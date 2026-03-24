@@ -34,7 +34,7 @@ export default function AdminDashboard() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const updateCampaignStatus = async (campaignId: string, status: string) => {
+  const updateCampaignStatus = async (campaignId: string, status: "active" | "pending" | "rejected") => {
     const { error } = await supabase
       .from("campaigns")
       .update({ status })

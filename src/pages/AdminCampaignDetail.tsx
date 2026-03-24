@@ -31,7 +31,7 @@ export default function AdminCampaignDetail() {
 
   useEffect(() => { fetchData(); }, [id]);
 
-  const updateStatus = async (status: string) => {
+  const updateStatus = async (status: "active" | "pending" | "rejected") => {
     if (!id) return;
     const { error } = await supabase.from("campaigns").update({ status }).eq("id", id);
     if (error) { toast.error(error.message); return; }
