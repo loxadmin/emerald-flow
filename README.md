@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Karbali
 
 TODO: Document your project here
