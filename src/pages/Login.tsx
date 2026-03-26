@@ -9,6 +9,7 @@ import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ export default function Login() {
       <FluidCanvas />
       <MotionWrapper className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
+          <Logo size={48} className="mx-auto mb-4" />
           <h1 className="text-3xl font-bold tracking-tight">
             <span className="text-gradient">Karbali</span>
           </h1>
