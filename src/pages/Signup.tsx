@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
+import Logo from "@/components/Logo";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -35,7 +36,10 @@ export default function Signup() {
       <FluidCanvas />
       <MotionWrapper className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight"><span className="text-gradient">Karbali</span></h1>
+          <Logo size={48} className="mx-auto mb-4" />
+          <h1 className="text-3xl font-bold tracking-tight">
+            <span className="text-gradient">Karbali</span>
+          </h1>
           <p className="mt-2 text-white/40">Create your advertiser account</p>
         </div>
         <GlassCard variant="strong">

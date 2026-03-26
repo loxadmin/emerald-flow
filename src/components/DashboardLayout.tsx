@@ -12,6 +12,7 @@ import {
   BarChart3,
   FileText,
 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const advertiserLinks = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -36,7 +37,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col glass-strong">
         <div className="flex h-16 items-center border-b border-white/[0.06] px-6">
-          <Link to="/dashboard" className="text-xl font-bold">
+          <Link to="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
+            <Logo size={24} />
             <span className="text-gradient">Karbali</span>
           </Link>
         </div>

@@ -4,6 +4,7 @@ import { GlassCard, GlassCardContent } from "@/components/ui/glass-card";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { BarChart3, Shield, Zap, DollarSign } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function Index() {
   return (
@@ -13,7 +14,12 @@ export default function Index() {
       {/* Nav */}
       <header className="relative z-10 border-b border-white/[0.06]">
         <div className="container flex h-16 items-center justify-between">
-          <h1 className="text-xl font-bold"><span className="text-gradient">Karbali</span></h1>
+          <div className="flex items-center gap-2">
+            <Logo size={28} />
+            <h1 className="text-xl font-bold tracking-tight">
+              <span className="text-gradient">Karbali</span>
+            </h1>
+          </div>
           <div className="flex gap-3">
             <Link to="/login"><GlassButton variant="ghost">Sign In</GlassButton></Link>
             <Link to="/signup"><GlassButton variant="glow">Get Started</GlassButton></Link>
