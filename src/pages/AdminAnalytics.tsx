@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
+import MotionWrapper from "@/components/MotionWrapper";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const COLORS = ["hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)", "hsl(217, 91%, 60%)"];
@@ -13,18 +14,14 @@ export default function AdminAnalytics() {
 
   useEffect(() => {
     const fetchAnalytics = async () => {
-      // Event breakdown
       const { count: dl } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "download");
       const { count: su } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "signup");
       const { count: pu } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "purchase");
-      
       setEventBreakdown([
         { name: "Downloads", value: dl || 0 },
         { name: "Signups", value: su || 0 },
         { name: "Purchases", value: pu || 0 },
       ]);
-
-      // Revenue by campaign
       const { data: campaigns } = await supabase.from("campaigns").select("id, name");
       if (campaigns) {
         const revenuePromises = campaigns.slice(0, 10).map(async (c) => {
@@ -32,8 +29,7 @@ export default function AdminAnalytics() {
           const total = txs?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
           return { name: c.name.slice(0, 20), revenue: total };
         });
-        const revenue = await Promise.all(revenuePromises);
-        setRevenueData(revenue.filter(r => r.revenue > 0));
+        setRevenueData((await Promise.all(revenuePromises)).filter(r => r.revenue > 0));
       }
       setLoading(false);
     };
@@ -42,49 +38,53 @@ export default function AdminAnalytics() {
 
   return (
     <DashboardLayout>
-      <div className="animate-fade-in space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
-          <p className="text-muted-foreground">Platform-wide performance metrics</p>
-        </div>
+      <div className="space-y-8">
+        <MotionWrapper>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white/95">Analytics</h1>
+            <p className="text-white/40">Platform-wide performance metrics</p>
+          </div>
+        </MotionWrapper>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader><CardTitle>Event Breakdown</CardTitle></CardHeader>
-            <CardContent>
-              {loading ? <p className="text-muted-foreground">Loading...</p> : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie data={eventBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                      {eventBreakdown.map((_, index) => (
-                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+          <MotionWrapper delay={0.1}>
+            <GlassCard variant="strong" className="h-full">
+              <GlassCardHeader><GlassCardTitle>Event Breakdown</GlassCardTitle></GlassCardHeader>
+              <GlassCardContent>
+                {loading ? <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div> : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie data={eventBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                        {eventBreakdown.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip contentStyle={{ background: "hsla(165,20%,10%,0.9)", border: "1px solid hsla(0,0%,100%,0.1)", borderRadius: "12px", color: "white" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </GlassCardContent>
+            </GlassCard>
+          </MotionWrapper>
 
-          <Card>
-            <CardHeader><CardTitle>Revenue by Campaign</CardTitle></CardHeader>
-            <CardContent>
-              {loading ? <p className="text-muted-foreground">Loading...</p> : revenueData.length === 0 ? (
-                <p className="text-muted-foreground">No revenue data yet.</p>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="revenue" fill="hsl(160, 84%, 39%)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+          <MotionWrapper delay={0.2}>
+            <GlassCard variant="strong" className="h-full">
+              <GlassCardHeader><GlassCardTitle>Revenue by Campaign</GlassCardTitle></GlassCardHeader>
+              <GlassCardContent>
+                {loading ? <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div> : revenueData.length === 0 ? (
+                  <p className="text-white/35">No revenue data yet.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={revenueData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsla(0,0%,100%,0.06)" />
+                      <XAxis dataKey="name" stroke="hsla(0,0%,100%,0.3)" tick={{ fontSize: 12 }} />
+                      <YAxis stroke="hsla(0,0%,100%,0.3)" tick={{ fontSize: 12 }} />
+                      <Tooltip contentStyle={{ background: "hsla(165,20%,10%,0.9)", border: "1px solid hsla(0,0%,100%,0.1)", borderRadius: "12px", color: "white" }} />
+                      <Bar dataKey="revenue" fill="hsl(160, 84%, 39%)" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </GlassCardContent>
+            </GlassCard>
+          </MotionWrapper>
         </div>
       </div>
     </DashboardLayout>

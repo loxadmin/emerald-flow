@@ -1,19 +1,15 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from "@/components/ui/glass-card";
+import { GlassButton } from "@/components/ui/glass-button";
+import { GlassInput } from "@/components/ui/glass-input";
 import { Label } from "@/components/ui/label";
+import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Save } from "lucide-react";
 
-interface Setting {
-  id: string;
-  key: string;
-  value: string;
-  description: string | null;
-}
+interface Setting { id: string; key: string; value: string; description: string | null; }
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Setting[]>([]);
@@ -37,81 +33,58 @@ export default function AdminSettings() {
 
   const saveSetting = async (key: string) => {
     setSaving(true);
-    const { error } = await supabase
-      .from("admin_settings")
-      .update({ value: editValues[key], updated_at: new Date().toISOString() })
-      .eq("key", key);
+    const { error } = await supabase.from("admin_settings").update({ value: editValues[key], updated_at: new Date().toISOString() }).eq("key", key);
     setSaving(false);
-    if (error) toast.error(error.message);
-    else toast.success(`${key} updated`);
+    if (error) toast.error(error.message); else toast.success(`${key} updated`);
   };
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-3xl animate-fade-in space-y-6">
+      <MotionWrapper className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Platform Settings</h1>
-          <p className="text-muted-foreground">Configure API keys and platform options</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white/95">Platform Settings</h1>
+          <p className="text-white/40">Configure API keys and platform options</p>
         </div>
 
         {loading ? (
-          <p className="text-muted-foreground">Loading...</p>
+          <div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
         ) : (
           <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Gateway Keys</CardTitle>
-                <CardDescription>Configure Stripe and Paystack API keys for billing</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {settings
-                  .filter(s => s.key.includes("stripe") || s.key.includes("paystack"))
-                  .map((setting) => (
-                    <div key={setting.key} className="space-y-2">
-                      <Label>{setting.description || setting.key}</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={editValues[setting.key] || ""}
-                          onChange={(e) => setEditValues({ ...editValues, [setting.key]: e.target.value })}
-                          type={setting.key.includes("secret") ? "password" : "text"}
-                          maxLength={500}
-                        />
-                        <Button size="sm" onClick={() => saveSetting(setting.key)} disabled={saving}>
-                          <Save className="h-4 w-4" />
-                        </Button>
-                      </div>
+            <GlassCard variant="strong">
+              <GlassCardHeader>
+                <GlassCardTitle>Payment Gateway Keys</GlassCardTitle>
+                <GlassCardDescription>Configure Stripe and Paystack API keys for billing</GlassCardDescription>
+              </GlassCardHeader>
+              <GlassCardContent className="space-y-4">
+                {settings.filter(s => s.key.includes("stripe") || s.key.includes("paystack")).map((setting) => (
+                  <div key={setting.key} className="space-y-2">
+                    <Label className="text-white/50 text-sm">{setting.description || setting.key}</Label>
+                    <div className="flex gap-2">
+                      <GlassInput value={editValues[setting.key] || ""} onChange={(e) => setEditValues({ ...editValues, [setting.key]: e.target.value })} type={setting.key.includes("secret") ? "password" : "text"} maxLength={500} />
+                      <GlassButton size="sm" variant="secondary" onClick={() => saveSetting(setting.key)} disabled={saving}><Save className="h-4 w-4" /></GlassButton>
                     </div>
-                  ))}
-              </CardContent>
-            </Card>
+                  </div>
+                ))}
+              </GlassCardContent>
+            </GlassCard>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Platform Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {settings
-                  .filter(s => !s.key.includes("stripe") && !s.key.includes("paystack"))
-                  .map((setting) => (
-                    <div key={setting.key} className="space-y-2">
-                      <Label>{setting.description || setting.key}</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={editValues[setting.key] || ""}
-                          onChange={(e) => setEditValues({ ...editValues, [setting.key]: e.target.value })}
-                          maxLength={500}
-                        />
-                        <Button size="sm" onClick={() => saveSetting(setting.key)} disabled={saving}>
-                          <Save className="h-4 w-4" />
-                        </Button>
-                      </div>
+            <GlassCard variant="strong">
+              <GlassCardHeader><GlassCardTitle>Platform Settings</GlassCardTitle></GlassCardHeader>
+              <GlassCardContent className="space-y-4">
+                {settings.filter(s => !s.key.includes("stripe") && !s.key.includes("paystack")).map((setting) => (
+                  <div key={setting.key} className="space-y-2">
+                    <Label className="text-white/50 text-sm">{setting.description || setting.key}</Label>
+                    <div className="flex gap-2">
+                      <GlassInput value={editValues[setting.key] || ""} onChange={(e) => setEditValues({ ...editValues, [setting.key]: e.target.value })} maxLength={500} />
+                      <GlassButton size="sm" variant="secondary" onClick={() => saveSetting(setting.key)} disabled={saving}><Save className="h-4 w-4" /></GlassButton>
                     </div>
-                  ))}
-              </CardContent>
-            </Card>
+                  </div>
+                ))}
+              </GlassCardContent>
+            </GlassCard>
           </>
         )}
-      </div>
+      </MotionWrapper>
     </DashboardLayout>
   );
 }
