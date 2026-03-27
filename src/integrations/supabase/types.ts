@@ -274,6 +274,39 @@ export type Database = {
           },
         ]
       }
+      site_content: {
+        Row: {
+          content: string | null
+          id: string
+          is_visible: boolean | null
+          section_key: string
+          sort_order: number | null
+          subtitle: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          id?: string
+          is_visible?: boolean | null
+          section_key: string
+          sort_order?: number | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          id?: string
+          is_visible?: boolean | null
+          section_key?: string
+          sort_order?: number | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number

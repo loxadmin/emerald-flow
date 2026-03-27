@@ -31,7 +31,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === "create_referral") {
-      // Get campaign's first source URL as redirect
       const { data: sources } = await supabase
         .from("campaign_sources")
         .select("url")
@@ -53,8 +52,9 @@ Deno.serve(async (req) => {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

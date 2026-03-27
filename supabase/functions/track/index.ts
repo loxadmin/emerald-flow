@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
         referral_id: referral_id || null,
         ip,
       })
-      .select()
+      .select("id")
       .single();
 
     if (eventError) throw eventError;
@@ -143,10 +143,10 @@ Deno.serve(async (req) => {
     // Billing engine - milestone logic
     let chargeAmount = 0;
 
-    // Check user's progress for milestone billing
+    // Check user's event history for milestone billing
     const { data: userEvents } = await supabase
       .from("events")
-      .select("event_type")
+      .select("id, event_type")
       .eq("campaign_id", campaign_id)
       .eq("external_user_id", user_id);
 
@@ -162,7 +162,6 @@ Deno.serve(async (req) => {
     }
 
     if (chargeAmount > 0 && Number(campaign.budget_remaining) >= chargeAmount) {
-      // Create transaction
       await supabase.from("transactions").insert({
         campaign_id,
         event_id: event.id,
@@ -170,11 +169,9 @@ Deno.serve(async (req) => {
         description: `${event_type} event charge`,
       });
 
-      // Deduct budget
       const newBudget = Number(campaign.budget_remaining) - chargeAmount;
-      const updateData: any = { budget_remaining: newBudget };
+      const updateData: Record<string, unknown> = { budget_remaining: newBudget };
       
-      // Disable campaign if budget depleted
       if (newBudget <= 0) {
         updateData.status = "rejected";
       }
@@ -186,9 +183,10 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true, event_id: event.id, charged: chargeAmount }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal server error";
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

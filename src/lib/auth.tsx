@@ -1,7 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+
+const INACTIVITY_TIMEOUT = 48 * 60 * 60 * 1000; // 48 hours in ms
+const ACTIVITY_CHECK_INTERVAL = 60 * 1000; // check every minute
 
 interface AuthContextType {
   session: Session | null;
@@ -25,20 +28,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const lastActivityRef = useRef<number>(Date.now());
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setIsAdmin(false);
+    localStorage.removeItem("karbali-last-activity");
+  }, []);
+
+  // Track user activity
+  useEffect(() => {
+    const updateActivity = () => {
+      lastActivityRef.current = Date.now();
+      localStorage.setItem("karbali-last-activity", String(Date.now()));
+    };
+
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, updateActivity, { passive: true }));
+
+    // Check inactivity
+    intervalRef.current = setInterval(() => {
+      const lastActivity = Number(localStorage.getItem("karbali-last-activity")) || Date.now();
+      if (Date.now() - lastActivity > INACTIVITY_TIMEOUT && session) {
+        signOut();
+      }
+    }, ACTIVITY_CHECK_INTERVAL);
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, updateActivity));
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [session, signOut]);
 
   useEffect(() => {
+    const checkAdmin = async (userId: string) => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         if (session?.user) {
-          // Check admin role without causing RLS recursion
-          const { data } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .eq("role", "admin")
-            .maybeSingle();
-          setIsAdmin(!!data);
+          const admin = await checkAdmin(session.user.id);
+          setIsAdmin(admin);
         } else {
           setIsAdmin(false);
         }
@@ -46,32 +86,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
-          .maybeSingle()
-          .then(({ data }) => {
-            setIsAdmin(!!data);
-            setIsLoading(false);
-          });
-      } else {
-        setIsLoading(false);
+        const admin = await checkAdmin(session.user.id);
+        setIsAdmin(admin);
       }
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setIsAdmin(false);
-  };
 
   return (
     <AuthContext.Provider
@@ -100,7 +125,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
@@ -121,7 +146,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
