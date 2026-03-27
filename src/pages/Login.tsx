@@ -22,13 +22,24 @@ export default function Login() {
     e.preventDefault();
     if (!email.trim() || !password.trim()) { toast.error("Please fill in all fields"); return; }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    setLoading(false);
-    if (error) { toast.error(error.message); } else { toast.success("Logged in successfully"); navigate("/dashboard"); }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Logged in successfully");
+        localStorage.setItem("karbali-last-activity", String(Date.now()));
+        navigate("/dashboard");
+      }
+    } catch {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4">
+    <div className="relative flex min-h-screen items-center justify-center px-4 bg-background">
       <FluidCanvas />
       <MotionWrapper className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
@@ -36,7 +47,7 @@ export default function Login() {
           <h1 className="text-3xl font-bold tracking-tight">
             <span className="text-gradient">Karbali</span>
           </h1>
-          <p className="mt-2 text-white/40">Performance Attribution Platform</p>
+          <p className="mt-2 text-muted-foreground">Performance Attribution Platform</p>
         </div>
         <GlassCard variant="strong">
           <GlassCardHeader>
@@ -46,14 +57,14 @@ export default function Login() {
           <GlassCardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-white/60 text-sm">Email</Label>
-                <GlassInput id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required />
+                <Label className="text-muted-foreground text-sm">Email</Label>
+                <GlassInput id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required autoComplete="email" />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/60 text-sm">Password</Label>
+                <Label className="text-muted-foreground text-sm">Password</Label>
                 <div className="relative">
-                  <GlassInput id="password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required />
-                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors" onClick={() => setShowPassword(!showPassword)}>
+                  <GlassInput id="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="current-password" />
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors" onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
@@ -62,7 +73,7 @@ export default function Login() {
                 {loading ? "Signing in..." : "Sign In"}
               </GlassButton>
             </form>
-            <div className="mt-4 text-center text-sm text-white/40">
+            <div className="mt-4 text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
               <Link to="/signup" className="text-primary hover:text-primary/80 transition-colors">Sign up</Link>
             </div>
