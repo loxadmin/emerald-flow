@@ -38,17 +38,24 @@ export default function AdminDashboard() {
     }
   };
 
+  const statusColor = (status: string) => {
+    switch (status) {
+      case "active": return "border-primary/30 bg-primary/10 text-primary";
+      case "pending": return "border-warning/30 bg-warning/10 text-warning";
+      default: return "border-destructive/30 bg-destructive/10 text-destructive";
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
         <MotionWrapper>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white/95">Admin Panel</h1>
-            <p className="text-white/40">Manage campaigns, approvals, and platform settings</p>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Admin Panel</h1>
+            <p className="text-muted-foreground">Manage campaigns, approvals, and platform settings</p>
           </div>
         </MotionWrapper>
 
-        {/* Stats */}
         <MotionStagger className="grid gap-4 md:grid-cols-3">
           {[
             { label: "Total Campaigns", value: stats.totalCampaigns, icon: Users },
@@ -58,16 +65,15 @@ export default function AdminDashboard() {
             <MotionItem key={s.label}>
               <GlassCard className="glass-hover">
                 <GlassCardHeader className="flex flex-row items-center justify-between pb-2">
-                  <GlassCardTitle className="text-sm font-medium text-white/40">{s.label}</GlassCardTitle>
-                  <s.icon className="h-4 w-4 text-white/20" />
+                  <GlassCardTitle className="text-sm font-medium text-muted-foreground">{s.label}</GlassCardTitle>
+                  <s.icon className="h-4 w-4 text-muted-foreground/50" />
                 </GlassCardHeader>
-                <GlassCardContent><p className="text-2xl font-bold text-white/90">{s.value}</p></GlassCardContent>
+                <GlassCardContent><p className="text-2xl font-bold text-foreground">{s.value}</p></GlassCardContent>
               </GlassCard>
             </MotionItem>
           ))}
         </MotionStagger>
 
-        {/* Pending */}
         <MotionWrapper delay={0.15}>
           <GlassCard variant="strong">
             <GlassCardHeader><GlassCardTitle>Pending Approvals</GlassCardTitle></GlassCardHeader>
@@ -76,12 +82,12 @@ export default function AdminDashboard() {
                 <div className="flex justify-center py-6"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
               ) : (
                 <div className="space-y-2">
-                  {campaigns.filter(c => c.status === "pending").length === 0 && <p className="text-white/35">No pending campaigns.</p>}
+                  {campaigns.filter(c => c.status === "pending").length === 0 && <p className="text-muted-foreground">No pending campaigns.</p>}
                   {campaigns.filter(c => c.status === "pending").map((c) => (
-                    <div key={c.id} className="flex items-center justify-between rounded-xl border border-white/[0.06] p-4">
+                    <div key={c.id} className="flex items-center justify-between rounded-xl border border-border/50 p-4">
                       <div>
-                        <p className="font-medium text-white/85">{c.name}</p>
-                        <p className="text-sm text-white/35">{(c.profiles as any)?.email || "Unknown"} • Budget: ${Number(c.budget_remaining).toFixed(2)}</p>
+                        <p className="font-medium text-foreground/90">{c.name}</p>
+                        <p className="text-sm text-muted-foreground">{(c.profiles as any)?.email || "Unknown"} | Budget: ${Number(c.budget_remaining).toFixed(2)}</p>
                       </div>
                       <div className="flex gap-2">
                         <GlassButton size="sm" variant="glow" onClick={() => updateCampaignStatus(c.id, "active")}>
@@ -99,23 +105,18 @@ export default function AdminDashboard() {
           </GlassCard>
         </MotionWrapper>
 
-        {/* All Campaigns */}
         <MotionWrapper delay={0.25}>
           <GlassCard variant="strong">
             <GlassCardHeader><GlassCardTitle>All Campaigns</GlassCardTitle></GlassCardHeader>
             <GlassCardContent>
               <div className="space-y-2">
                 {campaigns.map((c) => (
-                  <Link key={c.id} to={`/admin/campaigns/${c.id}`} className="flex items-center justify-between rounded-xl border border-white/[0.06] p-4 transition-all duration-200 hover:bg-white/[0.04] hover:border-white/[0.1]">
+                  <Link key={c.id} to={`/admin/campaigns/${c.id}`} className="flex items-center justify-between rounded-xl border border-border/50 p-4 transition-all duration-200 hover:bg-accent/5 hover:border-border">
                     <div>
-                      <p className="font-medium text-white/85">{c.name}</p>
-                      <p className="text-sm text-white/35">{(c.profiles as any)?.email || "Unknown"} • ${Number(c.budget_remaining).toFixed(2)}</p>
+                      <p className="font-medium text-foreground/90">{c.name}</p>
+                      <p className="text-sm text-muted-foreground">{(c.profiles as any)?.email || "Unknown"} | ${Number(c.budget_remaining).toFixed(2)}</p>
                     </div>
-                    <Badge variant="outline" className={
-                      c.status === "active" ? "border-primary/30 bg-primary/10 text-primary" :
-                      c.status === "pending" ? "border-warning/30 bg-warning/10 text-warning" :
-                      "border-destructive/30 bg-destructive/10 text-destructive"
-                    }>{c.status}</Badge>
+                    <Badge variant="outline" className={statusColor(c.status)}>{c.status}</Badge>
                   </Link>
                 ))}
               </div>

@@ -42,7 +42,7 @@ export default function CreateCampaign() {
   return (
     <DashboardLayout>
       <MotionWrapper className="mx-auto max-w-2xl">
-        <h1 className="mb-6 text-2xl font-bold tracking-tight text-white/95">Create Campaign</h1>
+        <h1 className="mb-6 text-2xl font-bold tracking-tight text-foreground">Create Campaign</h1>
         <GlassCard variant="strong">
           <GlassCardHeader>
             <GlassCardTitle>Campaign Details</GlassCardTitle>
@@ -51,11 +51,11 @@ export default function CreateCampaign() {
           <GlassCardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-white/60 text-sm">Campaign Name *</Label>
+                <Label className="text-muted-foreground text-sm">Campaign Name *</Label>
                 <GlassInput value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="My App Campaign" maxLength={200} required />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/60 text-sm">Budget (USD) *</Label>
+                <Label className="text-muted-foreground text-sm">Budget (USD) *</Label>
                 <GlassInput type="number" min="1" step="0.01" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} placeholder="1000.00" required />
               </div>
               <div className="grid gap-4 md:grid-cols-3">
@@ -65,12 +65,12 @@ export default function CreateCampaign() {
                   { key: "pricePurchase", label: "Price per Purchase ($)" },
                 ].map((p) => (
                   <div key={p.key} className="space-y-2">
-                    <Label className="text-white/60 text-sm">{p.label}</Label>
+                    <Label className="text-muted-foreground text-sm">{p.label}</Label>
                     <GlassInput type="number" min="0" step="0.01" value={(form as any)[p.key]} onChange={(e) => setForm({ ...form, [p.key]: e.target.value })} />
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-white/30">Milestone billing: If a user completes purchase, only the purchase price is charged (not cumulative).</p>
+              <p className="text-xs text-muted-foreground/60">Milestone billing: If a user completes purchase, only the purchase price is charged (not cumulative).</p>
               <GlassButton type="submit" className="w-full" variant="glow" disabled={loading}>
                 {loading ? "Creating..." : "Create Campaign"}
               </GlassButton>

@@ -26,7 +26,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Look up referral
     const { data: referral, error } = await supabase
       .from("referrals")
       .select("id, campaign_id, redirect_url, code")
@@ -40,7 +39,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Log click
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const user_agent = req.headers.get("user-agent") || "unknown";
 
@@ -50,7 +48,6 @@ Deno.serve(async (req) => {
       user_agent,
     });
 
-    // Get redirect URL - from referral or campaign's first source
     let redirect_url = referral.redirect_url;
     if (!redirect_url) {
       const { data: sources } = await supabase
@@ -65,9 +62,10 @@ Deno.serve(async (req) => {
       JSON.stringify({ redirect_url, referral_id: referral.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal server error";
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
