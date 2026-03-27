@@ -6,7 +6,7 @@
   :root,
   .light {
     --background: 150 10% 96%;
-    --foreground: 165 30% 10%;
+    --foreground: 165 30% 8%;
 
     --card: 150 10% 98%;
     --card-foreground: 165 30% 10%;
@@ -56,7 +56,7 @@
   .dark {
     /* Very dark desaturated green/blue */
     --background: 165 40% 3%;
-    --foreground: 0 0% 95%;
+    --foreground: 165 10% 98%;
 
     --card: 165 25% 6%;
     --card-foreground: 0 0% 95%;
@@ -115,13 +115,13 @@
     background: linear-gradient(135deg, hsl(160, 84%, 45%), hsl(160, 84%, 30%));
   }
   .text-gradient {
-    background: linear-gradient(180deg, hsl(160, 60%, 65%), hsl(160, 60%, 45%));
+    background: linear-gradient(180deg, hsl(160, 84%, 45%), hsl(160, 84%, 35%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .light .text-gradient {
-    background: linear-gradient(180deg, hsl(160, 84%, 38%), hsl(160, 84%, 28%));
+    background: linear-gradient(180deg, hsl(160, 84%, 35%), hsl(160, 84%, 25%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
