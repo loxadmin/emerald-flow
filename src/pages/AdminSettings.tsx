@@ -42,8 +42,8 @@ export default function AdminSettings() {
     <DashboardLayout>
       <MotionWrapper className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white/95">Platform Settings</h1>
-          <p className="text-white/40">Configure API keys and platform options</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Platform Settings</h1>
+          <p className="text-muted-foreground">Configure API keys and platform options</p>
         </div>
 
         {loading ? (
@@ -58,7 +58,7 @@ export default function AdminSettings() {
               <GlassCardContent className="space-y-4">
                 {settings.filter(s => s.key.includes("stripe") || s.key.includes("paystack")).map((setting) => (
                   <div key={setting.key} className="space-y-2">
-                    <Label className="text-white/50 text-sm">{setting.description || setting.key}</Label>
+                    <Label className="text-muted-foreground text-sm">{setting.description || setting.key}</Label>
                     <div className="flex gap-2">
                       <GlassInput value={editValues[setting.key] || ""} onChange={(e) => setEditValues({ ...editValues, [setting.key]: e.target.value })} type={setting.key.includes("secret") ? "password" : "text"} maxLength={500} />
                       <GlassButton size="sm" variant="secondary" onClick={() => saveSetting(setting.key)} disabled={saving}><Save className="h-4 w-4" /></GlassButton>
@@ -73,7 +73,7 @@ export default function AdminSettings() {
               <GlassCardContent className="space-y-4">
                 {settings.filter(s => !s.key.includes("stripe") && !s.key.includes("paystack")).map((setting) => (
                   <div key={setting.key} className="space-y-2">
-                    <Label className="text-white/50 text-sm">{setting.description || setting.key}</Label>
+                    <Label className="text-muted-foreground text-sm">{setting.description || setting.key}</Label>
                     <div className="flex gap-2">
                       <GlassInput value={editValues[setting.key] || ""} onChange={(e) => setEditValues({ ...editValues, [setting.key]: e.target.value })} maxLength={500} />
                       <GlassButton size="sm" variant="secondary" onClick={() => saveSetting(setting.key)} disabled={saving}><Save className="h-4 w-4" /></GlassButton>
