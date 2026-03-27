@@ -9,6 +9,7 @@ import { BarChart3, Shield, Zap, DollarSign, ArrowRight, Users, Target, Trending
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
 import MigrationAnimation from "@/components/MigrationAnimation";
+import { motion } from "framer-motion";
 
 interface SiteContent {
   section_key: string;
@@ -36,13 +37,17 @@ export default function Index() {
   useEffect(() => {
     const fetchData = async () => {
       // Fetch site content
-      const { data: contentData } = await supabase.from("site_content").select("section_key, title, subtitle, content, is_visible");
-      if (contentData) {
-        const mapped: Record<string, SiteContent> = { ...defaultContent };
-        contentData.forEach((item: SiteContent) => {
-          mapped[item.section_key] = item;
-        });
-        setContent(mapped);
+      try {
+        const { data: contentData } = await supabase.from("site_content").select("section_key, title, subtitle, content, is_visible");
+        if (contentData) {
+          const mapped: Record<string, SiteContent> = { ...defaultContent };
+          contentData.forEach((item: SiteContent) => {
+            mapped[item.section_key] = item;
+          });
+          setContent(mapped);
+        }
+      } catch (e) {
+        console.log("Supabase error (using defaults):", e);
       }
 
       // Fetch real metrics
@@ -160,14 +165,23 @@ export default function Index() {
               </MotionWrapper>
             </div>
 
-            <MotionWrapper delay={0.2} className="relative">
-              <div className="relative z-10 rounded-[2.5rem] border border-white/10 bg-white/5 p-4 backdrop-blur-xl shadow-2xl">
-                <MigrationAnimation />
+            <MotionWrapper delay={0.2} className="relative group perspective-1000">
+              <motion.div
+                whileHover={{ rotateX: 2, rotateY: -2, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="relative z-10 rounded-[3rem] border border-white/20 bg-white/5 p-2 backdrop-blur-2xl shadow-[0_32px_64px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.1)] overflow-hidden clay-shadow"
+              >
+                <div className="rounded-[2.5rem] bg-gradient-to-b from-white/5 to-transparent p-4">
+                  <MigrationAnimation />
+                </div>
 
                 {/* Decorative elements */}
-                <div className="absolute -top-6 -right-6 h-24 w-24 bg-primary/20 blur-3xl rounded-full" />
-                <div className="absolute -bottom-10 -left-10 h-32 w-32 bg-primary/10 blur-3xl rounded-full" />
-              </div>
+                <div className="absolute -top-12 -right-12 h-40 w-40 bg-primary/20 blur-[80px] rounded-full group-hover:bg-primary/30 transition-colors" />
+                <div className="absolute -bottom-16 -left-16 h-48 w-48 bg-primary/10 blur-[100px] rounded-full group-hover:bg-primary/20 transition-colors" />
+
+                {/* Glossy sheen */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+              </motion.div>
             </MotionWrapper>
           </div>
         </section>

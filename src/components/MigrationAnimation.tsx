@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useRef } from "react";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { User } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const Avatar = ({ id, delay }: { id: number; delay: number }) => {
+const Avatar = ({ delay }: { delay: number }) => {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0, x: -80, y: 20 }}
       animate={{
         opacity: [0, 1, 1, 0],
         scale: [0.5, 1, 1, 0.5],
-        x: [-80, -80, 80, 80],
-        y: [20, -40, -40, 20],
+        x: [-120, -120, 120, 120],
+        y: [40, -60, -60, 40],
       }}
       transition={{
         duration: 4,
@@ -18,99 +19,133 @@ const Avatar = ({ id, delay }: { id: number; delay: number }) => {
         repeat: Infinity,
         ease: "easeInOut",
       }}
-      className="absolute left-1/2 top-1/2 -ml-4 -mt-4 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-lg border border-primary/20"
+      className="absolute left-1/2 top-1/2 -ml-4 -mt-4 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-[0_8px_16px_rgba(0,0,0,0.1),inset_0_2px_4px_rgba(255,255,255,0.8)] border border-primary/20 z-20"
     >
-      <User className="h-4 w-4 text-primary" />
+      <User className="h-5 w-5 text-primary" />
     </motion.div>
   );
 };
 
-const Basket = ({ position }: { position: "left" | "right" }) => {
+const Basket = ({ label, isTarget = false }: { label: string; isTarget?: boolean }) => {
   return (
-    <div
-      className={`relative h-24 w-32 ${
-        position === "left" ? "-translate-x-20" : "translate-x-20"
-      }`}
-    >
-      {/* Back of basket */}
-      <div className="absolute inset-0 rounded-b-3xl rounded-t-xl bg-primary/20 backdrop-blur-sm border border-primary/30 shadow-inner" />
+    <div className="flex flex-col items-center gap-4 relative z-0">
+      <div className={cn(
+        "w-24 h-18 md:w-32 md:h-24 rounded-[2rem] relative transition-all duration-500 clay-shadow flex items-center justify-center",
+        isTarget ? "bg-emerald-500/20 border border-emerald-500/40" : "bg-white/5 border border-white/20"
+      )}>
+        {/* Inner glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-[2rem]" />
 
-      {/* 3D Rim */}
-      <div className="absolute -top-2 left-0 right-0 h-6 rounded-full border-4 border-primary/40 bg-primary/10 shadow-lg" />
+        {/* 3D Rim */}
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-16 md:w-20 h-3 md:h-4 bg-inherit border-inherit rounded-t-2xl" />
 
-      {/* Front of basket (transparent to see avatars) */}
-      <div className="absolute inset-0 rounded-b-3xl rounded-t-xl bg-gradient-to-t from-primary/10 to-transparent border-x border-b border-primary/20" />
-
-      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-        {position === "left" ? "Old Brand" : "Your Brand"}
+        {/* Shadow inside */}
+        <div className="absolute inset-[2px] rounded-[1.8rem] border border-white/5 pointer-events-none" />
       </div>
+      <span className="text-[9px] md:text-[10px] font-black tracking-[0.2em] text-foreground/50 uppercase text-center w-32">
+        {label}
+      </span>
     </div>
   );
 };
 
 const Character = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x, { stiffness: 150, damping: 20 });
+  const mouseYSpring = useSpring(y, { stiffness: 150, damping: 20 });
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["20deg", "-20deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-20deg", "20deg"]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const xPct = (e.clientX - rect.left) / rect.width - 0.5;
+    const yPct = (e.clientY - rect.top) / rect.height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
   return (
-    <div className="relative flex flex-col items-center">
-      {/* Head */}
+    <div
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative perspective-1000 z-10"
+    >
+      {/* Floating Shadow */}
       <motion.div
-        animate={{ y: [0, -5, 0] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="h-14 w-14 rounded-full bg-[#E5E7EB] shadow-[inset_-4px_-4px_8px_rgba(0,0,0,0.1),inset_4px_4px_8px_rgba(255,255,255,0.8)] border border-white/50"
+        animate={{
+          scale: [1, 0.7, 1],
+          opacity: [0.3, 0.15, 0.3],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-32 h-6 bg-black/40 rounded-[100%] blur-xl"
       />
 
-      {/* Body */}
+      {/* 3D Character Image */}
       <motion.div
-        animate={{ scaleY: [1, 1.02, 1] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="mt-1 h-24 w-20 rounded-[2rem] bg-[#F3F4F6] shadow-[inset_-6px_-6px_12px_rgba(0,0,0,0.15),inset_6px_6px_12px_rgba(255,255,255,0.9)] border border-white/60"
-      />
-
-      {/* Arms */}
-      <div className="absolute top-16 flex w-48 justify-between px-2">
-        {/* Left Arm */}
-        <motion.div
-          animate={{
-            rotate: [0, -20, 0],
-            y: [0, -10, 0],
-          }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="h-4 w-16 origin-right rounded-full bg-[#E5E7EB] shadow-md border border-white/40"
+        style={{
+          rotateX,
+          rotateY,
+          transformStyle: "preserve-3d",
+        }}
+        animate={{
+          y: [0, -25, 0],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="relative w-40 h-56 md:w-56 md:h-72 rounded-[3rem] md:rounded-[4rem] overflow-hidden border border-white/20 shadow-2xl clay-shadow"
+      >
+        <img
+          src="/assets/character.jpeg"
+          alt="3D Character"
+          className="w-full h-full object-cover scale-110 brightness-110 contrast-105"
         />
-        {/* Right Arm */}
-        <motion.div
-          animate={{
-            rotate: [0, 20, 0],
-            y: [0, -10, 0],
-          }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="h-4 w-16 origin-left rounded-full bg-[#E5E7EB] shadow-md border border-white/40"
-        />
-      </div>
+        {/* Glossy Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none" />
+      </motion.div>
     </div>
   );
 };
 
 const MigrationAnimation = () => {
-  const [avatars, setAvatars] = useState([0, 1, 2]);
+  const avatars = [0, 1, 2];
 
   return (
-    <div className="relative flex min-h-[400px] w-full items-center justify-center overflow-hidden py-10">
+    <div className="relative flex min-h-[450px] md:min-h-[550px] w-full items-center justify-center overflow-hidden py-10">
       {/* Ambient background glow */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-30">
-        <div className="h-[300px] w-[300px] rounded-full bg-primary/20 blur-[100px]" />
+      <div className="absolute inset-0 flex items-center justify-center opacity-20">
+        <div className="h-[500px] w-[500px] rounded-full bg-emerald-500/20 blur-[120px]" />
       </div>
 
-      <div className="relative flex flex-col items-center gap-8">
+      <div className="relative flex flex-col items-center gap-12 w-full max-w-4xl px-4">
         {/* The Character and Baskets */}
-        <div className="relative flex items-center justify-center pt-10">
-          <Basket position="left" />
+        <div className="relative flex items-center justify-center gap-6 md:gap-16 w-full pt-10">
+          <Basket label="Competitor Brand" />
           <Character />
-          <Basket position="right" />
+          <Basket label="Your Brand" isTarget />
 
           {/* Moving Avatars */}
           <div className="absolute inset-0 pointer-events-none">
             {avatars.map((id) => (
-              <Avatar key={id} id={id} delay={id * 1.5} />
+              <Avatar key={id} delay={id * 1.5} />
             ))}
           </div>
         </div>
@@ -119,10 +154,10 @@ const MigrationAnimation = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 px-6 py-3 shadow-xl"
+          className="rounded-[2rem] bg-white/5 backdrop-blur-xl border border-white/10 px-8 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.1)] clay-shadow"
         >
-          <p className="text-sm font-medium text-foreground/80 flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+          <p className="text-sm font-bold text-foreground/90 flex items-center gap-3">
+            <span className="flex h-3 w-3 rounded-full bg-primary animate-pulse shadow-[0_0_12px_rgba(var(--primary),0.5)]" />
             Migrating customers in real-time
           </p>
         </motion.div>
