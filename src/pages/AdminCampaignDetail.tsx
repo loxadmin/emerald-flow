@@ -52,7 +52,7 @@ export default function AdminCampaignDetail() {
   };
 
   if (loading) return <DashboardLayout><div className="flex justify-center py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></DashboardLayout>;
-  if (!campaign) return <DashboardLayout><p className="text-white/40">Campaign not found.</p></DashboardLayout>;
+  if (!campaign) return <DashboardLayout><p className="text-muted-foreground">Campaign not found.</p></DashboardLayout>;
 
   return (
     <DashboardLayout>
@@ -60,8 +60,8 @@ export default function AdminCampaignDetail() {
         <MotionWrapper>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white/95">{campaign.name}</h1>
-              <p className="text-sm text-white/35">ID: {campaign.id}</p>
+              <h1 className="text-2xl font-bold text-foreground">{campaign.name}</h1>
+              <p className="text-sm text-muted-foreground">ID: {campaign.id}</p>
             </div>
             <div className="flex gap-2">
               {campaign.status !== "active" && (
@@ -74,22 +74,21 @@ export default function AdminCampaignDetail() {
           </div>
         </MotionWrapper>
 
-        {/* Campaign Info */}
         <div className="grid gap-4 md:grid-cols-2">
           <MotionWrapper delay={0.1}>
             <GlassCard variant="strong" className="h-full">
               <GlassCardHeader><GlassCardTitle>Details</GlassCardTitle></GlassCardHeader>
               <GlassCardContent className="space-y-3 text-sm">
                 {[
-                  { l: "Status", v: <Badge variant="outline" className="border-white/[0.1]">{campaign.status}</Badge> },
+                  { l: "Status", v: <Badge variant="outline" className="border-border">{campaign.status}</Badge> },
                   { l: "Budget", v: `$${Number(campaign.budget_remaining).toFixed(2)}` },
                   { l: "Download Price", v: `$${Number(campaign.price_download).toFixed(2)}` },
                   { l: "Signup Price", v: `$${Number(campaign.price_signup).toFixed(2)}` },
                   { l: "Purchase Price", v: `$${Number(campaign.price_purchase).toFixed(2)}` },
                 ].map((r) => (
                   <div key={r.l} className="flex justify-between items-center">
-                    <span className="text-white/40">{r.l}</span>
-                    <span className="text-white/80">{r.v}</span>
+                    <span className="text-muted-foreground">{r.l}</span>
+                    <span className="text-foreground/80">{r.v}</span>
                   </div>
                 ))}
               </GlassCardContent>
@@ -99,12 +98,12 @@ export default function AdminCampaignDetail() {
             <GlassCard variant="strong" className="h-full">
               <GlassCardHeader><GlassCardTitle>Sources Detected</GlassCardTitle></GlassCardHeader>
               <GlassCardContent>
-                {sources.length === 0 ? <p className="text-sm text-white/35">No sources detected yet.</p> : (
+                {sources.length === 0 ? <p className="text-sm text-muted-foreground">No sources detected yet.</p> : (
                   <div className="space-y-2">
                     {sources.map(s => (
                       <div key={s.id} className="flex items-center gap-2 text-sm">
-                        <Badge variant="outline" className="border-white/[0.1]">{s.type}</Badge>
-                        <span className="truncate text-white/60">{s.url}</span>
+                        <Badge variant="outline" className="border-border">{s.type}</Badge>
+                        <span className="truncate text-muted-foreground">{s.url}</span>
                         {s.verified && <CheckCircle className="h-4 w-4 text-primary" />}
                       </div>
                     ))}
@@ -115,7 +114,6 @@ export default function AdminCampaignDetail() {
           </MotionWrapper>
         </div>
 
-        {/* Referral Links */}
         <MotionWrapper delay={0.2}>
           <GlassCard variant="glow">
             <GlassCardHeader className="flex flex-row items-center justify-between">
@@ -123,13 +121,13 @@ export default function AdminCampaignDetail() {
               <GlassButton size="sm" variant="outline" onClick={generateReferral}><LinkIcon className="mr-1 h-4 w-4" /> Generate Link</GlassButton>
             </GlassCardHeader>
             <GlassCardContent>
-              {referrals.length === 0 ? <p className="text-sm text-white/35">No referral links yet.</p> : (
+              {referrals.length === 0 ? <p className="text-sm text-muted-foreground">No referral links yet.</p> : (
                 <div className="space-y-2">
                   {referrals.map(r => {
                     const link = `${window.location.origin}/r/${r.code}`;
                     return (
                       <div key={r.id} className="flex items-center gap-2">
-                        <code className="flex-1 truncate rounded-lg bg-white/[0.04] border border-white/[0.08] px-3 py-1.5 text-sm text-primary/80">{link}</code>
+                        <code className="flex-1 truncate rounded-lg bg-muted/50 border border-border/50 px-3 py-1.5 text-sm text-primary/80">{link}</code>
                         <GlassButton size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(link); toast.success("Copied!"); }}><Copy className="h-4 w-4" /></GlassButton>
                       </div>
                     );
@@ -140,20 +138,19 @@ export default function AdminCampaignDetail() {
           </GlassCard>
         </MotionWrapper>
 
-        {/* Recent Events */}
         <MotionWrapper delay={0.25}>
           <GlassCard>
             <GlassCardHeader><GlassCardTitle>Recent Events</GlassCardTitle></GlassCardHeader>
             <GlassCardContent>
-              {events.length === 0 ? <p className="text-sm text-white/35">No events yet.</p> : (
+              {events.length === 0 ? <p className="text-sm text-muted-foreground">No events yet.</p> : (
                 <div className="space-y-2">
                   {events.map(e => (
-                    <div key={e.id} className="flex items-center justify-between rounded-xl border border-white/[0.06] p-3 text-sm">
+                    <div key={e.id} className="flex items-center justify-between rounded-xl border border-border/50 p-3 text-sm">
                       <div>
                         <Badge variant="outline" className="border-primary/20 text-primary/80">{e.event_type}</Badge>
-                        <span className="ml-2 text-white/40">User: {e.external_user_id}</span>
+                        <span className="ml-2 text-muted-foreground">User: {e.external_user_id}</span>
                       </div>
-                      <span className="text-xs text-white/30">{new Date(e.created_at).toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground/60">{new Date(e.created_at).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>

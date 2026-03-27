@@ -38,16 +38,20 @@ export default function CampaignDetail() {
   const copyApiKey = () => { if (apiKey) { navigator.clipboard.writeText(apiKey); toast.success("API key copied!"); } };
 
   if (loading) return <DashboardLayout><div className="flex items-center justify-center py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></DashboardLayout>;
-  if (!campaign) return <DashboardLayout><p className="text-white/40">Campaign not found.</p></DashboardLayout>;
+  if (!campaign) return <DashboardLayout><p className="text-muted-foreground">Campaign not found.</p></DashboardLayout>;
 
   const totalEvents = stats.downloads + stats.signups + stats.purchases;
 
   const statCards = [
-    { icon: Download, label: "Downloads", value: stats.downloads, color: "text-primary" },
-    { icon: UserPlus, label: "Signups", value: stats.signups, color: "text-primary" },
-    { icon: ShoppingCart, label: "Purchases", value: stats.purchases, color: "text-primary" },
-    { icon: Wallet, label: "Budget Remaining", value: `$${Number(campaign.budget_remaining).toFixed(2)}`, color: "text-white/90" },
+    { icon: Download, label: "Downloads", value: stats.downloads },
+    { icon: UserPlus, label: "Signups", value: stats.signups },
+    { icon: ShoppingCart, label: "Purchases", value: stats.purchases },
+    { icon: Wallet, label: "Budget Remaining", value: `$${Number(campaign.budget_remaining).toFixed(2)}` },
   ];
+
+  const statusColor = campaign.status === "active" ? "border-primary/30 bg-primary/10 text-primary" :
+    campaign.status === "pending" ? "border-warning/30 bg-warning/10 text-warning" :
+    "border-destructive/30 bg-destructive/10 text-destructive";
 
   return (
     <DashboardLayout>
@@ -55,18 +59,13 @@ export default function CampaignDetail() {
         <MotionWrapper>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white/95">{campaign.name}</h1>
-              <p className="text-white/35 text-sm">Campaign ID: {campaign.id}</p>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{campaign.name}</h1>
+              <p className="text-muted-foreground text-sm">Campaign ID: {campaign.id}</p>
             </div>
-            <Badge variant="outline" className={
-              campaign.status === "active" ? "border-primary/30 bg-primary/10 text-primary" :
-              campaign.status === "pending" ? "border-warning/30 bg-warning/10 text-warning" :
-              "border-destructive/30 bg-destructive/10 text-destructive"
-            }>{campaign.status}</Badge>
+            <Badge variant="outline" className={statusColor}>{campaign.status}</Badge>
           </div>
         </MotionWrapper>
 
-        {/* API Key */}
         <MotionWrapper delay={0.1}>
           <GlassCard variant="glow">
             <GlassCardHeader>
@@ -76,25 +75,24 @@ export default function CampaignDetail() {
             <GlassCardContent>
               {apiKey ? (
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-lg bg-white/[0.04] border border-white/[0.08] px-4 py-2.5 font-mono text-sm text-primary/80">{apiKey}</code>
+                  <code className="flex-1 rounded-lg bg-muted/50 border border-border/50 px-4 py-2.5 font-mono text-sm text-primary/80">{apiKey}</code>
                   <GlassButton variant="secondary" size="sm" onClick={copyApiKey}><Copy className="h-4 w-4" /></GlassButton>
                 </div>
-              ) : <p className="text-white/40">API key not generated yet.</p>}
+              ) : <p className="text-muted-foreground">API key not generated yet.</p>}
             </GlassCardContent>
           </GlassCard>
         </MotionWrapper>
 
-        {/* Stats */}
         <MotionStagger className="grid gap-4 md:grid-cols-4">
           {statCards.map((s) => (
             <MotionItem key={s.label}>
               <GlassCard className="glass-hover">
                 <GlassCardContent className="pt-6">
                   <div className="flex items-center gap-3">
-                    <s.icon className={`h-5 w-5 ${s.color}`} />
+                    <s.icon className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-2xl font-bold text-white/90">{s.value}</p>
-                      <p className="text-xs text-white/35">{s.label}</p>
+                      <p className="text-2xl font-bold text-foreground">{s.value}</p>
+                      <p className="text-xs text-muted-foreground">{s.label}</p>
                     </div>
                   </div>
                 </GlassCardContent>
@@ -103,7 +101,6 @@ export default function CampaignDetail() {
           ))}
         </MotionStagger>
 
-        {/* Conversion Rates */}
         {totalEvents > 0 && (
           <MotionWrapper delay={0.2}>
             <GlassCard>
@@ -111,12 +108,12 @@ export default function CampaignDetail() {
               <GlassCardContent>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <p className="text-sm text-white/40">Signup Rate (from downloads)</p>
-                    <p className="text-xl font-bold text-white/90">{stats.downloads > 0 ? ((stats.signups / stats.downloads) * 100).toFixed(1) : "0"}%</p>
+                    <p className="text-sm text-muted-foreground">Signup Rate (from downloads)</p>
+                    <p className="text-xl font-bold text-foreground">{stats.downloads > 0 ? ((stats.signups / stats.downloads) * 100).toFixed(1) : "0"}%</p>
                   </div>
                   <div>
-                    <p className="text-sm text-white/40">Purchase Rate (from signups)</p>
-                    <p className="text-xl font-bold text-white/90">{stats.signups > 0 ? ((stats.purchases / stats.signups) * 100).toFixed(1) : "0"}%</p>
+                    <p className="text-sm text-muted-foreground">Purchase Rate (from signups)</p>
+                    <p className="text-xl font-bold text-foreground">{stats.signups > 0 ? ((stats.purchases / stats.signups) * 100).toFixed(1) : "0"}%</p>
                   </div>
                 </div>
               </GlassCardContent>
@@ -124,7 +121,6 @@ export default function CampaignDetail() {
           </MotionWrapper>
         )}
 
-        {/* Pricing */}
         <MotionWrapper delay={0.25}>
           <GlassCard>
             <GlassCardHeader><GlassCardTitle>Pricing</GlassCardTitle></GlassCardHeader>
@@ -135,9 +131,9 @@ export default function CampaignDetail() {
                   { label: "Signup", value: campaign.price_signup },
                   { label: "Purchase", value: campaign.price_purchase },
                 ].map((p) => (
-                  <div key={p.label} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-                    <p className="text-sm text-white/40">{p.label}</p>
-                    <p className="text-xl font-bold text-white/90">${Number(p.value).toFixed(2)}</p>
+                  <div key={p.label} className="rounded-xl border border-border/50 bg-muted/30 p-4">
+                    <p className="text-sm text-muted-foreground">{p.label}</p>
+                    <p className="text-xl font-bold text-foreground">${Number(p.value).toFixed(2)}</p>
                   </div>
                 ))}
               </div>
@@ -145,20 +141,19 @@ export default function CampaignDetail() {
           </GlassCard>
         </MotionWrapper>
 
-        {/* Recent Events */}
         <MotionWrapper delay={0.3}>
           <GlassCard>
             <GlassCardHeader><GlassCardTitle>Recent Events</GlassCardTitle></GlassCardHeader>
             <GlassCardContent>
-              {events.length === 0 ? <p className="text-white/40">No events recorded yet.</p> : (
+              {events.length === 0 ? <p className="text-muted-foreground">No events recorded yet.</p> : (
                 <div className="space-y-2">
                   {events.map((event) => (
-                    <div key={event.id} className="flex items-center justify-between rounded-xl border border-white/[0.06] p-3 transition-colors hover:bg-white/[0.03]">
+                    <div key={event.id} className="flex items-center justify-between rounded-xl border border-border/50 p-3 transition-colors hover:bg-accent/5">
                       <div>
                         <Badge variant="outline" className="border-primary/20 text-primary/80">{event.event_type}</Badge>
-                        <span className="ml-2 text-sm text-white/40">User: {event.external_user_id}</span>
+                        <span className="ml-2 text-sm text-muted-foreground">User: {event.external_user_id}</span>
                       </div>
-                      <span className="text-xs text-white/30">{new Date(event.created_at).toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground/60">{new Date(event.created_at).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -167,12 +162,11 @@ export default function CampaignDetail() {
           </GlassCard>
         </MotionWrapper>
 
-        {/* Integration Guide */}
         <MotionWrapper delay={0.35}>
           <GlassCard>
             <GlassCardHeader><GlassCardTitle>Quick Integration</GlassCardTitle></GlassCardHeader>
             <GlassCardContent>
-              <pre className="overflow-x-auto rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 text-sm text-white/70">
+              <pre className="overflow-x-auto rounded-xl bg-muted/30 border border-border/50 p-4 text-sm text-foreground/70">
 {`// Send events to Karbali
 fetch("https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track", {
   method: "POST",

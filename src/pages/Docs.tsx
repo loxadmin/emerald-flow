@@ -9,24 +9,24 @@ export default function Docs() {
     <DashboardLayout>
       <MotionWrapper className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white/95">API Documentation</h1>
-          <p className="text-white/40">Integrate Karbali tracking into your application</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">API Documentation</h1>
+          <p className="text-muted-foreground">Integrate Karbali tracking into your application</p>
         </div>
 
         <GlassCard variant="strong">
           <GlassCardHeader><GlassCardTitle>1. Authentication</GlassCardTitle></GlassCardHeader>
           <GlassCardContent>
-            <p className="text-sm text-white/60">Every request must include your campaign <strong className="text-white/80">API key</strong>. You can find it on your campaign detail page.</p>
+            <p className="text-sm text-muted-foreground">Every request must include your campaign <strong className="text-foreground/80">API key</strong>. You can find it on your campaign detail page.</p>
           </GlassCardContent>
         </GlassCard>
 
         <GlassCard variant="strong">
           <GlassCardHeader><GlassCardTitle>2. Track Events</GlassCardTitle></GlassCardHeader>
           <GlassCardContent>
-            <p className="mb-4 text-sm text-white/40">Send user actions to the Karbali tracking endpoint.</p>
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
-              <p className="mb-1 text-xs font-semibold text-white/30">POST {baseUrl}/track</p>
-              <pre className="text-sm text-white/60">{`{
+            <p className="mb-4 text-sm text-muted-foreground">Send user actions to the Karbali tracking endpoint.</p>
+            <div className="rounded-xl bg-muted/30 border border-border/50 p-4">
+              <p className="mb-1 text-xs font-semibold text-muted-foreground/60">POST {baseUrl}/track</p>
+              <pre className="text-sm text-foreground/60">{`{
   "api_key": "kb_your_api_key",
   "event_type": "download" | "signup" | "purchase",
   "user_id": "your_internal_user_id",
@@ -40,10 +40,10 @@ export default function Docs() {
         <GlassCard variant="strong">
           <GlassCardHeader><GlassCardTitle>3. Verify Integration</GlassCardTitle></GlassCardHeader>
           <GlassCardContent>
-            <p className="mb-4 text-sm text-white/40">Send a test event to verify your setup before going live.</p>
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
-              <p className="mb-1 text-xs font-semibold text-white/30">POST {baseUrl}/track</p>
-              <pre className="text-sm text-white/60">{`{
+            <p className="mb-4 text-sm text-muted-foreground">Send a test event to verify your setup before going live.</p>
+            <div className="rounded-xl bg-muted/30 border border-border/50 p-4">
+              <p className="mb-1 text-xs font-semibold text-muted-foreground/60">POST {baseUrl}/track</p>
+              <pre className="text-sm text-foreground/60">{`{
   "api_key": "kb_your_api_key",
   "event_type": "download",
   "user_id": "test_user_001",
@@ -56,10 +56,10 @@ export default function Docs() {
         <GlassCard variant="strong">
           <GlassCardHeader><GlassCardTitle>4. Referral ID Handling</GlassCardTitle></GlassCardHeader>
           <GlassCardContent className="space-y-3">
-            <p className="text-sm text-white/50">When a user clicks a referral link, the <code className="rounded-lg bg-white/[0.06] px-1.5 py-0.5 text-primary/80">referral_id</code> is embedded in the URL.</p>
-            <p className="text-sm text-white/50">Store it in a cookie or local storage, then include it in all event tracking calls.</p>
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
-              <pre className="text-sm text-white/60">{`// Extract referral_id from URL
+            <p className="text-sm text-muted-foreground">When a user clicks a referral link, the <code className="rounded-lg bg-muted/50 px-1.5 py-0.5 text-primary/80">referral_id</code> is embedded in the URL.</p>
+            <p className="text-sm text-muted-foreground">Store it in a cookie or local storage, then include it in all event tracking calls.</p>
+            <div className="rounded-xl bg-muted/30 border border-border/50 p-4">
+              <pre className="text-sm text-foreground/60">{`// Extract referral_id from URL
 const params = new URLSearchParams(window.location.search);
 const refId = params.get("ref");
 if (refId) {
@@ -78,8 +78,8 @@ function getRefId() {
         <GlassCard variant="strong">
           <GlassCardHeader><GlassCardTitle>5. JavaScript SDK (Optional)</GlassCardTitle></GlassCardHeader>
           <GlassCardContent>
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
-              <pre className="text-sm text-white/60">{`<script>
+            <div className="rounded-xl bg-muted/30 border border-border/50 p-4">
+              <pre className="text-sm text-foreground/60">{`<script>
 window.Karbali = {
   apiKey: "kb_your_api_key",
   track: function(event, data) {
@@ -108,20 +108,20 @@ Karbali.track("signup", {
         </GlassCard>
 
         <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>6. Event Types & Billing</GlassCardTitle></GlassCardHeader>
+          <GlassCardHeader><GlassCardTitle>6. Event Types and Billing</GlassCardTitle></GlassCardHeader>
           <GlassCardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/[0.06] text-left">
-                    <th className="pb-3 text-white/50">Event</th>
-                    <th className="pb-3 text-white/50">Description</th>
-                    <th className="pb-3 text-white/50">Billing</th>
+                  <tr className="border-b border-border/50 text-left">
+                    <th className="pb-3 text-muted-foreground">Event</th>
+                    <th className="pb-3 text-muted-foreground">Description</th>
+                    <th className="pb-3 text-muted-foreground">Billing</th>
                   </tr>
                 </thead>
-                <tbody className="text-white/40">
-                  <tr className="border-b border-white/[0.04]"><td className="py-3 text-primary/80">download</td><td>App download / first visit</td><td>Charged if no signup/purchase yet</td></tr>
-                  <tr className="border-b border-white/[0.04]"><td className="py-3 text-primary/80">signup</td><td>User registration</td><td>Charged if no purchase yet</td></tr>
+                <tbody className="text-muted-foreground">
+                  <tr className="border-b border-border/30"><td className="py-3 text-primary/80">download</td><td>App download / first visit</td><td>Charged if no signup/purchase yet</td></tr>
+                  <tr className="border-b border-border/30"><td className="py-3 text-primary/80">signup</td><td>User registration</td><td>Charged if no purchase yet</td></tr>
                   <tr><td className="py-3 text-primary/80">purchase</td><td>Completed purchase</td><td>Final milestone charge</td></tr>
                 </tbody>
               </table>
