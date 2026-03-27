@@ -9,6 +9,7 @@ import { BarChart3, Shield, Zap, DollarSign, ArrowRight, Users, Target, Trending
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
 import MigrationAnimation from "@/components/MigrationAnimation";
+import AnimatedDisplayBox from "@/components/AnimatedDisplayBox";
 
 interface SiteContent {
   section_key: string;
@@ -161,13 +162,9 @@ export default function Index() {
             </div>
 
             <MotionWrapper delay={0.2} className="relative">
-              <div className="relative z-10 rounded-[2.5rem] border border-white/10 bg-white/5 p-4 backdrop-blur-xl shadow-2xl">
+              <AnimatedDisplayBox>
                 <MigrationAnimation />
-
-                {/* Decorative elements */}
-                <div className="absolute -top-6 -right-6 h-24 w-24 bg-primary/20 blur-3xl rounded-full" />
-                <div className="absolute -bottom-10 -left-10 h-32 w-32 bg-primary/10 blur-3xl rounded-full" />
-              </div>
+              </AnimatedDisplayBox>
             </MotionWrapper>
           </div>
         </section>

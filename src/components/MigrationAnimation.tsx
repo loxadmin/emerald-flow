@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { User } from "lucide-react";
 
 const Avatar = ({ id, delay }: { id: number; delay: number }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0, x: -80, y: 20 }}
+      initial={{ opacity: 0, scale: 0, x: -96, y: 20 }}
       animate={{
         opacity: [0, 1, 1, 0],
         scale: [0.5, 1, 1, 0.5],
-        x: [-80, -80, 80, 80],
+        x: [-96, -96, 96, 96],
         y: [20, -40, -40, 20],
       }}
       transition={{
@@ -25,11 +25,11 @@ const Avatar = ({ id, delay }: { id: number; delay: number }) => {
   );
 };
 
-const Basket = ({ position }: { position: "left" | "right" }) => {
+const Basket = ({ position, label }: { position: "left" | "right"; label: string }) => {
   return (
     <div
       className={`relative h-24 w-32 ${
-        position === "left" ? "-translate-x-20" : "translate-x-20"
+        position === "left" ? "-translate-x-24" : "translate-x-24"
       }`}
     >
       {/* Back of basket */}
@@ -41,8 +41,8 @@ const Basket = ({ position }: { position: "left" | "right" }) => {
       {/* Front of basket (transparent to see avatars) */}
       <div className="absolute inset-0 rounded-b-3xl rounded-t-xl bg-gradient-to-t from-primary/10 to-transparent border-x border-b border-primary/20" />
 
-      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-        {position === "left" ? "Old Brand" : "Your Brand"}
+      <div className="absolute -bottom-8 left-0 right-0 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/60 whitespace-nowrap">
+        {label}
       </div>
     </div>
   );
@@ -50,62 +50,57 @@ const Basket = ({ position }: { position: "left" | "right" }) => {
 
 const Character = () => {
   return (
-    <div className="relative flex flex-col items-center">
-      {/* Head */}
+    <div className="relative z-20 flex flex-col items-center">
       <motion.div
-        animate={{ y: [0, -5, 0] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="h-14 w-14 rounded-full bg-[#E5E7EB] shadow-[inset_-4px_-4px_8px_rgba(0,0,0,0.1),inset_4px_4px_8px_rgba(255,255,255,0.8)] border border-white/50"
-      />
-
-      {/* Body */}
-      <motion.div
-        animate={{ scaleY: [1, 1.02, 1] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="mt-1 h-24 w-20 rounded-[2rem] bg-[#F3F4F6] shadow-[inset_-6px_-6px_12px_rgba(0,0,0,0.15),inset_6px_6px_12px_rgba(255,255,255,0.9)] border border-white/60"
-      />
-
-      {/* Arms */}
-      <div className="absolute top-16 flex w-48 justify-between px-2">
-        {/* Left Arm */}
+        animate={{
+          y: [0, -12, 0],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="relative"
+      >
+        <img
+          src="/assets/3d-character.png"
+          alt="Character"
+          className="h-48 w-auto object-contain drop-shadow-2xl"
+        />
+        {/* Dynamic Shadow */}
         <motion.div
           animate={{
-            rotate: [0, -20, 0],
-            y: [0, -10, 0],
+            scale: [1, 0.8, 1],
+            opacity: [0.3, 0.15, 0.3]
           }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="h-4 w-16 origin-right rounded-full bg-[#E5E7EB] shadow-md border border-white/40"
-        />
-        {/* Right Arm */}
-        <motion.div
-          animate={{
-            rotate: [0, 20, 0],
-            y: [0, -10, 0],
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut"
           }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="h-4 w-16 origin-left rounded-full bg-[#E5E7EB] shadow-md border border-white/40"
+          className="absolute -bottom-4 left-1/2 -translate-x-1/2 h-4 w-24 bg-black/20 blur-xl rounded-full"
         />
-      </div>
+      </motion.div>
     </div>
   );
 };
 
 const MigrationAnimation = () => {
-  const [avatars, setAvatars] = useState([0, 1, 2]);
+  const [avatars] = useState([0, 1, 2]);
 
   return (
-    <div className="relative flex min-h-[400px] w-full items-center justify-center overflow-hidden py-10">
+    <div className="relative flex min-h-[420px] w-full items-center justify-center overflow-hidden py-10" data-testid="animation-container">
       {/* Ambient background glow */}
       <div className="absolute inset-0 flex items-center justify-center opacity-30">
         <div className="h-[300px] w-[300px] rounded-full bg-primary/20 blur-[100px]" />
       </div>
 
-      <div className="relative flex flex-col items-center gap-8">
+      <div className="relative flex flex-col items-center gap-10">
         {/* The Character and Baskets */}
         <div className="relative flex items-center justify-center pt-10">
-          <Basket position="left" />
+          <Basket position="left" label="Metamask" />
           <Character />
-          <Basket position="right" />
+          <Basket position="right" label="Secure Wallet" />
 
           {/* Moving Avatars */}
           <div className="absolute inset-0 pointer-events-none">
