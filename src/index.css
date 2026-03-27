@@ -14,7 +14,7 @@
     --popover: 150 10% 98%;
     --popover-foreground: 165 30% 10%;
 
-    --primary: 160 84% 32%;
+    --primary: 160 84% 35%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 150 10% 90%;
@@ -23,7 +23,7 @@
     --muted: 150 10% 90%;
     --muted-foreground: 160 10% 40%;
 
-    --accent: 160 84% 32%;
+    --accent: 160 84% 35%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 50%;
@@ -55,7 +55,7 @@
 
   .dark {
     /* Very dark desaturated green/blue */
-    --background: 165 40% 3%;
+    --background: 165 40% 1.5%;
     --foreground: 165 10% 98%;
 
     --card: 165 25% 6%;
@@ -93,8 +93,8 @@
     --sidebar-ring: 160 84% 45%;
 
     --glass-bg: hsla(165, 20%, 8%, 0.4);
-    --glass-border: hsla(0, 0%, 100%, 0.1);
-    --glass-glow: hsla(160, 84%, 45%, 0.15);
+    --glass-border: hsla(0, 0%, 0%, 0.12);
+    --glass-glow: hsla(160, 84%, 35%, 0.08);
   }
 }
 
@@ -107,6 +107,19 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    @apply text-base leading-relaxed;
+  }
+  h1 {
+    @apply text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl;
+  }
+  h2 {
+    @apply text-3xl font-bold tracking-tight md:text-4xl;
+  }
+  h3 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+  p {
+    @apply leading-relaxed;
   }
 }
 
