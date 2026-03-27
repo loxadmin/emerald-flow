@@ -22,16 +22,20 @@ export default function Login() {
     e.preventDefault();
     if (!email.trim() || !password.trim()) { toast.error("Please fill in all fields"); return; }
     setLoading(true);
+    console.log("Starting login for:", email);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      console.log("Login result:", { hasData: !!data, hasError: !!error });
       if (error) {
         toast.error(error.message);
       } else {
+        console.log("Login success, navigating to dashboard...");
         toast.success("Logged in successfully");
         localStorage.setItem("karbali-last-activity", String(Date.now()));
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
-    } catch {
+    } catch (err) {
+      console.error("Login exception:", err);
       toast.error("An unexpected error occurred");
     } finally {
       setLoading(false);
@@ -44,7 +48,7 @@ export default function Login() {
       <MotionWrapper className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
           <Logo size={48} className="mx-auto mb-4" />
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-3xl">
             <span className="text-gradient">Karbali</span>
           </h1>
           <p className="mt-2 text-muted-foreground">Performance Attribution Platform</p>

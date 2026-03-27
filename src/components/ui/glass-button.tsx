@@ -19,7 +19,7 @@ const glassButtonVariants = cva(
         glow:
           "border border-primary/40 bg-primary/25 text-foreground backdrop-blur-lg shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] hover:bg-primary/35 hover:brightness-110",
         outline:
-          "border border-white/[0.15] bg-transparent text-foreground/70 hover:bg-white/[0.08] hover:text-foreground backdrop-blur-lg hover:brightness-110",
+          "border border-black/[0.15] dark:border-white/[0.15] bg-transparent text-foreground/70 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:text-foreground backdrop-blur-lg hover:brightness-110",
       },
       size: {
         default: "h-11 px-6 py-2",

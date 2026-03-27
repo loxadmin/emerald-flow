@@ -29,20 +29,42 @@ const defaultContent: Record<string, SiteContent> = {
 
 export default function Index() {
   const [content, setContent] = useState<Record<string, SiteContent>>(defaultContent);
+  const [metrics, setMetrics] = useState({ advertisers: 0, campaigns: 0, events: 0 });
+  const [metricsLoading, setMetricsLoading] = useState(true);
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
-    const fetchContent = async () => {
-      const { data } = await supabase.from("site_content").select("section_key, title, subtitle, content, is_visible");
-      if (data) {
+    const fetchData = async () => {
+      // Fetch site content
+      const { data: contentData } = await supabase.from("site_content").select("section_key, title, subtitle, content, is_visible");
+      if (contentData) {
         const mapped: Record<string, SiteContent> = { ...defaultContent };
-        data.forEach((item: SiteContent) => {
+        contentData.forEach((item: SiteContent) => {
           mapped[item.section_key] = item;
         });
         setContent(mapped);
       }
+
+      // Fetch real metrics
+      try {
+        const [advRes, campRes, eventRes] = await Promise.all([
+          supabase.from("profiles").select("id", { count: "exact", head: true }),
+          supabase.from("campaigns").select("id", { count: "exact", head: true }),
+          supabase.from("events").select("id", { count: "exact", head: true })
+        ]);
+
+        setMetrics({
+          advertisers: advRes.count || 0,
+          campaigns: campRes.count || 0,
+          events: eventRes.count || 0
+        });
+      } catch (error) {
+        console.error("Error fetching metrics:", error);
+      } finally {
+        setMetricsLoading(false);
+      }
     };
-    fetchContent();
+    fetchData();
   }, []);
 
   const s = (key: string) => content[key] || defaultContent[key];
@@ -96,12 +118,12 @@ export default function Index() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
               <MotionWrapper>
-                <h1 className="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground leading-[1.1]">
+                <h1 className="max-w-3xl">
                   {s("hero").title}
                 </h1>
               </MotionWrapper>
               <MotionWrapper delay={0.15}>
-                <p className="mt-6 max-w-xl text-lg md:text-xl text-muted-foreground leading-relaxed">
+                <p className="mt-6 max-w-xl text-lg text-muted-foreground">
                   {s("hero").subtitle}
                 </p>
               </MotionWrapper>
@@ -122,13 +144,15 @@ export default function Index() {
               <MotionWrapper delay={0.45}>
                 <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4 border-t border-border/30 pt-8">
                   {[
-                    { icon: Users, label: "Active Advertisers", value: "500+" },
-                    { icon: Target, label: "Campaigns Tracked", value: "2,000+" },
-                    { icon: TrendingUp, label: "Events Processed", value: "10M+" },
+                    { icon: Users, label: "Active Advertisers", value: metrics.advertisers, raw: "500+" },
+                    { icon: Target, label: "Campaigns Tracked", value: metrics.campaigns, raw: "2,000+" },
+                    { icon: TrendingUp, label: "Events Processed", value: metrics.events, raw: "10M+" },
                   ].map((stat) => (
                     <div key={stat.label} className="text-center lg:text-left">
                       <stat.icon className="mx-auto lg:mx-0 mb-2 h-5 w-5 text-primary" />
-                      <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {metricsLoading ? "..." : stat.value >= 10 ? stat.value.toLocaleString() : "Calculating"}
+                      </p>
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</p>
                     </div>
                   ))}
@@ -155,9 +179,9 @@ export default function Index() {
           <div className="container">
             <MotionWrapper>
               <div className="mx-auto max-w-2xl text-center">
-                <h2 className="mb-4 text-3xl font-bold text-foreground">{s("about").title}</h2>
+                <h2 className="mb-4">{s("about").title}</h2>
                 <p className="mb-6 text-lg text-muted-foreground">{s("about").subtitle}</p>
-                <p className="text-muted-foreground/80 leading-relaxed">{s("about").content}</p>
+                <p className="text-muted-foreground/80">{s("about").content}</p>
               </div>
             </MotionWrapper>
           </div>
@@ -169,7 +193,7 @@ export default function Index() {
         <section id="how-it-works" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
             <MotionWrapper>
-              <h2 className="mb-4 text-center text-3xl font-bold text-foreground">{s("how_it_works").title}</h2>
+              <h2 className="mb-4 text-center">{s("how_it_works").title}</h2>
               <p className="mb-12 text-center text-muted-foreground">{s("how_it_works").subtitle}</p>
             </MotionWrapper>
             <MotionStagger className="mx-auto grid max-w-3xl gap-6 grid-cols-1 md:grid-cols-2">
@@ -199,7 +223,7 @@ export default function Index() {
         <section id="features" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
             <MotionWrapper>
-              <h2 className="mb-4 text-center text-3xl font-bold text-foreground">{s("features").title}</h2>
+              <h2 className="mb-4 text-center">{s("features").title}</h2>
               <p className="mb-12 text-center text-muted-foreground">{s("features").subtitle}</p>
             </MotionWrapper>
             <MotionStagger className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
@@ -223,7 +247,7 @@ export default function Index() {
           <div className="container">
             <MotionWrapper>
               <div className="mx-auto max-w-xl text-center">
-                <h2 className="mb-4 text-3xl font-bold text-foreground">{s("contact").title}</h2>
+                <h2 className="mb-4">{s("contact").title}</h2>
                 <p className="mb-8 text-muted-foreground">{s("contact").subtitle}</p>
                 <div className="space-y-4">
                   {contactLines.map((line, i) => {

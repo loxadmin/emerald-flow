@@ -74,7 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        console.log("Auth state change:", event, !!session);
         setSession(session);
         if (session?.user) {
           const admin = await checkAdmin(session.user.id);
@@ -87,11 +88,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log("Initial session:", !!session);
       setSession(session);
       if (session?.user) {
         const admin = await checkAdmin(session.user.id);
         setIsAdmin(admin);
       }
+      setIsLoading(false);
+    }).catch(err => {
+      console.error("Error getting session:", err);
       setIsLoading(false);
     });
 
