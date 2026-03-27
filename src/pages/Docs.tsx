@@ -3,7 +3,7 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/
 import MotionWrapper from "@/components/MotionWrapper";
 
 export default function Docs() {
-  const baseUrl = `https://dvkoafztquswcqniwcyf.supabase.co/functions/v1`;
+  const baseUrl = "https://advertiser.karbali.com/api";
 
   return (
     <DashboardLayout>

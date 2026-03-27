@@ -169,7 +169,7 @@ export default function CampaignDetail() {
             <GlassCardContent>
               <pre className="overflow-x-auto rounded-xl bg-muted/30 border border-border/50 p-4 text-sm text-foreground/70">
 {`// Send events to Karbali
-fetch("https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track", {
+fetch("https://advertiser.karbali.com/api/track", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
