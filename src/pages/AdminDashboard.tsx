@@ -8,9 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { CheckCircle, XCircle, BarChart3, DollarSign, Users } from "lucide-react";
+import { Tables } from "@/integrations/supabase/types";
+
+type CampaignWithProfile = Tables<"campaigns"> & {
+  profiles: {
+    email: string;
+    full_name: string | null;
+  } | null;
+};
 
 export default function AdminDashboard() {
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignWithProfile[]>([]);
   const [stats, setStats] = useState({ totalCampaigns: 0, totalEvents: 0, totalRevenue: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -87,7 +95,7 @@ export default function AdminDashboard() {
                     <div key={c.id} className="flex items-center justify-between rounded-xl border border-border/50 p-4">
                       <div>
                         <p className="font-medium text-foreground/90">{c.name}</p>
-                        <p className="text-sm text-muted-foreground">{(c.profiles as any)?.email || "Unknown"} | Budget: ${Number(c.budget_remaining).toFixed(2)}</p>
+                        <p className="text-sm text-muted-foreground">{c.profiles?.email || "Unknown"} | Budget: ${Number(c.budget_remaining).toFixed(2)}</p>
                       </div>
                       <div className="flex gap-2">
                         <GlassButton size="sm" variant="glow" onClick={() => updateCampaignStatus(c.id, "active")}>
@@ -114,7 +122,7 @@ export default function AdminDashboard() {
                   <Link key={c.id} to={`/admin/campaigns/${c.id}`} className="flex items-center justify-between rounded-xl border border-border/50 p-4 transition-all duration-200 hover:bg-accent/5 hover:border-border">
                     <div>
                       <p className="font-medium text-foreground/90">{c.name}</p>
-                      <p className="text-sm text-muted-foreground">{(c.profiles as any)?.email || "Unknown"} | ${Number(c.budget_remaining).toFixed(2)}</p>
+                      <p className="text-sm text-muted-foreground">{c.profiles?.email || "Unknown"} | ${Number(c.budget_remaining).toFixed(2)}</p>
                     </div>
                     <Badge variant="outline" className={statusColor(c.status)}>{c.status}</Badge>
                   </Link>
