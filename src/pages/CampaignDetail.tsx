@@ -8,12 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Copy, Download, UserPlus, ShoppingCart, Wallet } from "lucide-react";
+import { Tables } from "@/integrations/supabase/types";
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
-  const [campaign, setCampaign] = useState<any>(null);
+  const [campaign, setCampaign] = useState<Tables<"campaigns"> | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<Tables<"events">[]>([]);
   const [stats, setStats] = useState({ downloads: 0, signups: 0, purchases: 0 });
   const [loading, setLoading] = useState(true);
 

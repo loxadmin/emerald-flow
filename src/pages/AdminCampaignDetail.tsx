@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -8,16 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { CheckCircle, XCircle, Copy, Link as LinkIcon } from "lucide-react";
+import { Tables } from "@/integrations/supabase/types";
 
 export default function AdminCampaignDetail() {
   const { id } = useParams<{ id: string }>();
-  const [campaign, setCampaign] = useState<any>(null);
-  const [sources, setSources] = useState<any[]>([]);
-  const [referrals, setReferrals] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
+  const [campaign, setCampaign] = useState<Tables<"campaigns"> | null>(null);
+  const [sources, setSources] = useState<Tables<"campaign_sources">[]>([]);
+  const [referrals, setReferrals] = useState<Tables<"referrals">[]>([]);
+  const [events, setEvents] = useState<Tables<"events">[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!id) return;
     const { data: c } = await supabase.from("campaigns").select("*").eq("id", id).single();
     setCampaign(c);
@@ -28,9 +29,9 @@ export default function AdminCampaignDetail() {
     const { data: e } = await supabase.from("events").select("*").eq("campaign_id", id).order("created_at", { ascending: false }).limit(20);
     setEvents(e || []);
     setLoading(false);
-  };
+  }, [id]);
 
-  useEffect(() => { fetchData(); }, [id]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const updateStatus = async (status: "active" | "pending" | "rejected") => {
     if (!id) return;

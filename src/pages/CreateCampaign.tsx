@@ -10,11 +10,19 @@ import { Label } from "@/components/ui/label";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 
+interface CampaignForm {
+  name: string;
+  budget: string;
+  priceDownload: string;
+  priceSignup: string;
+  pricePurchase: string;
+}
+
 export default function CreateCampaign() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: "", budget: "", priceDownload: "1.00", priceSignup: "2.00", pricePurchase: "5.00" });
+  const [form, setForm] = useState<CampaignForm>({ name: "", budget: "", priceDownload: "1.00", priceSignup: "2.00", pricePurchase: "5.00" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,13 +68,13 @@ export default function CreateCampaign() {
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 {[
-                  { key: "priceDownload", label: "Price per Download ($)" },
-                  { key: "priceSignup", label: "Price per Signup ($)" },
-                  { key: "pricePurchase", label: "Price per Purchase ($)" },
+                  { key: "priceDownload" as const, label: "Price per Download ($)" },
+                  { key: "priceSignup" as const, label: "Price per Signup ($)" },
+                  { key: "pricePurchase" as const, label: "Price per Purchase ($)" },
                 ].map((p) => (
                   <div key={p.key} className="space-y-2">
                     <Label className="text-muted-foreground text-sm">{p.label}</Label>
-                    <GlassInput type="number" min="0" step="0.01" value={(form as any)[p.key]} onChange={(e) => setForm({ ...form, [p.key]: e.target.value })} />
+                    <GlassInput type="number" min="0" step="0.01" value={form[p.key]} onChange={(e) => setForm({ ...form, [p.key]: e.target.value })} />
                   </div>
                 ))}
               </div>

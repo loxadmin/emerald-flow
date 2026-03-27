@@ -84,7 +84,11 @@ export default function FluidCanvas() {
           const distort = 1 + Math.sin(time * 3 + angle * 2) * 0.15;
           const px = Math.cos(angle) * c.size * distort;
           const py = Math.sin(angle) * c.size * distort;
-          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+          if (i === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
         }
         ctx.closePath();
         ctx.fillStyle = isDark ? `hsla(160, 70%, 50%, ${opacity})` : `hsla(160, 60%, 35%, ${opacity})`;

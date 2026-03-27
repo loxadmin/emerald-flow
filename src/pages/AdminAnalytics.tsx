@@ -7,9 +7,19 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const COLORS = ["hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)", "hsl(217, 91%, 60%)"];
 
+interface EventBreakdown {
+  name: string;
+  value: number;
+}
+
+interface RevenueData {
+  name: string;
+  revenue: number;
+}
+
 export default function AdminAnalytics() {
-  const [eventBreakdown, setEventBreakdown] = useState<any[]>([]);
-  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [eventBreakdown, setEventBreakdown] = useState<EventBreakdown[]>([]);
+  const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
