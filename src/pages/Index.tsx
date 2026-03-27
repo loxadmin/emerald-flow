@@ -53,64 +53,71 @@ export default function Index() {
     { icon: Zap, title: "Simple API", desc: "One endpoint, three event types. Integrate in minutes, not days" },
   ];
 
-  const steps = (s("how_it_works").content || "").split("\n").filter(Boolean);
+  const steps = (s("how_it_works").content || "").split(/\r?\n|\\n/).filter(Boolean);
 
-  const contactLines = (s("contact").content || "").split("\n").filter(Boolean);
+  const contactLines = (s("contact").content || "").split(/\r?\n|\\n/).filter(Boolean);
   const contactIcons = [Mail, Phone, MapPin];
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
       <FluidCanvas />
 
       {/* Nav */}
       <header className="relative z-10 border-b border-border/30">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
             <Logo size={28} />
             <h1 className="text-xl font-bold tracking-tight">
               <span className="text-gradient">Karbali</span>
             </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={toggleTheme}
               className="rounded-lg p-2 text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
-            <Link to="/login"><GlassButton variant="ghost">Sign In</GlassButton></Link>
-            <Link to="/signup"><GlassButton variant="glow">Get Started</GlassButton></Link>
+            <div className="hidden sm:flex items-center gap-3">
+              <Link to="/login"><GlassButton variant="ghost">Sign In</GlassButton></Link>
+              <Link to="/signup"><GlassButton variant="glow">Get Started</GlassButton></Link>
+            </div>
+            <Link to="/login" className="sm:hidden">
+              <GlassButton variant="glow" size="sm">Sign In</GlassButton>
+            </Link>
           </div>
         </div>
       </header>
 
       {/* Hero */}
       {s("hero").is_visible && (
-        <section className="relative z-10 container py-28 text-center">
+        <section className="relative z-10 container py-16 md:py-28 text-center px-4 sm:px-6">
           <MotionWrapper>
-            <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
-              <span className="text-gradient">{s("hero").title}</span>
+            <h1 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight text-foreground">
+              {s("hero").title}
             </h1>
           </MotionWrapper>
           <MotionWrapper delay={0.15}>
-            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+            <p className="mx-auto mt-6 max-w-xl text-base md:text-lg text-muted-foreground">
               {s("hero").subtitle}
             </p>
           </MotionWrapper>
           <MotionWrapper delay={0.3}>
-            <div className="mt-8 flex justify-center gap-4">
-              <Link to="/signup">
-                <GlassButton size="lg" variant="glow">
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4 px-4 sm:px-0">
+              <Link to="/signup" className="w-full sm:w-auto">
+                <GlassButton size="lg" variant="glow" className="w-full sm:w-auto">
                   Start Free <ArrowRight className="ml-2 h-4 w-4" />
                 </GlassButton>
               </Link>
-              <Link to="/docs"><GlassButton size="lg" variant="outline">View API Docs</GlassButton></Link>
+              <Link to="/docs" className="w-full sm:w-auto">
+                <GlassButton size="lg" variant="outline" className="w-full sm:w-auto">View API Docs</GlassButton>
+              </Link>
             </div>
           </MotionWrapper>
 
           {/* Stats bar */}
           <MotionWrapper delay={0.45}>
-            <div className="mx-auto mt-16 grid max-w-2xl grid-cols-3 gap-4">
+            <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4">
               {[
                 { icon: Users, label: "Active Advertisers", value: "500+" },
                 { icon: Target, label: "Campaigns Tracked", value: "2,000+" },
@@ -129,7 +136,7 @@ export default function Index() {
 
       {/* About */}
       {s("about").is_visible && (
-        <section id="about" className="relative z-10 border-t border-border/30 py-20">
+        <section id="about" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
             <MotionWrapper>
               <div className="mx-auto max-w-2xl text-center">
@@ -144,13 +151,13 @@ export default function Index() {
 
       {/* How It Works */}
       {s("how_it_works").is_visible && (
-        <section id="how-it-works" className="relative z-10 border-t border-border/30 py-20">
+        <section id="how-it-works" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
             <MotionWrapper>
               <h2 className="mb-4 text-center text-3xl font-bold text-foreground">{s("how_it_works").title}</h2>
               <p className="mb-12 text-center text-muted-foreground">{s("how_it_works").subtitle}</p>
             </MotionWrapper>
-            <MotionStagger className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
+            <MotionStagger className="mx-auto grid max-w-3xl gap-6 grid-cols-1 md:grid-cols-2">
               {steps.map((step, i) => {
                 const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                 const title = parts[0] || step;
@@ -174,17 +181,17 @@ export default function Index() {
 
       {/* Features */}
       {s("features").is_visible && (
-        <section id="features" className="relative z-10 border-t border-border/30 py-20">
+        <section id="features" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
             <MotionWrapper>
               <h2 className="mb-4 text-center text-3xl font-bold text-foreground">{s("features").title}</h2>
               <p className="mb-12 text-center text-muted-foreground">{s("features").subtitle}</p>
             </MotionWrapper>
-            <MotionStagger className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <MotionStagger className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
               {features.map((f) => (
                 <MotionItem key={f.title}>
                   <GlassCard className="glass-hover h-full p-6">
-                    <f.icon className="mb-4 h-8 w-8 text-primary" />
+                    <f.icon className="mb-4 h-8 w-8 text-foreground" />
                     <h3 className="mb-2 font-semibold text-foreground">{f.title}</h3>
                     <p className="text-sm text-muted-foreground">{f.desc}</p>
                   </GlassCard>
@@ -197,7 +204,7 @@ export default function Index() {
 
       {/* Contact */}
       {s("contact").is_visible && (
-        <section id="contact" className="relative z-10 border-t border-border/30 py-20">
+        <section id="contact" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
             <MotionWrapper>
               <div className="mx-auto max-w-xl text-center">
@@ -222,7 +229,7 @@ export default function Index() {
 
       {/* Footer */}
       {s("footer").is_visible && (
-        <footer className="relative z-10 border-t border-border/30 py-8">
+        <footer className="relative z-10 border-t border-border/30 py-8 px-4 sm:px-6">
           <div className="container">
             <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
               <div className="flex items-center gap-2">
