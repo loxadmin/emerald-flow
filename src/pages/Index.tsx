@@ -8,6 +8,7 @@ import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWra
 import { BarChart3, Shield, Zap, DollarSign, ArrowRight, Users, Target, TrendingUp, Mail, Phone, MapPin, Sun, Moon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
+import MigrationAnimation from "@/components/MigrationAnimation";
 
 interface SiteContent {
   section_key: string;
@@ -91,46 +92,60 @@ export default function Index() {
 
       {/* Hero */}
       {s("hero").is_visible && (
-        <section className="relative z-10 container py-16 md:py-28 text-center px-4 sm:px-6">
-          <MotionWrapper>
-            <h1 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight text-foreground">
-              {s("hero").title}
-            </h1>
-          </MotionWrapper>
-          <MotionWrapper delay={0.15}>
-            <p className="mx-auto mt-6 max-w-xl text-base md:text-lg text-muted-foreground">
-              {s("hero").subtitle}
-            </p>
-          </MotionWrapper>
-          <MotionWrapper delay={0.3}>
-            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4 px-4 sm:px-0">
-              <Link to="/signup" className="w-full sm:w-auto">
-                <GlassButton size="lg" variant="glow" className="w-full sm:w-auto">
-                  Start Free <ArrowRight className="ml-2 h-4 w-4" />
-                </GlassButton>
-              </Link>
-              <Link to="/docs" className="w-full sm:w-auto">
-                <GlassButton size="lg" variant="outline" className="w-full sm:w-auto">View API Docs</GlassButton>
-              </Link>
-            </div>
-          </MotionWrapper>
-
-          {/* Stats bar */}
-          <MotionWrapper delay={0.45}>
-            <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4">
-              {[
-                { icon: Users, label: "Active Advertisers", value: "500+" },
-                { icon: Target, label: "Campaigns Tracked", value: "2,000+" },
-                { icon: TrendingUp, label: "Events Processed", value: "10M+" },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <stat.icon className="mx-auto mb-2 h-5 w-5 text-primary" />
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+        <section className="relative z-10 container py-16 md:py-28 px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <MotionWrapper>
+                <h1 className="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground leading-[1.1]">
+                  {s("hero").title}
+                </h1>
+              </MotionWrapper>
+              <MotionWrapper delay={0.15}>
+                <p className="mt-6 max-w-xl text-lg md:text-xl text-muted-foreground leading-relaxed">
+                  {s("hero").subtitle}
+                </p>
+              </MotionWrapper>
+              <MotionWrapper delay={0.3}>
+                <div className="mt-10 flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
+                  <Link to="/signup" className="w-full sm:w-auto">
+                    <GlassButton size="lg" variant="glow" className="w-full sm:w-auto px-8">
+                      Start Free <ArrowRight className="ml-2 h-4 w-4" />
+                    </GlassButton>
+                  </Link>
+                  <Link to="/docs" className="w-full sm:w-auto">
+                    <GlassButton size="lg" variant="outline" className="w-full sm:w-auto px-8">View API Docs</GlassButton>
+                  </Link>
                 </div>
-              ))}
+              </MotionWrapper>
+
+              {/* Stats bar */}
+              <MotionWrapper delay={0.45}>
+                <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4 border-t border-border/30 pt-8">
+                  {[
+                    { icon: Users, label: "Active Advertisers", value: "500+" },
+                    { icon: Target, label: "Campaigns Tracked", value: "2,000+" },
+                    { icon: TrendingUp, label: "Events Processed", value: "10M+" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="text-center lg:text-left">
+                      <stat.icon className="mx-auto lg:mx-0 mb-2 h-5 w-5 text-primary" />
+                      <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </MotionWrapper>
             </div>
-          </MotionWrapper>
+
+            <MotionWrapper delay={0.2} className="relative">
+              <div className="relative z-10 rounded-[2.5rem] border border-white/10 bg-white/5 p-4 backdrop-blur-xl shadow-2xl">
+                <MigrationAnimation />
+
+                {/* Decorative elements */}
+                <div className="absolute -top-6 -right-6 h-24 w-24 bg-primary/20 blur-3xl rounded-full" />
+                <div className="absolute -bottom-10 -left-10 h-32 w-32 bg-primary/10 blur-3xl rounded-full" />
+              </div>
+            </MotionWrapper>
+          </div>
         </section>
       )}
 
