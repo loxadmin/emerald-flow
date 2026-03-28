@@ -97,6 +97,6 @@ export default function AdminAnalytics() {
           </MotionWrapper>
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }
