@@ -23,8 +23,18 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
-    const { data: allCampaigns } = await supabase.from("campaigns").select("*, profiles:advertiser_id(email, full_name)").order("created_at", { ascending: false });
-    setCampaigns(allCampaigns || []);
+    const { data: allCampaigns } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
+    // Fetch profiles separately since there's no FK
+    const advertiserIds = [...new Set((allCampaigns || []).map(c => c.advertiser_id))];
+    const { data: profilesData } = advertiserIds.length > 0
+      ? await supabase.from("profiles").select("id, email, full_name").in("id", advertiserIds)
+      : { data: [] };
+    const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
+    const campaignsWithProfiles = (allCampaigns || []).map(c => ({
+      ...c,
+      profiles: profilesMap.get(c.advertiser_id) || null,
+    }));
+    setCampaigns(campaignsWithProfiles as CampaignWithProfile[]);
     const { count: eventsCount } = await supabase.from("events").select("*", { count: "exact", head: true });
     const { data: txData } = await supabase.from("transactions").select("amount");
     const totalRevenue = txData?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
