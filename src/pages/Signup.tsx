@@ -10,31 +10,77 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 
+function extractDomain(url: string): string {
+  try {
+    let cleaned = url.trim().toLowerCase();
+    if (!cleaned.startsWith("http")) cleaned = "https://" + cleaned;
+    return new URL(cleaned).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 export default function Signup() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim() || !fullName.trim()) { toast.error("Please fill in all required fields"); return; }
-    if (password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (!email.trim() || !password.trim() || !fullName.trim() || !website.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+
+    // Validate email matches website domain
+    const websiteDomain = extractDomain(website);
+    if (!websiteDomain) {
+      toast.error("Please enter a valid website URL");
+      return;
+    }
+
+    const emailDomain = email.trim().toLowerCase().split("@")[1];
+    if (emailDomain !== websiteDomain) {
+      toast.error(`Your email must use your website domain (@${websiteDomain})`);
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.signUp({
-        email: email.trim(), password,
-        options: { data: { full_name: fullName.trim(), company_name: companyName.trim() }, emailRedirectTo: window.location.origin },
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            company_name: companyName.trim(),
+            website: website.trim(),
+          },
+          emailRedirectTo: window.location.origin,
+        },
       });
-      if (error) { toast.error(error.message); } else { toast.success("Account created! Check your email to confirm."); navigate("/login"); }
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Account created! Check your email to confirm.");
+        navigate("/login");
+      }
     } catch {
       toast.error("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
   };
+
+  const websiteDomain = extractDomain(website);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 bg-background">
@@ -50,25 +96,49 @@ export default function Signup() {
         <GlassCard variant="strong">
           <GlassCardHeader>
             <GlassCardTitle>Sign Up</GlassCardTitle>
-            <GlassCardDescription>Start tracking performance-based campaigns</GlassCardDescription>
+            <GlassCardDescription>Register with your business email</GlassCardDescription>
           </GlassCardHeader>
           <GlassCardContent>
             <form onSubmit={handleSignup} className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-muted-foreground text-sm">Full Name *</Label>
-                <GlassInput id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} required autoComplete="name" />
+                <GlassInput value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} required autoComplete="name" />
               </div>
               <div className="space-y-2">
                 <Label className="text-muted-foreground text-sm">Company Name</Label>
-                <GlassInput id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={100} autoComplete="organization" />
+                <GlassInput value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={100} autoComplete="organization" />
               </div>
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Email *</Label>
-                <GlassInput id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required autoComplete="email" />
+                <Label className="text-muted-foreground text-sm">Website *</Label>
+                <GlassInput
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  maxLength={255}
+                  placeholder="yourbusiness.com"
+                  autoComplete="url"
+                  required
+                />
+                {websiteDomain && (
+                  <p className="text-xs text-muted-foreground/60">
+                    Your email must end with @{websiteDomain}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-sm">Business Email *</Label>
+                <GlassInput
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  maxLength={255}
+                  required
+                  autoComplete="email"
+                  placeholder={websiteDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"}
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-muted-foreground text-sm">Password *</Label>
-                <GlassInput id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="new-password" />
+                <GlassInput type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="new-password" />
                 <p className="text-xs text-muted-foreground/60">Minimum 8 characters</p>
               </div>
               <GlassButton type="submit" className="w-full" variant="glow" disabled={loading}>
