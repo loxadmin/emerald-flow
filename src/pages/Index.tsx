@@ -8,7 +8,7 @@ import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWra
 import { BarChart3, Shield, Zap, DollarSign, ArrowRight, Users, Target, TrendingUp, Mail, Phone, MapPin, Sun, Moon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
-import Migration3D from "@/components/Migration3D";
+import MigrationAnimation from "@/components/MigrationAnimation";
 import { motion } from "framer-motion";
 
 interface SiteContent {
@@ -172,7 +172,7 @@ export default function Index() {
                 className="relative z-10 rounded-[3rem] border border-white/20 bg-white/5 p-2 backdrop-blur-2xl shadow-[0_32px_64px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.1)] overflow-hidden clay-shadow"
               >
                 <div className="rounded-[2.5rem] bg-gradient-to-b from-white/5 to-transparent p-4">
-                  <Migration3D />
+                  <MigrationAnimation />
                 </div>
 
                 {/* Decorative elements */}
