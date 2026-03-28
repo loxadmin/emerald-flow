@@ -52,11 +52,11 @@ export default function AdminCampaignDetail() {
     if (error) toast.error("Failed to create referral"); else { toast.success("Referral link created!"); fetchData(); }
   };
 
-  if (loading) return <DashboardLayout><div className="flex justify-center py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></DashboardLayout>;
-  if (!campaign) return <DashboardLayout><p className="text-muted-foreground">Campaign not found.</p></DashboardLayout>;
+  if (loading) return <AdminLayout><div className="flex justify-center py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></AdminLayout>;
+  if (!campaign) return <AdminLayout><p className="text-muted-foreground">Campaign not found.</p></AdminLayout>;
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         <MotionWrapper>
           <div className="flex items-center justify-between">
@@ -160,6 +160,6 @@ export default function AdminCampaignDetail() {
           </GlassCard>
         </MotionWrapper>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }
