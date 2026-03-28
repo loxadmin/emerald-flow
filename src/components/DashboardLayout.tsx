@@ -58,28 +58,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               {link.label}
             </Link>
           ))}
-
-          {isAdmin && (
-            <>
-              <p className="mb-2 mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-                Admin
-              </p>
-              {adminLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${
-                    location.pathname === link.to
-                      ? "bg-primary/15 text-primary shadow-[0_0_15px_hsl(var(--primary)/0.1)]"
-                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                  }`}
-                >
-                  <link.icon className="h-4 w-4" />
-                  {link.label}
-                </Link>
-              ))}
-            </>
-          )}
         </nav>
 
         <div className="border-t border-border/30 p-4 space-y-2">
