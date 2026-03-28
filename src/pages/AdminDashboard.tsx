@@ -65,7 +65,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-8">
         <MotionWrapper>
           <div>
