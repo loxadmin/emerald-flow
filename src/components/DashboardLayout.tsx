@@ -18,14 +18,8 @@ import Logo from "@/components/Logo";
 const advertiserLinks = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/campaigns/create", label: "New Campaign", icon: Plus },
+  { to: "/wallet", label: "Wallet", icon: Wallet },
   { to: "/docs", label: "API Docs", icon: FileText },
-];
-
-const adminLinks = [
-  { to: "/admin", label: "Admin Panel", icon: Shield },
-  { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/admin/content", label: "Site Content", icon: PenSquare },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
