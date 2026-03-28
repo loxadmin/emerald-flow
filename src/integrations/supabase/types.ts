@@ -38,6 +38,38 @@ export type Database = {
         }
         Relationships: []
       }
+      advertiser_categories: {
+        Row: {
+          advertiser_id: string
+          category_id: string
+          created_at: string
+          id: string
+          status: string
+        }
+        Insert: {
+          advertiser_id: string
+          category_id: string
+          created_at?: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          advertiser_id?: string
+          category_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advertiser_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           campaign_id: string
@@ -138,6 +170,33 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clicks: {
         Row: {
           created_at: string
@@ -225,6 +284,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          website: string | null
         }
         Insert: {
           company_name?: string | null
@@ -232,6 +292,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          website?: string | null
         }
         Update: {
           company_name?: string | null
@@ -239,6 +300,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -405,6 +467,86 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          reference: string | null
+          status: string
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference?: string | null
+          status?: string
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference?: string | null
+          status?: string
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          advertiser_id: string
+          balance: number
+          created_at: string
+          currency: string
+          id: string
+          is_activated: boolean
+          paystack_customer_code: string | null
+          paystack_dva_account_number: string | null
+          paystack_dva_bank_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          advertiser_id: string
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_activated?: boolean
+          paystack_customer_code?: string | null
+          paystack_dva_account_number?: string | null
+          paystack_dva_bank_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advertiser_id?: string
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_activated?: boolean
+          paystack_customer_code?: string | null
+          paystack_dva_account_number?: string | null
+          paystack_dva_bank_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

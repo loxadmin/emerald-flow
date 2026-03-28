@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import DashboardLayout from "@/components/DashboardLayout";
+import AdminLayout from "@/components/AdminLayout";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from "@/components/ui/glass-card";
 import { GlassButton } from "@/components/ui/glass-button";
 import { GlassInput } from "@/components/ui/glass-input";
@@ -39,7 +39,7 @@ export default function AdminSettings() {
   };
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <MotionWrapper className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Platform Settings</h1>
@@ -85,6 +85,6 @@ export default function AdminSettings() {
           </>
         )}
       </MotionWrapper>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

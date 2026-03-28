@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import DashboardLayout from "@/components/DashboardLayout";
+import AdminLayout from "@/components/AdminLayout";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-8">
         <MotionWrapper>
           <div>
@@ -142,6 +142,6 @@ export default function AdminDashboard() {
           </GlassCard>
         </MotionWrapper>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

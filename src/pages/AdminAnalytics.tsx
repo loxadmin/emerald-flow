@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import DashboardLayout from "@/components/DashboardLayout";
+import AdminLayout from "@/components/AdminLayout";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
 import MotionWrapper from "@/components/MotionWrapper";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
@@ -47,7 +47,7 @@ export default function AdminAnalytics() {
   }, []);
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-8">
         <MotionWrapper>
           <div>
@@ -97,6 +97,6 @@ export default function AdminAnalytics() {
           </MotionWrapper>
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }
