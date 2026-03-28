@@ -7,14 +7,11 @@ import FluidCanvas from "@/components/FluidCanvas";
 import {
   LayoutDashboard,
   Plus,
-  Settings,
   LogOut,
-  Shield,
-  BarChart3,
-  FileText,
   Sun,
   Moon,
-  PenSquare,
+  FileText,
+  Wallet,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
