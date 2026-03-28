@@ -47,7 +47,7 @@ export default function AdminAnalytics() {
   }, []);
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-8">
         <MotionWrapper>
           <div>
