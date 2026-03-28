@@ -42,7 +42,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-4">
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Campaigns
+            Advertiser
           </p>
           {advertiserLinks.map((link) => (
             <Link
