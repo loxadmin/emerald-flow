@@ -34,7 +34,7 @@ export default function AdminDashboard() {
       ...c,
       profiles: profilesMap.get(c.advertiser_id) || null,
     }));
-    setCampaigns(allCampaigns || []);
+    setCampaigns(campaignsWithProfiles as CampaignWithProfile[]);
     const { count: eventsCount } = await supabase.from("events").select("*", { count: "exact", head: true });
     const { data: txData } = await supabase.from("transactions").select("amount");
     const totalRevenue = txData?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
