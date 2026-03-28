@@ -23,7 +23,7 @@ const advertiserLinks = [
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
