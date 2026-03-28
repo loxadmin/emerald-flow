@@ -61,7 +61,7 @@ export default function AdminContent() {
   };
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <MotionWrapper className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Site Content</h1>
