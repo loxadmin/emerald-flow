@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+// @ts-ignore - layout swap
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";

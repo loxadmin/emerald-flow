@@ -85,6 +85,6 @@ export default function AdminSettings() {
           </>
         )}
       </MotionWrapper>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

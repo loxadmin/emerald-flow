@@ -142,6 +142,6 @@ export default function AdminDashboard() {
           </GlassCard>
         </MotionWrapper>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }
