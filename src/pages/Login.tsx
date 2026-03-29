@@ -29,10 +29,28 @@ export default function Login() {
       if (error) {
         toast.error(error.message);
       } else {
-        console.log("Login success, navigating to dashboard...");
+        console.log("Login success, checking role...");
         toast.success("Logged in successfully");
         localStorage.setItem("karbali-last-activity", String(Date.now()));
-        navigate("/dashboard", { replace: true });
+        
+        // Check if user is admin to redirect appropriately
+        const userId = data.user?.id;
+        if (userId) {
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", userId)
+            .eq("role", "admin")
+            .maybeSingle();
+          
+          if (roleData) {
+            navigate("/admin", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
       }
     } catch (err) {
       console.error("Login exception:", err);
