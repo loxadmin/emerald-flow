@@ -26,7 +26,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const { data: campaignsData } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
+      const { data: campaignsData } = await supabase.from("campaigns").select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false });
       setCampaigns((campaignsData as Campaign[]) || []);
       if (campaignsData && campaignsData.length > 0) {
         const campaignIds = campaignsData.map((c: Campaign) => c.id);
