@@ -30,7 +30,7 @@ interface WalletTx {
 }
 
 export default function WalletPage() {
-  const { user } = useAuth();
+  const { user, refreshAccessState } = useAuth();
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<WalletTx[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +90,15 @@ export default function WalletPage() {
 
   useEffect(() => { fetchData(); }, [user]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("activated") === "true" || params.get("funded") === "true") {
+      toast.success(params.get("activated") === "true" ? "Payment received. Refreshing wallet status..." : "Funding received. Refreshing wallet status...");
+      void Promise.all([fetchData(), refreshAccessState()]);
+      window.history.replaceState({}, "", "/wallet");
+    }
+  }, [refreshAccessState, user]);
+
   const handleActivate = async () => {
     setActivating(true);
     try {
@@ -98,9 +107,10 @@ export default function WalletPage() {
       });
       if (error) throw error;
       if (data?.authorization_url) {
-        window.open(data.authorization_url, "_blank");
-        toast.success("Payment window opened. Complete payment to activate your wallet.");
+        window.location.href = data.authorization_url;
+        return;
       }
+      throw new Error("Payment gateway did not return an authorization URL");
     } catch (err: unknown) {
       toast.error((err as Error).message || "Failed to initialize activation");
     } finally {
@@ -121,10 +131,11 @@ export default function WalletPage() {
       });
       if (error) throw error;
       if (data?.authorization_url) {
-        window.open(data.authorization_url, "_blank");
-        toast.success("Payment window opened. Complete payment to fund your wallet.");
+        window.location.href = data.authorization_url;
         setFundAmount("");
+        return;
       }
+      throw new Error("Payment gateway did not return an authorization URL");
     } catch (err: unknown) {
       toast.error((err as Error).message || "Failed to initialize funding");
     } finally {
