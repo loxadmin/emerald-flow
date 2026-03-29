@@ -20,13 +20,18 @@ interface CampaignForm {
 
 export default function CreateCampaign() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, walletActivated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<CampaignForm>({ name: "", budget: "", priceDownload: "1.00", priceSignup: "2.00", pricePurchase: "5.00" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (walletActivated !== true) {
+      toast.error("Activate your Paystack wallet before creating a campaign");
+      navigate("/wallet");
+      return;
+    }
     if (!form.name.trim() || !form.budget) { toast.error("Please fill in all required fields"); return; }
     const budget = parseFloat(form.budget);
     if (isNaN(budget) || budget <= 0) { toast.error("Budget must be a positive number"); return; }

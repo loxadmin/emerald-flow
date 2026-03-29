@@ -13,6 +13,8 @@ interface AuthContextType {
   isLoading: boolean;
   hasCategory: boolean | null;
   categoryStatus: string | null;
+  walletActivated: boolean | null;
+  refreshAccessState: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -23,6 +25,8 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   hasCategory: null,
   categoryStatus: null,
+  walletActivated: null,
+  refreshAccessState: async () => {},
   signOut: async () => {},
 });
 
@@ -34,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasCategory, setHasCategory] = useState<boolean | null>(null);
   const [categoryStatus, setCategoryStatus] = useState<string | null>(null);
+  const [walletActivated, setWalletActivated] = useState<boolean | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -43,8 +48,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAdmin(false);
     setHasCategory(null);
     setCategoryStatus(null);
+    setWalletActivated(null);
     localStorage.removeItem("karbali-last-activity");
   }, []);
+
+  const loadAccessState = useCallback(async (activeUser: User | null | undefined) => {
+    if (!activeUser) {
+      setIsAdmin(false);
+      setHasCategory(null);
+      setCategoryStatus(null);
+      setWalletActivated(null);
+      return;
+    }
+
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", activeUser.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    const admin = !!roleData;
+    setIsAdmin(admin);
+
+    if (admin) {
+      setHasCategory(true);
+      setCategoryStatus(null);
+      setWalletActivated(true);
+      return;
+    }
+
+    const [{ data: categoryData }, { data: walletData }] = await Promise.all([
+      supabase
+        .from("advertiser_categories")
+        .select("status")
+        .eq("advertiser_id", activeUser.id)
+        .maybeSingle(),
+      supabase
+        .from("wallets")
+        .select("is_activated")
+        .eq("advertiser_id", activeUser.id)
+        .maybeSingle(),
+    ]);
+
+    setHasCategory(!!categoryData);
+    setCategoryStatus(categoryData?.status || null);
+    setWalletActivated(walletData?.is_activated ?? false);
+  }, []);
+
+  const refreshAccessState = useCallback(async () => {
+    await loadAccessState(session?.user ?? null);
+  }, [loadAccessState, session?.user]);
 
   useEffect(() => {
     const updateActivity = () => {
@@ -69,58 +123,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, signOut]);
 
   useEffect(() => {
-    const checkAdmin = async (userId: string) => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle();
-      return !!data;
-    };
-
-    const checkCategory = async (userId: string) => {
-      const { data } = await supabase
-        .from("advertiser_categories")
-        .select("status")
-        .eq("advertiser_id", userId)
-        .maybeSingle();
-      setHasCategory(!!data);
-      setCategoryStatus(data?.status || null);
-    };
-
-    const handleUser = async (user: User | undefined) => {
-      if (user) {
-        const admin = await checkAdmin(user.id);
-        setIsAdmin(admin);
-        if (!admin) {
-          await checkCategory(user.id);
-        }
-      } else {
-        setIsAdmin(false);
-        setHasCategory(null);
-        setCategoryStatus(null);
-      }
-    };
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setIsLoading(false);
-        handleUser(session?.user);
+        void loadAccessState(session?.user);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsLoading(false);
-      handleUser(session?.user);
+      void loadAccessState(session?.user);
     }).catch(() => {
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [loadAccessState]);
 
   return (
     <AuthContext.Provider
@@ -131,6 +151,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         hasCategory,
         categoryStatus,
+        walletActivated,
+        refreshAccessState,
         signOut,
       }}
     >

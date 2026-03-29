@@ -18,7 +18,7 @@ interface Category {
 }
 
 export default function CategorySelection() {
-  const { user } = useAuth();
+  const { user, refreshAccessState } = useAuth();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -39,7 +39,10 @@ export default function CategorySelection() {
     setSubmitting(true);
 
     const category = categories.find(c => c.id === selected);
-    if (!category) return;
+    if (!category) {
+      setSubmitting(false);
+      return;
+    }
 
     // If category is active, set status to active immediately
     // If inactive, set to waiting_list (requires payment activation)
@@ -60,6 +63,8 @@ export default function CategorySelection() {
       setSubmitting(false);
       return;
     }
+
+    await refreshAccessState();
 
     if (status === "active") {
       toast.success("Category activated! Welcome to Karbali.");
