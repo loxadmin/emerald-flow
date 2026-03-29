@@ -32,7 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Sign out error:", e);
+    }
     setSession(null);
     setIsAdmin(false);
     localStorage.removeItem("karbali-last-activity");
@@ -64,23 +68,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkAdmin = async (userId: string) => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle();
-      return !!data;
+      try {
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("role", "admin")
+          .maybeSingle();
+        return !!data;
+      } catch (e) {
+        console.error("Admin check error:", e);
+        return false;
+      }
     };
+
+    let mounted = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!mounted) return;
         console.log("Auth state change:", event, !!session);
         setSession(session);
         setIsLoading(false);
 
         if (session?.user) {
-          checkAdmin(session.user.id).then(setIsAdmin);
+          checkAdmin(session.user.id).then(res => {
+            if (mounted) setIsAdmin(res);
+          });
         } else {
           setIsAdmin(false);
         }
@@ -88,21 +102,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       console.log("Initial session:", !!session);
       setSession(session);
       setIsLoading(false);
 
       if (session?.user) {
-        checkAdmin(session.user.id).then(setIsAdmin);
+        checkAdmin(session.user.id).then(res => {
+          if (mounted) setIsAdmin(res);
+        });
       } else {
         setIsAdmin(false);
       }
     }).catch(err => {
       console.error("Error getting session:", err);
-      setIsLoading(false);
+      if (mounted) setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -125,8 +145,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !session) {
-      navigate("/login");
+    if (!isLoading && !session && navigate) {
+      try {
+        navigate("/login");
+      } catch (e) {}
     }
   }, [session, isLoading, navigate]);
 
@@ -146,8 +168,10 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !isAdmin) {
-      navigate("/dashboard");
+    if (!isLoading && !isAdmin && navigate) {
+      try {
+        navigate("/dashboard");
+      } catch (e) {}
     }
   }, [isAdmin, isLoading, navigate]);
 

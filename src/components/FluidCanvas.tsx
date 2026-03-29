@@ -57,11 +57,9 @@ export default function FluidCanvas() {
       time += 0.005;
       const scroll = scrollRef.current;
 
-      // Clear with background color
       ctx.fillStyle = isDark ? "hsl(165, 30%, 4%)" : "hsl(150, 10%, 96%)";
       ctx.fillRect(0, 0, W, H);
 
-      // Draw Blobs
       const blobOpacity = isDark ? 0.04 : 0.03;
       blobs.forEach((b) => {
         b.x += b.vx;
@@ -79,13 +77,12 @@ export default function FluidCanvas() {
         ctx.fillRect(0, 0, W, H);
       });
 
-      // Draw Caustics
       const causticBaseOpacity = isDark ? 0.012 : 0.015;
       caustics.forEach((c) => {
         c.rotation += c.speed;
         const opacity = causticBaseOpacity + Math.sin(time * 1.5 + c.phase) * 0.005;
         const cx = c.x * W;
-        const cy = (c.y * H + scroll * 0.05) % H; // Parallax scroll
+        const cy = (c.y * H + scroll * 0.05) % H;
 
         ctx.save();
         ctx.translate(cx, cy);
@@ -105,7 +102,6 @@ export default function FluidCanvas() {
         ctx.restore();
       });
 
-      // Draw Waves
       const waveConfigs = [
         { amp: 40, freq: 0.002, speed: 0.3, yOffset: 0.7, opacity: isDark ? 0.05 : 0.04 },
         { amp: 30, freq: 0.004, speed: 0.5, yOffset: 0.75, opacity: isDark ? 0.04 : 0.03 },
@@ -116,27 +112,21 @@ export default function FluidCanvas() {
       waveConfigs.forEach((w) => {
         ctx.beginPath();
         ctx.moveTo(0, H);
-
-        // Parallax shift based on scroll
         const scrollShift = scroll * (w.yOffset * 0.15);
-
         for (let x = 0; x <= W; x += 5) {
           const y =
             H * w.yOffset +
             Math.sin(x * w.freq + time * w.speed + scroll * 0.002) * w.amp +
             Math.cos(x * w.freq * 0.8 + time * w.speed * 1.2) * w.amp * 0.6 -
             scrollShift;
-
           ctx.lineTo(x, y);
         }
         ctx.lineTo(W, H);
         ctx.closePath();
-
         const grad = ctx.createLinearGradient(0, H * w.yOffset - w.amp - scrollShift, 0, H);
         const hue = 160;
         grad.addColorStop(0, `hsla(${hue}, 70%, 50%, ${w.opacity})`);
         grad.addColorStop(1, `hsla(${hue}, 70%, 50%, 0)`);
-
         ctx.fillStyle = grad;
         ctx.fill();
       });
@@ -157,16 +147,15 @@ export default function FluidCanvas() {
     <>
       <canvas
         ref={canvasRef}
+        id="fluid-canvas"
         className="pointer-events-none fixed inset-0 z-0"
       />
-      {/* Glass Layer Overlay */}
       <div
         className="pointer-events-none fixed inset-0 z-[1] backdrop-blur-[1px]"
         style={{
           background: "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 100%)",
         }}
       />
-      {/* Noise Texture */}
       <div className="noise pointer-events-none fixed inset-0 z-[2] opacity-30 mix-blend-overlay" />
     </>
   );
