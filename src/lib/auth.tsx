@@ -1,16 +1,18 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
-const INACTIVITY_TIMEOUT = 48 * 60 * 60 * 1000; // 48 hours in ms
-const ACTIVITY_CHECK_INTERVAL = 60 * 1000; // check every minute
+const INACTIVITY_TIMEOUT = 48 * 60 * 60 * 1000;
+const ACTIVITY_CHECK_INTERVAL = 60 * 1000;
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   isAdmin: boolean;
   isLoading: boolean;
+  hasCategory: boolean | null;
+  categoryStatus: string | null;
   signOut: () => Promise<void>;
 }
 
@@ -19,6 +21,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAdmin: false,
   isLoading: true,
+  hasCategory: null,
+  categoryStatus: null,
   signOut: async () => {},
 });
 
@@ -28,6 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCategory, setHasCategory] = useState<boolean | null>(null);
+  const [categoryStatus, setCategoryStatus] = useState<string | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -35,10 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setSession(null);
     setIsAdmin(false);
+    setHasCategory(null);
+    setCategoryStatus(null);
     localStorage.removeItem("karbali-last-activity");
   }, []);
 
-  // Track user activity
   useEffect(() => {
     const updateActivity = () => {
       lastActivityRef.current = Date.now();
@@ -48,7 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const events = ["mousedown", "keydown", "scroll", "touchstart"];
     events.forEach((e) => window.addEventListener(e, updateActivity, { passive: true }));
 
-    // Check inactivity
     intervalRef.current = setInterval(() => {
       const lastActivity = Number(localStorage.getItem("karbali-last-activity")) || Date.now();
       if (Date.now() - lastActivity > INACTIVITY_TIMEOUT && session) {
@@ -73,32 +79,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return !!data;
     };
 
+    const checkCategory = async (userId: string) => {
+      const { data } = await supabase
+        .from("advertiser_categories")
+        .select("status")
+        .eq("advertiser_id", userId)
+        .maybeSingle();
+      setHasCategory(!!data);
+      setCategoryStatus(data?.status || null);
+    };
+
+    const handleUser = async (user: User | undefined) => {
+      if (user) {
+        const admin = await checkAdmin(user.id);
+        setIsAdmin(admin);
+        if (!admin) {
+          await checkCategory(user.id);
+        }
+      } else {
+        setIsAdmin(false);
+        setHasCategory(null);
+        setCategoryStatus(null);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("Auth state change:", event, !!session);
         setSession(session);
         setIsLoading(false);
-
-        if (session?.user) {
-          checkAdmin(session.user.id).then(setIsAdmin);
-        } else {
-          setIsAdmin(false);
-        }
+        handleUser(session?.user);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session:", !!session);
       setSession(session);
       setIsLoading(false);
-
-      if (session?.user) {
-        checkAdmin(session.user.id).then(setIsAdmin);
-      } else {
-        setIsAdmin(false);
-      }
-    }).catch(err => {
-      console.error("Error getting session:", err);
+      handleUser(session?.user);
+    }).catch(() => {
       setIsLoading(false);
     });
 
@@ -112,6 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: session?.user ?? null,
         isAdmin,
         isLoading,
+        hasCategory,
+        categoryStatus,
         signOut,
       }}
     >
@@ -121,14 +140,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, isAdmin, hasCategory } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !session) {
+    if (isLoading) return;
+    if (!session) {
       navigate("/login");
+      return;
     }
-  }, [session, isLoading, navigate]);
+    // Admin users skip category check
+    if (isAdmin) return;
+    // If user hasn't picked a category yet and isn't on category-select page
+    if (hasCategory === false && location.pathname !== "/category-select") {
+      navigate("/category-select");
+    }
+  }, [session, isLoading, isAdmin, hasCategory, navigate, location.pathname]);
 
   if (isLoading) {
     return (
