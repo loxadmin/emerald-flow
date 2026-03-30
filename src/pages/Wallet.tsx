@@ -7,7 +7,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { GlassInput } from "@/components/ui/glass-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
+import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Wallet as WalletIcon, CreditCard, ArrowUpCircle, Loader2, AlertCircle } from "lucide-react";
 
@@ -39,11 +39,11 @@ export default function WalletPage() {
   const [funding, setFunding] = useState(false);
   const [activationFee, setActivationFee] = useState(10);
   const [exchangeRate, setExchangeRate] = useState(1500);
+  const [activationAmount, setActivationAmount] = useState("10");
 
   const fetchData = async () => {
     if (!user) return;
 
-    // Get or create wallet
     let { data: walletData } = await supabase
       .from("wallets")
       .select("*")
@@ -51,7 +51,6 @@ export default function WalletPage() {
       .maybeSingle();
 
     if (!walletData) {
-      // Create wallet via edge function
       const { data: newWallet, error } = await supabase.functions.invoke("paystack-wallet", {
         body: { action: "create_wallet" },
       });
@@ -65,7 +64,6 @@ export default function WalletPage() {
 
     if (walletData) setWallet(walletData as WalletData);
 
-    // Fetch transactions
     if (walletData) {
       const { data: txData } = await supabase
         .from("wallet_transactions")
@@ -76,11 +74,14 @@ export default function WalletPage() {
       setTransactions((txData as WalletTx[]) || []);
     }
 
-    // Fetch admin settings
     const { data: settings } = await supabase.from("admin_settings").select("key, value").in("key", ["activation_fee_usd", "usd_to_ngn_rate"]);
     if (settings) {
       settings.forEach((s: { key: string; value: string }) => {
-        if (s.key === "activation_fee_usd") setActivationFee(Number(s.value));
+        if (s.key === "activation_fee_usd") {
+          const fee = Number(s.value);
+          setActivationFee(fee);
+          setActivationAmount(String(fee));
+        }
         if (s.key === "usd_to_ngn_rate") setExchangeRate(Number(s.value));
       });
     }
@@ -100,17 +101,23 @@ export default function WalletPage() {
   }, [refreshAccessState, user]);
 
   const handleActivate = async () => {
+    const amount = Number(activationAmount);
+    if (!amount || amount < activationFee) {
+      toast.error(`Minimum activation amount is $${activationFee}`);
+      return;
+    }
     setActivating(true);
     try {
       const { data, error } = await supabase.functions.invoke("paystack-wallet", {
-        body: { action: "initialize_activation" },
+        body: { action: "initialize_activation", amount, callback_origin: window.location.origin },
       });
       if (error) throw error;
       if (data?.authorization_url) {
         window.location.href = data.authorization_url;
         return;
       }
-      throw new Error("Payment gateway did not return an authorization URL");
+      const errorMsg = data?.error || data?.details?.message || "Payment gateway did not return an authorization URL";
+      throw new Error(errorMsg);
     } catch (err: unknown) {
       toast.error((err as Error).message || "Failed to initialize activation");
     } finally {
@@ -127,7 +134,7 @@ export default function WalletPage() {
     setFunding(true);
     try {
       const { data, error } = await supabase.functions.invoke("paystack-wallet", {
-        body: { action: "initialize_funding", amount },
+        body: { action: "initialize_funding", amount, callback_origin: window.location.origin },
       });
       if (error) throw error;
       if (data?.authorization_url) {
@@ -135,7 +142,8 @@ export default function WalletPage() {
         setFundAmount("");
         return;
       }
-      throw new Error("Payment gateway did not return an authorization URL");
+      const errorMsg = data?.error || data?.details?.message || "Payment gateway did not return an authorization URL";
+      throw new Error(errorMsg);
     } catch (err: unknown) {
       toast.error((err as Error).message || "Failed to initialize funding");
     } finally {
@@ -143,7 +151,7 @@ export default function WalletPage() {
     }
   };
 
-  const ngnAmount = activationFee * exchangeRate;
+  const ngnActivation = Number(activationAmount) * exchangeRate;
 
   return (
     <DashboardLayout>
@@ -199,7 +207,7 @@ export default function WalletPage() {
                       Activate Your Wallet
                     </GlassCardTitle>
                     <GlassCardDescription>
-                      A one-time activation fee of ${activationFee} (NGN {ngnAmount.toLocaleString()}) is required
+                      A minimum of ${activationFee} (NGN {(activationFee * exchangeRate).toLocaleString()}) is required to activate
                     </GlassCardDescription>
                   </GlassCardHeader>
                   <GlassCardContent>
@@ -207,13 +215,31 @@ export default function WalletPage() {
                       This activation fee will be reflected as wallet funding on your account.
                       You need an activated wallet to create campaigns.
                     </p>
-                    <GlassButton variant="glow" onClick={handleActivate} disabled={activating}>
-                      {activating ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
-                      ) : (
-                        <><CreditCard className="mr-2 h-4 w-4" /> Pay ${activationFee} to Activate</>
-                      )}
-                    </GlassButton>
+                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                      <div className="flex-1 space-y-2 w-full">
+                        <Label className="text-muted-foreground text-sm">Amount (USD) - minimum ${activationFee}</Label>
+                        <GlassInput
+                          type="number"
+                          min={activationFee}
+                          step="1"
+                          value={activationAmount}
+                          onChange={(e) => setActivationAmount(e.target.value)}
+                          placeholder={`Min $${activationFee}`}
+                        />
+                        {Number(activationAmount) > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            = NGN {ngnActivation.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      <GlassButton variant="glow" onClick={handleActivate} disabled={activating} className="w-full sm:w-auto whitespace-nowrap">
+                        {activating ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                        ) : (
+                          <><CreditCard className="mr-2 h-4 w-4" /> Pay to Activate</>
+                        )}
+                      </GlassButton>
+                    </div>
                   </GlassCardContent>
                 </GlassCard>
               </MotionWrapper>
@@ -228,8 +254,8 @@ export default function WalletPage() {
                     <GlassCardDescription>Add funds to your wallet via Paystack</GlassCardDescription>
                   </GlassCardHeader>
                   <GlassCardContent>
-                    <div className="flex gap-3 items-end">
-                      <div className="flex-1 space-y-2">
+                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                      <div className="flex-1 space-y-2 w-full">
                         <Label className="text-muted-foreground text-sm">Amount (USD)</Label>
                         <GlassInput
                           type="number"
@@ -245,7 +271,7 @@ export default function WalletPage() {
                           </p>
                         )}
                       </div>
-                      <GlassButton variant="glow" onClick={handleFund} disabled={funding}>
+                      <GlassButton variant="glow" onClick={handleFund} disabled={funding} className="w-full sm:w-auto whitespace-nowrap">
                         {funding ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
@@ -295,12 +321,12 @@ export default function WalletPage() {
                     <div className="space-y-2">
                       {transactions.map((tx) => (
                         <div key={tx.id} className="flex items-center justify-between rounded-xl border border-border/50 p-3">
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-foreground capitalize">{tx.type}</p>
-                            <p className="text-xs text-muted-foreground">{tx.description || "No description"}</p>
+                            <p className="text-xs text-muted-foreground truncate">{tx.description || "No description"}</p>
                             <p className="text-xs text-muted-foreground/60">{new Date(tx.created_at).toLocaleDateString()}</p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right ml-2 shrink-0">
                             <p className={`text-sm font-bold ${tx.type === "charge" ? "text-destructive" : "text-primary"}`}>
                               {tx.type === "charge" ? "-" : "+"}${Math.abs(tx.amount).toFixed(2)}
                             </p>

@@ -7,7 +7,7 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/
 import { GlassButton } from "@/components/ui/glass-button";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { Plus, BarChart3, DollarSign, MousePointerClick } from "lucide-react";
+import { Plus, BarChart3, DollarSign, MousePointerClick, Tag } from "lucide-react";
 
 interface Campaign {
   id: string;
@@ -18,14 +18,25 @@ interface Campaign {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, categoryStatus } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [stats, setStats] = useState({ totalEvents: 0, totalSpent: 0, totalClicks: 0 });
   const [loading, setLoading] = useState(true);
+  const [categoryName, setCategoryName] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
+      // Fetch category name
+      const { data: catData } = await supabase
+        .from("advertiser_categories")
+        .select("category_id, categories(name)")
+        .eq("advertiser_id", user.id)
+        .maybeSingle();
+      if (catData) {
+        setCategoryName((catData as any).categories?.name || null);
+      }
+
       const { data: campaignsData } = await supabase.from("campaigns").select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false });
       setCampaigns((campaignsData as Campaign[]) || []);
       if (campaignsData && campaignsData.length > 0) {
@@ -51,20 +62,35 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <MotionWrapper>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">Manage your campaigns and track performance</p>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+              <p className="text-sm text-muted-foreground">Manage your campaigns and track performance</p>
+              {categoryName && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Tag className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs text-muted-foreground">Category:</span>
+                  <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-xs">{categoryName}</Badge>
+                  {categoryStatus && (
+                    <Badge variant="outline" className={
+                      categoryStatus === "active" ? "border-primary/30 bg-primary/10 text-primary text-xs" :
+                      "border-warning/30 bg-warning/10 text-warning text-xs"
+                    }>
+                      {categoryStatus}
+                    </Badge>
+                  )}
+                </div>
+              )}
             </div>
             <Link to="/campaigns/create">
-              <GlassButton variant="glow"><Plus className="mr-2 h-4 w-4" />New Campaign</GlassButton>
+              <GlassButton variant="glow" className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" />New Campaign</GlassButton>
             </Link>
           </div>
         </MotionWrapper>
 
-        <MotionStagger className="grid gap-4 md:grid-cols-3">
+        <MotionStagger className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
           {[
             { label: "Total Events", value: stats.totalEvents.toLocaleString(), icon: BarChart3 },
             { label: "Total Spent", value: `$${stats.totalSpent.toFixed(2)}`, icon: DollarSign },
@@ -77,7 +103,7 @@ export default function Dashboard() {
                   <s.icon className="h-4 w-4 text-muted-foreground/50" />
                 </GlassCardHeader>
                 <GlassCardContent>
-                  <p className="text-2xl font-bold text-foreground">{s.value}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground">{s.value}</p>
                 </GlassCardContent>
               </GlassCard>
             </MotionItem>
@@ -100,12 +126,12 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-2">
                   {campaigns.map((campaign) => (
-                    <Link key={campaign.id} to={`/campaigns/${campaign.id}`} className="flex items-center justify-between rounded-xl border border-border/50 p-4 transition-all duration-200 hover:bg-accent/5 hover:border-border">
-                      <div>
-                        <p className="font-medium text-foreground/90">{campaign.name}</p>
+                    <Link key={campaign.id} to={`/campaigns/${campaign.id}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-border/50 p-3 sm:p-4 transition-all duration-200 hover:bg-accent/5 hover:border-border">
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground/90 truncate">{campaign.name}</p>
                         <p className="text-sm text-muted-foreground">Budget: ${Number(campaign.budget_remaining).toFixed(2)}</p>
                       </div>
-                      <Badge variant="outline" className={statusColor(campaign.status)}>{campaign.status}</Badge>
+                      <Badge variant="outline" className={`${statusColor(campaign.status)} shrink-0`}>{campaign.status}</Badge>
                     </Link>
                   ))}
                 </div>

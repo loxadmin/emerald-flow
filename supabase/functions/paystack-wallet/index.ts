@@ -21,6 +21,7 @@ Deno.serve(async (req) => {
     const paystackSecret = Deno.env.get("PAYSTACK_SECRET_KEY");
 
     if (!paystackSecret) {
+      console.error("PAYSTACK_SECRET_KEY is not set");
       return new Response(JSON.stringify({ error: "Payment system not configured" }), { status: 500, headers: corsHeaders });
     }
 
@@ -34,7 +35,10 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action } = body;
+    const { action, callback_origin } = body;
+
+    // Use callback_origin from request body (sent by client), fallback to referer/origin header
+    const origin = callback_origin || req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "") || "https://advertiser.karbali.com";
 
     // Get admin settings
     const { data: settings } = await supabase.from("admin_settings").select("key, value").in("key", ["activation_fee_usd", "usd_to_ngn_rate"]);
@@ -44,13 +48,11 @@ Deno.serve(async (req) => {
     const usdToNgn = Number(settingsMap["usd_to_ngn_rate"] || "1500");
 
     if (action === "create_wallet") {
-      // Check if wallet exists
       const { data: existing } = await supabase.from("wallets").select("*").eq("advertiser_id", user.id).maybeSingle();
       if (existing) {
         return new Response(JSON.stringify({ wallet: existing }), { headers: corsHeaders });
       }
 
-      // Get profile
       const { data: profile } = await supabase.from("profiles").select("email, full_name").eq("id", user.id).single();
 
       // Create Paystack customer
@@ -64,8 +66,8 @@ Deno.serve(async (req) => {
         }),
       });
       const custData = await custRes.json();
+      console.log("Paystack customer response:", JSON.stringify(custData));
 
-      // Create wallet
       const { data: wallet, error } = await supabase.from("wallets").insert({
         advertiser_id: user.id,
         paystack_customer_code: custData.data?.customer_code || null,
@@ -79,7 +81,10 @@ Deno.serve(async (req) => {
     }
 
     if (action === "initialize_activation") {
-      const amountNgn = activationFeeUsd * usdToNgn * 100; // Paystack uses kobo
+      const { amount: customAmount } = body;
+      // Allow custom amount >= activation fee
+      const payAmount = customAmount && Number(customAmount) >= activationFeeUsd ? Number(customAmount) : activationFeeUsd;
+      const amountNgn = payAmount * usdToNgn * 100; // Paystack uses kobo
 
       const { data: wallet } = await supabase.from("wallets").select("*").eq("advertiser_id", user.id).maybeSingle();
       if (!wallet) {
@@ -91,33 +96,35 @@ Deno.serve(async (req) => {
 
       const reference = `act_${user.id.replace(/-/g, "").slice(0, 8)}_${Date.now()}`;
 
-      // Create pending transaction
       await supabase.from("wallet_transactions").insert({
         wallet_id: wallet.id,
-        amount: activationFeeUsd,
+        amount: payAmount,
         type: "activation",
-        description: `Wallet activation fee ($${activationFeeUsd})`,
+        description: `Wallet activation ($${payAmount})`,
         reference,
         status: "pending",
       });
 
-      // Initialize Paystack transaction
       const profile = await supabase.from("profiles").select("email").eq("id", user.id).single();
+      const callbackUrl = `${origin}/wallet?activated=true`;
+      console.log("Paystack init activation with callback:", callbackUrl, "amount kobo:", amountNgn);
+
       const initRes = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: { Authorization: `Bearer ${paystackSecret}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           email: profile.data?.email || user.email,
-          amount: amountNgn,
+          amount: Math.round(amountNgn),
           reference,
-          callback_url: `${req.headers.get("origin") || supabaseUrl}/wallet?activated=true`,
+          callback_url: callbackUrl,
           metadata: { type: "activation", user_id: user.id, wallet_id: wallet.id },
         }),
       });
       const initData = await initRes.json();
+      console.log("Paystack init response:", JSON.stringify(initData));
 
-      if (!initData.status) {
-        return new Response(JSON.stringify({ error: initData.message || "Payment initialization failed" }), { status: 400, headers: corsHeaders });
+      if (!initData.status || !initData.data?.authorization_url) {
+        return new Response(JSON.stringify({ error: initData.message || "Payment initialization failed", details: initData }), { status: 400, headers: corsHeaders });
       }
 
       return new Response(JSON.stringify({ authorization_url: initData.data.authorization_url, reference }), { headers: corsHeaders });
@@ -147,21 +154,25 @@ Deno.serve(async (req) => {
       });
 
       const profile = await supabase.from("profiles").select("email").eq("id", user.id).single();
+      const callbackUrl = `${origin}/wallet?funded=true`;
+      console.log("Paystack init funding with callback:", callbackUrl, "amount kobo:", amountNgn);
+
       const initRes = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: { Authorization: `Bearer ${paystackSecret}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           email: profile.data?.email || user.email,
-          amount: amountNgn,
+          amount: Math.round(amountNgn),
           reference,
-          callback_url: `${req.headers.get("origin") || supabaseUrl}/wallet?funded=true`,
+          callback_url: callbackUrl,
           metadata: { type: "funding", user_id: user.id, wallet_id: wallet.id, usd_amount: amount },
         }),
       });
       const initData = await initRes.json();
+      console.log("Paystack funding response:", JSON.stringify(initData));
 
-      if (!initData.status) {
-        return new Response(JSON.stringify({ error: initData.message || "Payment initialization failed" }), { status: 400, headers: corsHeaders });
+      if (!initData.status || !initData.data?.authorization_url) {
+        return new Response(JSON.stringify({ error: initData.message || "Payment initialization failed", details: initData }), { status: 400, headers: corsHeaders });
       }
 
       return new Response(JSON.stringify({ authorization_url: initData.data.authorization_url, reference }), { headers: corsHeaders });
@@ -169,6 +180,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: corsHeaders });
   } catch (err: unknown) {
+    console.error("Edge function error:", (err as Error).message);
     return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: corsHeaders });
   }
 });
