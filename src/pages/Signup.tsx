@@ -10,6 +10,14 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 
+const FORBIDDEN_DOMAINS = [
+  "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "live.com",
+  "aol.com", "icloud.com", "mail.com", "protonmail.com", "zoho.com",
+  "yandex.com", "gmx.com", "fastmail.com", "tutanota.com", "hey.com",
+  "pm.me", "proton.me", "qq.com", "163.com", "126.com",
+  "msn.com", "me.com", "mac.com", "googlemail.com",
+];
+
 function extractDomain(url: string): string {
   try {
     let cleaned = url.trim().toLowerCase();
@@ -40,10 +48,15 @@ export default function Signup() {
       return;
     }
 
-    // Validate email matches website domain
     const websiteDomain = extractDomain(website);
     if (!websiteDomain) {
       toast.error("Please enter a valid website URL");
+      return;
+    }
+
+    // Block email provider domains as websites
+    if (FORBIDDEN_DOMAINS.includes(websiteDomain)) {
+      toast.error("Please provide a professional business website, not a public email provider.");
       return;
     }
 
@@ -81,6 +94,7 @@ export default function Signup() {
   };
 
   const websiteDomain = extractDomain(website);
+  const isForbiddenDomain = websiteDomain && FORBIDDEN_DOMAINS.includes(websiteDomain);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 bg-background">
@@ -118,11 +132,15 @@ export default function Signup() {
                   autoComplete="url"
                   required
                 />
-                {websiteDomain && (
+                {isForbiddenDomain ? (
+                  <p className="text-xs text-destructive">
+                    Email provider domains are not accepted. Please use your business website.
+                  </p>
+                ) : websiteDomain ? (
                   <p className="text-xs text-muted-foreground/60">
                     Your email must end with @{websiteDomain}
                   </p>
-                )}
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label className="text-muted-foreground text-sm">Business Email *</Label>
@@ -133,7 +151,7 @@ export default function Signup() {
                   maxLength={255}
                   required
                   autoComplete="email"
-                  placeholder={websiteDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"}
+                  placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"}
                 />
               </div>
               <div className="space-y-2">
@@ -141,7 +159,7 @@ export default function Signup() {
                 <GlassInput type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="new-password" />
                 <p className="text-xs text-muted-foreground/60">Minimum 8 characters</p>
               </div>
-              <GlassButton type="submit" className="w-full" variant="glow" disabled={loading}>
+              <GlassButton type="submit" className="w-full" variant="glow" disabled={loading || !!isForbiddenDomain}>
                 {loading ? "Creating account..." : "Create Account"}
               </GlassButton>
             </form>
