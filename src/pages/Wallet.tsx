@@ -29,6 +29,30 @@ interface WalletTx {
   created_at: string;
 }
 
+interface WalletFunctionResponse {
+  wallet?: WalletData;
+  authorization_url?: string;
+  reference?: string;
+  error?: string;
+  details?: {
+    message?: string;
+  };
+}
+
+const parseWalletFunctionResponse = (payload: unknown): WalletFunctionResponse | null => {
+  if (!payload) return null;
+
+  if (typeof payload === "string") {
+    try {
+      return JSON.parse(payload) as WalletFunctionResponse;
+    } catch {
+      return null;
+    }
+  }
+
+  return typeof payload === "object" ? (payload as WalletFunctionResponse) : null;
+};
+
 export default function WalletPage() {
   const { user, refreshAccessState } = useAuth();
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -59,7 +83,7 @@ export default function WalletPage() {
         setLoading(false);
         return;
       }
-      walletData = newWallet?.wallet;
+      walletData = parseWalletFunctionResponse(newWallet)?.wallet;
     }
 
     if (walletData) setWallet(walletData as WalletData);
@@ -112,11 +136,12 @@ export default function WalletPage() {
         body: { action: "initialize_activation", amount, callback_origin: window.location.origin },
       });
       if (error) throw error;
-      if (data?.authorization_url) {
-        window.location.href = data.authorization_url;
+      const payload = parseWalletFunctionResponse(data);
+      if (payload?.authorization_url) {
+        window.location.href = payload.authorization_url;
         return;
       }
-      const errorMsg = data?.error || data?.details?.message || "Payment gateway did not return an authorization URL";
+      const errorMsg = payload?.error || payload?.details?.message || "Payment gateway did not return an authorization URL";
       throw new Error(errorMsg);
     } catch (err: unknown) {
       toast.error((err as Error).message || "Failed to initialize activation");
@@ -137,12 +162,13 @@ export default function WalletPage() {
         body: { action: "initialize_funding", amount, callback_origin: window.location.origin },
       });
       if (error) throw error;
-      if (data?.authorization_url) {
-        window.location.href = data.authorization_url;
+      const payload = parseWalletFunctionResponse(data);
+      if (payload?.authorization_url) {
+        window.location.href = payload.authorization_url;
         setFundAmount("");
         return;
       }
-      const errorMsg = data?.error || data?.details?.message || "Payment gateway did not return an authorization URL";
+      const errorMsg = payload?.error || payload?.details?.message || "Payment gateway did not return an authorization URL";
       throw new Error(errorMsg);
     } catch (err: unknown) {
       toast.error((err as Error).message || "Failed to initialize funding");
