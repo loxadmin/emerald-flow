@@ -5,6 +5,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -13,7 +22,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -22,7 +31,7 @@ Deno.serve(async (req) => {
 
     if (!paystackSecret) {
       console.error("PAYSTACK_SECRET_KEY is not set");
-      return new Response(JSON.stringify({ error: "Payment system not configured" }), { status: 500, headers: corsHeaders });
+      return jsonResponse({ error: "Payment system not configured" }, 500);
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -31,7 +40,7 @@ Deno.serve(async (req) => {
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data: { user }, error: authError } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: corsHeaders });
+      return jsonResponse({ error: "Invalid token" }, 401);
     }
 
     const body = await req.json();
@@ -50,7 +59,7 @@ Deno.serve(async (req) => {
     if (action === "create_wallet") {
       const { data: existing } = await supabase.from("wallets").select("*").eq("advertiser_id", user.id).maybeSingle();
       if (existing) {
-        return new Response(JSON.stringify({ wallet: existing }), { headers: corsHeaders });
+        return jsonResponse({ wallet: existing });
       }
 
       const { data: profile } = await supabase.from("profiles").select("email, full_name").eq("id", user.id).single();
@@ -74,10 +83,10 @@ Deno.serve(async (req) => {
       }).select().single();
 
       if (error) {
-        return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders });
+        return jsonResponse({ error: error.message }, 400);
       }
 
-      return new Response(JSON.stringify({ wallet }), { headers: corsHeaders });
+      return jsonResponse({ wallet });
     }
 
     if (action === "initialize_activation") {
@@ -88,10 +97,10 @@ Deno.serve(async (req) => {
 
       const { data: wallet } = await supabase.from("wallets").select("*").eq("advertiser_id", user.id).maybeSingle();
       if (!wallet) {
-        return new Response(JSON.stringify({ error: "No wallet found" }), { status: 400, headers: corsHeaders });
+        return jsonResponse({ error: "No wallet found" }, 400);
       }
       if (wallet.is_activated) {
-        return new Response(JSON.stringify({ error: "Wallet already activated" }), { status: 400, headers: corsHeaders });
+        return jsonResponse({ error: "Wallet already activated" }, 400);
       }
 
       const reference = `act_${user.id.replace(/-/g, "").slice(0, 8)}_${Date.now()}`;
@@ -124,21 +133,21 @@ Deno.serve(async (req) => {
       console.log("Paystack init response:", JSON.stringify(initData));
 
       if (!initData.status || !initData.data?.authorization_url) {
-        return new Response(JSON.stringify({ error: initData.message || "Payment initialization failed", details: initData }), { status: 400, headers: corsHeaders });
+        return jsonResponse({ error: initData.message || "Payment initialization failed", details: initData }, 400);
       }
 
-      return new Response(JSON.stringify({ authorization_url: initData.data.authorization_url, reference }), { headers: corsHeaders });
+      return jsonResponse({ authorization_url: initData.data.authorization_url, reference });
     }
 
     if (action === "initialize_funding") {
       const { amount } = body;
       if (!amount || amount < 1) {
-        return new Response(JSON.stringify({ error: "Invalid amount" }), { status: 400, headers: corsHeaders });
+        return jsonResponse({ error: "Invalid amount" }, 400);
       }
 
       const { data: wallet } = await supabase.from("wallets").select("*").eq("advertiser_id", user.id).maybeSingle();
       if (!wallet) {
-        return new Response(JSON.stringify({ error: "No wallet found" }), { status: 400, headers: corsHeaders });
+        return jsonResponse({ error: "No wallet found" }, 400);
       }
 
       const amountNgn = amount * usdToNgn * 100;
@@ -172,15 +181,15 @@ Deno.serve(async (req) => {
       console.log("Paystack funding response:", JSON.stringify(initData));
 
       if (!initData.status || !initData.data?.authorization_url) {
-        return new Response(JSON.stringify({ error: initData.message || "Payment initialization failed", details: initData }), { status: 400, headers: corsHeaders });
+        return jsonResponse({ error: initData.message || "Payment initialization failed", details: initData }, 400);
       }
 
-      return new Response(JSON.stringify({ authorization_url: initData.data.authorization_url, reference }), { headers: corsHeaders });
+      return jsonResponse({ authorization_url: initData.data.authorization_url, reference });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: corsHeaders });
+    return jsonResponse({ error: "Unknown action" }, 400);
   } catch (err: unknown) {
     console.error("Edge function error:", (err as Error).message);
-    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: corsHeaders });
+    return jsonResponse({ error: (err as Error).message }, 500);
   }
 });
