@@ -20,6 +20,8 @@ interface WalletData {
   paystack_dva_bank_name: string | null;
 }
 
+const walletSelectFields = "id, balance, currency, is_activated, paystack_dva_account_number, paystack_dva_bank_name";
+
 interface WalletTx {
   id: string;
   amount: number;
@@ -68,11 +70,13 @@ export default function WalletPage() {
   const fetchData = async () => {
     if (!user) return;
 
-    let { data: walletData } = await supabase
+    const { data: existingWallet } = await supabase
       .from("wallets")
-      .select("*")
+      .select(walletSelectFields)
       .eq("advertiser_id", user.id)
       .maybeSingle();
+
+    let walletData: WalletData | null = existingWallet as WalletData | null;
 
     if (!walletData) {
       const { data: newWallet, error } = await supabase.functions.invoke("paystack-wallet", {
