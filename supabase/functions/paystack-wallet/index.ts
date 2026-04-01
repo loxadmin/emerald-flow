@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       });
 
       const profile = await supabase.from("profiles").select("email").eq("id", user.id).single();
-      const callbackUrl = `${origin}/wallet?activated=true`;
+      const callbackUrl = `${origin}/wallet?activated=true&ref=${reference}`;
       console.log("Paystack init activation with callback:", callbackUrl, "amount kobo:", amountNgn);
 
       const initRes = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
       });
 
       const profile = await supabase.from("profiles").select("email").eq("id", user.id).single();
-      const callbackUrl = `${origin}/wallet?funded=true`;
+      const callbackUrl = `${origin}/wallet?funded=true&ref=${reference}`;
       console.log("Paystack init funding with callback:", callbackUrl, "amount kobo:", amountNgn);
 
       const initRes = await fetch("https://api.paystack.co/transaction/initialize", {
