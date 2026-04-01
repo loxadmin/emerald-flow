@@ -121,9 +121,40 @@ export default function WalletPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("activated") === "true" || params.get("funded") === "true") {
-      toast.success(params.get("activated") === "true" ? "Payment received. Refreshing wallet status..." : "Funding received. Refreshing wallet status...");
-      void Promise.all([fetchData(), refreshAccessState()]);
+    const trxref = params.get("trxref") || params.get("reference");
+    const isActivated = params.get("activated") === "true";
+    const isFunded = params.get("funded") === "true";
+
+    if (trxref || isActivated || isFunded) {
+      // Verify the payment with Paystack if we have a reference
+      const verifyAndRefresh = async () => {
+        if (trxref) {
+          toast.info("Verifying payment...");
+          try {
+            const { data, error } = await supabase.functions.invoke("paystack-verify", {
+              body: { reference: trxref },
+            });
+            if (error) {
+              console.error("Verify error:", error);
+              toast.error("Could not verify payment. Please contact support if funds were deducted.");
+            } else {
+              const payload = typeof data === "string" ? JSON.parse(data) : data;
+              if (payload?.success || payload?.already_processed) {
+                toast.success("Payment verified successfully!");
+              } else {
+                toast.error(payload?.error || "Payment verification failed");
+              }
+            }
+          } catch (e) {
+            console.error("Verify exception:", e);
+          }
+        } else {
+          toast.success("Refreshing wallet status...");
+        }
+        await fetchData();
+        await refreshAccessState();
+      };
+      void verifyAndRefresh();
       window.history.replaceState({}, "", "/wallet");
     }
   }, [refreshAccessState, user]);
