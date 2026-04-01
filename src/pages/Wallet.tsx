@@ -121,7 +121,7 @@ export default function WalletPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const trxref = params.get("trxref") || params.get("reference");
+    const trxref = params.get("trxref") || params.get("reference") || params.get("ref");
     const isActivated = params.get("activated") === "true";
     const isFunded = params.get("funded") === "true";
 
