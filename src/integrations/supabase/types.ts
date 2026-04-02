@@ -140,33 +140,48 @@ export type Database = {
           budget_remaining: number
           created_at: string
           id: string
+          integration_type: string
+          integration_verified: boolean
           name: string
           price_download: number
           price_purchase: number
           price_signup: number
+          selected_milestones: string[]
           status: Database["public"]["Enums"]["campaign_status"]
+          target_users: number
+          total_cost: number
         }
         Insert: {
           advertiser_id: string
           budget_remaining?: number
           created_at?: string
           id?: string
+          integration_type?: string
+          integration_verified?: boolean
           name: string
           price_download?: number
           price_purchase?: number
           price_signup?: number
+          selected_milestones?: string[]
           status?: Database["public"]["Enums"]["campaign_status"]
+          target_users?: number
+          total_cost?: number
         }
         Update: {
           advertiser_id?: string
           budget_remaining?: number
           created_at?: string
           id?: string
+          integration_type?: string
+          integration_verified?: boolean
           name?: string
           price_download?: number
           price_purchase?: number
           price_signup?: number
+          selected_milestones?: string[]
           status?: Database["public"]["Enums"]["campaign_status"]
+          target_users?: number
+          total_cost?: number
         }
         Relationships: []
       }
