@@ -8,14 +8,10 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { Plus, BarChart3, DollarSign, MousePointerClick, Tag } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-interface Campaign {
-  id: string;
-  name: string;
-  status: string;
-  budget_remaining: number;
-  created_at: string;
-}
+interface Campaign { id: string; name: string; status: string; budget_remaining: number; created_at: string; target_users?: number; selected_milestones?: string[]; }
+interface DailyData { date: string; events: number; }
 
 export default function Dashboard() {
   const { user, categoryStatus } = useAuth();
@@ -23,19 +19,17 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ totalEvents: 0, totalSpent: 0, totalClicks: 0 });
   const [loading, setLoading] = useState(true);
   const [categoryName, setCategoryName] = useState<string | null>(null);
+  const [dailyData, setDailyData] = useState<DailyData[]>([]);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      // Fetch category name
       const { data: catData } = await supabase
         .from("advertiser_categories")
         .select("category_id, categories(name)")
         .eq("advertiser_id", user.id)
         .maybeSingle();
-      if (catData) {
-        setCategoryName((catData as any).categories?.name || null);
-      }
+      if (catData) setCategoryName((catData as any).categories?.name || null);
 
       const { data: campaignsData } = await supabase.from("campaigns").select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false });
       setCampaigns((campaignsData as Campaign[]) || []);
@@ -45,6 +39,18 @@ export default function Dashboard() {
         const { data: txData } = await supabase.from("transactions").select("amount").in("campaign_id", campaignIds);
         const totalSpent = txData?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
         setStats({ totalEvents: eventsCount || 0, totalSpent, totalClicks: 0 });
+
+        // Chart data
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: events } = await supabase.from("events").select("created_at").in("campaign_id", campaignIds).gte("created_at", thirtyDaysAgo);
+        if (events && events.length > 0) {
+          const byDay: Record<string, number> = {};
+          events.forEach((e) => {
+            const day = new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            byDay[day] = (byDay[day] || 0) + 1;
+          });
+          setDailyData(Object.entries(byDay).map(([date, events]) => ({ date, events })));
+        }
       }
       setLoading(false);
     };
@@ -60,6 +66,8 @@ export default function Dashboard() {
     }
   };
 
+  const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", color: "hsl(var(--foreground))" };
+
   return (
     <DashboardLayout>
       <div className="space-y-6 sm:space-y-8">
@@ -74,10 +82,7 @@ export default function Dashboard() {
                   <span className="text-xs text-muted-foreground">Category:</span>
                   <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-xs">{categoryName}</Badge>
                   {categoryStatus && (
-                    <Badge variant="outline" className={
-                      categoryStatus === "active" ? "border-primary/30 bg-primary/10 text-primary text-xs" :
-                      "border-warning/30 bg-warning/10 text-warning text-xs"
-                    }>
+                    <Badge variant="outline" className={categoryStatus === "active" ? "border-primary/30 bg-primary/10 text-primary text-xs" : "border-warning/30 bg-warning/10 text-warning text-xs"}>
                       {categoryStatus}
                     </Badge>
                   )}
@@ -102,19 +107,41 @@ export default function Dashboard() {
                   <GlassCardTitle className="text-sm font-medium text-muted-foreground">{s.label}</GlassCardTitle>
                   <s.icon className="h-4 w-4 text-muted-foreground/50" />
                 </GlassCardHeader>
-                <GlassCardContent>
-                  <p className="text-xl sm:text-2xl font-bold text-foreground">{s.value}</p>
-                </GlassCardContent>
+                <GlassCardContent><p className="text-xl sm:text-2xl font-bold text-foreground">{s.value}</p></GlassCardContent>
               </GlassCard>
             </MotionItem>
           ))}
         </MotionStagger>
 
+        {/* Analytics Chart */}
+        {dailyData.length > 0 && (
+          <MotionWrapper delay={0.15}>
+            <GlassCard variant="strong">
+              <GlassCardHeader><GlassCardTitle>Events (Last 30 Days)</GlassCardTitle></GlassCardHeader>
+              <GlassCardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <AreaChart data={dailyData}>
+                    <defs>
+                      <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Area type="monotone" dataKey="events" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#colorEvents)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </GlassCardContent>
+            </GlassCard>
+          </MotionWrapper>
+        )}
+
         <MotionWrapper delay={0.2}>
           <GlassCard variant="strong">
-            <GlassCardHeader>
-              <GlassCardTitle>Your Campaigns</GlassCardTitle>
-            </GlassCardHeader>
+            <GlassCardHeader><GlassCardTitle>Your Campaigns</GlassCardTitle></GlassCardHeader>
             <GlassCardContent>
               {loading ? (
                 <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
