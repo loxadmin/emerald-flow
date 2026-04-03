@@ -37,6 +37,8 @@ export default function CreateCampaign() {
   const [milestones, setMilestones] = useState<string[]>([]);
   const [prices, setPrices] = useState<AdminPrices>({ price_per_download: 1, price_per_signup: 2, price_per_purchase: 5, ad_placement_fee: 2 });
   const [walletBalance, setWalletBalance] = useState(0);
+  const [profileWebsite, setProfileWebsite] = useState<string | null>(null);
+  const [manualWebsite, setManualWebsite] = useState("");
 
   // Partnership / External Referral flow
   const [hasExternalReferral, setHasExternalReferral] = useState<boolean | null>(null);
@@ -74,6 +76,12 @@ export default function CreateCampaign() {
       }
       const { data: w } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
       if (w) setWalletBalance(Number(w.balance));
+
+      const { data: profile } = await supabase.from("profiles").select("website").eq("id", user.id).maybeSingle();
+      if (profile?.website) {
+        setProfileWebsite(profile.website);
+        setManualWebsite(profile.website);
+      }
     };
     fetchData();
   }, [user]);
@@ -113,14 +121,27 @@ export default function CreateCampaign() {
 
   const handleVerify = async () => {
     if (!campaignId || !apiKey) return;
+    if (!manualWebsite.trim()) {
+      toast.error("Please enter your website URL for verification");
+      return;
+    }
     setVerifying(true);
     try {
       const { data, error } = await supabase.functions.invoke("verify-integration", {
-        body: { campaign_id: campaignId, api_key: apiKey },
+        body: {
+          campaign_id: campaignId,
+          api_key: apiKey,
+          website: manualWebsite.trim()
+        },
       });
       if (error) throw error;
       const payload = typeof data === "string" ? JSON.parse(data) : data;
-      if (payload?.verified) { setVerified(true); toast.success("Integration verified!"); setStep(3); }
+      if (payload?.verified) {
+        setVerified(true);
+        setProfileWebsite(manualWebsite.trim());
+        toast.success("Integration verified!");
+        setStep(3);
+      }
       else toast.error(payload?.error || "Verification failed");
     } catch (err: unknown) { toast.error((err as Error).message || "Verification failed"); }
     finally { setVerifying(false); }
@@ -515,8 +536,22 @@ window.Karbali = {
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <div>
               <h3 className="text-sm font-medium text-foreground flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary" /> Verify Integration</h3>
-              <p className="text-xs text-muted-foreground mt-1">We'll send a test call to verify your API key is working from your registered domain.</p>
+              <p className="text-xs text-muted-foreground mt-1">We'll send a test call to verify your API key is working from your domain.</p>
             </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Website URL *</Label>
+              <Input
+                value={manualWebsite}
+                onChange={(e) => setManualWebsite(e.target.value)}
+                placeholder="https://yourwebsite.com"
+                disabled={verified}
+              />
+              {!profileWebsite && (
+                <p className="text-[10px] text-amber-600">Your profile is missing a website. This will also update your profile.</p>
+              )}
+            </div>
+
             {verified && (
               <div className="flex items-center gap-2 text-primary text-sm"><CheckCircle className="h-4 w-4" /> Integration verified!</div>
             )}
