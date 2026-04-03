@@ -191,6 +191,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          is_partnership: boolean
           name: string
           updated_at: string
         }
@@ -199,6 +200,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_partnership?: boolean
           name: string
           updated_at?: string
         }
@@ -207,6 +209,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_partnership?: boolean
           name?: string
           updated_at?: string
         }
@@ -288,6 +291,62 @@ export type Database = {
             columns: ["referral_id"]
             isOneToOne: false
             referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_referral_programs: {
+        Row: {
+          activation_fee_paid: boolean
+          admin_notes: string | null
+          admin_referral_code: string | null
+          admin_referral_link: string | null
+          advertiser_id: string
+          campaign_id: string
+          compensation_structure: string
+          created_at: string
+          id: string
+          referral_guide: string
+          registration_link: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activation_fee_paid?: boolean
+          admin_notes?: string | null
+          admin_referral_code?: string | null
+          admin_referral_link?: string | null
+          advertiser_id: string
+          campaign_id: string
+          compensation_structure?: string
+          created_at?: string
+          id?: string
+          referral_guide?: string
+          registration_link?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activation_fee_paid?: boolean
+          admin_notes?: string | null
+          admin_referral_code?: string | null
+          admin_referral_link?: string | null
+          advertiser_id?: string
+          campaign_id?: string
+          compensation_structure?: string
+          created_at?: string
+          id?: string
+          referral_guide?: string
+          registration_link?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_referral_programs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]
