@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authErr } = await anonClient.auth.getUser(token);
     if (authErr || !user) return json({ error: "Invalid token" }, 401);
 
-    const { campaign_id, api_key } = await req.json();
+    const { campaign_id, api_key, website } = await req.json();
     if (!campaign_id || !api_key) return json({ error: "Missing campaign_id or api_key" }, 400);
 
     const supabase = createClient(supabaseUrl, serviceKey);
@@ -62,10 +62,17 @@ Deno.serve(async (req) => {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.website) return json({ error: "No website registered on your profile. Update your profile with your website domain." }, 400);
+    const finalWebsite = website || profile?.website;
+
+    if (!finalWebsite) return json({ error: "No website registered on your profile. Update your profile with your website domain." }, 400);
+
+    // Update profile if website was provided but not in profile
+    if (website && !profile?.website) {
+      await supabase.from("profiles").update({ website }).eq("id", user.id);
+    }
 
     // Extract domain from advertiser's registered website
-    const domain = profile.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    const domain = finalWebsite.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
 
     // Send a test tracking call to verify the API key works
     // We simulate a test call directly via the track function
@@ -97,7 +104,7 @@ Deno.serve(async (req) => {
       // Add a source entry for the advertiser's website
       const { error: sourceErr } = await supabase.from("campaign_sources").insert({
         campaign_id,
-        url: profile.website,
+        url: finalWebsite,
         type: "web",
         verified: true,
       });
