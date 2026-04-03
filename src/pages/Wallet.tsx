@@ -2,56 +2,25 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from "@/components/ui/glass-card";
-import { GlassButton } from "@/components/ui/glass-button";
-import { GlassInput } from "@/components/ui/glass-input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Wallet as WalletIcon, CreditCard, ArrowUpCircle, Loader2, AlertCircle } from "lucide-react";
+import { Wallet as WalletIcon, CreditCard, ArrowUpCircle, Loader2, AlertCircle, ArrowDownRight, ArrowUpRight, Building2 } from "lucide-react";
 
 interface WalletData {
-  id: string;
-  balance: number;
-  currency: string;
-  is_activated: boolean;
-  paystack_dva_account_number: string | null;
-  paystack_dva_bank_name: string | null;
+  id: string; balance: number; currency: string; is_activated: boolean;
+  paystack_dva_account_number: string | null; paystack_dva_bank_name: string | null;
 }
-
 const walletSelectFields = "id, balance, currency, is_activated, paystack_dva_account_number, paystack_dva_bank_name";
+interface WalletTx { id: string; amount: number; type: string; description: string | null; status: string; created_at: string; }
+interface WalletFunctionResponse { wallet?: WalletData; authorization_url?: string; reference?: string; error?: string; details?: { message?: string }; }
 
-interface WalletTx {
-  id: string;
-  amount: number;
-  type: string;
-  description: string | null;
-  status: string;
-  created_at: string;
-}
-
-interface WalletFunctionResponse {
-  wallet?: WalletData;
-  authorization_url?: string;
-  reference?: string;
-  error?: string;
-  details?: {
-    message?: string;
-  };
-}
-
-const parseWalletFunctionResponse = (payload: unknown): WalletFunctionResponse | null => {
+const parseResponse = (payload: unknown): WalletFunctionResponse | null => {
   if (!payload) return null;
-
-  if (typeof payload === "string") {
-    try {
-      return JSON.parse(payload) as WalletFunctionResponse;
-    } catch {
-      return null;
-    }
-  }
-
+  if (typeof payload === "string") { try { return JSON.parse(payload); } catch { return null; } }
   return typeof payload === "object" ? (payload as WalletFunctionResponse) : null;
 };
 
@@ -69,51 +38,25 @@ export default function WalletPage() {
 
   const fetchData = async () => {
     if (!user) return;
-
-    const { data: existingWallet } = await supabase
-      .from("wallets")
-      .select(walletSelectFields)
-      .eq("advertiser_id", user.id)
-      .maybeSingle();
-
+    const { data: existingWallet } = await supabase.from("wallets").select(walletSelectFields).eq("advertiser_id", user.id).maybeSingle();
     let walletData: WalletData | null = existingWallet as WalletData | null;
-
     if (!walletData) {
-      const { data: newWallet, error } = await supabase.functions.invoke("paystack-wallet", {
-        body: { action: "create_wallet" },
-      });
-      if (error) {
-        toast.error("Failed to create wallet");
-        setLoading(false);
-        return;
-      }
-      walletData = parseWalletFunctionResponse(newWallet)?.wallet;
+      const { data: newWallet, error } = await supabase.functions.invoke("paystack-wallet", { body: { action: "create_wallet" } });
+      if (error) { toast.error("Failed to create wallet"); setLoading(false); return; }
+      walletData = parseResponse(newWallet)?.wallet ?? null;
     }
-
-    if (walletData) setWallet(walletData as WalletData);
-
+    if (walletData) setWallet(walletData);
     if (walletData) {
-      const { data: txData } = await supabase
-        .from("wallet_transactions")
-        .select("*")
-        .eq("wallet_id", (walletData as WalletData).id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const { data: txData } = await supabase.from("wallet_transactions").select("*").eq("wallet_id", walletData.id).order("created_at", { ascending: false }).limit(50);
       setTransactions((txData as WalletTx[]) || []);
     }
-
     const { data: settings } = await supabase.from("admin_settings").select("key, value").in("key", ["activation_fee_usd", "usd_to_ngn_rate"]);
     if (settings) {
       settings.forEach((s: { key: string; value: string }) => {
-        if (s.key === "activation_fee_usd") {
-          const fee = Number(s.value);
-          setActivationFee(fee);
-          setActivationAmount(String(fee));
-        }
+        if (s.key === "activation_fee_usd") { setActivationFee(Number(s.value)); setActivationAmount(String(Number(s.value))); }
         if (s.key === "usd_to_ngn_rate") setExchangeRate(Number(s.value));
       });
     }
-
     setLoading(false);
   };
 
@@ -124,33 +67,19 @@ export default function WalletPage() {
     const trxref = params.get("trxref") || params.get("reference") || params.get("ref");
     const isActivated = params.get("activated") === "true";
     const isFunded = params.get("funded") === "true";
-
     if (trxref || isActivated || isFunded) {
-      // Verify the payment with Paystack if we have a reference
       const verifyAndRefresh = async () => {
         if (trxref) {
           toast.info("Verifying payment...");
           try {
-            const { data, error } = await supabase.functions.invoke("paystack-verify", {
-              body: { reference: trxref },
-            });
-            if (error) {
-              console.error("Verify error:", error);
-              toast.error("Could not verify payment. Please contact support if funds were deducted.");
-            } else {
+            const { data, error } = await supabase.functions.invoke("paystack-verify", { body: { reference: trxref } });
+            if (error) { toast.error("Could not verify payment."); } else {
               const payload = typeof data === "string" ? JSON.parse(data) : data;
-              if (payload?.success || payload?.already_processed) {
-                toast.success("Payment verified successfully!");
-              } else {
-                toast.error(payload?.error || "Payment verification failed");
-              }
+              if (payload?.success || payload?.already_processed) toast.success("Payment verified!");
+              else toast.error(payload?.error || "Payment verification failed");
             }
-          } catch (e) {
-            console.error("Verify exception:", e);
-          }
-        } else {
-          toast.success("Refreshing wallet status...");
-        }
+          } catch (e) { console.error("Verify exception:", e); }
+        } else { toast.success("Refreshing wallet status..."); }
         await fetchData();
         await refreshAccessState();
       };
@@ -161,250 +90,161 @@ export default function WalletPage() {
 
   const handleActivate = async () => {
     const amount = Number(activationAmount);
-    if (!amount || amount < activationFee) {
-      toast.error(`Minimum activation amount is $${activationFee}`);
-      return;
-    }
+    if (!amount || amount < activationFee) { toast.error(`Minimum activation amount is $${activationFee}`); return; }
     setActivating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-wallet", {
-        body: { action: "initialize_activation", amount, callback_origin: window.location.origin },
-      });
+      const { data, error } = await supabase.functions.invoke("paystack-wallet", { body: { action: "initialize_activation", amount, callback_origin: window.location.origin } });
       if (error) throw error;
-      const payload = parseWalletFunctionResponse(data);
-      if (payload?.authorization_url) {
-        window.location.href = payload.authorization_url;
-        return;
-      }
-      const errorMsg = payload?.error || payload?.details?.message || "Payment gateway did not return an authorization URL";
-      throw new Error(errorMsg);
-    } catch (err: unknown) {
-      toast.error((err as Error).message || "Failed to initialize activation");
-    } finally {
-      setActivating(false);
-    }
+      const payload = parseResponse(data);
+      if (payload?.authorization_url) { window.location.href = payload.authorization_url; return; }
+      throw new Error(payload?.error || payload?.details?.message || "Payment gateway error");
+    } catch (err: unknown) { toast.error((err as Error).message || "Failed to initialize activation"); } finally { setActivating(false); }
   };
 
   const handleFund = async () => {
     const amount = Number(fundAmount);
-    if (!amount || amount < 1) {
-      toast.error("Enter a valid amount (minimum $1)");
-      return;
-    }
+    if (!amount || amount < 1) { toast.error("Enter a valid amount (minimum $1)"); return; }
     setFunding(true);
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-wallet", {
-        body: { action: "initialize_funding", amount, callback_origin: window.location.origin },
-      });
+      const { data, error } = await supabase.functions.invoke("paystack-wallet", { body: { action: "initialize_funding", amount, callback_origin: window.location.origin } });
       if (error) throw error;
-      const payload = parseWalletFunctionResponse(data);
-      if (payload?.authorization_url) {
-        window.location.href = payload.authorization_url;
-        setFundAmount("");
-        return;
-      }
-      const errorMsg = payload?.error || payload?.details?.message || "Payment gateway did not return an authorization URL";
-      throw new Error(errorMsg);
-    } catch (err: unknown) {
-      toast.error((err as Error).message || "Failed to initialize funding");
-    } finally {
-      setFunding(false);
-    }
+      const payload = parseResponse(data);
+      if (payload?.authorization_url) { window.location.href = payload.authorization_url; setFundAmount(""); return; }
+      throw new Error(payload?.error || payload?.details?.message || "Payment gateway error");
+    } catch (err: unknown) { toast.error((err as Error).message || "Failed to initialize funding"); } finally { setFunding(false); }
   };
-
-  const ngnActivation = Number(activationAmount) * exchangeRate;
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 max-w-4xl">
+      <div className="space-y-6 max-w-4xl">
         <MotionWrapper>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Wallet</h1>
-            <p className="text-muted-foreground">Manage your payment methods and balance</p>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Wallet</h1>
+            <p className="text-sm text-muted-foreground">Manage your balance and payment methods</p>
           </div>
         </MotionWrapper>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
+          <div className="flex justify-center py-12"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
         ) : (
           <>
             {/* Balance Card */}
-            <MotionWrapper delay={0.1}>
-              <GlassCard variant="strong">
-                <GlassCardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6">
+            <MotionWrapper delay={0.05}>
+              <div className="rounded-xl border border-border bg-card p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15">
-                      <WalletIcon className="h-6 w-6 text-primary" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <WalletIcon className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Available Balance</p>
-                      <p className="text-3xl font-bold text-foreground">
-                        ${wallet?.balance?.toFixed(2) || "0.00"}
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Available Balance</p>
+                      <p className="text-3xl font-semibold text-foreground">${wallet?.balance?.toFixed(2) || "0.00"}</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={wallet?.is_activated ? "text-primary border-primary/20 bg-primary/5" : "text-amber-600 border-amber-500/20 bg-amber-500/5"}>
+                    {wallet?.is_activated ? "Active" : "Not Activated"}
+                  </Badge>
+                </div>
+              </div>
+            </MotionWrapper>
+
+            {/* Activation */}
+            {!wallet?.is_activated && (
+              <MotionWrapper delay={0.1}>
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                    <div>
+                      <h3 className="text-sm font-medium text-foreground">Activate Your Wallet</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        A minimum of ${activationFee} (NGN {(activationFee * exchangeRate).toLocaleString()}) is required. This amount is added to your balance.
                       </p>
                     </div>
                   </div>
-                  <Badge
-                    variant="outline"
-                    className={wallet?.is_activated
-                      ? "border-primary/30 bg-primary/10 text-primary"
-                      : "border-warning/30 bg-warning/10 text-warning"
-                    }
-                  >
-                    {wallet?.is_activated ? "Activated" : "Not Activated"}
-                  </Badge>
-                </GlassCardContent>
-              </GlassCard>
-            </MotionWrapper>
-
-            {/* Activation Card (if not activated) */}
-            {!wallet?.is_activated && (
-              <MotionWrapper delay={0.15}>
-                <GlassCard variant="strong" className="border-warning/20">
-                  <GlassCardHeader>
-                    <GlassCardTitle className="flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5 text-warning" />
-                      Activate Your Wallet
-                    </GlassCardTitle>
-                    <GlassCardDescription>
-                      A minimum of ${activationFee} (NGN {(activationFee * exchangeRate).toLocaleString()}) is required to activate
-                    </GlassCardDescription>
-                  </GlassCardHeader>
-                  <GlassCardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      This activation fee will be reflected as wallet funding on your account.
-                      You need an activated wallet to create campaigns.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-                      <div className="flex-1 space-y-2 w-full">
-                        <Label className="text-muted-foreground text-sm">Amount (USD) - minimum ${activationFee}</Label>
-                        <GlassInput
-                          type="number"
-                          min={activationFee}
-                          step="1"
-                          value={activationAmount}
-                          onChange={(e) => setActivationAmount(e.target.value)}
-                          placeholder={`Min $${activationFee}`}
-                        />
-                        {Number(activationAmount) > 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            = NGN {ngnActivation.toLocaleString()}
-                          </p>
-                        )}
-                      </div>
-                      <GlassButton variant="glow" onClick={handleActivate} disabled={activating} className="w-full sm:w-auto whitespace-nowrap">
-                        {activating ? (
-                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
-                        ) : (
-                          <><CreditCard className="mr-2 h-4 w-4" /> Pay to Activate</>
-                        )}
-                      </GlassButton>
+                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                    <div className="flex-1 space-y-1.5 w-full">
+                      <Label className="text-xs text-muted-foreground">Amount (USD) — min ${activationFee}</Label>
+                      <Input type="number" min={activationFee} step="1" value={activationAmount} onChange={(e) => setActivationAmount(e.target.value)} />
+                      {Number(activationAmount) > 0 && <p className="text-[10px] text-muted-foreground">= NGN {(Number(activationAmount) * exchangeRate).toLocaleString()}</p>}
                     </div>
-                  </GlassCardContent>
-                </GlassCard>
+                    <Button onClick={handleActivate} disabled={activating} className="w-full sm:w-auto">
+                      {activating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</> : <><CreditCard className="mr-2 h-4 w-4" /> Pay to Activate</>}
+                    </Button>
+                  </div>
+                </div>
               </MotionWrapper>
             )}
 
             {/* Fund Wallet */}
             {wallet?.is_activated && (
-              <MotionWrapper delay={0.2}>
-                <GlassCard variant="strong">
-                  <GlassCardHeader>
-                    <GlassCardTitle>Fund Wallet</GlassCardTitle>
-                    <GlassCardDescription>Add funds to your wallet via Paystack</GlassCardDescription>
-                  </GlassCardHeader>
-                  <GlassCardContent>
-                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-                      <div className="flex-1 space-y-2 w-full">
-                        <Label className="text-muted-foreground text-sm">Amount (USD)</Label>
-                        <GlassInput
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={fundAmount}
-                          onChange={(e) => setFundAmount(e.target.value)}
-                          placeholder="Enter amount"
-                        />
-                        {fundAmount && Number(fundAmount) > 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            = NGN {(Number(fundAmount) * exchangeRate).toLocaleString()}
-                          </p>
-                        )}
-                      </div>
-                      <GlassButton variant="glow" onClick={handleFund} disabled={funding} className="w-full sm:w-auto whitespace-nowrap">
-                        {funding ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <><ArrowUpCircle className="mr-2 h-4 w-4" /> Fund</>
-                        )}
-                      </GlassButton>
+              <MotionWrapper delay={0.1}>
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <h3 className="text-sm font-medium text-foreground mb-1">Fund Wallet</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Add funds via Paystack</p>
+                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                    <div className="flex-1 space-y-1.5 w-full">
+                      <Label className="text-xs text-muted-foreground">Amount (USD)</Label>
+                      <Input type="number" min="1" step="1" value={fundAmount} onChange={(e) => setFundAmount(e.target.value)} placeholder="Enter amount" />
+                      {fundAmount && Number(fundAmount) > 0 && <p className="text-[10px] text-muted-foreground">= NGN {(Number(fundAmount) * exchangeRate).toLocaleString()}</p>}
                     </div>
-                  </GlassCardContent>
-                </GlassCard>
+                    <Button onClick={handleFund} disabled={funding} className="w-full sm:w-auto">
+                      {funding ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ArrowUpCircle className="mr-2 h-4 w-4" /> Fund</>}
+                    </Button>
+                  </div>
+                </div>
               </MotionWrapper>
             )}
 
             {/* DVA Info */}
             {wallet?.paystack_dva_account_number && (
-              <MotionWrapper delay={0.25}>
-                <GlassCard>
-                  <GlassCardHeader>
-                    <GlassCardTitle>Virtual Account</GlassCardTitle>
-                    <GlassCardDescription>Transfer directly to fund your wallet</GlassCardDescription>
-                  </GlassCardHeader>
-                  <GlassCardContent>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Bank</span>
-                        <span className="text-sm text-foreground font-medium">{wallet.paystack_dva_bank_name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Account Number</span>
-                        <span className="text-sm text-foreground font-mono font-medium">{wallet.paystack_dva_account_number}</span>
-                      </div>
-                    </div>
-                  </GlassCardContent>
-                </GlassCard>
+              <MotionWrapper delay={0.15}>
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-medium text-foreground">Virtual Account</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div><p className="text-xs text-muted-foreground">Bank</p><p className="font-medium text-foreground">{wallet.paystack_dva_bank_name}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Account Number</p><p className="font-mono font-medium text-foreground">{wallet.paystack_dva_account_number}</p></div>
+                  </div>
+                </div>
               </MotionWrapper>
             )}
 
-            {/* Transaction History */}
-            <MotionWrapper delay={0.3}>
-              <GlassCard variant="strong">
-                <GlassCardHeader>
-                  <GlassCardTitle>Transaction History</GlassCardTitle>
-                </GlassCardHeader>
-                <GlassCardContent>
+            {/* Transactions */}
+            <MotionWrapper delay={0.2}>
+              <div className="rounded-xl border border-border bg-card">
+                <div className="p-5 pb-3">
+                  <h3 className="text-sm font-medium text-foreground">Transaction History</h3>
+                </div>
+                <div className="px-5 pb-5">
                   {transactions.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-6">No transactions yet</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">No transactions yet</p>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="divide-y divide-border">
                       {transactions.map((tx) => (
-                        <div key={tx.id} className="flex items-center justify-between rounded-xl border border-border/50 p-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-foreground capitalize">{tx.type}</p>
-                            <p className="text-xs text-muted-foreground truncate">{tx.description || "No description"}</p>
-                            <p className="text-xs text-muted-foreground/60">{new Date(tx.created_at).toLocaleDateString()}</p>
+                        <div key={tx.id} className="flex items-center justify-between py-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${tx.type === "charge" ? "bg-destructive/10" : "bg-primary/10"}`}>
+                              {tx.type === "charge" ? <ArrowDownRight className="h-4 w-4 text-destructive" /> : <ArrowUpRight className="h-4 w-4 text-primary" />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-foreground capitalize">{tx.type}</p>
+                              <p className="text-xs text-muted-foreground truncate">{tx.description || "—"}</p>
+                            </div>
                           </div>
-                          <div className="text-right ml-2 shrink-0">
-                            <p className={`text-sm font-bold ${tx.type === "charge" ? "text-destructive" : "text-primary"}`}>
+                          <div className="text-right shrink-0 ml-3">
+                            <p className={`text-sm font-medium ${tx.type === "charge" ? "text-destructive" : "text-primary"}`}>
                               {tx.type === "charge" ? "-" : "+"}${Math.abs(tx.amount).toFixed(2)}
                             </p>
-                            <Badge variant="outline" className={
-                              tx.status === "completed" ? "border-primary/30 bg-primary/10 text-primary text-xs" :
-                              tx.status === "failed" ? "border-destructive/30 bg-destructive/10 text-destructive text-xs" :
-                              "border-warning/30 bg-warning/10 text-warning text-xs"
-                            }>
-                              {tx.status}
-                            </Badge>
+                            <p className="text-[10px] text-muted-foreground">{new Date(tx.created_at).toLocaleDateString()}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
-                </GlassCardContent>
-              </GlassCard>
+                </div>
+              </div>
             </MotionWrapper>
           </>
         )}

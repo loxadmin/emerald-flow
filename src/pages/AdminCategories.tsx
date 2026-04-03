@@ -1,21 +1,17 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
-import { GlassButton } from "@/components/ui/glass-button";
-import { GlassInput } from "@/components/ui/glass-input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Trash2, Handshake } from "lucide-react";
 
 interface Category {
-  id: string;
-  name: string;
-  description: string | null;
-  is_active: boolean;
+  id: string; name: string; description: string | null; is_active: boolean; is_partnership: boolean;
 }
 
 export default function AdminCategories() {
@@ -24,6 +20,7 @@ export default function AdminCategories() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newActive, setNewActive] = useState(true);
+  const [newPartnership, setNewPartnership] = useState(false);
   const [adding, setAdding] = useState(false);
 
   const fetchCategories = async () => {
@@ -41,95 +38,101 @@ export default function AdminCategories() {
       name: newName.trim(),
       description: newDesc.trim() || null,
       is_active: newActive,
-    });
+      is_partnership: newPartnership,
+    } as any);
     if (error) toast.error(error.message);
-    else {
-      toast.success("Category created");
-      setNewName("");
-      setNewDesc("");
-      setNewActive(true);
-      fetchCategories();
-    }
+    else { toast.success("Category created"); setNewName(""); setNewDesc(""); setNewActive(true); setNewPartnership(false); fetchCategories(); }
     setAdding(false);
   };
 
   const toggleActive = async (id: string, current: boolean) => {
     const { error } = await supabase.from("categories").update({ is_active: !current, updated_at: new Date().toISOString() }).eq("id", id);
-    if (error) toast.error(error.message);
-    else fetchCategories();
+    if (error) toast.error(error.message); else fetchCategories();
   };
 
   const deleteCategory = async (id: string) => {
     const { error } = await supabase.from("categories").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Deleted"); fetchCategories(); }
+    if (error) toast.error(error.message); else { toast.success("Deleted"); fetchCategories(); }
   };
 
   return (
     <AdminLayout>
       <MotionWrapper className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Categories</h1>
-          <p className="text-muted-foreground">Manage advertiser business categories</p>
+          <h1 className="text-xl font-semibold text-foreground">Categories</h1>
+          <p className="text-sm text-muted-foreground">Manage advertiser business categories</p>
         </div>
 
-        {/* Add New */}
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>Add Category</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent className="space-y-4">
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Name *</Label>
-                <GlassInput value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={100} placeholder="e.g. E-Commerce" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Description</Label>
-                <GlassInput value={newDesc} onChange={(e) => setNewDesc(e.target.value)} maxLength={255} placeholder="Optional description" />
-              </div>
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h3 className="text-sm font-medium text-foreground mb-4">Add Category</h3>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Name *</Label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={100} placeholder="e.g. E-Commerce" />
             </div>
-            <div className="flex items-center justify-between">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Description</Label>
+              <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} maxLength={255} placeholder="Optional description" />
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <Switch checked={newActive} onCheckedChange={setNewActive} />
-                <Label className="text-sm text-muted-foreground">{newActive ? "Active (free access)" : "Inactive (requires payment)"}</Label>
+                <Label className="text-xs text-muted-foreground">{newActive ? "Active" : "Inactive"}</Label>
               </div>
-              <GlassButton variant="glow" size="sm" onClick={addCategory} disabled={adding}>
-                <Plus className="mr-1 h-4 w-4" /> Add
-              </GlassButton>
+              <div className="flex items-center gap-2">
+                <Switch checked={newPartnership} onCheckedChange={setNewPartnership} />
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Handshake className="h-3 w-3" /> Partnership
+                </Label>
+              </div>
             </div>
-          </GlassCardContent>
-        </GlassCard>
+            <Button size="sm" onClick={addCategory} disabled={adding}>
+              <Plus className="mr-1 h-4 w-4" /> Add
+            </Button>
+          </div>
+        </div>
 
-        {/* List */}
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>All Categories</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent>
+        <div className="rounded-xl border border-border bg-card">
+          <div className="p-5 pb-3">
+            <h3 className="text-sm font-medium text-foreground">All Categories</h3>
+          </div>
+          <div className="px-5 pb-5">
             {loading ? (
-              <div className="flex justify-center py-6"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+              <div className="flex justify-center py-6"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
             ) : categories.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">No categories created yet</p>
+              <p className="text-center text-sm text-muted-foreground py-4">No categories created yet</p>
             ) : (
-              <div className="space-y-2">
+              <div className="divide-y divide-border">
                 {categories.map((cat) => (
-                  <div key={cat.id} className="flex items-center justify-between rounded-xl border border-border/50 p-4">
+                  <div key={cat.id} className="flex items-center justify-between py-3">
                     <div>
-                      <p className="font-medium text-foreground">{cat.name}</p>
-                      {cat.description && <p className="text-sm text-muted-foreground">{cat.description}</p>}
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">{cat.name}</p>
+                        {cat.is_partnership && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-blue-500 border-blue-500/20 bg-blue-500/5">
+                            <Handshake className="h-2.5 w-2.5 mr-0.5" /> Partnership
+                          </Badge>
+                        )}
+                      </div>
+                      {cat.description && <p className="text-xs text-muted-foreground">{cat.description}</p>}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className={cat.is_active ? "border-primary/30 bg-primary/10 text-primary" : "border-warning/30 bg-warning/10 text-warning"}>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${cat.is_active ? "text-primary border-primary/20" : "text-amber-600 border-amber-500/20"}`}>
                         {cat.is_active ? "Active" : "Inactive"}
                       </Badge>
                       <Switch checked={cat.is_active} onCheckedChange={() => toggleActive(cat.id, cat.is_active)} />
-                      <GlassButton variant="destructive" size="sm" onClick={() => deleteCategory(cat.id)}>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => deleteCategory(cat.id)}>
                         <Trash2 className="h-4 w-4" />
-                      </GlassButton>
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </GlassCardContent>
-        </GlassCard>
+          </div>
+        </div>
       </MotionWrapper>
     </AdminLayout>
   );

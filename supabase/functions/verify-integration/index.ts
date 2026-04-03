@@ -22,8 +22,12 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const anonClient = createClient(supabaseUrl, anonKey);
-    const { data: { user }, error: authErr } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    // Authenticate user with anon client
+    const anonClient = createClient(supabaseUrl, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authErr } = await anonClient.auth.getUser(token);
     if (authErr || !user) return json({ error: "Invalid token" }, 401);
 
     const { campaign_id, api_key } = await req.json();
@@ -58,9 +62,13 @@ Deno.serve(async (req) => {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.website) return json({ error: "No website registered on your profile" }, 400);
+    if (!profile?.website) return json({ error: "No website registered on your profile. Update your profile with your website domain." }, 400);
+
+    // Extract domain from advertiser's registered website
+    const domain = profile.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
 
     // Send a test tracking call to verify the API key works
+    // We simulate a test call directly via the track function
     const testRes = await fetch(`${supabaseUrl}/functions/v1/track`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -74,7 +82,12 @@ Deno.serve(async (req) => {
 
     const testData = await testRes.json();
 
-    if (testRes.ok && testData.success) {
+    // For verification, we accept the test call even if campaign is not active yet
+    // The track function may return 403 because campaign is pending - that's OK for verification
+    // What matters is: API key is valid AND belongs to advertiser's campaign
+    const keyValid = testRes.ok || (testRes.status === 403 && testData.error === "Campaign is not active");
+
+    if (keyValid) {
       // Mark campaign as integration verified
       await supabase
         .from("campaigns")
@@ -82,18 +95,21 @@ Deno.serve(async (req) => {
         .eq("id", campaign_id);
 
       // Add a source entry for the advertiser's website
-      const domain = profile.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-      await supabase.from("campaign_sources").insert({
+      const { error: sourceErr } = await supabase.from("campaign_sources").insert({
         campaign_id,
         url: profile.website,
         type: "web",
         verified: true,
-      }).onConflict("campaign_id,url").then(() => {});
+      });
+      // Ignore duplicate errors
+      if (sourceErr && !sourceErr.message.includes("duplicate")) {
+        console.error("Source insert error:", sourceErr.message);
+      }
 
       return json({ verified: true, domain });
     }
 
-    return json({ verified: false, error: testData.error || "Test call failed" });
+    return json({ verified: false, error: testData.error || "Test call failed. Please ensure you've integrated the tracking code correctly." });
   } catch (err: unknown) {
     console.error("Verify integration error:", (err as Error).message);
     return json({ error: (err as Error).message }, 500);

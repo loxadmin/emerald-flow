@@ -3,12 +3,11 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
-import { GlassButton } from "@/components/ui/glass-button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { Plus, BarChart3, DollarSign, MousePointerClick, Tag } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Plus, BarChart3, DollarSign, MousePointerClick, Tag, TrendingUp, TrendingDown, ArrowRight, Activity } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface Campaign { id: string; name: string; status: string; budget_remaining: number; created_at: string; target_users?: number; selected_milestones?: string[]; }
 interface DailyData { date: string; events: number; }
@@ -40,7 +39,6 @@ export default function Dashboard() {
         const totalSpent = txData?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
         setStats({ totalEvents: eventsCount || 0, totalSpent, totalClicks: 0 });
 
-        // Chart data
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
         const { data: events } = await supabase.from("events").select("created_at").in("campaign_id", campaignIds).gte("created_at", thirtyDaysAgo);
         if (events && events.length > 0) {
@@ -59,112 +57,149 @@ export default function Dashboard() {
 
   const statusColor = (status: string) => {
     switch (status) {
-      case "active": return "border-primary/30 bg-primary/10 text-primary";
-      case "pending": return "border-warning/30 bg-warning/10 text-warning";
-      case "rejected": return "border-destructive/30 bg-destructive/10 text-destructive";
+      case "active": return "bg-primary/10 text-primary border-primary/20";
+      case "pending": return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+      case "rejected": return "bg-destructive/10 text-destructive border-destructive/20";
       default: return "";
     }
   };
 
-  const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", color: "hsl(var(--foreground))" };
+  const activeCampaigns = campaigns.filter(c => c.status === "active").length;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-6">
+        {/* Header */}
         <MotionWrapper>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Manage your campaigns and track performance</p>
-              {categoryName && (
-                <div className="mt-2 flex items-center gap-2">
-                  <Tag className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs text-muted-foreground">Category:</span>
-                  <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-xs">{categoryName}</Badge>
-                  {categoryStatus && (
-                    <Badge variant="outline" className={categoryStatus === "active" ? "border-primary/30 bg-primary/10 text-primary text-xs" : "border-warning/30 bg-warning/10 text-warning text-xs"}>
-                      {categoryStatus}
-                    </Badge>
-                  )}
-                </div>
-              )}
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Overview</h1>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-muted-foreground">Campaign performance & analytics</p>
+                {categoryName && (
+                  <Badge variant="outline" className="text-xs font-normal">
+                    <Tag className="h-3 w-3 mr-1" />{categoryName}
+                  </Badge>
+                )}
+              </div>
             </div>
             <Link to="/campaigns/create">
-              <GlassButton variant="glow" className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" />New Campaign</GlassButton>
+              <Button size="sm" className="gap-1.5">
+                <Plus className="h-4 w-4" />New Campaign
+              </Button>
             </Link>
           </div>
         </MotionWrapper>
 
-        <MotionStagger className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
+        {/* Stats Cards */}
+        <MotionStagger className="grid gap-4 grid-cols-1 sm:grid-cols-3">
           {[
-            { label: "Total Events", value: stats.totalEvents.toLocaleString(), icon: BarChart3 },
-            { label: "Total Spent", value: `$${stats.totalSpent.toFixed(2)}`, icon: DollarSign },
-            { label: "Active Campaigns", value: campaigns.filter(c => c.status === "active").length, icon: MousePointerClick },
+            { label: "Total Events", value: stats.totalEvents.toLocaleString(), icon: Activity, trend: "+12%", up: true },
+            { label: "Total Spent", value: `$${stats.totalSpent.toFixed(2)}`, icon: DollarSign, trend: null, up: false },
+            { label: "Active Campaigns", value: activeCampaigns, icon: MousePointerClick, trend: null, up: true },
           ].map((s) => (
             <MotionItem key={s.label}>
-              <GlassCard className="glass-hover">
-                <GlassCardHeader className="flex flex-row items-center justify-between pb-2">
-                  <GlassCardTitle className="text-sm font-medium text-muted-foreground">{s.label}</GlassCardTitle>
-                  <s.icon className="h-4 w-4 text-muted-foreground/50" />
-                </GlassCardHeader>
-                <GlassCardContent><p className="text-xl sm:text-2xl font-bold text-foreground">{s.value}</p></GlassCardContent>
-              </GlassCard>
+              <div className="rounded-xl border border-border bg-card p-5 transition-colors hover:bg-accent/5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-muted-foreground">{s.label}</span>
+                  <s.icon className="h-4 w-4 text-muted-foreground/60" />
+                </div>
+                <div className="flex items-end gap-2">
+                  <span className="text-2xl font-semibold text-foreground">{s.value}</span>
+                  {s.trend && (
+                    <span className={`flex items-center text-xs font-medium mb-0.5 ${s.up ? "text-primary" : "text-destructive"}`}>
+                      {s.up ? <TrendingUp className="h-3 w-3 mr-0.5" /> : <TrendingDown className="h-3 w-3 mr-0.5" />}
+                      {s.trend}
+                    </span>
+                  )}
+                </div>
+              </div>
             </MotionItem>
           ))}
         </MotionStagger>
 
         {/* Analytics Chart */}
-        {dailyData.length > 0 && (
-          <MotionWrapper delay={0.15}>
-            <GlassCard variant="strong">
-              <GlassCardHeader><GlassCardTitle>Events (Last 30 Days)</GlassCardTitle></GlassCardHeader>
-              <GlassCardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <AreaChart data={dailyData}>
-                    <defs>
-                      <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Area type="monotone" dataKey="events" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#colorEvents)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </GlassCardContent>
-            </GlassCard>
-          </MotionWrapper>
-        )}
+        <MotionWrapper delay={0.1}>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-medium text-foreground">Performance</h3>
+                <p className="text-xs text-muted-foreground">Events over the last 30 days</p>
+              </div>
+              <Badge variant="outline" className="text-xs font-normal">Last 30 days</Badge>
+            </div>
+            {dailyData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={dailyData}>
+                  <defs>
+                    <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: 12,
+                      color: "hsl(var(--foreground))",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    }}
+                  />
+                  <Area type="monotone" dataKey="events" stroke="hsl(var(--primary))" strokeWidth={2} fillOpacity={1} fill="url(#colorEvents)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[220px] text-sm text-muted-foreground">
+                <div className="text-center">
+                  <BarChart3 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                  <p>No event data yet</p>
+                  <p className="text-xs mt-1">Events will appear here once campaigns are active</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </MotionWrapper>
 
-        <MotionWrapper delay={0.2}>
-          <GlassCard variant="strong">
-            <GlassCardHeader><GlassCardTitle>Your Campaigns</GlassCardTitle></GlassCardHeader>
-            <GlassCardContent>
+        {/* Campaigns List */}
+        <MotionWrapper delay={0.15}>
+          <div className="rounded-xl border border-border bg-card">
+            <div className="flex items-center justify-between p-5 pb-3">
+              <h3 className="text-sm font-medium text-foreground">Campaigns</h3>
+              <span className="text-xs text-muted-foreground">{campaigns.length} total</span>
+            </div>
+            <div className="px-5 pb-5">
               {loading ? (
-                <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+                <div className="flex justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
               ) : campaigns.length === 0 ? (
-                <div className="py-8 text-center">
-                  <p className="text-muted-foreground">No campaigns yet.</p>
-                  <Link to="/campaigns/create"><GlassButton variant="outline" className="mt-4">Create your first campaign</GlassButton></Link>
+                <div className="py-10 text-center">
+                  <BarChart3 className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground mb-3">No campaigns yet</p>
+                  <Link to="/campaigns/create">
+                    <Button variant="outline" size="sm">Create your first campaign</Button>
+                  </Link>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="divide-y divide-border">
                   {campaigns.map((campaign) => (
-                    <Link key={campaign.id} to={`/campaigns/${campaign.id}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-border/50 p-3 sm:p-4 transition-all duration-200 hover:bg-accent/5 hover:border-border">
-                      <div className="min-w-0">
-                        <p className="font-medium text-foreground/90 truncate">{campaign.name}</p>
-                        <p className="text-sm text-muted-foreground">Budget: ${Number(campaign.budget_remaining).toFixed(2)}</p>
+                    <Link key={campaign.id} to={`/campaigns/${campaign.id}`} className="flex items-center justify-between gap-3 py-3.5 group">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">{campaign.name}</p>
+                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${statusColor(campaign.status)}`}>{campaign.status}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">Budget: ${Number(campaign.budget_remaining).toFixed(2)}</p>
                       </div>
-                      <Badge variant="outline" className={`${statusColor(campaign.status)} shrink-0`}>{campaign.status}</Badge>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
                     </Link>
                   ))}
                 </div>
               )}
-            </GlassCardContent>
-          </GlassCard>
+            </div>
+          </div>
         </MotionWrapper>
       </div>
     </DashboardLayout>

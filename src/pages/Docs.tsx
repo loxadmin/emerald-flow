@@ -1,103 +1,102 @@
-import DashboardLayout from "@/components/DashboardLayout";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
+import { Link } from "react-router-dom";
+import FluidCanvas from "@/components/FluidCanvas";
+import Logo from "@/components/Logo";
 import MotionWrapper from "@/components/MotionWrapper";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Docs() {
-  const baseUrl = "https://advertiser.karbali.com/api";
+  const trackUrl = "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track";
 
   return (
-    <DashboardLayout>
-      <MotionWrapper className="mx-auto max-w-3xl space-y-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">API Documentation</h1>
-          <p className="text-sm text-muted-foreground">Integrate Karbali tracking into your application</p>
-        </div>
+    <div className="relative min-h-screen bg-background">
+      <FluidCanvas />
+      <div className="relative z-10 mx-auto max-w-3xl px-4 py-8 sm:py-12">
+        <MotionWrapper>
+          <div className="flex items-center gap-3 mb-8">
+            <Link to="/">
+              <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" /> Home</Button>
+            </Link>
+            <Logo size={24} />
+            <span className="text-lg font-semibold text-gradient">Karbali API Docs</span>
+          </div>
+        </MotionWrapper>
 
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>Base URL</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent>
-            <div className="rounded-xl bg-muted/30 border border-border/50 p-4">
-              <code className="text-sm text-primary/80 break-all">{baseUrl}</code>
+        <div className="space-y-6">
+          <MotionWrapper delay={0.05}>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-base font-semibold text-foreground mb-2">Base URL</h2>
+              <code className="block rounded-lg bg-muted px-4 py-2.5 text-sm text-primary break-all">{trackUrl}</code>
+              <p className="text-sm text-muted-foreground mt-3">All tracking API requests are sent to this endpoint.</p>
             </div>
-            <p className="text-sm text-muted-foreground mt-3">All API requests should be made to this base URL. The Karbali platform handles routing and load balancing internally.</p>
-          </GlassCardContent>
-        </GlassCard>
+          </MotionWrapper>
 
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>1. Authentication</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent>
-            <p className="text-sm text-muted-foreground">Every request must include your campaign <strong className="text-foreground/80">API key</strong>. You can find it on your campaign detail page.</p>
-          </GlassCardContent>
-        </GlassCard>
+          <MotionWrapper delay={0.08}>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-base font-semibold text-foreground mb-2">1. Authentication</h2>
+              <p className="text-sm text-muted-foreground">Every request must include your campaign <strong className="text-foreground">API key</strong> in the request body. Generate one when creating a campaign.</p>
+            </div>
+          </MotionWrapper>
 
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>2. Track Events</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent>
-            <p className="mb-4 text-sm text-muted-foreground">Send user actions to the Karbali tracking endpoint.</p>
-            <div className="rounded-xl bg-muted/30 border border-border/50 p-4 overflow-x-auto">
-              <p className="mb-1 text-xs font-semibold text-muted-foreground/60">POST {baseUrl}/track</p>
-              <pre className="text-sm text-foreground/60 whitespace-pre-wrap">{`{
+          <MotionWrapper delay={0.1}>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-base font-semibold text-foreground mb-2">2. Track Events</h2>
+              <p className="text-sm text-muted-foreground mb-3">Send user actions to the tracking endpoint.</p>
+              <div className="rounded-lg bg-muted p-4 overflow-x-auto">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">POST {trackUrl}</p>
+                <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`{
   "api_key": "kb_your_api_key",
   "event_type": "download" | "signup" | "purchase",
   "user_id": "your_internal_user_id",
   "referral_id": "ref_abc123",
   "amount": 49.99
 }`}</pre>
+              </div>
             </div>
-          </GlassCardContent>
-        </GlassCard>
+          </MotionWrapper>
 
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>3. Response Format</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent>
-            <div className="rounded-xl bg-muted/30 border border-border/50 p-4 overflow-x-auto">
-              <p className="mb-1 text-xs font-semibold text-muted-foreground/60">Success Response (200)</p>
-              <pre className="text-sm text-foreground/60 whitespace-pre-wrap">{`{
-  "success": true,
-  "event_id": "uuid",
-  "charged": 2.00
-}`}</pre>
+          <MotionWrapper delay={0.12}>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-base font-semibold text-foreground mb-2">3. Response Format</h2>
+              <div className="space-y-3">
+                <div className="rounded-lg bg-muted p-4 overflow-x-auto">
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Success (200)</p>
+                  <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`{ "success": true, "event_id": "uuid", "charged": 2.00 }`}</pre>
+                </div>
+                <div className="rounded-lg bg-muted p-4 overflow-x-auto">
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Error (4xx/5xx)</p>
+                  <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`{ "error": "Description of the error" }`}</pre>
+                </div>
+              </div>
             </div>
-            <div className="rounded-xl bg-muted/30 border border-border/50 p-4 mt-3 overflow-x-auto">
-              <p className="mb-1 text-xs font-semibold text-muted-foreground/60">Error Response (4xx/5xx)</p>
-              <pre className="text-sm text-foreground/60 whitespace-pre-wrap">{`{
-  "error": "Description of the error"
-}`}</pre>
-            </div>
-          </GlassCardContent>
-        </GlassCard>
+          </MotionWrapper>
 
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>4. Referral ID Handling</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">When a user clicks a referral link, the <code className="rounded-lg bg-muted/50 px-1.5 py-0.5 text-primary/80">referral_id</code> is embedded in the URL.</p>
-            <p className="text-sm text-muted-foreground">Store it in a cookie or local storage, then include it in all event tracking calls.</p>
-            <div className="rounded-xl bg-muted/30 border border-border/50 p-4 overflow-x-auto">
-              <pre className="text-sm text-foreground/60 whitespace-pre-wrap">{`// Extract referral_id from URL
-const params = new URLSearchParams(window.location.search);
+          <MotionWrapper delay={0.14}>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-base font-semibold text-foreground mb-2">4. Referral ID Handling</h2>
+              <p className="text-sm text-muted-foreground mb-3">When a user clicks a referral link, the <code className="text-primary bg-muted px-1.5 py-0.5 rounded">referral_id</code> is in the URL. Store it in a cookie and include in all tracking calls.</p>
+              <div className="rounded-lg bg-muted p-4 overflow-x-auto">
+                <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`const params = new URLSearchParams(window.location.search);
 const refId = params.get("ref");
-if (refId) {
-  document.cookie = "karbali_ref=" + refId + ";path=/;max-age=2592000";
-}
+if (refId) document.cookie = "karbali_ref=" + refId + ";path=/;max-age=2592000";
 
-// Read it later
 function getRefId() {
-  const match = document.cookie.match(/karbali_ref=([^;]+)/);
-  return match ? match[1] : null;
+  const m = document.cookie.match(/karbali_ref=([^;]+)/);
+  return m ? m[1] : null;
 }`}</pre>
+              </div>
             </div>
-          </GlassCardContent>
-        </GlassCard>
+          </MotionWrapper>
 
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>5. JavaScript SDK (Optional)</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent>
-            <div className="rounded-xl bg-muted/30 border border-border/50 p-4 overflow-x-auto">
-              <pre className="text-sm text-foreground/60 whitespace-pre-wrap">{`<script>
+          <MotionWrapper delay={0.16}>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-base font-semibold text-foreground mb-2">5. JavaScript SDK</h2>
+              <div className="rounded-lg bg-muted p-4 overflow-x-auto">
+                <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`<script>
 window.Karbali = {
   apiKey: "kb_your_api_key",
   track: function(event, data) {
-    fetch("${baseUrl}/track", {
+    fetch("${trackUrl}", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -112,49 +111,47 @@ window.Karbali = {
 };
 
 // Usage
-Karbali.track("signup", {
-  user_id: "user_123",
-  referral_id: getRefId()
-});
+Karbali.track("signup", { user_id: "user_123", referral_id: getRefId() });
 </script>`}</pre>
+              </div>
             </div>
-          </GlassCardContent>
-        </GlassCard>
+          </MotionWrapper>
 
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>6. Event Types and Billing</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/50 text-left">
-                    <th className="pb-3 text-muted-foreground">Event</th>
-                    <th className="pb-3 text-muted-foreground">Description</th>
-                    <th className="pb-3 text-muted-foreground">Billing</th>
-                  </tr>
-                </thead>
-                <tbody className="text-muted-foreground">
-                  <tr className="border-b border-border/30"><td className="py-3 text-primary/80">download</td><td>App download / first visit</td><td>Charged if no signup/purchase yet</td></tr>
-                  <tr className="border-b border-border/30"><td className="py-3 text-primary/80">signup</td><td>User registration</td><td>Charged if no purchase yet</td></tr>
-                  <tr><td className="py-3 text-primary/80">purchase</td><td>Completed purchase</td><td>Final milestone charge</td></tr>
-                </tbody>
-              </table>
+          <MotionWrapper delay={0.18}>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-base font-semibold text-foreground mb-2">6. Event Types & Billing</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left">
+                      <th className="pb-2 text-muted-foreground font-medium">Event</th>
+                      <th className="pb-2 text-muted-foreground font-medium">Description</th>
+                      <th className="pb-2 text-muted-foreground font-medium">Billing</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-muted-foreground">
+                    <tr className="border-b border-border/50"><td className="py-2 text-primary">download</td><td>App download / first visit</td><td>Charged if no signup/purchase yet</td></tr>
+                    <tr className="border-b border-border/50"><td className="py-2 text-primary">signup</td><td>User registration</td><td>Charged if no purchase yet</td></tr>
+                    <tr><td className="py-2 text-primary">purchase</td><td>Completed purchase</td><td>Final milestone charge</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </GlassCardContent>
-        </GlassCard>
+          </MotionWrapper>
 
-        <GlassCard variant="strong">
-          <GlassCardHeader><GlassCardTitle>7. Rate Limits</GlassCardTitle></GlassCardHeader>
-          <GlassCardContent>
-            <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-              <li>Maximum 10 events per IP per minute per campaign</li>
-              <li>Duplicate events (same user + event type) within 5 seconds are rejected</li>
-              <li>Invalid API keys return 401 Unauthorized</li>
-              <li>Inactive campaigns return 403 Forbidden</li>
-            </ul>
-          </GlassCardContent>
-        </GlassCard>
-      </MotionWrapper>
-    </DashboardLayout>
+          <MotionWrapper delay={0.2}>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-base font-semibold text-foreground mb-2">7. Rate Limits</h2>
+              <ul className="text-sm text-muted-foreground space-y-1.5 list-disc list-inside">
+                <li>Maximum 10 events per IP per minute per campaign</li>
+                <li>Duplicate events (same user + event type) within 5 seconds are rejected</li>
+                <li>Invalid API keys return 401 Unauthorized</li>
+                <li>Inactive campaigns return 403 Forbidden</li>
+              </ul>
+            </div>
+          </MotionWrapper>
+        </div>
+      </div>
+    </div>
   );
 }
