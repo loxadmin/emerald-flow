@@ -30,12 +30,26 @@ interface CategoryChangeReq {
   requested_name?: string;
 }
 
+interface ExternalReferralReq {
+  id: string;
+  campaign_id: string;
+  advertiser_id: string;
+  referral_guide: string;
+  compensation_structure: string;
+  registration_link: string;
+  status: string;
+  created_at: string;
+  advertiser_email?: string;
+  campaign_name?: string;
+}
+
 export default function AdminDashboard() {
   const [campaigns, setCampaigns] = useState<CampaignWithProfile[]>([]);
   const [stats, setStats] = useState({ totalCampaigns: 0, totalEvents: 0, totalRevenue: 0 });
   const [loading, setLoading] = useState(true);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [categoryRequests, setCategoryRequests] = useState<CategoryChangeReq[]>([]);
+  const [externalRequests, setExternalRequests] = useState<ExternalReferralReq[]>([]);
 
   const fetchData = async () => {
     const { data: allCampaigns } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
@@ -86,6 +100,22 @@ export default function AdminDashboard() {
         current_name: catMap.get(r.current_category_id) || "Unknown",
         requested_name: catMap.get(r.requested_category_id) || "Unknown",
       })));
+    }
+
+    // Fetch external referral program requests
+    const { data: extData } = await supabase.from("external_referral_programs" as any).select("*, campaigns(name)").eq("status", "pending").order("created_at", { ascending: false });
+    if (extData && (extData as any[]).length > 0) {
+      const reqs = extData as any as (ExternalReferralReq & { campaigns: { name: string } })[];
+      const extAdvertiserIds = [...new Set(reqs.map(r => r.advertiser_id))];
+      const { data: extProfiles } = await supabase.from("profiles").select("id, email").in("id", extAdvertiserIds);
+      const profMap = new Map((extProfiles || []).map(p => [p.id, p.email]));
+      setExternalRequests(reqs.map(r => ({
+        ...r,
+        advertiser_email: profMap.get(r.advertiser_id) || "Unknown",
+        campaign_name: r.campaigns?.name || "Unknown",
+      })));
+    } else {
+      setExternalRequests([]);
     }
 
     setLoading(false);
@@ -168,6 +198,37 @@ export default function AdminDashboard() {
                     <Area type="monotone" dataKey="revenue" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#colorRv)" name="Revenue ($)" />
                   </AreaChart>
                 </ResponsiveContainer>
+              </GlassCardContent>
+            </GlassCard>
+          </MotionWrapper>
+        )}
+
+        {/* External Referral Requests */}
+        {externalRequests.length > 0 && (
+          <MotionWrapper delay={0.11}>
+            <GlassCard variant="strong">
+              <GlassCardHeader><GlassCardTitle className="flex items-center gap-2"><Handshake className="h-4 w-4" /> External Referral Requests</GlassCardTitle></GlassCardHeader>
+              <GlassCardContent>
+                <div className="space-y-2">
+                  {externalRequests.map(req => (
+                    <div key={req.id} className="rounded-xl border border-border/50 p-4 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{req.advertiser_email}</p>
+                          <p className="text-xs text-muted-foreground">Campaign: <strong className="text-foreground">{req.campaign_name}</strong></p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">"{req.referral_guide}"</p>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <Link to={`/admin/campaigns/${req.campaign_id}`}>
+                            <GlassButton size="sm" variant="glow">
+                              View Details
+                            </GlassButton>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </GlassCardContent>
             </GlassCard>
           </MotionWrapper>

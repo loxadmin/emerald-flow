@@ -268,7 +268,7 @@ export default function CreateCampaign() {
     if (extErr) { toast.error(extErr.message); setLoading(false); return; }
 
     setCampaignId(campaign.id);
-    toast.success("External referral program submitted for admin review!");
+    toast.success("Referral details saved! Please complete the campaign configuration.");
     setStep(isPartnership && hasExternalReferral ? 1 : 3);
     setLoading(false);
   };
@@ -409,7 +409,7 @@ new KarbaliTracking();`;
               <p>• Current balance: <strong className={walletBalance >= externalMinBalance ? "text-primary" : "text-destructive"}>${walletBalance.toFixed(2)}</strong></p>
             </div>
             <Button className="w-full" onClick={handleExternalReferralSubmit} disabled={loading}>
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : <><Send className="mr-2 h-4 w-4" /> Submit for Review</>}
+              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Send className="mr-2 h-4 w-4" /> Save & Continue</>}
             </Button>
           </div>
         )}
