@@ -7,13 +7,15 @@ import FluidCanvas from "@/components/FluidCanvas";
 import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
-  Menu, X, Lock, AlertCircle,
+  Menu, X, Lock, AlertCircle, Megaphone, Globe,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
 const advertiserLinks = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { to: "/ads", label: "Ads", icon: Megaphone },
   { to: "/campaigns/create", label: "New Campaign", icon: Plus },
+  { to: "/websites", label: "Websites", icon: Globe },
   { to: "/wallet", label: "Wallet", icon: Wallet },
   { to: "/docs", label: "API Docs", icon: FileText },
 ];
