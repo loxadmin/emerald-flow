@@ -13,6 +13,8 @@ import Dashboard from "./pages/Dashboard";
 import CreateCampaign from "./pages/CreateCampaign";
 import CampaignDetail from "./pages/CampaignDetail";
 import CategorySelection from "./pages/CategorySelection";
+import Ads from "./pages/Ads";
+import Websites from "./pages/Websites";
 import Wallet from "./pages/Wallet";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCampaignDetail from "./pages/AdminCampaignDetail";
