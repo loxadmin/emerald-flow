@@ -77,9 +77,16 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-sm text-muted-foreground">Campaign performance & analytics</p>
                 {categoryName && (
-                  <Badge variant="outline" className="text-xs font-normal">
-                    <Tag className="h-3 w-3 mr-1" />{categoryName}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs font-normal">
+                      <Tag className="h-3 w-3 mr-1" />{categoryName}
+                    </Badge>
+                    <Link to="/category-select">
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-muted-foreground">
+                        <RefreshCw className="h-3 w-3 mr-1" /> Change
+                      </Button>
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>
