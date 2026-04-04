@@ -7,7 +7,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Copy, Link as LinkIcon } from "lucide-react";
+import { CheckCircle, XCircle, Copy, Link as LinkIcon, Handshake, ExternalLink } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -22,10 +22,23 @@ export default function AdminCampaignDetail() {
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // External Referral
+  const [externalProgram, setExternalProgram] = useState<Tables<"external_referral_programs"> | null>(null);
+  const [adminReferralCode, setAdminReferralCode] = useState("");
+  const [adminReferralLink, setAdminReferralLink] = useState("");
+
   const fetchData = useCallback(async () => {
     if (!id) return;
     const { data: c } = await supabase.from("campaigns").select("*").eq("id", id).single();
     setCampaign(c as any);
+    if (c?.integration_type === "external_referral") {
+      const { data: ext } = await supabase.from("external_referral_programs" as any).select("*").eq("campaign_id", id).maybeSingle();
+      if (ext) {
+        setExternalProgram(ext as any);
+        setAdminReferralCode(ext.admin_referral_code || "");
+        setAdminReferralLink(ext.admin_referral_link || "");
+      }
+    }
     const { data: s } = await supabase.from("campaign_sources").select("*").eq("campaign_id", id);
     setSources(s || []);
     const { data: r } = await supabase.from("referrals").select("*").eq("campaign_id", id);
@@ -54,10 +67,25 @@ export default function AdminCampaignDetail() {
 
   const updateStatus = async (status: "active" | "pending" | "rejected") => {
     if (!id) return;
+
+    if (status === "active" && campaign?.integration_type === "external_referral") {
+      if (!adminReferralCode.trim() || !adminReferralLink.trim()) {
+        toast.error("Please provide both Admin Referral Code and Link for external programs.");
+        return;
+      }
+      // Update external program details
+      await supabase.from("external_referral_programs" as any).update({
+        admin_referral_code: adminReferralCode.trim(),
+        admin_referral_link: adminReferralLink.trim(),
+        status: "active",
+        updated_at: new Date().toISOString()
+      } as any).eq("campaign_id", id);
+    }
+
     const { error } = await supabase.from("campaigns").update({ status }).eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success(`Campaign ${status}`);
-    if (status === "active" && referrals.length === 0) {
+    if (status === "active" && referrals.length === 0 && campaign?.integration_type !== "external_referral") {
       const code = `ref_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
       await supabase.functions.invoke("manage-campaign", { body: { action: "create_referral", campaign_id: id, code } });
     }
@@ -98,6 +126,65 @@ export default function AdminCampaignDetail() {
             </div>
           </div>
         </MotionWrapper>
+
+        {externalProgram && (
+          <MotionWrapper delay={0.05}>
+            <GlassCard variant="strong" className="mb-6 border-primary/20">
+              <GlassCardHeader><GlassCardTitle className="flex items-center gap-2 text-primary"><Handshake className="h-5 w-5" /> External Referral Program Details</GlassCardTitle></GlassCardHeader>
+              <GlassCardContent className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Referral Guide</h4>
+                      <div className="rounded-lg bg-muted/30 p-3 text-sm text-foreground/90 whitespace-pre-wrap border border-border/50">
+                        {externalProgram.referral_guide}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Compensation Structure</h4>
+                      <div className="rounded-lg bg-muted/30 p-3 text-sm text-foreground/90 border border-border/50">
+                        {externalProgram.compensation_structure}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Advertiser Registration Link</h4>
+                      <a href={externalProgram.registration_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium">
+                        {externalProgram.registration_link} <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 border-l border-border/50 pl-6">
+                    <h4 className="text-sm font-semibold text-foreground mb-3">Admin Response (Required for Approval)</h4>
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-muted-foreground font-medium">Admin Referral Code</label>
+                      <input
+                        type="text"
+                        value={adminReferralCode}
+                        onChange={(e) => setAdminReferralCode(e.target.value)}
+                        placeholder="e.g. KARBALI_ADV_01"
+                        className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-muted-foreground font-medium">Admin Referral Link</label>
+                      <input
+                        type="text"
+                        value={adminReferralLink}
+                        onChange={(e) => setAdminReferralLink(e.target.value)}
+                        placeholder="https://external-referral.com/karbali"
+                        className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground bg-primary/5 p-2 rounded-md border border-primary/10 italic">
+                      Provide the referral code and link from the advertiser's platform that Karbali will use to track this campaign.
+                    </p>
+                  </div>
+                </div>
+              </GlassCardContent>
+            </GlassCard>
+          </MotionWrapper>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2">
           <MotionWrapper delay={0.1}>
