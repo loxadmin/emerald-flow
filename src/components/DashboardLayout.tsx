@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const isCategoryActive = categoryStatus === "active";
 
   const isPageLocked = (path: string) => {
-    if (path === "/wallet" || path === "/docs") return false;
+    if (path === "/wallet" || path === "/docs" || path === "/websites") return false;
     if (isCategoryInactive) return true;
     if (isWalletNotActivated) return true;
     return false;
