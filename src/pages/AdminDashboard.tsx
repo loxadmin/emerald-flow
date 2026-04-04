@@ -7,7 +7,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, BarChart3, DollarSign, Users } from "lucide-react";
+import { CheckCircle, XCircle, BarChart3, DollarSign, Users, RefreshCw } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -17,32 +17,43 @@ type CampaignWithProfile = Tables<"campaigns"> & {
   selected_milestones?: string[];
   integration_verified?: boolean;
   total_cost?: number;
+  is_draft?: boolean;
 };
 
 interface DailyData { date: string; events: number; revenue: number; }
+interface CategoryChangeReq {
+  id: string; advertiser_id: string; current_category_id: string;
+  requested_category_id: string; reason: string; status: string;
+  created_at: string;
+  advertiser_email?: string;
+  current_name?: string;
+  requested_name?: string;
+}
 
 export default function AdminDashboard() {
   const [campaigns, setCampaigns] = useState<CampaignWithProfile[]>([]);
   const [stats, setStats] = useState({ totalCampaigns: 0, totalEvents: 0, totalRevenue: 0 });
   const [loading, setLoading] = useState(true);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
+  const [categoryRequests, setCategoryRequests] = useState<CategoryChangeReq[]>([]);
 
   const fetchData = async () => {
     const { data: allCampaigns } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
-    const advertiserIds = [...new Set((allCampaigns || []).map(c => c.advertiser_id))];
+    // Filter out drafts for admin view
+    const nonDraftCampaigns = (allCampaigns || []).filter((c: any) => !c.is_draft);
+    const advertiserIds = [...new Set(nonDraftCampaigns.map(c => c.advertiser_id))];
     const { data: profilesData } = advertiserIds.length > 0
       ? await supabase.from("profiles").select("id, email, full_name").in("id", advertiserIds)
       : { data: [] };
     const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
-    const campaignsWithProfiles = (allCampaigns || []).map(c => ({ ...c, profiles: profilesMap.get(c.advertiser_id) || null }));
+    const campaignsWithProfiles = nonDraftCampaigns.map(c => ({ ...c, profiles: profilesMap.get(c.advertiser_id) || null }));
     setCampaigns(campaignsWithProfiles as CampaignWithProfile[]);
 
     const { count: eventsCount } = await supabase.from("events").select("*", { count: "exact", head: true });
     const { data: txData } = await supabase.from("transactions").select("amount");
     const totalRevenue = txData?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-    setStats({ totalCampaigns: allCampaigns?.length || 0, totalEvents: eventsCount || 0, totalRevenue });
+    setStats({ totalCampaigns: nonDraftCampaigns.length, totalEvents: eventsCount || 0, totalRevenue });
 
-    // Chart data
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: events } = await supabase.from("events").select("created_at").gte("created_at", thirtyDaysAgo);
     const { data: txRecent } = await supabase.from("transactions").select("amount, created_at").gte("created_at", thirtyDaysAgo);
@@ -59,6 +70,24 @@ export default function AdminDashboard() {
     });
     setDailyData(Object.values(byDay));
 
+    // Fetch category change requests
+    const { data: reqData } = await supabase.from("category_change_requests" as any).select("*").eq("status", "pending").order("created_at", { ascending: false });
+    if (reqData && (reqData as any[]).length > 0) {
+      const reqs = reqData as any as CategoryChangeReq[];
+      const reqAdvertiserIds = [...new Set(reqs.map(r => r.advertiser_id))];
+      const catIds = [...new Set([...reqs.map(r => r.current_category_id), ...reqs.map(r => r.requested_category_id)])];
+      const { data: reqProfiles } = await supabase.from("profiles").select("id, email").in("id", reqAdvertiserIds);
+      const { data: reqCats } = await supabase.from("categories").select("id, name").in("id", catIds);
+      const profMap = new Map((reqProfiles || []).map(p => [p.id, p.email]));
+      const catMap = new Map((reqCats || []).map(c => [c.id, c.name]));
+      setCategoryRequests(reqs.map(r => ({
+        ...r,
+        advertiser_email: profMap.get(r.advertiser_id) || "Unknown",
+        current_name: catMap.get(r.current_category_id) || "Unknown",
+        requested_name: catMap.get(r.requested_category_id) || "Unknown",
+      })));
+    }
+
     setLoading(false);
   };
 
@@ -72,6 +101,16 @@ export default function AdminDashboard() {
       const code = `ref_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
       await supabase.functions.invoke("manage-campaign", { body: { action: "create_referral", campaign_id: campaignId, code } });
     }
+    fetchData();
+  };
+
+  const handleCategoryChangeRequest = async (reqId: string, action: "approved" | "rejected", req: CategoryChangeReq) => {
+    if (action === "approved") {
+      // Update the advertiser's category
+      await supabase.from("advertiser_categories").update({ category_id: req.requested_category_id, status: "active" }).eq("advertiser_id", req.advertiser_id);
+    }
+    await supabase.from("category_change_requests" as any).update({ status: action, updated_at: new Date().toISOString() } as any).eq("id", reqId);
+    toast.success(`Category change ${action}`);
     fetchData();
   };
 
@@ -110,7 +149,6 @@ export default function AdminDashboard() {
           ))}
         </MotionStagger>
 
-        {/* Analytics chart */}
         {dailyData.length > 0 && (
           <MotionWrapper delay={0.1}>
             <GlassCard variant="strong">
@@ -119,14 +157,8 @@ export default function AdminDashboard() {
                 <ResponsiveContainer width="100%" height={250}>
                   <AreaChart data={dailyData}>
                     <defs>
-                      <linearGradient id="colorEv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorRv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} />
-                      </linearGradient>
+                      <linearGradient id="colorEv" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="colorRv" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} /></linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
@@ -136,6 +168,38 @@ export default function AdminDashboard() {
                     <Area type="monotone" dataKey="revenue" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#colorRv)" name="Revenue ($)" />
                   </AreaChart>
                 </ResponsiveContainer>
+              </GlassCardContent>
+            </GlassCard>
+          </MotionWrapper>
+        )}
+
+        {/* Category Change Requests */}
+        {categoryRequests.length > 0 && (
+          <MotionWrapper delay={0.12}>
+            <GlassCard variant="strong">
+              <GlassCardHeader><GlassCardTitle className="flex items-center gap-2"><RefreshCw className="h-4 w-4" /> Category Change Requests</GlassCardTitle></GlassCardHeader>
+              <GlassCardContent>
+                <div className="space-y-2">
+                  {categoryRequests.map(req => (
+                    <div key={req.id} className="rounded-xl border border-border/50 p-4 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{req.advertiser_email}</p>
+                          <p className="text-xs text-muted-foreground">{req.current_name} → <strong className="text-foreground">{req.requested_name}</strong></p>
+                          <p className="text-xs text-muted-foreground mt-1 italic">"{req.reason}"</p>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <GlassButton size="sm" variant="glow" onClick={() => handleCategoryChangeRequest(req.id, "approved", req)}>
+                            <CheckCircle className="mr-1 h-4 w-4" /> Approve
+                          </GlassButton>
+                          <GlassButton size="sm" variant="destructive" onClick={() => handleCategoryChangeRequest(req.id, "rejected", req)}>
+                            <XCircle className="mr-1 h-4 w-4" /> Reject
+                          </GlassButton>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </GlassCardContent>
             </GlassCard>
           </MotionWrapper>
