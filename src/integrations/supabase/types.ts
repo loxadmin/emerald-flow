@@ -70,6 +70,36 @@ export type Database = {
           },
         ]
       }
+      advertiser_websites: {
+        Row: {
+          advertiser_id: string
+          created_at: string
+          domain: string
+          id: string
+          is_verified: boolean
+          otp_code: string | null
+          otp_expires_at: string | null
+        }
+        Insert: {
+          advertiser_id: string
+          created_at?: string
+          domain: string
+          id?: string
+          is_verified?: boolean
+          otp_code?: string | null
+          otp_expires_at?: string | null
+        }
+        Update: {
+          advertiser_id?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          is_verified?: boolean
+          otp_code?: string | null
+          otp_expires_at?: string | null
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           campaign_id: string
@@ -142,6 +172,7 @@ export type Database = {
           id: string
           integration_type: string
           integration_verified: boolean
+          is_draft: boolean
           name: string
           price_download: number
           price_purchase: number
@@ -150,6 +181,7 @@ export type Database = {
           status: Database["public"]["Enums"]["campaign_status"]
           target_users: number
           total_cost: number
+          website_id: string | null
         }
         Insert: {
           advertiser_id: string
@@ -158,6 +190,7 @@ export type Database = {
           id?: string
           integration_type?: string
           integration_verified?: boolean
+          is_draft?: boolean
           name: string
           price_download?: number
           price_purchase?: number
@@ -166,6 +199,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["campaign_status"]
           target_users?: number
           total_cost?: number
+          website_id?: string | null
         }
         Update: {
           advertiser_id?: string
@@ -174,6 +208,7 @@ export type Database = {
           id?: string
           integration_type?: string
           integration_verified?: boolean
+          is_draft?: boolean
           name?: string
           price_download?: number
           price_purchase?: number
@@ -182,6 +217,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["campaign_status"]
           target_users?: number
           total_cost?: number
+          website_id?: string | null
         }
         Relationships: []
       }
@@ -211,6 +247,42 @@ export type Database = {
           is_active?: boolean
           is_partnership?: boolean
           name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      category_change_requests: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          created_at: string
+          current_category_id: string
+          id: string
+          reason: string
+          requested_category_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          created_at?: string
+          current_category_id: string
+          id?: string
+          reason: string
+          requested_category_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          created_at?: string
+          current_category_id?: string
+          id?: string
+          reason?: string
+          requested_category_id?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []

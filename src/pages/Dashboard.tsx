@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { Plus, BarChart3, DollarSign, MousePointerClick, Tag, TrendingUp, TrendingDown, ArrowRight, Activity } from "lucide-react";
+import { Plus, BarChart3, DollarSign, MousePointerClick, Tag, TrendingUp, TrendingDown, ArrowRight, Activity, RefreshCw } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface Campaign { id: string; name: string; status: string; budget_remaining: number; created_at: string; target_users?: number; selected_milestones?: string[]; }
@@ -77,9 +77,16 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-sm text-muted-foreground">Campaign performance & analytics</p>
                 {categoryName && (
-                  <Badge variant="outline" className="text-xs font-normal">
-                    <Tag className="h-3 w-3 mr-1" />{categoryName}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs font-normal">
+                      <Tag className="h-3 w-3 mr-1" />{categoryName}
+                    </Badge>
+                    <Link to="/category-select">
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-muted-foreground">
+                        <RefreshCw className="h-3 w-3 mr-1" /> Change
+                      </Button>
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>
