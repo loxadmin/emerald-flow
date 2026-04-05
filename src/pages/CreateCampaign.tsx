@@ -17,6 +17,8 @@ import JSZip from "jszip";
 interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
 interface Website { id: string; domain: string; is_verified: boolean; }
 
+const SALE_FLAT_FEE = 1;
+
 export default function CreateCampaign() {
   const navigate = useNavigate();
   const { user, walletActivated } = useAuth();
@@ -24,6 +26,7 @@ export default function CreateCampaign() {
   const [loading, setLoading] = useState(false);
   const [isPartnership, setIsPartnership] = useState(false);
   const [categoryPartnership, setCategoryPartnership] = useState<boolean | null>(null);
+  const [allowedEvents, setAllowedEvents] = useState<string[]>(["download", "signup", "purchase"]);
 
   // Standard flow
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -66,6 +69,14 @@ export default function CreateCampaign() {
       if (catData) {
         const { data: cat } = await supabase.from("categories").select("is_partnership").eq("id", catData.category_id).single();
         setCategoryPartnership((cat as any)?.is_partnership ?? false);
+
+        const { data: eventsData } = await supabase.functions.invoke("manage-campaign", {
+          body: { action: "get_category_events", category_id: catData.category_id },
+        });
+        const eventPayload = typeof eventsData === "string" ? JSON.parse(eventsData) : eventsData;
+        if (Array.isArray(eventPayload?.events) && eventPayload.events.length > 0) {
+          setAllowedEvents(eventPayload.events);
+        }
       }
 
       // Fetch verified websites
@@ -128,12 +139,24 @@ export default function CreateCampaign() {
     fetchData();
   }, [user]);
 
+  useEffect(() => {
+    if (!selectedWebsiteId) return;
+    const matchedWebsite = websites.find((website) => website.id === selectedWebsiteId);
+    if (matchedWebsite) {
+      setSelectedDomain(matchedWebsite.domain);
+    }
+  }, [selectedWebsiteId, websites]);
+
+  useEffect(() => {
+    setMilestones((current) => current.filter((milestone) => allowedEvents.includes(milestone)));
+  }, [allowedEvents]);
+
   const totalCost = (() => {
     const users = Math.max(100, Number(targetUsers) || 100);
     let milestoneTotal = 0;
     if (milestones.includes("download")) milestoneTotal += prices.price_per_download;
     if (milestones.includes("signup")) milestoneTotal += prices.price_per_signup;
-    if (milestones.includes("purchase")) milestoneTotal += prices.price_per_purchase;
+    if (milestones.includes("purchase")) milestoneTotal += SALE_FLAT_FEE;
     return milestoneTotal * users + prices.ad_placement_fee;
   })();
 
@@ -203,6 +226,7 @@ export default function CreateCampaign() {
     if (!user) return;
     if (!campaignName.trim()) { toast.error("Enter a campaign name"); return; }
     if (milestones.length === 0) { toast.error("Select at least one milestone"); return; }
+    if (!isPartnership && !verified) { toast.error("Verify your integration before submitting"); return; }
     const users = Number(targetUsers);
     if (users < 100) { toast.error("Minimum 100 target users"); return; }
     if (walletBalance < totalCost) { toast.error(`Insufficient balance. Need $${totalCost.toFixed(2)}, have $${walletBalance.toFixed(2)}.`); return; }
@@ -225,7 +249,7 @@ export default function CreateCampaign() {
       budget_remaining: totalCost - prices.ad_placement_fee,
       price_download: milestones.includes("download") ? prices.price_per_download : 0,
       price_signup: milestones.includes("signup") ? prices.price_per_signup : 0,
-      price_purchase: milestones.includes("purchase") ? prices.price_per_purchase : 0,
+      price_purchase: milestones.includes("purchase") ? SALE_FLAT_FEE : 0,
       integration_verified: verified, integration_type: isPartnership ? "external_referral" : integrationType,
       status: "pending", is_draft: false,
       website_id: selectedWebsiteId,
@@ -322,7 +346,14 @@ new KarbaliTracking();`;
   };
 
   const projectId = "dvkoafztquswcqniwcyf";
-  const trackUrl = `https://${projectId}.supabase.co/functions/v1/track`;
+  const trackerScriptUrl = `${window.location.origin}/karbali-tracker.js`;
+  const directTrackUrl = `https://${projectId}.supabase.co/functions/v1/track`;
+
+  const milestoneOptions = [
+    { id: "download", label: "App Downloads", priceLabel: `$${prices.price_per_download.toFixed(2)} / user`, unitPrice: prices.price_per_download },
+    { id: "signup", label: "Sign Ups", priceLabel: `$${prices.price_per_signup.toFixed(2)} / user`, unitPrice: prices.price_per_signup },
+    { id: "purchase", label: "Sales / Subscriptions", priceLabel: "$1.00 + 10% / sale", unitPrice: SALE_FLAT_FEE },
+  ].filter((option) => allowedEvents.includes(option.id));
 
   // Partnership category: show choice first
   if (categoryPartnership && hasExternalReferral === null) {
@@ -466,24 +497,28 @@ new KarbaliTracking();`;
                 <p className="text-xs text-muted-foreground">Add this to your website:</p>
                 <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs text-foreground/70">
 {`<script>
-(function(){
-  var p = new URLSearchParams(window.location.search);
-  var ref = p.get('ref') || p.get('referral_id');
-  if(ref) document.cookie = 'karbali_ref=' + ref + ';path=/;max-age=2592000';
-})();
-window.Karbali = {
-  apiKey: "${apiKey}",
-  track: function(event, data) {
-    var ref = (document.cookie.match(/karbali_ref=([^;]+)/)||[])[1]||null;
-    fetch("${trackUrl}", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ api_key: this.apiKey, event_type: event, user_id: data.user_id, referral_id: data.referral_id || ref, amount: data.amount || null })
-    });
+  window.KarbaliConfig = { apiKey: "${apiKey}" };
+</script>
+<script async src="${trackerScriptUrl}" data-api-key="${apiKey}"></script>
+<script>
+  window.addEventListener("load", function () {
+    window.Karbali?.sync();
+  });
+
+  function trackDownload() {
+    window.Karbali?.track("download", {});
   }
-};
+
+  function trackSignup(userId) {
+    window.Karbali?.track("signup", { user_id: userId });
+  }
+
+  function trackPurchase(userId, orderTotal) {
+    window.Karbali?.track("purchase", { user_id: userId, amount: orderTotal });
+  }
 </script>`}
                 </pre>
+                <p className="text-[11px] text-muted-foreground">Visible integration stays on your Karbali loader script, while the tracker posts securely to your campaign backend.</p>
               </div>
             )}
             <Button className="w-full" variant="outline" onClick={() => { saveDraft(); setStep(2); }}>I've integrated → Continue to Verify</Button>
@@ -494,7 +529,7 @@ window.Karbali = {
         {!isPartnership && step === 2 && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary" /> Verify Integration</h3>
-            <p className="text-xs text-muted-foreground mt-1">We'll verify your API key is working from your registered domain: <strong className="text-foreground">{selectedDomain || websites[0]?.domain}</strong></p></div>
+            <p className="text-xs text-muted-foreground mt-1">We'll scan your verified domain for the Karbali loader, your API key, and an active tracker installation: <strong className="text-foreground">{selectedDomain || websites[0]?.domain}</strong></p></div>
             {verified ? (
               <div className="flex items-center gap-2 text-primary text-sm"><CheckCircle className="h-4 w-4" /> Integration verified!</div>
             ) : null}
@@ -515,17 +550,13 @@ window.Karbali = {
             <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Target Users (min 100) *</Label><Input type="number" min="100" value={targetUsers} onChange={e => setTargetUsers(e.target.value)} /></div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Milestones *</Label>
-              {[
-                { id: "download", label: "App Downloads", price: prices.price_per_download },
-                { id: "signup", label: "Sign Ups", price: prices.price_per_signup },
-                { id: "purchase", label: "Sales / Purchases", price: prices.price_per_purchase },
-              ].map(m => (
+              {milestoneOptions.map(m => (
                 <label key={m.id} className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors ${milestones.includes(m.id) ? "border-primary bg-primary/5" : "border-border hover:border-border/80"}`}>
                   <div className="flex items-center gap-2">
                     <Checkbox checked={milestones.includes(m.id)} onCheckedChange={checked => setMilestones(checked ? [...milestones, m.id] : milestones.filter(x => x !== m.id))} />
                     <span className="text-sm text-foreground">{m.label}</span>
                   </div>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">${m.price.toFixed(2)} / user</Badge>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">{m.priceLabel}</Badge>
                 </label>
               ))}
             </div>
@@ -533,11 +564,12 @@ window.Karbali = {
               <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 text-sm">
                 <p className="font-medium text-foreground text-xs">Cost Breakdown</p>
                 {milestones.map(m => {
-                  const price = m === "download" ? prices.price_per_download : m === "signup" ? prices.price_per_signup : prices.price_per_purchase;
+                  const price = m === "download" ? prices.price_per_download : m === "signup" ? prices.price_per_signup : SALE_FLAT_FEE;
                   const users = Math.max(100, Number(targetUsers) || 100);
-                  return <div key={m} className="flex justify-between text-xs text-muted-foreground"><span className="capitalize">{m}: ${price.toFixed(2)} × {users}</span><span className="text-foreground">${(price * users).toFixed(2)}</span></div>;
+                  return <div key={m} className="flex justify-between text-xs text-muted-foreground"><span className="capitalize">{m === "purchase" ? "sales reserve" : m}: ${price.toFixed(2)} × {users}</span><span className="text-foreground">${(price * users).toFixed(2)}</span></div>;
                 })}
                 <div className="flex justify-between text-xs text-muted-foreground"><span>Placement Fee</span><span className="text-foreground">${prices.ad_placement_fee.toFixed(2)}</span></div>
+                {milestones.includes("purchase") && <div className="text-[10px] text-muted-foreground">10% sales commission is deducted separately whenever a tracked sale comes in.</div>}
                 <div className="border-t border-border pt-1.5 flex justify-between text-xs font-medium text-foreground"><span>Total</span><span className="text-primary">${totalCost.toFixed(2)}</span></div>
                 <div className="flex justify-between text-[10px] text-muted-foreground"><span>Balance</span><span className={walletBalance >= totalCost ? "text-primary" : "text-destructive"}>${walletBalance.toFixed(2)} {walletBalance < totalCost && "(Insufficient)"}</span></div>
               </div>

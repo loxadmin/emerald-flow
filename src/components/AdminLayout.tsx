@@ -15,6 +15,7 @@ import {
   Users,
   Layers,
   Wallet,
+  Handshake,
   Menu,
   X,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const adminLinks = [
   { to: "/admin", label: "Overview", icon: Shield },
   { to: "/admin/advertisers", label: "Advertisers", icon: Users },
   { to: "/admin/categories", label: "Categories", icon: Layers },
+  { to: "/admin/partnerships", label: "Partnerships", icon: Handshake },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/wallets", label: "Wallets", icon: Wallet },
   { to: "/admin/content", label: "Site Content", icon: PenSquare },

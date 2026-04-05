@@ -20,11 +20,16 @@ export default function ReferralRedirect() {
         return;
       }
 
-      // Set cookie
-      document.cookie = `karbali_ref=${code};path=/;max-age=2592000;SameSite=Lax`;
-
-      // Redirect
-      window.location.href = data.redirect_url;
+      try {
+        const redirectUrl = new URL(data.redirect_url);
+        const clientId = crypto.randomUUID();
+        redirectUrl.searchParams.set("ref", data.referral_id || code);
+        redirectUrl.searchParams.set("ref_code", code);
+        redirectUrl.searchParams.set("client_id", clientId);
+        window.location.href = redirectUrl.toString();
+      } catch {
+        setError(true);
+      }
     };
 
     handleRedirect();

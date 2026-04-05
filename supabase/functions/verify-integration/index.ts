@@ -11,6 +11,53 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const normalizeDomain = (value: string) => value.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "").trim().toLowerCase();
+
+const trackerMarkers = [
+  "karbali-tracker.js",
+  "window.karbali",
+  "window.karbaliconfig",
+  "karbaliconfig",
+  "data-api-key",
+  "karbali.track",
+];
+
+async function fetchText(url: string) {
+  const response = await fetch(url, {
+    headers: { "User-Agent": "Karbali-Integration-Check/1.0" },
+    signal: AbortSignal.timeout(4000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url} (${response.status})`);
+  }
+
+  return response.text();
+}
+
+function extractScriptUrls(html: string, baseUrl: string) {
+  const scriptMatches = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)];
+  return scriptMatches
+    .map((match) => match[1])
+    .map((src) => {
+      try {
+        return new URL(src, baseUrl).toString();
+      } catch {
+        return null;
+      }
+    })
+    .filter((url): url is string => !!url)
+    .slice(0, 5);
+}
+
+function containsTracker(texts: string[], apiKey: string) {
+  const normalizedApiKey = apiKey.toLowerCase();
+  return texts.some((text) => {
+    const normalizedText = text.toLowerCase();
+    return normalizedText.includes(normalizedApiKey) && trackerMarkers.some((marker) => normalizedText.includes(marker));
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -38,7 +85,7 @@ Deno.serve(async (req) => {
     // Verify campaign belongs to this user
     const { data: campaign } = await supabase
       .from("campaigns")
-      .select("id, advertiser_id")
+      .select("id, advertiser_id, website_id")
       .eq("id", campaign_id)
       .eq("advertiser_id", user.id)
       .single();
@@ -55,68 +102,77 @@ Deno.serve(async (req) => {
 
     if (!keyData) return json({ error: "Invalid API key" }, 400);
 
-    // Get advertiser's registered website domain
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("website")
-      .eq("id", user.id)
-      .single();
+    const requestedDomain = website ? normalizeDomain(website) : null;
+    const websiteQuery = supabase
+      .from("advertiser_websites")
+      .select("id, domain, is_verified")
+      .eq("advertiser_id", user.id)
+      .eq("is_verified", true);
 
-    const finalWebsite = website || profile?.website;
+    const { data: verifiedWebsites } = campaign.website_id
+      ? await websiteQuery.eq("id", campaign.website_id)
+      : requestedDomain
+        ? await websiteQuery.eq("domain", requestedDomain)
+        : await websiteQuery;
 
-    if (!finalWebsite) return json({ error: "No website registered on your profile. Update your profile with your website domain." }, 400);
-
-    // Update profile if website was provided but not in profile
-    if (website && !profile?.website) {
-      await supabase.from("profiles").update({ website }).eq("id", user.id);
+    const selectedWebsite = verifiedWebsites?.[0];
+    if (!selectedWebsite) {
+      return json({ error: "Select a verified advertiser website before verifying integration." }, 400);
     }
 
-    // Extract domain from advertiser's registered website
-    const domain = finalWebsite.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    const domain = normalizeDomain(selectedWebsite.domain);
+    const candidateUrls = [`https://${domain}`, `http://${domain}`];
 
-    // Send a test tracking call to verify the API key works
-    // We simulate a test call directly via the track function
-    const testRes = await fetch(`${supabaseUrl}/functions/v1/track`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key,
-        event_type: "download",
-        user_id: `verify_test_${Date.now()}`,
-        referral_id: null,
-      }),
+    let html = "";
+    let checkedUrl = "";
+    let lastFetchError = "";
+
+    for (const candidateUrl of candidateUrls) {
+      try {
+        html = await fetchText(candidateUrl);
+        checkedUrl = candidateUrl;
+        break;
+      } catch (error) {
+        lastFetchError = error instanceof Error ? error.message : "Unable to fetch website";
+      }
+    }
+
+    if (!html || !checkedUrl) {
+      return json({ verified: false, error: lastFetchError || "We could not reach the selected website to verify the integration." });
+    }
+
+    const textsToScan = [html];
+    const scriptUrls = extractScriptUrls(html, checkedUrl);
+
+    for (const scriptUrl of scriptUrls) {
+      try {
+        textsToScan.push(await fetchText(scriptUrl));
+      } catch {
+        // Ignore individual script failures and continue scanning what we can fetch.
+      }
+    }
+
+    if (!containsTracker(textsToScan, api_key)) {
+      return json({ verified: false, error: "We couldn't detect the Karbali loader or API key on your selected website yet." });
+    }
+
+    await supabase
+      .from("campaigns")
+      .update({ integration_verified: true })
+      .eq("id", campaign_id);
+
+    const { error: sourceErr } = await supabase.from("campaign_sources").insert({
+      campaign_id,
+      url: checkedUrl,
+      type: "web",
+      verified: true,
     });
 
-    const testData = await testRes.json();
-
-    // For verification, we accept the test call even if campaign is not active yet
-    // The track function may return 403 because campaign is pending - that's OK for verification
-    // What matters is: API key is valid AND belongs to advertiser's campaign
-    const keyValid = testRes.ok || (testRes.status === 403 && testData.error === "Campaign is not active");
-
-    if (keyValid) {
-      // Mark campaign as integration verified
-      await supabase
-        .from("campaigns")
-        .update({ integration_verified: true })
-        .eq("id", campaign_id);
-
-      // Add a source entry for the advertiser's website
-      const { error: sourceErr } = await supabase.from("campaign_sources").insert({
-        campaign_id,
-        url: finalWebsite,
-        type: "web",
-        verified: true,
-      });
-      // Ignore duplicate errors
-      if (sourceErr && !sourceErr.message.includes("duplicate")) {
-        console.error("Source insert error:", sourceErr.message);
-      }
-
-      return json({ verified: true, domain });
+    if (sourceErr && !sourceErr.message.toLowerCase().includes("duplicate")) {
+      console.error("Source insert error:", sourceErr.message);
     }
 
-    return json({ verified: false, error: testData.error || "Test call failed. Please ensure you've integrated the tracking code correctly." });
+    return json({ verified: true, domain, checked_url: checkedUrl });
   } catch (err: unknown) {
     console.error("Verify integration error:", (err as Error).message);
     return json({ error: (err as Error).message }, 500);
