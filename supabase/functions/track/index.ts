@@ -28,9 +28,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!["download", "signup", "purchase"].includes(event_type)) {
+    if (!["download", "signup", "purchase", "verify"].includes(event_type)) {
       return new Response(
-        JSON.stringify({ error: "Invalid event_type. Must be: download, signup, purchase" }),
+        JSON.stringify({ error: "Invalid event_type. Must be: download, signup, purchase, verify" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -108,20 +108,39 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Attribution: check if user exists
+    // Attribution: check if user exists (by external_user_id OR IP for first-time tracking)
+    let finalReferralId = referral_id || null;
+
     const { data: existingUser } = await supabase
       .from("users_tracking")
-      .select("id")
+      .select("id, referral_id")
       .eq("campaign_id", campaign_id)
       .eq("external_user_id", user_id)
       .maybeSingle();
 
     if (!existingUser) {
+      // If no referral_id provided, try to find it by IP from recent clicks
+      if (!finalReferralId) {
+        const { data: recentClick } = await supabase
+          .from("clicks")
+          .select("referral_id")
+          .eq("ip", ip)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (recentClick) {
+          finalReferralId = recentClick.referral_id;
+        }
+      }
+
       await supabase.from("users_tracking").insert({
         external_user_id: user_id,
         campaign_id,
-        referral_id: referral_id || null,
+        referral_id: finalReferralId,
       });
+    } else if (existingUser.referral_id) {
+      finalReferralId = existingUser.referral_id;
     }
 
     // Save event
@@ -132,13 +151,21 @@ Deno.serve(async (req) => {
         external_user_id: user_id,
         event_type,
         amount: amount || null,
-        referral_id: referral_id || null,
+        referral_id: finalReferralId,
         ip,
       })
       .select("id")
       .single();
 
     if (eventError) throw eventError;
+
+    // For "verify" event, we don't charge anything
+    if (event_type === "verify") {
+      return new Response(
+        JSON.stringify({ success: true, event_id: event.id, charged: 0, message: "Verification event recorded" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Billing engine - milestone logic
     let chargeAmount = 0;
@@ -154,7 +181,9 @@ Deno.serve(async (req) => {
     const hasSignup = userEvents?.some((e) => e.event_type === "signup" && e.id !== event.id);
 
     if (event_type === "purchase") {
-      chargeAmount = Number(campaign.price_purchase);
+      // Sales: $1 flat fee + 10% commission
+      const saleAmount = Number(amount || 0);
+      chargeAmount = 1 + (saleAmount * 0.10);
     } else if (event_type === "signup" && !hasPurchase) {
       chargeAmount = Number(campaign.price_signup);
     } else if (event_type === "download" && !hasSignup && !hasPurchase) {

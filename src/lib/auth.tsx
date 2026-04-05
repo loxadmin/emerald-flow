@@ -124,17 +124,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
+        if (session) {
+          await loadAccessState(session.user);
+        } else {
+          setIsAdmin(false);
+          setHasCategory(null);
+          setCategoryStatus(null);
+          setWalletActivated(null);
+        }
         setIsLoading(false);
-        void loadAccessState(session?.user);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
+      if (session) {
+        await loadAccessState(session.user);
+      } else {
+        setIsAdmin(false);
+        setHasCategory(null);
+        setCategoryStatus(null);
+        setWalletActivated(null);
+      }
       setIsLoading(false);
-      void loadAccessState(session?.user);
     }).catch(() => {
       setIsLoading(false);
     });

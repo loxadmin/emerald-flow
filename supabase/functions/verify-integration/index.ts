@@ -74,27 +74,32 @@ Deno.serve(async (req) => {
     // Extract domain from advertiser's registered website
     const domain = finalWebsite.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
 
-    // Send a test tracking call to verify the API key works
-    // We simulate a test call directly via the track function
-    const testRes = await fetch(`${supabaseUrl}/functions/v1/track`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key,
-        event_type: "download",
-        user_id: `verify_test_${Date.now()}`,
-        referral_id: null,
-      }),
-    });
+    // Instead of simulating a call, check if an event has actually been received for this campaign
+    // from the specified domain (IP based check is better for web)
+    const { data: recentEvents, error: eventsErr } = await supabase
+      .from("events")
+      .select("id, ip, created_at")
+      .eq("campaign_id", campaign_id)
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-    const testData = await testRes.json();
+    if (eventsErr) throw eventsErr;
 
-    // For verification, we accept the test call even if campaign is not active yet
-    // The track function may return 403 because campaign is pending - that's OK for verification
-    // What matters is: API key is valid AND belongs to advertiser's campaign
-    const keyValid = testRes.ok || (testRes.status === 403 && testData.error === "Campaign is not active");
+    const keyValid = recentEvents && recentEvents.length > 0;
 
     if (keyValid) {
+      // Check if the event is very recent (last 10 minutes)
+      const eventTime = new Date(recentEvents[0].created_at).getTime();
+      const now = Date.now();
+      const tenMinutes = 10 * 60 * 1000;
+
+      if (now - eventTime > tenMinutes) {
+        return json({
+          verified: false,
+          error: "Recent test event not found. Please trigger a test event on your website now and click Verify again."
+        });
+      }
+
       // Mark campaign as integration verified
       await supabase
         .from("campaigns")
@@ -116,7 +121,10 @@ Deno.serve(async (req) => {
       return json({ verified: true, domain });
     }
 
-    return json({ verified: false, error: testData.error || "Test call failed. Please ensure you've integrated the tracking code correctly." });
+    return json({
+      verified: false,
+      error: "No test event detected. Please ensure you've integrated the tracking code and triggered a test event (e.g., by reloading your page or clicking a button)."
+    });
   } catch (err: unknown) {
     console.error("Verify integration error:", (err as Error).message);
     return json({ error: (err as Error).message }, 500);

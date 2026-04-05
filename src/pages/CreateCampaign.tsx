@@ -24,6 +24,7 @@ export default function CreateCampaign() {
   const [loading, setLoading] = useState(false);
   const [isPartnership, setIsPartnership] = useState(false);
   const [categoryPartnership, setCategoryPartnership] = useState<boolean | null>(null);
+  const [categoryPermissions, setCategoryPermissions] = useState<{dl: boolean, su: boolean, pu: boolean}>({dl: true, su: true, pu: true});
 
   // Standard flow
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -64,8 +65,15 @@ export default function CreateCampaign() {
         .eq("advertiser_id", user.id)
         .maybeSingle();
       if (catData) {
-        const { data: cat } = await supabase.from("categories").select("is_partnership").eq("id", catData.category_id).single();
-        setCategoryPartnership((cat as any)?.is_partnership ?? false);
+        const { data: cat } = await supabase.from("categories").select("is_partnership, allow_download, allow_signup, allow_purchase").eq("id", catData.category_id).single();
+        if (cat) {
+          setCategoryPartnership((cat as any).is_partnership ?? false);
+          setCategoryPermissions({
+            dl: (cat as any).allow_download ?? true,
+            su: (cat as any).allow_signup ?? true,
+            pu: (cat as any).allow_purchase ?? true
+          });
+        }
       }
 
       // Fetch verified websites
@@ -494,7 +502,13 @@ window.Karbali = {
         {!isPartnership && step === 2 && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary" /> Verify Integration</h3>
-            <p className="text-xs text-muted-foreground mt-1">We'll verify your API key is working from your registered domain: <strong className="text-foreground">{selectedDomain || websites[0]?.domain}</strong></p></div>
+            <p className="text-xs text-muted-foreground mt-1">To verify, please follow these steps:</p>
+            <ol className="text-xs text-muted-foreground mt-2 list-decimal list-inside space-y-1">
+              <li>Open your website in a new tab: <strong className="text-foreground">{selectedDomain || websites[0]?.domain}</strong></li>
+              <li>Wait for the page to load or trigger a tracking event</li>
+              <li>Come back here and click the "Verify" button below</li>
+            </ol>
+            </div>
             {verified ? (
               <div className="flex items-center gap-2 text-primary text-sm"><CheckCircle className="h-4 w-4" /> Integration verified!</div>
             ) : null}
@@ -516,10 +530,10 @@ window.Karbali = {
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Milestones *</Label>
               {[
-                { id: "download", label: "App Downloads", price: prices.price_per_download },
-                { id: "signup", label: "Sign Ups", price: prices.price_per_signup },
-                { id: "purchase", label: "Sales / Purchases", price: prices.price_per_purchase },
-              ].map(m => (
+                { id: "download", label: "App Downloads", price: prices.price_per_download, allowed: categoryPermissions.dl },
+                { id: "signup", label: "Sign Ups", price: prices.price_per_signup, allowed: categoryPermissions.su },
+                { id: "purchase", label: "Sales / Purchases", price: prices.price_per_purchase, allowed: categoryPermissions.pu },
+              ].filter(m => m.allowed).map(m => (
                 <label key={m.id} className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors ${milestones.includes(m.id) ? "border-primary bg-primary/5" : "border-border hover:border-border/80"}`}>
                   <div className="flex items-center gap-2">
                     <Checkbox checked={milestones.includes(m.id)} onCheckedChange={checked => setMilestones(checked ? [...milestones, m.id] : milestones.filter(x => x !== m.id))} />
@@ -528,6 +542,9 @@ window.Karbali = {
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0">${m.price.toFixed(2)} / user</Badge>
                 </label>
               ))}
+              {[categoryPermissions.dl, categoryPermissions.su, categoryPermissions.pu].every(p => !p) && (
+                <p className="text-xs text-destructive">No milestones available for your category. Please contact support.</p>
+              )}
             </div>
             {milestones.length > 0 && (
               <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 text-sm">

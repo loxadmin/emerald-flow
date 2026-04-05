@@ -8,10 +8,12 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Plus, Trash2, Handshake } from "lucide-react";
+import { Plus, Trash2, Handshake, Download, UserPlus, CreditCard } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Category {
   id: string; name: string; description: string | null; is_active: boolean; is_partnership: boolean;
+  allow_download: boolean; allow_signup: boolean; allow_purchase: boolean;
 }
 
 export default function AdminCategories() {
@@ -21,6 +23,9 @@ export default function AdminCategories() {
   const [newDesc, setNewDesc] = useState("");
   const [newActive, setNewActive] = useState(true);
   const [newPartnership, setNewPartnership] = useState(false);
+  const [newAllowDownload, setNewAllowDownload] = useState(true);
+  const [newAllowSignup, setNewAllowSignup] = useState(true);
+  const [newAllowPurchase, setNewAllowPurchase] = useState(true);
   const [adding, setAdding] = useState(false);
 
   const fetchCategories = async () => {
@@ -39,14 +44,28 @@ export default function AdminCategories() {
       description: newDesc.trim() || null,
       is_active: newActive,
       is_partnership: newPartnership,
+      allow_download: newAllowDownload,
+      allow_signup: newAllowSignup,
+      allow_purchase: newAllowPurchase,
     } as any);
     if (error) toast.error(error.message);
-    else { toast.success("Category created"); setNewName(""); setNewDesc(""); setNewActive(true); setNewPartnership(false); fetchCategories(); }
+    else {
+      toast.success("Category created");
+      setNewName(""); setNewDesc("");
+      setNewActive(true); setNewPartnership(false);
+      setNewAllowDownload(true); setNewAllowSignup(true); setNewAllowPurchase(true);
+      fetchCategories();
+    }
     setAdding(false);
   };
 
   const toggleActive = async (id: string, current: boolean) => {
     const { error } = await supabase.from("categories").update({ is_active: !current, updated_at: new Date().toISOString() }).eq("id", id);
+    if (error) toast.error(error.message); else fetchCategories();
+  };
+
+  const togglePermission = async (id: string, field: string, current: boolean) => {
+    const { error } = await supabase.from("categories").update({ [field]: !current, updated_at: new Date().toISOString() } as any).eq("id", id);
     if (error) toast.error(error.message); else fetchCategories();
   };
 
@@ -87,6 +106,18 @@ export default function AdminCategories() {
                   <Handshake className="h-3 w-3" /> Partnership
                 </Label>
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox id="newDl" checked={newAllowDownload} onCheckedChange={(c) => setNewAllowDownload(!!c)} />
+                <Label htmlFor="newDl" className="text-xs text-muted-foreground">Download</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox id="newSu" checked={newAllowSignup} onCheckedChange={(c) => setNewAllowSignup(!!c)} />
+                <Label htmlFor="newSu" className="text-xs text-muted-foreground">Signup</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox id="newPu" checked={newAllowPurchase} onCheckedChange={(c) => setNewAllowPurchase(!!c)} />
+                <Label htmlFor="newPu" className="text-xs text-muted-foreground">Sales</Label>
+              </div>
             </div>
             <Button size="sm" onClick={addCategory} disabled={adding}>
               <Plus className="mr-1 h-4 w-4" /> Add
@@ -106,8 +137,8 @@ export default function AdminCategories() {
             ) : (
               <div className="divide-y divide-border">
                 {categories.map((cat) => (
-                  <div key={cat.id} className="flex items-center justify-between py-3">
-                    <div>
+                  <div key={cat.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-3">
+                    <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-foreground">{cat.name}</p>
                         {cat.is_partnership && (
@@ -117,6 +148,17 @@ export default function AdminCategories() {
                         )}
                       </div>
                       {cat.description && <p className="text-xs text-muted-foreground">{cat.description}</p>}
+                      <div className="flex gap-4 mt-2">
+                        <button onClick={() => togglePermission(cat.id, "allow_download", cat.allow_download)} className={`flex items-center gap-1 text-[10px] uppercase font-bold transition-colors ${cat.allow_download ? "text-primary" : "text-muted-foreground/40"}`}>
+                          <Download className="h-2.5 w-2.5" /> Download
+                        </button>
+                        <button onClick={() => togglePermission(cat.id, "allow_signup", cat.allow_signup)} className={`flex items-center gap-1 text-[10px] uppercase font-bold transition-colors ${cat.allow_signup ? "text-primary" : "text-muted-foreground/40"}`}>
+                          <UserPlus className="h-2.5 w-2.5" /> Signup
+                        </button>
+                        <button onClick={() => togglePermission(cat.id, "allow_purchase", cat.allow_purchase)} className={`flex items-center gap-1 text-[10px] uppercase font-bold transition-colors ${cat.allow_purchase ? "text-primary" : "text-muted-foreground/40"}`}>
+                          <CreditCard className="h-2.5 w-2.5" /> Sales
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${cat.is_active ? "text-primary border-primary/20" : "text-amber-600 border-amber-500/20"}`}>

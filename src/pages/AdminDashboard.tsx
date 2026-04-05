@@ -30,12 +30,21 @@ interface CategoryChangeReq {
   requested_name?: string;
 }
 
+interface ExternalReferralReq {
+  id: string; campaign_id: string; advertiser_id: string;
+  referral_guide: string; compensation_structure: string; registration_link: string;
+  status: string; created_at: string;
+  advertiser_email?: string; campaign_name?: string;
+}
+
 export default function AdminDashboard() {
   const [campaigns, setCampaigns] = useState<CampaignWithProfile[]>([]);
   const [stats, setStats] = useState({ totalCampaigns: 0, totalEvents: 0, totalRevenue: 0 });
   const [loading, setLoading] = useState(true);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [categoryRequests, setCategoryRequests] = useState<CategoryChangeReq[]>([]);
+  const [externalRequests, setExternalRequests] = useState<ExternalReferralReq[]>([]);
+  const [approvalDetails, setApprovalDetails] = useState<Record<string, { code: string; link: string }>>({});
 
   const fetchData = async () => {
     const { data: allCampaigns } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
@@ -88,6 +97,25 @@ export default function AdminDashboard() {
       })));
     }
 
+    // Fetch external referral requests
+    const { data: extData } = await supabase.from("external_referral_programs" as any).select("*").eq("status", "pending").order("created_at", { ascending: false });
+    if (extData && (extData as any[]).length > 0) {
+      const reqs = extData as any as ExternalReferralReq[];
+      const advertiserIds = [...new Set(reqs.map(r => r.advertiser_id))];
+      const campaignIds = [...new Set(reqs.map(r => r.campaign_id))];
+      const { data: profiles } = await supabase.from("profiles").select("id, email").in("id", advertiserIds);
+      const { data: campaigns } = await supabase.from("campaigns").select("id, name").in("id", campaignIds);
+      const profMap = new Map((profiles || []).map(p => [p.id, p.email]));
+      const campMap = new Map((campaigns || []).map(c => [c.id, c.name]));
+      setExternalRequests(reqs.map(r => ({
+        ...r,
+        advertiser_email: profMap.get(r.advertiser_id) || "Unknown",
+        campaign_name: campMap.get(r.campaign_id) || "Unknown Campaign",
+      })));
+    } else {
+      setExternalRequests([]);
+    }
+
     setLoading(false);
   };
 
@@ -111,6 +139,29 @@ export default function AdminDashboard() {
     }
     await supabase.from("category_change_requests" as any).update({ status: action, updated_at: new Date().toISOString() } as any).eq("id", reqId);
     toast.success(`Category change ${action}`);
+    fetchData();
+  };
+
+  const handleExternalReferralRequest = async (reqId: string, action: "approved" | "rejected", req: ExternalReferralReq) => {
+    if (action === "approved") {
+      const details = approvalDetails[reqId];
+      if (!details?.code || !details?.link) {
+        toast.error("Referral code and link are required for approval");
+        return;
+      }
+      await supabase.from("external_referral_programs" as any).update({
+        status: "active",
+        admin_referral_code: details.code,
+        admin_referral_link: details.link,
+        updated_at: new Date().toISOString()
+      }).eq("id", reqId);
+      // Also activate the campaign
+      await supabase.from("campaigns").update({ status: "active", is_draft: false }).eq("id", req.campaign_id);
+    } else {
+      await supabase.from("external_referral_programs" as any).update({ status: "rejected", updated_at: new Date().toISOString() }).eq("id", reqId);
+      await supabase.from("campaigns").update({ status: "rejected" }).eq("id", req.campaign_id);
+    }
+    toast.success(`External referral ${action}`);
     fetchData();
   };
 
@@ -168,6 +219,71 @@ export default function AdminDashboard() {
                     <Area type="monotone" dataKey="revenue" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#colorRv)" name="Revenue ($)" />
                   </AreaChart>
                 </ResponsiveContainer>
+              </GlassCardContent>
+            </GlassCard>
+          </MotionWrapper>
+        )}
+
+        {/* External Referral Requests */}
+        {externalRequests.length > 0 && (
+          <MotionWrapper delay={0.13}>
+            <GlassCard variant="strong">
+              <GlassCardHeader><GlassCardTitle className="flex items-center gap-2"><RefreshCw className="h-4 w-4" /> External Referral Requests</GlassCardTitle></GlassCardHeader>
+              <GlassCardContent>
+                <div className="space-y-4">
+                  {externalRequests.map(req => (
+                    <div key={req.id} className="rounded-xl border border-border/50 p-4 space-y-4">
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{req.advertiser_email}</p>
+                            <p className="text-xs text-primary font-medium">{req.campaign_name}</p>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <p className="text-muted-foreground uppercase tracking-wider font-bold text-[10px]">Referral Guide</p>
+                              <p className="text-foreground/80 mt-1 whitespace-pre-wrap">{req.referral_guide}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground uppercase tracking-wider font-bold text-[10px]">Compensation</p>
+                              <p className="text-foreground/80 mt-1 whitespace-pre-wrap">{req.compensation_structure}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground uppercase tracking-wider font-bold text-[10px]">Registration Link</p>
+                            <a href={req.registration_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline block truncate">{req.registration_link}</a>
+                          </div>
+                        </div>
+
+                        <div className="w-full md:w-64 space-y-3 p-3 rounded-lg bg-accent/5 border border-border/50">
+                          <p className="text-xs font-medium text-foreground">Admin Assignment</p>
+                          <div className="space-y-2">
+                            <input
+                              placeholder="Referral Code"
+                              className="w-full bg-background border border-border rounded-md px-2 py-1 text-xs"
+                              value={approvalDetails[req.id]?.code || ""}
+                              onChange={(e) => setApprovalDetails({...approvalDetails, [req.id]: {...(approvalDetails[req.id] || {link: ""}), code: e.target.value}})}
+                            />
+                            <input
+                              placeholder="Referral Link"
+                              className="w-full bg-background border border-border rounded-md px-2 py-1 text-xs"
+                              value={approvalDetails[req.id]?.link || ""}
+                              onChange={(e) => setApprovalDetails({...approvalDetails, [req.id]: {...(approvalDetails[req.id] || {code: ""}), link: e.target.value}})}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <GlassButton className="flex-1" size="sm" variant="glow" onClick={() => handleExternalReferralRequest(req.id, "approved", req)}>
+                              Approve
+                            </GlassButton>
+                            <GlassButton size="sm" variant="destructive" onClick={() => handleExternalReferralRequest(req.id, "rejected", req)}>
+                              Reject
+                            </GlassButton>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </GlassCardContent>
             </GlassCard>
           </MotionWrapper>
