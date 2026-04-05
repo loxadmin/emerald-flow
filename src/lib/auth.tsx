@@ -41,60 +41,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [walletActivated, setWalletActivated] = useState<boolean | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const accessRequestIdRef = useRef(0);
 
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setSession(null);
+  const resetAccessState = useCallback(() => {
     setIsAdmin(false);
     setHasCategory(null);
     setCategoryStatus(null);
     setWalletActivated(null);
-    localStorage.removeItem("karbali-last-activity");
   }, []);
+
+  const signOut = useCallback(async () => {
+    accessRequestIdRef.current += 1;
+    await supabase.auth.signOut();
+    setSession(null);
+    resetAccessState();
+    setIsLoading(false);
+    localStorage.removeItem("karbali-last-activity");
+  }, [resetAccessState]);
 
   const loadAccessState = useCallback(async (activeUser: User | null | undefined) => {
+    const requestId = ++accessRequestIdRef.current;
+
     if (!activeUser) {
-      setIsAdmin(false);
-      setHasCategory(null);
-      setCategoryStatus(null);
-      setWalletActivated(null);
+      resetAccessState();
+      if (requestId === accessRequestIdRef.current) {
+        setIsLoading(false);
+      }
       return;
     }
 
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", activeUser.id)
-      .eq("role", "admin")
-      .maybeSingle();
+    setIsLoading(true);
 
-    const admin = !!roleData;
-    setIsAdmin(admin);
+    try {
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", activeUser.id);
 
-    if (admin) {
-      setHasCategory(true);
-      setCategoryStatus(null);
-      setWalletActivated(true);
-      return;
+      if (requestId !== accessRequestIdRef.current) return;
+
+      if (rolesError) throw rolesError;
+
+      const admin = (rolesData || []).some((role) => role.role === "admin");
+      setIsAdmin(admin);
+
+      if (admin) {
+        setHasCategory(true);
+        setCategoryStatus("active");
+        setWalletActivated(true);
+        return;
+      }
+
+      const [{ data: categoryData }, { data: walletData }] = await Promise.all([
+        supabase
+          .from("advertiser_categories")
+          .select("status")
+          .eq("advertiser_id", activeUser.id)
+          .maybeSingle(),
+        supabase
+          .from("wallets")
+          .select("is_activated")
+          .eq("advertiser_id", activeUser.id)
+          .maybeSingle(),
+      ]);
+
+      if (requestId !== accessRequestIdRef.current) return;
+
+      setHasCategory(!!categoryData);
+      setCategoryStatus(categoryData?.status || null);
+      setWalletActivated(walletData?.is_activated ?? false);
+    } catch (error) {
+      if (requestId !== accessRequestIdRef.current) return;
+      console.error("Failed to load access state:", error);
+      resetAccessState();
+    } finally {
+      if (requestId === accessRequestIdRef.current) {
+        setIsLoading(false);
+      }
     }
-
-    const [{ data: categoryData }, { data: walletData }] = await Promise.all([
-      supabase
-        .from("advertiser_categories")
-        .select("status")
-        .eq("advertiser_id", activeUser.id)
-        .maybeSingle(),
-      supabase
-        .from("wallets")
-        .select("is_activated")
-        .eq("advertiser_id", activeUser.id)
-        .maybeSingle(),
-    ]);
-
-    setHasCategory(!!categoryData);
-    setCategoryStatus(categoryData?.status || null);
-    setWalletActivated(walletData?.is_activated ?? false);
-  }, []);
+  }, [resetAccessState]);
 
   const refreshAccessState = useCallback(async () => {
     await loadAccessState(session?.user ?? null);
@@ -123,24 +148,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, signOut]);
 
   useEffect(() => {
+    const syncSessionState = (nextSession: Session | null) => {
+      setSession(nextSession);
+      setIsLoading(true);
+      void loadAccessState(nextSession?.user ?? null);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setIsLoading(false);
-        void loadAccessState(session?.user);
+      (_event, nextSession) => {
+        syncSessionState(nextSession);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsLoading(false);
-      void loadAccessState(session?.user);
+    supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
+      syncSessionState(nextSession);
     }).catch(() => {
+      resetAccessState();
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [loadAccessState]);
+  }, [loadAccessState, resetAccessState]);
 
   return (
     <AuthContext.Provider
@@ -169,14 +197,14 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
     if (!session) {
-      navigate("/login");
+      navigate("/login", { replace: true });
       return;
     }
     // Admin users skip category check
     if (isAdmin) return;
     // If user hasn't picked a category yet and isn't on category-select page
     if (hasCategory === false && location.pathname !== "/category-select") {
-      navigate("/category-select");
+      navigate("/category-select", { replace: true });
     }
   }, [session, isLoading, isAdmin, hasCategory, navigate, location.pathname]);
 
@@ -192,14 +220,14 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 export function RequireAdmin({ children }: { children: ReactNode }) {
-  const { isAdmin, isLoading } = useAuth();
+  const { session, isAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !isAdmin) {
-      navigate("/dashboard");
+    if (!isLoading && session && !isAdmin) {
+      navigate("/dashboard", { replace: true });
     }
-  }, [isAdmin, isLoading, navigate]);
+  }, [session, isAdmin, isLoading, navigate]);
 
   if (isLoading) {
     return (

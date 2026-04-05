@@ -34,16 +34,21 @@ export default function Login() {
         localStorage.setItem("karbali-last-activity", String(Date.now()));
         
         // Check if user is admin to redirect appropriately
+        await supabase.auth.getSession();
         const userId = data.user?.id;
         if (userId) {
-          const { data: roleData } = await supabase
+          const { data: rolesData, error: rolesError } = await supabase
             .from("user_roles")
             .select("role")
-            .eq("user_id", userId)
-            .eq("role", "admin")
-            .maybeSingle();
+            .eq("user_id", userId);
+
+          if (rolesError) {
+            console.error("Role lookup failed:", rolesError);
+          }
+
+          const hasAdminRole = (rolesData || []).some((role) => role.role === "admin");
           
-          if (roleData) {
+          if (hasAdminRole) {
             navigate("/admin", { replace: true });
           } else {
             navigate("/dashboard", { replace: true });

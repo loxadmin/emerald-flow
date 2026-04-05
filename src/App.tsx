@@ -24,6 +24,7 @@ import AdminContent from "./pages/AdminContent";
 import AdminCategories from "./pages/AdminCategories";
 import AdminAdvertisers from "./pages/AdminAdvertisers";
 import AdminWallets from "./pages/AdminWallets";
+import AdminPartnerships from "./pages/AdminPartnerships";
 import Docs from "./pages/Docs";
 import ReferralRedirect from "./pages/ReferralRedirect";
 import NotFound from "./pages/NotFound";
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/admin/settings" element={<RequireAuth><RequireAdmin><AdminSettings /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/content" element={<RequireAuth><RequireAdmin><AdminContent /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/categories" element={<RequireAuth><RequireAdmin><AdminCategories /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/partnerships" element={<RequireAuth><RequireAdmin><AdminPartnerships /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/advertisers" element={<RequireAuth><RequireAdmin><AdminAdvertisers /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/wallets" element={<RequireAuth><RequireAdmin><AdminWallets /></RequireAdmin></RequireAuth>} />
 
