@@ -31,6 +31,11 @@ export default function AdminCampaignDetail() {
     setSources(s || []);
     const { data: r } = await supabase.from("referrals").select("*").eq("campaign_id", id);
     setReferrals(r || []);
+    const referralIds = (r || []).map((referral) => referral.id);
+    const { count: trackedClicks } = referralIds.length > 0
+      ? await supabase.from("clicks").select("*", { count: "exact", head: true }).in("referral_id", referralIds)
+      : { count: 0 };
+    setClickCount(trackedClicks || 0);
     const { data: e } = await supabase.from("events").select("*").eq("campaign_id", id).order("created_at", { ascending: false }).limit(20);
     setEvents(e || []);
 
