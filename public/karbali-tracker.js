@@ -52,12 +52,15 @@
   }
 
   function getCurrentScript() {
-    return document.currentScript || document.querySelector('script[src*="karbali-tracker.js"][data-api-key]');
+    return document.currentScript || document.querySelector('script[src*="karbali-tracker"][data-api-key]');
   }
 
   function getApiKey(data) {
+    if (cachedApiKey) return cachedApiKey;
     var script = getCurrentScript();
-    return (data && data.apiKey) || (window.KarbaliConfig && window.KarbaliConfig.apiKey) || (script && script.getAttribute("data-api-key")) || null;
+    var key = (data && data.apiKey) || (window.KarbaliConfig && window.KarbaliConfig.apiKey) || (script && script.getAttribute("data-api-key")) || null;
+    if (key) cachedApiKey = key;
+    return key;
   }
 
   function firstValue(values) {
