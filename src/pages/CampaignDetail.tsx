@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Copy, Download, UserPlus, ShoppingCart, Wallet, Users } from "lucide-react";
+import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -16,7 +16,7 @@ export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
   const [campaign, setCampaign] = useState<(Tables<"campaigns"> & { target_users?: number; selected_milestones?: string[]; total_cost?: number; integration_verified?: boolean; integration_type?: string }) | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
-  const [stats, setStats] = useState({ downloads: 0, signups: 0, purchases: 0 });
+  const [stats, setStats] = useState({ clicks: 0, downloads: 0, signups: 0, purchases: 0 });
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +30,12 @@ export default function CampaignDetail() {
       const { count: dl } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "download");
       const { count: su } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "signup");
       const { count: pu } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "purchase");
-      setStats({ downloads: dl || 0, signups: su || 0, purchases: pu || 0 });
+      const { data: campaignReferrals } = await supabase.from("referrals").select("id").eq("campaign_id", id);
+      const referralIds = campaignReferrals?.map((referral) => referral.id) || [];
+      const { count: clickCount } = referralIds.length > 0
+        ? await supabase.from("clicks").select("*", { count: "exact", head: true }).in("referral_id", referralIds)
+        : { count: 0 };
+      setStats({ clicks: clickCount || 0, downloads: dl || 0, signups: su || 0, purchases: pu || 0 });
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data: events } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo).order("created_at");
       if (events && events.length > 0) {
@@ -92,6 +97,7 @@ export default function CampaignDetail() {
         {/* Stats */}
         <MotionStagger className="grid gap-3 grid-cols-2 md:grid-cols-5">
           {[
+            { icon: MousePointerClick, label: "Clicks", value: stats.clicks },
             { icon: Download, label: "Downloads", value: stats.downloads },
             { icon: UserPlus, label: "Signups", value: stats.signups },
             { icon: ShoppingCart, label: "Purchases", value: stats.purchases },

@@ -36,8 +36,13 @@ export default function Dashboard() {
         const campaignIds = campaignsData.map((c: Campaign) => c.id);
         const { count: eventsCount } = await supabase.from("events").select("*", { count: "exact", head: true }).in("campaign_id", campaignIds);
         const { data: txData } = await supabase.from("transactions").select("amount").in("campaign_id", campaignIds);
+        const { data: referralData } = await supabase.from("referrals").select("id").in("campaign_id", campaignIds);
+        const referralIds = referralData?.map((referral) => referral.id) || [];
+        const { count: clicksCount } = referralIds.length > 0
+          ? await supabase.from("clicks").select("*", { count: "exact", head: true }).in("referral_id", referralIds)
+          : { count: 0 };
         const totalSpent = txData?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-        setStats({ totalEvents: eventsCount || 0, totalSpent, totalClicks: 0 });
+        setStats({ totalEvents: eventsCount || 0, totalSpent, totalClicks: clicksCount || 0 });
 
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
         const { data: events } = await supabase.from("events").select("created_at").in("campaign_id", campaignIds).gte("created_at", thirtyDaysAgo);
@@ -99,11 +104,12 @@ export default function Dashboard() {
         </MotionWrapper>
 
         {/* Stats Cards */}
-        <MotionStagger className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+        <MotionStagger className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
           {[
             { label: "Total Events", value: stats.totalEvents.toLocaleString(), icon: Activity, trend: "+12%", up: true },
+            { label: "Total Clicks", value: stats.totalClicks.toLocaleString(), icon: MousePointerClick, trend: null, up: true },
             { label: "Total Spent", value: `$${stats.totalSpent.toFixed(2)}`, icon: DollarSign, trend: null, up: false },
-            { label: "Active Campaigns", value: activeCampaigns, icon: MousePointerClick, trend: null, up: true },
+            { label: "Active Campaigns", value: activeCampaigns, icon: BarChart3, trend: null, up: true },
           ].map((s) => (
             <MotionItem key={s.label}>
               <div className="rounded-xl border border-border bg-card p-5 transition-colors hover:bg-accent/5">
