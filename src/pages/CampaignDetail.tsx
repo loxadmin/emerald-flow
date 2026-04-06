@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Copy, Download, UserPlus, ShoppingCart, Wallet, Users } from "lucide-react";
+import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 

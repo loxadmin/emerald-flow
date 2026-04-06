@@ -20,6 +20,7 @@ export default function AdminCampaignDetail() {
   const [referrals, setReferrals] = useState<Tables<"referrals">[]>([]);
   const [events, setEvents] = useState<Tables<"events">[]>([]);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
+  const [clickCount, setClickCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {

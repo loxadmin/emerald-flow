@@ -36,8 +36,13 @@ export default function Dashboard() {
         const campaignIds = campaignsData.map((c: Campaign) => c.id);
         const { count: eventsCount } = await supabase.from("events").select("*", { count: "exact", head: true }).in("campaign_id", campaignIds);
         const { data: txData } = await supabase.from("transactions").select("amount").in("campaign_id", campaignIds);
+        const { data: referralData } = await supabase.from("referrals").select("id").in("campaign_id", campaignIds);
+        const referralIds = referralData?.map((referral) => referral.id) || [];
+        const { count: clicksCount } = referralIds.length > 0
+          ? await supabase.from("clicks").select("*", { count: "exact", head: true }).in("referral_id", referralIds)
+          : { count: 0 };
         const totalSpent = txData?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-        setStats({ totalEvents: eventsCount || 0, totalSpent, totalClicks: 0 });
+        setStats({ totalEvents: eventsCount || 0, totalSpent, totalClicks: clicksCount || 0 });
 
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
         const { data: events } = await supabase.from("events").select("created_at").in("campaign_id", campaignIds).gte("created_at", thirtyDaysAgo);
