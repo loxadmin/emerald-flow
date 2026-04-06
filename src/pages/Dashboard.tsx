@@ -104,11 +104,12 @@ export default function Dashboard() {
         </MotionWrapper>
 
         {/* Stats Cards */}
-        <MotionStagger className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+        <MotionStagger className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
           {[
             { label: "Total Events", value: stats.totalEvents.toLocaleString(), icon: Activity, trend: "+12%", up: true },
+            { label: "Total Clicks", value: stats.totalClicks.toLocaleString(), icon: MousePointerClick, trend: null, up: true },
             { label: "Total Spent", value: `$${stats.totalSpent.toFixed(2)}`, icon: DollarSign, trend: null, up: false },
-            { label: "Active Campaigns", value: activeCampaigns, icon: MousePointerClick, trend: null, up: true },
+            { label: "Active Campaigns", value: activeCampaigns, icon: BarChart3, trend: null, up: true },
           ].map((s) => (
             <MotionItem key={s.label}>
               <div className="rounded-xl border border-border bg-card p-5 transition-colors hover:bg-accent/5">

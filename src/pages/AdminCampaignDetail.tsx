@@ -115,6 +115,7 @@ export default function AdminCampaignDetail() {
                   { l: "Budget Remaining", v: `$${Number(campaign.budget_remaining).toFixed(2)}` },
                   { l: "Total Cost", v: `$${Number((campaign as any).total_cost || 0).toFixed(2)}` },
                   { l: "Target Users", v: String((campaign as any).target_users || "—") },
+                  { l: "Clicks", v: String(clickCount) },
                   { l: "Download Price", v: `$${Number(campaign.price_download).toFixed(2)}` },
                   { l: "Signup Price", v: `$${Number(campaign.price_signup).toFixed(2)}` },
                   { l: "Purchase Price", v: `$${Number(campaign.price_purchase).toFixed(2)}` },

@@ -97,6 +97,7 @@ export default function CampaignDetail() {
         {/* Stats */}
         <MotionStagger className="grid gap-3 grid-cols-2 md:grid-cols-5">
           {[
+            { icon: MousePointerClick, label: "Clicks", value: stats.clicks },
             { icon: Download, label: "Downloads", value: stats.downloads },
             { icon: UserPlus, label: "Signups", value: stats.signups },
             { icon: ShoppingCart, label: "Purchases", value: stats.purchases },
