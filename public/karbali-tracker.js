@@ -4,6 +4,7 @@
   var REFERRAL_CODE_KEY = "karbali_referral_code";
   var CLIENT_ID_KEY = "karbali_client_id";
   var recentAutoTracks = {};
+  var cachedApiKey = null;
   var SIGNUP_PATTERNS = ["/auth/v1/signup", "signup", "sign-up", "register"];
   var PURCHASE_PATTERNS = ["purchase", "checkout", "subscribe", "subscription", "payment", "payments", "orders", "paystack"];
   var PURCHASE_SUCCESS_PATTERNS = ["verify", "success", "complete", "completed", "callback"];
