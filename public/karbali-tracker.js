@@ -342,6 +342,7 @@
   }
 
   syncAttribution();
+  getApiKey(null);
   patchFetch();
   patchXhr();
   bindClickTracking();
