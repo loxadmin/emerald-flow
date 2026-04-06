@@ -4,6 +4,7 @@
   var REFERRAL_CODE_KEY = "karbali_referral_code";
   var CLIENT_ID_KEY = "karbali_client_id";
   var recentAutoTracks = {};
+  var cachedApiKey = null;
   var SIGNUP_PATTERNS = ["/auth/v1/signup", "signup", "sign-up", "register"];
   var PURCHASE_PATTERNS = ["purchase", "checkout", "subscribe", "subscription", "payment", "payments", "orders", "paystack"];
   var PURCHASE_SUCCESS_PATTERNS = ["verify", "success", "complete", "completed", "callback"];
@@ -51,12 +52,15 @@
   }
 
   function getCurrentScript() {
-    return document.currentScript || document.querySelector('script[src*="karbali-tracker.js"][data-api-key]');
+    return document.currentScript || document.querySelector('script[src*="karbali-tracker"][data-api-key]');
   }
 
   function getApiKey(data) {
+    if (cachedApiKey) return cachedApiKey;
     var script = getCurrentScript();
-    return (data && data.apiKey) || (window.KarbaliConfig && window.KarbaliConfig.apiKey) || (script && script.getAttribute("data-api-key")) || null;
+    var key = (data && data.apiKey) || (window.KarbaliConfig && window.KarbaliConfig.apiKey) || (script && script.getAttribute("data-api-key")) || null;
+    if (key) cachedApiKey = key;
+    return key;
   }
 
   function firstValue(values) {
@@ -338,6 +342,7 @@
   }
 
   syncAttribution();
+  getApiKey(null);
   patchFetch();
   patchXhr();
   bindClickTracking();
