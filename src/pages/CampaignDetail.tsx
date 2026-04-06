@@ -16,7 +16,7 @@ export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
   const [campaign, setCampaign] = useState<(Tables<"campaigns"> & { target_users?: number; selected_milestones?: string[]; total_cost?: number; integration_verified?: boolean; integration_type?: string }) | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
-  const [stats, setStats] = useState({ downloads: 0, signups: 0, purchases: 0 });
+  const [stats, setStats] = useState({ clicks: 0, downloads: 0, signups: 0, purchases: 0 });
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [loading, setLoading] = useState(true);
 
