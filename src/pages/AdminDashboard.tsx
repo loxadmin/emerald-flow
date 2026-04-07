@@ -7,39 +7,34 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, BarChart3, DollarSign, Users, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, BarChart3, DollarSign, Users, RefreshCw, MousePointerClick, Activity, TrendingUp } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from "recharts";
 
 type CampaignWithProfile = Tables<"campaigns"> & {
   profiles: { email: string; full_name: string | null } | null;
-  target_users?: number;
-  selected_milestones?: string[];
-  integration_verified?: boolean;
-  total_cost?: number;
-  is_draft?: boolean;
 };
 
-interface DailyData { date: string; events: number; revenue: number; }
+interface DailyData { date: string; events: number; revenue: number; clicks: number; }
 interface CategoryChangeReq {
   id: string; advertiser_id: string; current_category_id: string;
-  requested_category_id: string; reason: string; status: string;
-  created_at: string;
-  advertiser_email?: string;
-  current_name?: string;
-  requested_name?: string;
+  requested_category_id: string; reason: string; status: string; created_at: string;
+  advertiser_email?: string; current_name?: string; requested_name?: string;
 }
+
+const CHART_COLORS = ["hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)", "hsl(217, 91%, 60%)", "hsl(0, 72%, 50%)"];
+const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: 12 };
 
 export default function AdminDashboard() {
   const [campaigns, setCampaigns] = useState<CampaignWithProfile[]>([]);
-  const [stats, setStats] = useState({ totalCampaigns: 0, totalEvents: 0, totalRevenue: 0 });
+  const [stats, setStats] = useState({ totalCampaigns: 0, totalEvents: 0, totalRevenue: 0, totalClicks: 0, totalAdvertisers: 0, activeWallets: 0 });
   const [loading, setLoading] = useState(true);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
+  const [eventBreakdown, setEventBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [categoryRequests, setCategoryRequests] = useState<CategoryChangeReq[]>([]);
 
   const fetchData = async () => {
     const { data: allCampaigns } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
-    // Filter out drafts for admin view
     const nonDraftCampaigns = (allCampaigns || []).filter((c: any) => !c.is_draft);
     const advertiserIds = [...new Set(nonDraftCampaigns.map(c => c.advertiser_id))];
     const { data: profilesData } = advertiserIds.length > 0
@@ -49,35 +44,62 @@ export default function AdminDashboard() {
     const campaignsWithProfiles = nonDraftCampaigns.map(c => ({ ...c, profiles: profilesMap.get(c.advertiser_id) || null }));
     setCampaigns(campaignsWithProfiles as CampaignWithProfile[]);
 
-    const { count: eventsCount } = await supabase.from("events").select("*", { count: "exact", head: true });
-    const { data: txData } = await supabase.from("transactions").select("amount");
-    const totalRevenue = txData?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-    setStats({ totalCampaigns: nonDraftCampaigns.length, totalEvents: eventsCount || 0, totalRevenue });
+    // Fetch stats in parallel
+    const [eventsRes, txRes, clicksRes, advertisersRes, walletsRes, dlRes, suRes, puRes] = await Promise.all([
+      supabase.from("events").select("*", { count: "exact", head: true }),
+      supabase.from("transactions").select("amount"),
+      supabase.from("clicks").select("*", { count: "exact", head: true }),
+      supabase.from("profiles").select("*", { count: "exact", head: true }),
+      supabase.from("wallets").select("*", { count: "exact", head: true }).eq("is_activated", true),
+      supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "download"),
+      supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "signup"),
+      supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "purchase"),
+    ]);
 
+    const totalRevenue = txRes.data?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+    setStats({
+      totalCampaigns: nonDraftCampaigns.length,
+      totalEvents: eventsRes.count || 0,
+      totalRevenue,
+      totalClicks: clicksRes.count || 0,
+      totalAdvertisers: advertisersRes.count || 0,
+      activeWallets: walletsRes.count || 0,
+    });
+
+    setEventBreakdown([
+      { name: "Downloads", value: dlRes.count || 0 },
+      { name: "Signups", value: suRes.count || 0 },
+      { name: "Purchases", value: puRes.count || 0 },
+    ]);
+
+    // 30-day trend
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: events } = await supabase.from("events").select("created_at").gte("created_at", thirtyDaysAgo);
-    const { data: txRecent } = await supabase.from("transactions").select("amount, created_at").gte("created_at", thirtyDaysAgo);
+    const [{ data: events }, { data: txRecent }, { data: clicksRecent }] = await Promise.all([
+      supabase.from("events").select("created_at").gte("created_at", thirtyDaysAgo),
+      supabase.from("transactions").select("amount, created_at").gte("created_at", thirtyDaysAgo),
+      supabase.from("clicks").select("created_at").gte("created_at", thirtyDaysAgo),
+    ]);
     const byDay: Record<string, DailyData> = {};
-    events?.forEach(e => {
-      const day = new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      if (!byDay[day]) byDay[day] = { date: day, events: 0, revenue: 0 };
-      byDay[day].events++;
-    });
-    txRecent?.forEach(t => {
-      const day = new Date(t.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      if (!byDay[day]) byDay[day] = { date: day, events: 0, revenue: 0 };
-      byDay[day].revenue += Number(t.amount);
-    });
+    const addDay = (dateStr: string) => {
+      const day = new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      if (!byDay[day]) byDay[day] = { date: day, events: 0, revenue: 0, clicks: 0 };
+      return day;
+    };
+    events?.forEach(e => { byDay[addDay(e.created_at)].events++; });
+    txRecent?.forEach(t => { byDay[addDay(t.created_at)].revenue += Number(t.amount); });
+    clicksRecent?.forEach(c => { byDay[addDay(c.created_at)].clicks++; });
     setDailyData(Object.values(byDay));
 
-    // Fetch category change requests
+    // Category change requests
     const { data: reqData } = await supabase.from("category_change_requests" as any).select("*").eq("status", "pending").order("created_at", { ascending: false });
     if (reqData && (reqData as any[]).length > 0) {
       const reqs = reqData as any as CategoryChangeReq[];
-      const reqAdvertiserIds = [...new Set(reqs.map(r => r.advertiser_id))];
+      const reqAdvIds = [...new Set(reqs.map(r => r.advertiser_id))];
       const catIds = [...new Set([...reqs.map(r => r.current_category_id), ...reqs.map(r => r.requested_category_id)])];
-      const { data: reqProfiles } = await supabase.from("profiles").select("id, email").in("id", reqAdvertiserIds);
-      const { data: reqCats } = await supabase.from("categories").select("id, name").in("id", catIds);
+      const [{ data: reqProfiles }, { data: reqCats }] = await Promise.all([
+        supabase.from("profiles").select("id, email").in("id", reqAdvIds),
+        supabase.from("categories").select("id, name").in("id", catIds),
+      ]);
       const profMap = new Map((reqProfiles || []).map(p => [p.id, p.email]));
       const catMap = new Map((reqCats || []).map(c => [c.id, c.name]));
       setCategoryRequests(reqs.map(r => ({
@@ -106,7 +128,6 @@ export default function AdminDashboard() {
 
   const handleCategoryChangeRequest = async (reqId: string, action: "approved" | "rejected", req: CategoryChangeReq) => {
     if (action === "approved") {
-      // Update the advertiser's category
       await supabase.from("advertiser_categories").update({ category_id: req.requested_category_id, status: "active" }).eq("advertiser_id", req.advertiser_id);
     }
     await supabase.from("category_change_requests" as any).update({ status: action, updated_at: new Date().toISOString() } as any).eq("id", reqId);
@@ -116,149 +137,191 @@ export default function AdminDashboard() {
 
   const statusColor = (status: string) => {
     switch (status) {
-      case "active": return "border-primary/30 bg-primary/10 text-primary";
-      case "pending": return "border-warning/30 bg-warning/10 text-warning";
-      default: return "border-destructive/30 bg-destructive/10 text-destructive";
+      case "active": return "bg-primary/10 text-primary border-primary/20";
+      case "pending": return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+      default: return "bg-destructive/10 text-destructive border-destructive/20";
     }
   };
 
-  const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", color: "hsl(var(--foreground))" };
+  const pendingCampaigns = campaigns.filter(c => c.status === "pending");
 
   return (
     <AdminLayout>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <MotionWrapper>
-          <div><h1 className="text-2xl font-bold tracking-tight text-foreground">Admin Panel</h1><p className="text-muted-foreground">Manage campaigns, approvals, and platform settings</p></div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Admin Dashboard</h1>
+            <p className="text-muted-foreground text-sm">Platform overview and management</p>
+          </div>
         </MotionWrapper>
 
-        <MotionStagger className="grid gap-4 md:grid-cols-3">
+        {/* Stats Grid */}
+        <MotionStagger className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {[
-            { label: "Total Campaigns", value: stats.totalCampaigns, icon: Users },
-            { label: "Total Events", value: stats.totalEvents.toLocaleString(), icon: BarChart3 },
-            { label: "Total Revenue", value: `$${stats.totalRevenue.toFixed(2)}`, icon: DollarSign },
+            { label: "Advertisers", value: stats.totalAdvertisers, icon: Users },
+            { label: "Campaigns", value: stats.totalCampaigns, icon: BarChart3 },
+            { label: "Events", value: stats.totalEvents.toLocaleString(), icon: Activity },
+            { label: "Clicks", value: stats.totalClicks.toLocaleString(), icon: MousePointerClick },
+            { label: "Revenue", value: `$${stats.totalRevenue.toFixed(2)}`, icon: DollarSign },
+            { label: "Active Wallets", value: stats.activeWallets, icon: TrendingUp },
           ].map((s) => (
             <MotionItem key={s.label}>
-              <GlassCard className="glass-hover">
-                <GlassCardHeader className="flex flex-row items-center justify-between pb-2">
-                  <GlassCardTitle className="text-sm font-medium text-muted-foreground">{s.label}</GlassCardTitle>
-                  <s.icon className="h-4 w-4 text-muted-foreground/50" />
-                </GlassCardHeader>
-                <GlassCardContent><p className="text-2xl font-bold text-foreground">{s.value}</p></GlassCardContent>
-              </GlassCard>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">{s.label}</span>
+                  <s.icon className="h-3.5 w-3.5 text-muted-foreground/50" />
+                </div>
+                <p className="text-xl font-semibold text-foreground">{s.value}</p>
+              </div>
             </MotionItem>
           ))}
         </MotionStagger>
 
-        {dailyData.length > 0 && (
-          <MotionWrapper delay={0.1}>
-            <GlassCard variant="strong">
-              <GlassCardHeader><GlassCardTitle>Platform Activity (Last 30 Days)</GlassCardTitle></GlassCardHeader>
-              <GlassCardContent>
-                <ResponsiveContainer width="100%" height={250}>
+        {/* Charts Row */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          {/* Activity Trend */}
+          <MotionWrapper delay={0.05} className="lg:col-span-2">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="text-sm font-medium text-foreground mb-1">Platform Activity</h3>
+              <p className="text-xs text-muted-foreground mb-4">Last 30 days</p>
+              {dailyData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={dailyData}>
                     <defs>
-                      <linearGradient id="colorEv" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} /></linearGradient>
-                      <linearGradient id="colorRv" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="aEvents" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="aClicks" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="aRevenue" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} /></linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Area type="monotone" dataKey="events" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#colorEv)" name="Events" />
-                    <Area type="monotone" dataKey="revenue" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#colorRv)" name="Revenue ($)" />
+                    <Area type="monotone" dataKey="clicks" stroke="hsl(217, 91%, 60%)" strokeWidth={1.5} fillOpacity={1} fill="url(#aClicks)" name="Clicks" />
+                    <Area type="monotone" dataKey="events" stroke="hsl(160, 84%, 39%)" strokeWidth={1.5} fillOpacity={1} fill="url(#aEvents)" name="Events" />
+                    <Area type="monotone" dataKey="revenue" stroke="hsl(38, 92%, 50%)" strokeWidth={1.5} fillOpacity={1} fill="url(#aRevenue)" name="Revenue ($)" />
                   </AreaChart>
                 </ResponsiveContainer>
-              </GlassCardContent>
-            </GlassCard>
+              ) : (
+                <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">No data yet</div>
+              )}
+            </div>
           </MotionWrapper>
-        )}
+
+          {/* Event Breakdown Pie */}
+          <MotionWrapper delay={0.1}>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="text-sm font-medium text-foreground mb-1">Event Breakdown</h3>
+              <p className="text-xs text-muted-foreground mb-4">All time</p>
+              {eventBreakdown.some(e => e.value > 0) ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie data={eventBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} paddingAngle={2}>
+                      {eventBreakdown.map((_, i) => <Cell key={i} fill={CHART_COLORS[i]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">No events yet</div>
+              )}
+            </div>
+          </MotionWrapper>
+        </div>
 
         {/* Category Change Requests */}
         {categoryRequests.length > 0 && (
           <MotionWrapper delay={0.12}>
-            <GlassCard variant="strong">
-              <GlassCardHeader><GlassCardTitle className="flex items-center gap-2"><RefreshCw className="h-4 w-4" /> Category Change Requests</GlassCardTitle></GlassCardHeader>
-              <GlassCardContent>
-                <div className="space-y-2">
-                  {categoryRequests.map(req => (
-                    <div key={req.id} className="rounded-xl border border-border/50 p-4 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{req.advertiser_email}</p>
-                          <p className="text-xs text-muted-foreground">{req.current_name} → <strong className="text-foreground">{req.requested_name}</strong></p>
-                          <p className="text-xs text-muted-foreground mt-1 italic">"{req.reason}"</p>
-                        </div>
-                        <div className="flex gap-2 shrink-0">
-                          <GlassButton size="sm" variant="glow" onClick={() => handleCategoryChangeRequest(req.id, "approved", req)}>
-                            <CheckCircle className="mr-1 h-4 w-4" /> Approve
-                          </GlassButton>
-                          <GlassButton size="sm" variant="destructive" onClick={() => handleCategoryChangeRequest(req.id, "rejected", req)}>
-                            <XCircle className="mr-1 h-4 w-4" /> Reject
-                          </GlassButton>
-                        </div>
+            <div className="rounded-xl border border-border bg-card">
+              <div className="p-5 pb-3">
+                <h3 className="text-sm font-medium text-foreground flex items-center gap-2"><RefreshCw className="h-4 w-4" /> Category Change Requests</h3>
+              </div>
+              <div className="px-5 pb-5 space-y-2">
+                {categoryRequests.map(req => (
+                  <div key={req.id} className="rounded-lg border border-border p-4 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{req.advertiser_email}</p>
+                        <p className="text-xs text-muted-foreground">{req.current_name} → <span className="font-medium text-foreground">{req.requested_name}</span></p>
+                        <p className="text-xs text-muted-foreground mt-1 italic">"{req.reason}"</p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <GlassButton size="sm" onClick={() => handleCategoryChangeRequest(req.id, "approved", req)}>
+                          <CheckCircle className="mr-1 h-3.5 w-3.5" /> Approve
+                        </GlassButton>
+                        <GlassButton size="sm" variant="destructive" onClick={() => handleCategoryChangeRequest(req.id, "rejected", req)}>
+                          <XCircle className="mr-1 h-3.5 w-3.5" /> Reject
+                        </GlassButton>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </GlassCardContent>
-            </GlassCard>
+                  </div>
+                ))}
+              </div>
+            </div>
           </MotionWrapper>
         )}
 
+        {/* Pending Approvals - only non-draft campaigns */}
         <MotionWrapper delay={0.15}>
-          <GlassCard variant="strong">
-            <GlassCardHeader><GlassCardTitle>Pending Approvals</GlassCardTitle></GlassCardHeader>
-            <GlassCardContent>
+          <div className="rounded-xl border border-border bg-card">
+            <div className="p-5 pb-3">
+              <h3 className="text-sm font-medium text-foreground">Pending Approvals</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Only verified campaigns submitted for review</p>
+            </div>
+            <div className="px-5 pb-5">
               {loading ? (
-                <div className="flex justify-center py-6"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+                <div className="flex justify-center py-6"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+              ) : pendingCampaigns.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No pending campaigns</p>
               ) : (
-                <div className="space-y-2">
-                  {campaigns.filter(c => c.status === "pending").length === 0 && <p className="text-muted-foreground">No pending campaigns.</p>}
-                  {campaigns.filter(c => c.status === "pending").map((c) => (
-                    <div key={c.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-border/50 p-4">
+                <div className="divide-y divide-border">
+                  {pendingCampaigns.map((c) => (
+                    <div key={c.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3.5">
                       <div>
-                        <p className="font-medium text-foreground/90">{c.name}</p>
-                        <p className="text-sm text-muted-foreground">{c.profiles?.email || "Unknown"} | Target: {(c as any).target_users || "—"} users | Cost: ${Number((c as any).total_cost || c.budget_remaining).toFixed(2)}</p>
+                        <p className="text-sm font-medium text-foreground">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">{c.profiles?.email || "Unknown"} • Target: {c.target_users} users • ${Number(c.total_cost).toFixed(2)}</p>
                         <div className="flex gap-1 mt-1">
-                          {((c as any).selected_milestones || []).map((m: string) => (
-                            <Badge key={m} variant="outline" className="text-xs capitalize border-primary/20 text-primary/80">{m}</Badge>
+                          {(c.selected_milestones || []).map((m: string) => (
+                            <Badge key={m} variant="outline" className="text-[10px] capitalize border-primary/20 text-primary/80">{m}</Badge>
                           ))}
-                          {(c as any).integration_verified && <Badge variant="outline" className="text-xs border-primary/20 text-primary">✓ Verified</Badge>}
+                          {c.integration_verified && <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">✓ Verified</Badge>}
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
-                        <GlassButton size="sm" variant="glow" onClick={() => updateCampaignStatus(c.id, "active")}>
-                          <CheckCircle className="mr-1 h-4 w-4" /> Approve
+                        <GlassButton size="sm" onClick={() => updateCampaignStatus(c.id, "active")}>
+                          <CheckCircle className="mr-1 h-3.5 w-3.5" /> Approve
                         </GlassButton>
                         <GlassButton size="sm" variant="destructive" onClick={() => updateCampaignStatus(c.id, "rejected")}>
-                          <XCircle className="mr-1 h-4 w-4" /> Reject
+                          <XCircle className="mr-1 h-3.5 w-3.5" /> Reject
                         </GlassButton>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </GlassCardContent>
-          </GlassCard>
+            </div>
+          </div>
         </MotionWrapper>
 
-        <MotionWrapper delay={0.25}>
-          <GlassCard variant="strong">
-            <GlassCardHeader><GlassCardTitle>All Campaigns</GlassCardTitle></GlassCardHeader>
-            <GlassCardContent>
-              <div className="space-y-2">
-                {campaigns.map((c) => (
-                  <Link key={c.id} to={`/admin/campaigns/${c.id}`} className="flex items-center justify-between rounded-xl border border-border/50 p-4 transition-all duration-200 hover:bg-accent/5 hover:border-border">
-                    <div>
-                      <p className="font-medium text-foreground/90">{c.name}</p>
-                      <p className="text-sm text-muted-foreground">{c.profiles?.email || "Unknown"} | ${Number(c.budget_remaining).toFixed(2)}</p>
-                    </div>
-                    <Badge variant="outline" className={statusColor(c.status)}>{c.status}</Badge>
-                  </Link>
-                ))}
-              </div>
-            </GlassCardContent>
-          </GlassCard>
+        {/* All Campaigns */}
+        <MotionWrapper delay={0.2}>
+          <div className="rounded-xl border border-border bg-card">
+            <div className="p-5 pb-3">
+              <h3 className="text-sm font-medium text-foreground">All Campaigns</h3>
+              <span className="text-xs text-muted-foreground">{campaigns.length} total</span>
+            </div>
+            <div className="px-5 pb-5 divide-y divide-border">
+              {campaigns.map((c) => (
+                <Link key={c.id} to={`/admin/campaigns/${c.id}`} className="flex items-center justify-between py-3 group">
+                  <div>
+                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{c.name}</p>
+                    <p className="text-xs text-muted-foreground">{c.profiles?.email || "Unknown"} • ${Number(c.budget_remaining).toFixed(2)}</p>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] ${statusColor(c.status)}`}>{c.status}</Badge>
+                </Link>
+              ))}
+            </div>
+          </div>
         </MotionWrapper>
       </div>
     </AdminLayout>
