@@ -189,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasCategory,
         categoryStatus,
         walletActivated,
+        maintenanceMode,
         refreshAccessState,
         signOut,
       }}
