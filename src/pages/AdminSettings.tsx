@@ -88,6 +88,20 @@ export default function AdminSettings() {
           <div className="flex justify-center py-12"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
         ) : (
           <>
+            {/* Maintenance Mode */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Construction className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <h3 className="text-sm font-medium text-foreground">Maintenance Mode</h3>
+                    <p className="text-xs text-muted-foreground">When enabled, new advertisers without an activated wallet will see an "Under Development" page</p>
+                  </div>
+                </div>
+                <Switch checked={isMaintenanceOn} onCheckedChange={toggleMaintenanceMode} />
+              </div>
+            </div>
+
             {/* Gateway Selector */}
             <div className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-center gap-2 mb-4">
