@@ -27,14 +27,20 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const paystackSecret = Deno.env.get("PAYSTACK_SECRET_KEY");
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Read Paystack secret from admin_settings (admin-editable), fallback to env var
+    const { data: paystackSetting } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "paystack_secret_key")
+      .maybeSingle();
+    const paystackSecret = paystackSetting?.value || Deno.env.get("PAYSTACK_SECRET_KEY");
 
     if (!paystackSecret) {
-      console.error("PAYSTACK_SECRET_KEY is not set");
+      console.error("PAYSTACK_SECRET_KEY is not configured in admin_settings or env");
       return jsonResponse({ error: "Payment system not configured" }, 500);
     }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Verify user
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);

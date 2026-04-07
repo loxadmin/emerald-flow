@@ -12,12 +12,23 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const paystackSecret = Deno.env.get("PAYSTACK_SECRET_KEY");
+    const rawBody = await req.text();
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Read Paystack secret from admin_settings, fallback to env var
+    const { data: paystackSetting } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "paystack_secret_key")
+      .maybeSingle();
+    const paystackSecret = paystackSetting?.value || Deno.env.get("PAYSTACK_SECRET_KEY");
     if (!paystackSecret) {
       return new Response("Not configured", { status: 500 });
     }
-
-    const rawBody = await req.text();
 
     // Verify Paystack signature
     const signature = req.headers.get("x-paystack-signature");
