@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Label } from "@/components/ui/label";
@@ -125,7 +125,7 @@ export default function Signup() {
       {/* Left Panel - Marketing */}
       <div className="hidden lg:flex lg:w-[45%] flex-col justify-center px-12 xl:px-20 bg-card border-r border-border">
         <div className="max-w-md">
-          <Logo size={40} className="mb-8" />
+          <Link to="/" className="inline-block mb-8"><Logo size={40} /></Link>
           
           <h1 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-4">
             Start your free trial today to grow your brand with no strings attached:
@@ -168,9 +168,9 @@ export default function Signup() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="lg:hidden mb-6">
+            <Link to="/" className="lg:hidden mb-6 inline-block">
               <Logo size={40} className="mx-auto" />
-            </div>
+            </Link>
             <h2 className="text-2xl font-bold text-foreground">Sign up for free</h2>
             <p className="mt-2 text-muted-foreground text-sm">
               Create your advertiser account and start migrating customers today.
