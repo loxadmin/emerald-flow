@@ -56,7 +56,7 @@ export default function Login() {
       {/* Left Panel - Marketing */}
       <div className="hidden lg:flex lg:w-[45%] flex-col justify-center px-12 xl:px-20 bg-card border-r border-border">
         <div className="max-w-md">
-          <Link to="/" className="inline-block mb-8"><Logo size={40} /></Link>
+          <Logo size={40} className="mb-8" />
 
           <h1 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-4">
             Welcome back to the customer migration platform:
@@ -95,9 +95,9 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link to="/" className="lg:hidden mb-6 inline-block">
+            <div className="lg:hidden mb-6">
               <Logo size={40} className="mx-auto" />
-            </Link>
+            </div>
             <h2 className="text-2xl font-bold text-foreground">Sign in to your account</h2>
             <p className="mt-2 text-muted-foreground text-sm">
               Enter your credentials to access your dashboard.
