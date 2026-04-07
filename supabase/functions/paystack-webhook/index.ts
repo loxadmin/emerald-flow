@@ -50,10 +50,7 @@ Deno.serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // reuse supabase client created above
 
     // Find the pending transaction
     const { data: tx } = await supabase

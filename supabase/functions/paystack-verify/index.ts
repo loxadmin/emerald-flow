@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Payment not verified", details: verifyData.data?.gateway_response || verifyData.message }, 400);
     }
 
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = supabaseAdmin;
 
     // Find the pending transaction for this reference belonging to this user
     const { data: tx } = await supabase
