@@ -159,12 +159,7 @@
     box-shadow: 0 0 30px var(--glass-glow), 0 8px 32px rgba(0, 0, 0, 0.1);
   }
   .glass-hover {
-    @apply transition-all duration-300;
-  }
-  .glass-hover:hover {
-    background: var(--glass-bg);
-    border-color: var(--glass-border);
-    box-shadow: 0 0 20px var(--glass-glow);
+    /* No hover animations */
   }
   .clay-shadow {
     box-shadow:

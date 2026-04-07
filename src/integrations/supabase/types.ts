@@ -661,6 +661,10 @@ export type Database = {
           balance: number
           created_at: string
           currency: string
+          flutterwave_bank_name: string | null
+          flutterwave_barter_id: string | null
+          flutterwave_nuban: string | null
+          flutterwave_psa_reference: string | null
           id: string
           is_activated: boolean
           paystack_customer_code: string | null
@@ -673,6 +677,10 @@ export type Database = {
           balance?: number
           created_at?: string
           currency?: string
+          flutterwave_bank_name?: string | null
+          flutterwave_barter_id?: string | null
+          flutterwave_nuban?: string | null
+          flutterwave_psa_reference?: string | null
           id?: string
           is_activated?: boolean
           paystack_customer_code?: string | null
@@ -685,6 +693,10 @@ export type Database = {
           balance?: number
           created_at?: string
           currency?: string
+          flutterwave_bank_name?: string | null
+          flutterwave_barter_id?: string | null
+          flutterwave_nuban?: string | null
+          flutterwave_psa_reference?: string | null
           id?: string
           is_activated?: boolean
           paystack_customer_code?: string | null

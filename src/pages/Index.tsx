@@ -217,7 +217,7 @@ export default function Index() {
                 const desc = parts.slice(1).join(": ") || "";
                 return (
                   <MotionItem key={i}>
-                    <GlassCard className="glass-hover h-full p-6">
+                    <GlassCard className="h-full p-6">
                       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold">
                         {i + 1}
                       </div>
@@ -243,8 +243,8 @@ export default function Index() {
             <MotionStagger className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
               {features.map((f) => (
                 <MotionItem key={f.title}>
-                  <GlassCard className="glass-hover h-full p-6">
-                    <f.icon className="mb-4 h-8 w-8 text-foreground" />
+                  <GlassCard className="h-full p-6">
+                    <f.icon className="mb-4 h-8 w-8 text-primary" />
                     <h3 className="mb-2 font-semibold text-foreground">{f.title}</h3>
                     <p className="text-sm text-muted-foreground">{f.desc}</p>
                   </GlassCard>
