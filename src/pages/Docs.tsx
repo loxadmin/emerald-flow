@@ -17,8 +17,8 @@ export default function Docs() {
       <div className="relative z-10 mx-auto max-w-3xl px-4 py-8 sm:py-12">
         <MotionWrapper>
           <div className="flex items-center gap-3 mb-8">
-            <Link to="/">
-              <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" /> Home</Button>
+            <Link to="/dashboard">
+              <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" /> Back to Dashboard</Button>
             </Link>
             <Logo size={24} />
             <span className="text-lg font-semibold text-gradient">Karbali API Docs</span>
