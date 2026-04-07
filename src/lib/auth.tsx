@@ -14,6 +14,7 @@ interface AuthContextType {
   hasCategory: boolean | null;
   categoryStatus: string | null;
   walletActivated: boolean | null;
+  maintenanceMode: boolean;
   refreshAccessState: () => Promise<void>;
   signOut: () => Promise<void>;
 }
