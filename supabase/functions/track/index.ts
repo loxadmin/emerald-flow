@@ -78,6 +78,30 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: `This campaign is not configured for ${event_type} tracking` }, 403);
     }
 
+    // Domain lock: API key can only be used from the campaign's registered website domain
+    if (campaign.website_id) {
+      const { data: website } = await supabase
+        .from("advertiser_websites")
+        .select("domain")
+        .eq("id", campaign.website_id)
+        .single();
+
+      if (website?.domain) {
+        const origin = req.headers.get("origin") || req.headers.get("referer") || "";
+        let requestDomain = "";
+        try {
+          requestDomain = new URL(origin).hostname.replace(/^www\./, "");
+        } catch {
+          requestDomain = "";
+        }
+        const allowedDomain = website.domain.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "").toLowerCase();
+        
+        if (!requestDomain || requestDomain.toLowerCase() !== allowedDomain) {
+          return jsonResponse({ error: "API key is not authorized for this domain" }, 403);
+        }
+      }
+    }
+
     let resolvedReferralId: string | null = null;
     if (referral_id) {
       const referralValue = String(referral_id).trim();
