@@ -10,13 +10,41 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 
-const FORBIDDEN_DOMAINS = [
+// Public email providers
+const PUBLIC_EMAIL_DOMAINS = [
   "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "live.com",
   "aol.com", "icloud.com", "mail.com", "protonmail.com", "zoho.com",
   "yandex.com", "gmx.com", "fastmail.com", "tutanota.com", "hey.com",
   "pm.me", "proton.me", "qq.com", "163.com", "126.com",
   "msn.com", "me.com", "mac.com", "googlemail.com",
 ];
+
+// Disposable/temporary/bot email domains
+const DISPOSABLE_DOMAINS = [
+  "example.com", "example.org", "example.net", "test.com", "test.org",
+  "mailinator.com", "guerrillamail.com", "guerrillamail.net", "guerrillamail.org",
+  "tempmail.com", "throwaway.email", "temp-mail.org", "fakeinbox.com",
+  "sharklasers.com", "guerrillamailblock.com", "grr.la", "dispostable.com",
+  "yopmail.com", "yopmail.fr", "trashmail.com", "trashmail.me", "trashmail.net",
+  "mailnesia.com", "maildrop.cc", "discard.email", "discardmail.com",
+  "mailcatch.com", "mintemail.com", "tempail.com", "mohmal.com",
+  "burnermail.io", "mailnator.com", "getnada.com", "nada.email",
+  "tempinbox.com", "tempr.email", "10minutemail.com", "10minutemail.net",
+  "harakirimail.com", "emailondeck.com", "33mail.com", "maildax.com",
+  "binkmail.com", "bobmail.info", "chammy.info", "devnullmail.com",
+  "letthemeatspam.com", "mailexpire.com", "mailmoat.com", "mailnull.com",
+  "mailshell.com", "mailzilla.com", "nomail.xl.cx", "nowmymail.com",
+  "spamfree24.org", "spamgourmet.com", "spamhole.com", "trashymail.com",
+  "jetable.org", "mailforspam.com", "safetymail.info", "getairmail.com",
+  "filzmail.com", "inboxalias.com", "mailblocks.com", "mailscrap.com",
+  "einrot.com", "cuvox.de", "armyspy.com", "dayrep.com", "fleckens.hu",
+  "gustr.com", "jourrapide.com", "rhyta.com", "superrito.com", "teleworm.us",
+  "tempomail.fr", "tmpmail.net", "tmpmail.org", "trash-mail.com",
+  "bugmenot.com", "notmailinator.com", "spamevader.com",
+  "localhost", "invalid.com", "nowhere.com", "noone.com",
+];
+
+const FORBIDDEN_DOMAINS = [...PUBLIC_EMAIL_DOMAINS, ...DISPOSABLE_DOMAINS];
 
 function extractDomain(url: string): string {
   try {
