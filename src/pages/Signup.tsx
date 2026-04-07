@@ -168,9 +168,9 @@ export default function Signup() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="lg:hidden mb-6">
+            <Link to="/" className="lg:hidden mb-6 inline-block">
               <Logo size={40} className="mx-auto" />
-            </div>
+            </Link>
             <h2 className="text-2xl font-bold text-foreground">Sign up for free</h2>
             <p className="mt-2 text-muted-foreground text-sm">
               Create your advertiser account and start migrating customers today.
