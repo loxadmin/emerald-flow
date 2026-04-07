@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const [{ data: categoryData }, { data: walletData }] = await Promise.all([
+      const [{ data: categoryData }, { data: walletData }, { data: maintenanceData }] = await Promise.all([
         supabase
           .from("advertiser_categories")
           .select("status")
@@ -106,6 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select("is_activated")
           .eq("advertiser_id", activeUser.id)
           .maybeSingle(),
+        supabase
+          .from("admin_settings")
+          .select("value")
+          .eq("key", "maintenance_mode")
+          .maybeSingle(),
       ]);
 
       if (requestId !== accessRequestIdRef.current) return;
@@ -113,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setHasCategory(!!categoryData);
       setCategoryStatus(categoryData?.status || null);
       setWalletActivated(walletData?.is_activated ?? false);
+      setMaintenanceMode(maintenanceData?.value === "true");
     } catch (error) {
       if (requestId !== accessRequestIdRef.current) return;
       console.error("Failed to load access state:", error);
