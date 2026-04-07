@@ -4,8 +4,10 @@ import Logo from "@/components/Logo";
 import MotionWrapper from "@/components/MotionWrapper";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
 
 export default function Docs() {
+  const { session } = useAuth();
   const brandedBaseUrl = "https://advertiser.karbali.com";
   const referralUrl = `${brandedBaseUrl}/r/ref_xxxxxxxx`;
   const trackerScriptUrl = `${brandedBaseUrl}/karbali-tracker.js`;
