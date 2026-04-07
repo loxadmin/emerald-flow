@@ -1,0 +1,1 @@
+INSERT INTO admin_settings (key, value, description) VALUES ('maintenance_mode', 'false', 'When enabled, new advertisers who have not activated their wallet will see an under development page');

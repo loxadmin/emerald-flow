@@ -4,9 +4,10 @@ import AdminLayout from "@/components/AdminLayout";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Save, CreditCard, Settings2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Save, CreditCard, Settings2, ToggleLeft, ToggleRight, Construction } from "lucide-react";
 
 interface Setting { id: string; key: string; value: string; description: string | null; }
 
@@ -38,6 +39,14 @@ export default function AdminSettings() {
   };
 
   const activeGateway = editValues["active_payment_gateway"] || "paystack";
+  const isMaintenanceOn = editValues["maintenance_mode"] === "true";
+
+  const toggleMaintenanceMode = async () => {
+    const newVal = isMaintenanceOn ? "false" : "true";
+    setEditValues({ ...editValues, maintenance_mode: newVal });
+    const { error } = await supabase.from("admin_settings").update({ value: newVal, updated_at: new Date().toISOString() }).eq("key", "maintenance_mode");
+    if (error) toast.error(error.message); else toast.success(`Maintenance mode ${newVal === "true" ? "enabled" : "disabled"}`);
+  };
 
   const setActiveGateway = async (gateway: string) => {
     setEditValues({ ...editValues, active_payment_gateway: gateway });
@@ -79,6 +88,20 @@ export default function AdminSettings() {
           <div className="flex justify-center py-12"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
         ) : (
           <>
+            {/* Maintenance Mode */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Construction className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <h3 className="text-sm font-medium text-foreground">Maintenance Mode</h3>
+                    <p className="text-xs text-muted-foreground">When enabled, new advertisers without an activated wallet will see an "Under Development" page</p>
+                  </div>
+                </div>
+                <Switch checked={isMaintenanceOn} onCheckedChange={toggleMaintenanceMode} />
+              </div>
+            </div>
+
             {/* Gateway Selector */}
             <div className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-center gap-2 mb-4">

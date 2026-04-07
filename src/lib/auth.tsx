@@ -14,6 +14,7 @@ interface AuthContextType {
   hasCategory: boolean | null;
   categoryStatus: string | null;
   walletActivated: boolean | null;
+  maintenanceMode: boolean;
   refreshAccessState: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   hasCategory: null,
   categoryStatus: null,
   walletActivated: null,
+  maintenanceMode: false,
   refreshAccessState: async () => {},
   signOut: async () => {},
 });
@@ -39,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [hasCategory, setHasCategory] = useState<boolean | null>(null);
   const [categoryStatus, setCategoryStatus] = useState<string | null>(null);
   const [walletActivated, setWalletActivated] = useState<boolean | null>(null);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
   const lastActivityRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const accessRequestIdRef = useRef(0);
@@ -92,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const [{ data: categoryData }, { data: walletData }] = await Promise.all([
+      const [{ data: categoryData }, { data: walletData }, { data: maintenanceData }] = await Promise.all([
         supabase
           .from("advertiser_categories")
           .select("status")
@@ -103,6 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select("is_activated")
           .eq("advertiser_id", activeUser.id)
           .maybeSingle(),
+        supabase
+          .from("admin_settings")
+          .select("value")
+          .eq("key", "maintenance_mode")
+          .maybeSingle(),
       ]);
 
       if (requestId !== accessRequestIdRef.current) return;
@@ -110,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setHasCategory(!!categoryData);
       setCategoryStatus(categoryData?.status || null);
       setWalletActivated(walletData?.is_activated ?? false);
+      setMaintenanceMode(maintenanceData?.value === "true");
     } catch (error) {
       if (requestId !== accessRequestIdRef.current) return;
       console.error("Failed to load access state:", error);
@@ -180,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasCategory,
         categoryStatus,
         walletActivated,
+        maintenanceMode,
         refreshAccessState,
         signOut,
       }}

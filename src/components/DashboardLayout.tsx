@@ -21,7 +21,7 @@ const advertiserLinks = [
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, signOut, walletActivated, categoryStatus } = useAuth();
+  const { user, signOut, walletActivated, categoryStatus, maintenanceMode } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -135,7 +135,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Main */}
       <main className="relative z-10 lg:ml-56 flex-1 p-4 pt-16 lg:p-6 lg:pt-6 min-w-0">
-        {currentPageLocked ? (
+        {maintenanceMode && !walletActivated ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
+            <h2 className="text-lg font-semibold text-foreground mb-1">Under Development</h2>
+            <p className="text-sm text-muted-foreground max-w-md">This platform is currently under development. Please check back soon.</p>
+          </div>
+        ) : currentPageLocked ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
             <h2 className="text-lg font-semibold text-foreground mb-1">Access Restricted</h2>
