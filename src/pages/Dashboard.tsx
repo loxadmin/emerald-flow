@@ -112,7 +112,7 @@ export default function Dashboard() {
             { label: "Active Campaigns", value: activeCampaigns, icon: BarChart3, trend: null, up: true },
           ].map((s) => (
             <MotionItem key={s.label}>
-              <div className="rounded-xl border border-border bg-card p-5 transition-colors hover:bg-accent/5">
+              <div className="rounded-xl border border-border bg-card p-5">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-muted-foreground">{s.label}</span>
                   <s.icon className="h-4 w-4 text-muted-foreground/60" />
