@@ -125,7 +125,7 @@ export default function Signup() {
       {/* Left Panel - Marketing */}
       <div className="hidden lg:flex lg:w-[45%] flex-col justify-center px-12 xl:px-20 bg-card border-r border-border">
         <div className="max-w-md">
-          <Logo size={40} className="mb-8" />
+          <Link to="/" className="inline-block mb-8"><Logo size={40} /></Link>
           
           <h1 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-4">
             Start your free trial today to grow your brand with no strings attached:
