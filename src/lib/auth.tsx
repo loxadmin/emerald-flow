@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [hasCategory, setHasCategory] = useState<boolean | null>(null);
   const [categoryStatus, setCategoryStatus] = useState<string | null>(null);
   const [walletActivated, setWalletActivated] = useState<boolean | null>(null);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
   const lastActivityRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const accessRequestIdRef = useRef(0);
