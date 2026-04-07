@@ -27,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   hasCategory: null,
   categoryStatus: null,
   walletActivated: null,
+  maintenanceMode: false,
   refreshAccessState: async () => {},
   signOut: async () => {},
 });
