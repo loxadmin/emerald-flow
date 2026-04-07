@@ -15,35 +15,16 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
   // Pre-compute hair positions to avoid random on each render
   const hairStrands = useMemo(() => {
     const strands: { x: number; y: number; z: number; r: number }[] = [];
-    // Main volume - long droopy strands like reference
-    for (let i = 0; i < 14; i++) {
-      const angle = (i / 14) * Math.PI * 2;
-      const r = 0.16;
+    // Much denser and more randomized hair for "frizzy" look
+    for (let i = 0; i < 80; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const height = 0.4 + Math.random() * 0.45;
+      const radius = 0.18 + Math.random() * 0.12;
       strands.push({
-        x: Math.cos(angle) * r,
-        y: 0.68,
-        z: Math.sin(angle) * r,
-        r: 0.055,
-      });
-    }
-    // Outer droopy layer
-    for (let i = 0; i < 10; i++) {
-      const angle = (i / 10) * Math.PI * 2;
-      strands.push({
-        x: Math.cos(angle) * 0.21,
-        y: 0.58,
-        z: Math.sin(angle) * 0.21,
-        r: 0.05,
-      });
-    }
-    // Draping ends
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      strands.push({
-        x: Math.cos(angle) * 0.24,
-        y: 0.45,
-        z: Math.sin(angle) * 0.24,
-        r: 0.04,
+        x: Math.cos(angle) * radius,
+        y: height,
+        z: Math.sin(angle) * radius,
+        r: 0.04 + Math.random() * 0.04,
       });
     }
     return strands;
@@ -51,17 +32,16 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
 
   const topHair = useMemo(() => {
     const tops: { x: number; y: number; z: number; r: number }[] = [];
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
+    for (let i = 0; i < 30; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 0.18;
       tops.push({
-        x: Math.cos(angle) * 0.1,
-        y: 0.82,
-        z: Math.sin(angle) * 0.1,
-        r: 0.06,
+        x: Math.cos(angle) * radius,
+        y: 0.8 + Math.random() * 0.1,
+        z: Math.sin(angle) * radius,
+        r: 0.05 + Math.random() * 0.03,
       });
     }
-    // Crown
-    tops.push({ x: 0, y: 0.88, z: 0, r: 0.07 });
     return tops;
   }, []);
 
@@ -85,7 +65,7 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
       isWalking = false;
       facingRight = false;
       const p = (cycle - 2.5) / 1.5;
-      bendDown = Math.sin(p * Math.PI) * 0.3;
+      bendDown = Math.sin(p * Math.PI) * 0.45;
     } else if (cycle < 7) {
       // Walk to your brand wallet
       const p = (cycle - 4) / 3;
@@ -95,7 +75,7 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
       // Bend down and drop into wallet
       x = 2.2;
       isWalking = false;
-      bendDown = Math.sin(((cycle - 7) / 1.5) * Math.PI) * 0.3;
+      bendDown = Math.sin(((cycle - 7) / 1.5) * Math.PI) * 0.45;
     } else {
       // Walk back to center
       const p = (cycle - 8.5) / 1.5;
@@ -115,8 +95,8 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
       rightLegRef.current.rotation.x = -Math.sin(t * walkSpeed) * walkAmp;
     }
     if (leftArmRef.current && rightArmRef.current) {
-      leftArmRef.current.rotation.x = -Math.sin(t * walkSpeed) * walkAmp * 0.6 - bendDown * 2;
-      rightArmRef.current.rotation.x = Math.sin(t * walkSpeed) * walkAmp * 0.6 - bendDown * 2;
+      leftArmRef.current.rotation.x = -Math.sin(t * walkSpeed) * walkAmp * 0.6 - bendDown * 2.5;
+      rightArmRef.current.rotation.x = Math.sin(t * walkSpeed) * walkAmp * 0.6 - bendDown * 2.5;
     }
     if (bodyBobRef.current) {
       bodyBobRef.current.position.y = isWalking
@@ -126,11 +106,12 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
     }
   });
 
-  const skinColor = "#8B5E3C";
-  const hairColor = "#7EC8E3";
+  const skinColor = "#6B4226";
+  const noseColor = "#FF8A8A";
+  const hairColor = "#9BD8F2";
   const sweaterColor = "#E85D3A";
-  const dotColor1 = "#3B7DD8";
-  const dotColor2 = "#E8C63A";
+  const patternBlue = "#3B7DD8";
+  const patternYellow = "#E8C63A";
 
   return (
     <group ref={groupRef} position={[0, 0.1, 0]} scale={0.9}>
@@ -167,12 +148,31 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
           <torusGeometry args={[0.12, 0.03, 8, 16]} />
           <meshStandardMaterial color={sweaterColor} roughness={0.8} />
         </mesh>
-        {/* Dots on sweater */}
-        {[[-0.08, 0.2, 0.16], [0.08, 0.15, 0.16], [0, 0.28, 0.16], [-0.1, 0.08, 0.14], [0.1, 0.08, 0.14]].map((pos, i) => (
-          <mesh key={`dot-${i}`} position={pos as [number, number, number]}>
-            <sphereGeometry args={[0.04, 8, 8]} />
-            <meshStandardMaterial color={i % 2 === 0 ? dotColor1 : dotColor2} roughness={0.7} />
-          </mesh>
+        {/* Flower pattern on sweater */}
+        {[
+          [-0.08, 0.22, 0.15],
+          [0.08, 0.15, 0.15],
+          [0, 0.3, 0.15],
+          [-0.1, 0.08, 0.12],
+          [0.1, 0.08, 0.12]
+        ].map((center, i) => (
+          <group key={`flower-${i}`} position={center as [number, number, number]} scale={0.4}>
+            {/* Flower center */}
+            <mesh>
+              <sphereGeometry args={[0.06, 8, 8]} />
+              <meshStandardMaterial color={patternYellow} roughness={0.7} />
+            </mesh>
+            {/* Petals */}
+            {[0, 1, 2, 3, 4].map((p) => {
+              const angle = (p / 5) * Math.PI * 2;
+              return (
+                <mesh key={`petal-${p}`} position={[Math.cos(angle) * 0.08, Math.sin(angle) * 0.08, 0]}>
+                  <sphereGeometry args={[0.05, 8, 8]} />
+                  <meshStandardMaterial color={patternBlue} roughness={0.7} />
+                </mesh>
+              );
+            })}
+          </group>
         ))}
 
         {/* Arms */}
@@ -215,8 +215,8 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
           <meshStandardMaterial color="#2a1a0a" />
         </mesh>
         {/* Left eyelid (droopy) */}
-        <mesh position={[-0.055, 0.56, 0.155]} rotation={[0.3, 0, 0]}>
-          <boxGeometry args={[0.08, 0.02, 0.03]} />
+        <mesh position={[-0.055, 0.565, 0.155]} rotation={[0.45, 0, 0]}>
+          <boxGeometry args={[0.08, 0.025, 0.03]} />
           <meshStandardMaterial color={skinColor} roughness={0.7} />
         </mesh>
         {/* Right eye */}
@@ -228,15 +228,15 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
           <sphereGeometry args={[0.018, 8, 8]} />
           <meshStandardMaterial color="#2a1a0a" />
         </mesh>
-        <mesh position={[0.055, 0.56, 0.155]} rotation={[0.3, 0, 0]}>
-          <boxGeometry args={[0.08, 0.02, 0.03]} />
+        <mesh position={[0.055, 0.565, 0.155]} rotation={[0.45, 0, 0]}>
+          <boxGeometry args={[0.08, 0.025, 0.03]} />
           <meshStandardMaterial color={skinColor} roughness={0.7} />
         </mesh>
 
         {/* Nose - round like reference */}
         <mesh position={[0, 0.5, 0.16]}>
-          <sphereGeometry args={[0.025, 8, 8]} />
-          <meshStandardMaterial color="#C97A5A" roughness={0.6} />
+          <sphereGeometry args={[0.03, 8, 8]} />
+          <meshStandardMaterial color={noseColor} roughness={0.6} />
         </mesh>
 
         {/* Mouth - slight frown */}
@@ -286,16 +286,16 @@ function Wallet({ position, label, isTarget }: {
     <Float speed={1.2} rotationIntensity={0.02} floatIntensity={0.15}>
       <group position={position}>
         {/* Wallet body */}
-        <RoundedBox args={[1.0, 0.7, 0.6]} radius={0.08} position={[0, 0, 0]}>
-          <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />
+        <RoundedBox args={[1.0, 0.8, 0.4]} radius={0.12} position={[0, 0, 0]}>
+          <meshStandardMaterial color={color} roughness={0.7} metalness={0.1} />
         </RoundedBox>
-        {/* Wallet flap (open) */}
-        <RoundedBox args={[1.0, 0.05, 0.6]} radius={0.03} position={[0, 0.38, -0.1]} rotation={[-0.3, 0, 0]}>
-          <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />
+        {/* Wallet flap (more pronounced) */}
+        <RoundedBox args={[1.02, 0.4, 0.05]} radius={0.05} position={[0, 0.2, 0.2]} rotation={[0.2, 0, 0]}>
+          <meshStandardMaterial color={color} roughness={0.7} metalness={0.1} />
         </RoundedBox>
         {/* Inner pocket visible */}
         <mesh position={[0, 0.1, 0]}>
-          <boxGeometry args={[0.85, 0.45, 0.45]} />
+          <boxGeometry args={[0.9, 0.6, 0.35]} />
           <meshStandardMaterial color={innerColor} roughness={0.5} transparent opacity={0.4} />
         </mesh>
         {/* Clasp */}
@@ -309,15 +309,15 @@ function Wallet({ position, label, isTarget }: {
             <meshStandardMaterial color={isTarget ? "#059669" : "#475569"} roughness={0.5} transparent opacity={0.3} />
           </RoundedBox>
         ))}
-        {/* Label centered below */}
+        {/* Label centered on front face of wallet */}
         <Text
-          position={[0, -0.52, 0]}
-          fontSize={0.09}
-          color={isTarget ? "#10b981" : "#94a3b8"}
+          position={[0, -0.05, 0.21]}
+          fontSize={0.1}
+          color="white"
           anchorX="center"
           anchorY="middle"
           font={undefined}
-          maxWidth={1.2}
+          maxWidth={0.8}
           textAlign="center"
         >
           {label.toUpperCase()}
@@ -343,38 +343,38 @@ function UserAvatar({ index, charPos }: { index: number; charPos: React.MutableR
     if (cycle < 2.5) {
       // Sitting in competitor wallet
       x = -2.2 + offset * 0.3;
-      y = 0.3;
+      y = 0.15;
       scale = 0.8;
     } else if (cycle < 4) {
       // Being picked up
       const p = (cycle - 2.5) / 1.5;
       x = -2.2 + offset * 0.15;
       if (p < 0.5) {
-        y = THREE.MathUtils.lerp(0.3, 1.1, easeInOut(p * 2));
+        y = THREE.MathUtils.lerp(0.15, 0.45, easeInOut(p * 2));
       } else {
-        y = 1.1 + Math.sin(t * 3 + index) * 0.03;
+        y = 0.45 + Math.sin(t * 3 + index) * 0.02;
       }
       scale = 0.7;
     } else if (cycle < 7) {
-      // Carried by character
-      x = charPos.current.x + offset * 0.15;
-      y = 1.1 + Math.sin(t * 3 + index) * 0.03;
+      // Carried by character - closer to hands
+      x = charPos.current.x + offset * 0.12;
+      y = 0.45 + Math.sin(t * 3 + index) * 0.02;
       scale = 0.7;
     } else if (cycle < 8.5) {
       // Being dropped
       const p = (cycle - 7) / 1.5;
       x = 2.2 + offset * 0.2;
       if (p < 0.5) {
-        y = 1.1 + Math.sin(t * 3 + index) * 0.03;
+        y = 0.45 + Math.sin(t * 3 + index) * 0.02;
       } else {
-        y = THREE.MathUtils.lerp(1.1, 0.3, easeInOut((p - 0.5) * 2));
+        y = THREE.MathUtils.lerp(0.45, 0.15, easeInOut((p - 0.5) * 2));
       }
       scale = THREE.MathUtils.lerp(0.7, 0.8, p);
     } else {
       // Fade in competitor wallet for reset
       const p = (cycle - 8.5) / 1.5;
       x = 2.2 + offset * 0.2;
-      y = 0.3;
+      y = 0.15;
       scale = THREE.MathUtils.lerp(0.8, 0, Math.max(0, (p - 0.5) * 2));
     }
 
@@ -485,7 +485,7 @@ const MigrationAnimation = () => {
   return (
     <div className="relative w-full" style={{ height: "420px" }}>
       <Canvas
-        camera={{ position: [0, 1.8, 5.5], fov: 38 }}
+        camera={{ position: [0, 2, 6], fov: 35 }}
         dpr={[1, 2]}
         style={{ background: "transparent" }}
         gl={{ alpha: true, antialias: true }}
