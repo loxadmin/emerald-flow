@@ -22,7 +22,15 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const paystackSecret = Deno.env.get("PAYSTACK_SECRET_KEY");
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey);
+
+    // Read Paystack secret from admin_settings, fallback to env var
+    const { data: paystackSetting } = await supabaseAdmin
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "paystack_secret_key")
+      .maybeSingle();
+    const paystackSecret = paystackSetting?.value || Deno.env.get("PAYSTACK_SECRET_KEY");
     if (!paystackSecret) return jsonResponse({ error: "Not configured" }, 500);
 
     // Verify calling user
@@ -46,7 +54,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Payment not verified", details: verifyData.data?.gateway_response || verifyData.message }, 400);
     }
 
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = supabaseAdmin;
 
     // Find the pending transaction for this reference belonging to this user
     const { data: tx } = await supabase
