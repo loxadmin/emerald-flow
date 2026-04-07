@@ -2,15 +2,12 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
-import { GlassInput } from "@/components/ui/glass-input";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from "@/components/ui/glass-card";
 import { Label } from "@/components/ui/label";
-import FluidCanvas from "@/components/FluidCanvas";
-import MotionWrapper from "@/components/MotionWrapper";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import Logo from "@/components/Logo";
 
-// Public email providers
 const PUBLIC_EMAIL_DOMAINS = [
   "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "live.com",
   "aol.com", "icloud.com", "mail.com", "protonmail.com", "zoho.com",
@@ -19,7 +16,6 @@ const PUBLIC_EMAIL_DOMAINS = [
   "msn.com", "me.com", "mac.com", "googlemail.com",
 ];
 
-// Disposable/temporary/bot email domains
 const DISPOSABLE_DOMAINS = [
   "example.com", "example.org", "example.net", "test.com", "test.org",
   "mailinator.com", "guerrillamail.com", "guerrillamail.net", "guerrillamail.org",
@@ -64,6 +60,7 @@ export default function Signup() {
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +79,6 @@ export default function Signup() {
       return;
     }
 
-    // Block email provider domains as websites
     if (FORBIDDEN_DOMAINS.includes(websiteDomain)) {
       toast.error("Please provide a professional business website, not a public email provider.");
       return;
@@ -125,79 +121,169 @@ export default function Signup() {
   const isForbiddenDomain = websiteDomain && FORBIDDEN_DOMAINS.includes(websiteDomain);
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 bg-background">
-      <FluidCanvas />
-      <MotionWrapper className="relative z-10 w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Logo size={48} className="mx-auto mb-4" />
-          <h1 className="text-3xl">
-            <span className="text-gradient">Karbali</span>
+    <div className="min-h-screen flex bg-background">
+      {/* Left Panel - Marketing */}
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center px-12 xl:px-20 bg-card border-r border-border">
+        <div className="max-w-md">
+          <Logo size={40} className="mb-8" />
+          
+          <h1 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-4">
+            Start your free trial today to grow your brand with no strings attached:
           </h1>
-          <p className="mt-2 text-muted-foreground">Create your advertiser account</p>
+
+          <ul className="space-y-3 mb-10">
+            {[
+              "No upfront costs required",
+              "Pay only for real results",
+              "Full access to migration tools",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-3 text-primary">
+                <CheckCircle2 className="h-5 w-5 shrink-0" />
+                <span className="text-foreground font-medium">{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          <h2 className="text-xl font-bold text-foreground mb-4">Get up and running</h2>
+          <ul className="space-y-3 mb-10">
+            {[
+              "Verify your business domain",
+              "Create your first campaign",
+              "Start acquiring customers!",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-3 text-primary">
+                <CheckCircle2 className="h-5 w-5 shrink-0" />
+                <span className="text-foreground font-medium">{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="text-xs text-muted-foreground">
+            *Campaigns are performance-based. You only pay when users complete milestones you define.
+          </p>
         </div>
-        <GlassCard variant="strong">
-          <GlassCardHeader>
-            <GlassCardTitle>Sign Up</GlassCardTitle>
-            <GlassCardDescription>Register with your business email</GlassCardDescription>
-          </GlassCardHeader>
-          <GlassCardContent>
-            <form onSubmit={handleSignup} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Full Name *</Label>
-                <GlassInput value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} required autoComplete="name" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Company Name</Label>
-                <GlassInput value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={100} autoComplete="organization" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Website *</Label>
-                <GlassInput
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  maxLength={255}
-                  placeholder="yourbusiness.com"
-                  autoComplete="url"
-                  required
-                />
-                {isForbiddenDomain ? (
-                  <p className="text-xs text-destructive">
-                    Email provider domains are not accepted. Please use your business website.
-                  </p>
-                ) : websiteDomain ? (
-                  <p className="text-xs text-muted-foreground/60">
-                    Your email must end with @{websiteDomain}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Business Email *</Label>
-                <GlassInput
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  maxLength={255}
-                  required
-                  autoComplete="email"
-                  placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Password *</Label>
-                <GlassInput type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="new-password" />
-                <p className="text-xs text-muted-foreground/60">Minimum 8 characters</p>
-              </div>
-              <GlassButton type="submit" className="w-full" variant="glow" disabled={loading || !!isForbiddenDomain}>
-                {loading ? "Creating account..." : "Create Account"}
-              </GlassButton>
-            </form>
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:text-primary/80 transition-colors">Sign in</Link>
+      </div>
+
+      {/* Right Panel - Form */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="lg:hidden mb-6">
+              <Logo size={40} className="mx-auto" />
             </div>
-          </GlassCardContent>
-        </GlassCard>
-      </MotionWrapper>
+            <h2 className="text-2xl font-bold text-foreground">Sign up for free</h2>
+            <p className="mt-2 text-muted-foreground text-sm">
+              Create your advertiser account and start migrating customers today.
+            </p>
+          </div>
+
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="fullName" className="text-sm text-foreground">Full name *</Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                maxLength={100}
+                required
+                autoComplete="name"
+                className="h-11 bg-background border-border"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="companyName" className="text-sm text-foreground">Company name</Label>
+              <Input
+                id="companyName"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                maxLength={100}
+                autoComplete="organization"
+                className="h-11 bg-background border-border"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="website" className="text-sm text-foreground">Website *</Label>
+              <Input
+                id="website"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                maxLength={255}
+                placeholder="yourbusiness.com"
+                autoComplete="url"
+                required
+                className="h-11 bg-background border-border"
+              />
+              {isForbiddenDomain ? (
+                <p className="text-xs text-destructive">
+                  Email provider domains are not accepted. Please use your business website.
+                </p>
+              ) : websiteDomain ? (
+                <p className="text-xs text-muted-foreground">
+                  Your email must end with @{websiteDomain}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm text-foreground">Business email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                maxLength={255}
+                required
+                autoComplete="email"
+                placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"}
+                className="h-11 bg-background border-border"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-sm text-foreground">Password *</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  maxLength={128}
+                  required
+                  autoComplete="new-password"
+                  className="h-11 bg-background border-border pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              By clicking Continue, you agree to the{" "}
+              <span className="text-primary cursor-pointer">Terms of Service</span> and{" "}
+              <span className="text-primary cursor-pointer">Privacy Policy</span>.
+            </p>
+
+            <GlassButton type="submit" className="w-full h-11" variant="glow" disabled={loading || !!isForbiddenDomain}>
+              {loading ? "Creating account..." : "Continue"}
+            </GlassButton>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary font-medium hover:text-primary/80 transition-colors">
+              Login
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

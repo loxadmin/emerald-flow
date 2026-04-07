@@ -2,13 +2,10 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
-import { GlassInput } from "@/components/ui/glass-input";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from "@/components/ui/glass-card";
 import { Label } from "@/components/ui/label";
-import FluidCanvas from "@/components/FluidCanvas";
-import MotionWrapper from "@/components/MotionWrapper";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import Logo from "@/components/Logo";
 
 export default function Login() {
@@ -22,18 +19,14 @@ export default function Login() {
     e.preventDefault();
     if (!email.trim() || !password.trim()) { toast.error("Please fill in all fields"); return; }
     setLoading(true);
-    console.log("Starting login for:", email);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      console.log("Login result:", { hasData: !!data, hasError: !!error });
       if (error) {
         toast.error(error.message);
       } else {
-        console.log("Login success, checking role...");
         toast.success("Logged in successfully");
         localStorage.setItem("karbali-last-activity", String(Date.now()));
         
-        // Check if user is admin to redirect appropriately
         await supabase.auth.getSession();
         const userId = data.user?.id;
         if (userId) {
@@ -42,17 +35,10 @@ export default function Login() {
             .select("role")
             .eq("user_id", userId);
 
-          if (rolesError) {
-            console.error("Role lookup failed:", rolesError);
-          }
+          if (rolesError) console.error("Role lookup failed:", rolesError);
 
           const hasAdminRole = (rolesData || []).some((role) => role.role === "admin");
-          
-          if (hasAdminRole) {
-            navigate("/admin", { replace: true });
-          } else {
-            navigate("/dashboard", { replace: true });
-          }
+          navigate(hasAdminRole ? "/admin" : "/dashboard", { replace: true });
         } else {
           navigate("/dashboard", { replace: true });
         }
@@ -66,47 +52,111 @@ export default function Login() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 bg-background">
-      <FluidCanvas />
-      <MotionWrapper className="relative z-10 w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Logo size={48} className="mx-auto mb-4" />
-          <h1 className="text-3xl">
-            <span className="text-gradient">Karbali</span>
+    <div className="min-h-screen flex bg-background">
+      {/* Left Panel - Marketing */}
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-center px-12 xl:px-20 bg-card border-r border-border">
+        <div className="max-w-md">
+          <Logo size={40} className="mb-8" />
+
+          <h1 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-4">
+            Welcome back to the customer migration platform:
           </h1>
-          <p className="mt-2 text-muted-foreground">Performance Attribution Platform</p>
+
+          <ul className="space-y-3 mb-10">
+            {[
+              "Track campaign performance in real-time",
+              "Manage referrals and milestones",
+              "Pay only for verified results",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-3 text-primary">
+                <CheckCircle2 className="h-5 w-5 shrink-0" />
+                <span className="text-foreground font-medium">{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          <h2 className="text-xl font-bold text-foreground mb-4">Your dashboard awaits</h2>
+          <ul className="space-y-3">
+            {[
+              "View active campaigns & analytics",
+              "Monitor wallet & transactions",
+              "Manage your integration",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-3 text-primary">
+                <CheckCircle2 className="h-5 w-5 shrink-0" />
+                <span className="text-foreground font-medium">{item}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-        <GlassCard variant="strong">
-          <GlassCardHeader>
-            <GlassCardTitle>Sign In</GlassCardTitle>
-            <GlassCardDescription>Enter your credentials to access your dashboard</GlassCardDescription>
-          </GlassCardHeader>
-          <GlassCardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Email</Label>
-                <GlassInput id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required autoComplete="email" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Password</Label>
-                <div className="relative">
-                  <GlassInput id="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="current-password" />
-                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <GlassButton type="submit" className="w-full" variant="glow" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
-              </GlassButton>
-            </form>
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/signup" className="text-primary hover:text-primary/80 transition-colors">Sign up</Link>
+      </div>
+
+      {/* Right Panel - Form */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="lg:hidden mb-6">
+              <Logo size={40} className="mx-auto" />
             </div>
-          </GlassCardContent>
-        </GlassCard>
-      </MotionWrapper>
+            <h2 className="text-2xl font-bold text-foreground">Sign in to your account</h2>
+            <p className="mt-2 text-muted-foreground text-sm">
+              Enter your credentials to access your dashboard.
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm text-foreground">Email address *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@yourbusiness.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                maxLength={255}
+                required
+                autoComplete="email"
+                className="h-11 bg-background border-border"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-sm text-foreground">Password *</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  maxLength={128}
+                  required
+                  autoComplete="current-password"
+                  className="h-11 bg-background border-border pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <GlassButton type="submit" className="w-full h-11" variant="glow" disabled={loading}>
+              {loading ? "Signing in..." : "Continue"}
+            </GlassButton>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-primary font-medium hover:text-primary/80 transition-colors">
+              Sign up
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
