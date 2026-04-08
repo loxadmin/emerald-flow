@@ -40,7 +40,8 @@ export default function Index() {
   const [metrics, setMetrics] = useState({ advertisers: 0, campaigns: 0, events: 0 });
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
-  const [heroDesign, setHeroDesign] = useState("default");
+  const [heroDesign, setHeroDesign] = useState<string | null>(null);
+  const [designReady, setDesignReady] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   const [contactName, setContactName] = useState("");
@@ -67,8 +68,9 @@ export default function Index() {
 
       try {
         const { data: designData } = await supabase.from("admin_settings").select("value").eq("key", "landing_design").maybeSingle();
-        if (designData?.value) setHeroDesign(designData.value);
-      } catch (e) { console.log("Design setting error:", e); }
+        setHeroDesign(designData?.value || "default");
+      } catch (e) { console.log("Design setting error:", e); setHeroDesign("default"); }
+      setDesignReady(true);
 
       try {
         const [advRes, campRes, eventRes] = await Promise.all([
@@ -98,6 +100,14 @@ export default function Index() {
   const s = (key: string) => content[key] || defaultContent[key];
 
   const isVariant = heroDesign !== "default";
+
+  if (!designReady) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   const variantProps = {
     content,
@@ -153,6 +163,7 @@ export default function Index() {
        heroDesign === "variant3" ? <LandingVariant3 {...variantProps} /> :
        heroDesign === "variant4" ? <LandingVariant4 {...variantProps} /> :
        heroDesign === "variant5" ? <LandingVariant5 {...variantProps} /> :
+       heroDesign === "default" ?
       (
         <>
           {/* Default layout */}
@@ -315,7 +326,7 @@ export default function Index() {
             </footer>
           )}
         </>
-      )}
+      ) : null}
     </div>
   );
 }
