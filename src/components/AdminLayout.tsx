@@ -18,6 +18,7 @@ import {
   Handshake,
   Menu,
   X,
+  MessageSquare,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
@@ -28,6 +29,7 @@ const adminLinks = [
   { to: "/admin/partnerships", label: "Partnerships", icon: Handshake },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/wallets", label: "Wallets", icon: Wallet },
+  { to: "/admin/messages", label: "Messages", icon: MessageSquare },
   { to: "/admin/content", label: "Site Content", icon: PenSquare },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];

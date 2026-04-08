@@ -25,6 +25,8 @@ import AdminCategories from "./pages/AdminCategories";
 import AdminAdvertisers from "./pages/AdminAdvertisers";
 import AdminWallets from "./pages/AdminWallets";
 import AdminPartnerships from "./pages/AdminPartnerships";
+import AdminMessages from "./pages/AdminMessages";
+import About from "./pages/About";
 import Docs from "./pages/Docs";
 import ReferralRedirect from "./pages/ReferralRedirect";
 import NotFound from "./pages/NotFound";
@@ -54,6 +56,7 @@ const App = () => (
               <Route path="/campaigns/create" element={<RequireAuth><CreateCampaign /></RequireAuth>} />
               <Route path="/campaigns/:id" element={<RequireAuth><CampaignDetail /></RequireAuth>} />
               <Route path="/docs" element={<Docs />} />
+              <Route path="/about" element={<About />} />
 
               {/* Admin routes (separate panel) */}
               <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />
@@ -65,6 +68,7 @@ const App = () => (
               <Route path="/admin/partnerships" element={<RequireAuth><RequireAdmin><AdminPartnerships /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/advertisers" element={<RequireAuth><RequireAdmin><AdminAdvertisers /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/wallets" element={<RequireAuth><RequireAdmin><AdminWallets /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/messages" element={<RequireAuth><RequireAdmin><AdminMessages /></RequireAdmin></RequireAuth>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
