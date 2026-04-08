@@ -129,11 +129,13 @@ export default function Signup() {
       <FluidCanvas />
       <MotionWrapper className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
-          <Logo size={48} className="mx-auto mb-4" />
-          <h1 className="text-3xl">
-            <span className="text-gradient">Karbali</span>
-          </h1>
-          <p className="mt-2 text-muted-foreground">Create your advertiser account</p>
+          <Link to="/" className="inline-block group">
+            <Logo size={48} className="mx-auto mb-4 group-hover:scale-105 transition-transform" />
+            <h1 className="text-3xl font-bold">
+              <span className="text-gradient">Karbali</span>
+            </h1>
+          </Link>
+          <p className="mt-2 text-muted-foreground font-medium">Create your advertiser account</p>
         </div>
         <GlassCard variant="strong">
           <GlassCardHeader>
