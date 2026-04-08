@@ -157,6 +157,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, signOut]);
 
   useEffect(() => {
+    let initialSessionHandled = false;
+
     const syncSessionState = (nextSession: Session | null) => {
       setSession(nextSession);
       setIsLoading(true);
@@ -164,16 +166,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      (event, nextSession) => {
+        if (event === "INITIAL_SESSION") {
+          initialSessionHandled = true;
+        }
         syncSessionState(nextSession);
       }
     );
 
+    // Only call getSession if onAuthStateChange didn't fire INITIAL_SESSION yet
     supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
-      syncSessionState(nextSession);
+      if (!initialSessionHandled) {
+        syncSessionState(nextSession);
+      }
     }).catch(() => {
-      resetAccessState();
-      setIsLoading(false);
+      if (!initialSessionHandled) {
+        resetAccessState();
+        setIsLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
