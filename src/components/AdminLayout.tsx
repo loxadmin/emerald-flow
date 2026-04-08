@@ -19,6 +19,7 @@ import {
   Menu,
   X,
   MessageSquare,
+  Layout,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
@@ -31,6 +32,7 @@ const adminLinks = [
   { to: "/admin/wallets", label: "Wallets", icon: Wallet },
   { to: "/admin/messages", label: "Messages", icon: MessageSquare },
   { to: "/admin/content", label: "Site Content", icon: PenSquare },
+  { to: "/admin/design", label: "Page Design", icon: Layout },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

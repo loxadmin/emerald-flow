@@ -44,7 +44,7 @@ export default function WebsitesPage() {
       advertiser_id: user.id, domain, is_verified: false,
     } as any);
     if (error) {
-      if (error.code === "23505") toast.error("This domain is already added");
+      if (error.code === "23505") toast.error("This domain is already registered on the platform by another account");
       else toast.error(error.message);
     } else {
       toast.success("Website added. Please verify it.");

@@ -21,6 +21,7 @@ import AdminCampaignDetail from "./pages/AdminCampaignDetail";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSettings from "./pages/AdminSettings";
 import AdminContent from "./pages/AdminContent";
+import AdminDesign from "./pages/AdminDesign";
 import AdminCategories from "./pages/AdminCategories";
 import AdminAdvertisers from "./pages/AdminAdvertisers";
 import AdminWallets from "./pages/AdminWallets";
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="/admin/analytics" element={<RequireAuth><RequireAdmin><AdminAnalytics /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/settings" element={<RequireAuth><RequireAdmin><AdminSettings /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/content" element={<RequireAuth><RequireAdmin><AdminContent /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/design" element={<RequireAuth><RequireAdmin><AdminDesign /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/categories" element={<RequireAuth><RequireAdmin><AdminCategories /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/partnerships" element={<RequireAuth><RequireAdmin><AdminPartnerships /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/advertisers" element={<RequireAuth><RequireAdmin><AdminAdvertisers /></RequireAdmin></RequireAuth>} />

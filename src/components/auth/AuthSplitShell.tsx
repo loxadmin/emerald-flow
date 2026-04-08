@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import Logo from "@/components/Logo";
+import FluidCanvas from "@/components/FluidCanvas";
 
 interface AuthSplitShellProps {
   eyebrow: string;
@@ -13,6 +14,7 @@ interface AuthSplitShellProps {
 export default function AuthSplitShell({ title, description, children, footer }: AuthSplitShellProps) {
   return (
     <div className="flex min-h-screen bg-background">
+      <FluidCanvas />
       {/* Left — full-bleed video/image panel */}
       <div className="relative hidden w-[45%] overflow-hidden lg:block">
         <video

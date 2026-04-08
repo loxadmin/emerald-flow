@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
@@ -8,6 +8,11 @@ import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Termin
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
 import LandingHero from "@/components/landing/LandingHero";
+import LandingVariant1 from "@/components/landing/LandingVariant1";
+import LandingVariant2 from "@/components/landing/LandingVariant2";
+import LandingVariant3 from "@/components/landing/LandingVariant3";
+import LandingVariant4 from "@/components/landing/LandingVariant4";
+import LandingVariant5 from "@/components/landing/LandingVariant5";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -35,6 +40,7 @@ export default function Index() {
   const [metrics, setMetrics] = useState({ advertisers: 0, campaigns: 0, events: 0 });
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [heroDesign, setHeroDesign] = useState("default");
   const { theme, toggleTheme } = useTheme();
 
   const [contactName, setContactName] = useState("");
@@ -61,6 +67,15 @@ export default function Index() {
           setContent(mapped);
         }
       } catch (e) { console.log("Supabase error (using defaults):", e); }
+
+      try {
+        const { data: designData } = await supabase
+          .from("admin_settings")
+          .select("value")
+          .eq("key", "landing_design")
+          .maybeSingle();
+        if (designData?.value) setHeroDesign(designData.value);
+      } catch (e) { console.log("Design setting error:", e); }
 
       try {
         const [advRes, campRes, eventRes] = await Promise.all([
@@ -164,6 +179,11 @@ export default function Index() {
 
       {/* Hero — video fills full viewport, navbar overlays it */}
       {s("hero").is_visible && (
+        heroDesign === "variant1" ? <LandingVariant1 title={s("hero").title} subtitle={s("hero").subtitle} /> :
+        heroDesign === "variant2" ? <LandingVariant2 title={s("hero").title} subtitle={s("hero").subtitle} /> :
+        heroDesign === "variant3" ? <LandingVariant3 title={s("hero").title} subtitle={s("hero").subtitle} /> :
+        heroDesign === "variant4" ? <LandingVariant4 title={s("hero").title} subtitle={s("hero").subtitle} /> :
+        heroDesign === "variant5" ? <LandingVariant5 title={s("hero").title} subtitle={s("hero").subtitle} /> :
         <LandingHero title={s("hero").title} subtitle={s("hero").subtitle} metrics={metrics} metricsLoading={metricsLoading} />
       )}
 
