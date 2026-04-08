@@ -93,8 +93,8 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
 
     posRef.current.copy(groupRef.current.position);
 
-    const walkSpeed = 12;
-    const walkAmp = isWalking ? 0.6 : 0;
+    const walkSpeed = 10;
+    const walkAmp = isWalking ? 0.5 : 0;
 
     if (leftLegRef.current && rightLegRef.current) {
       leftLegRef.current.rotation.x = Math.sin(t * walkSpeed) * walkAmp;
@@ -120,37 +120,37 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
         <group ref={leftLegRef} position={[-0.1, -0.05, 0]}>
           <mesh position={[0, -0.4, 0]}>
             <capsuleGeometry args={[0.06, 0.3, 8, 16]} />
-            <meshStandardMaterial color={skinColor} />
+            <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
           </mesh>
         </group>
         <group ref={rightLegRef} position={[0.1, -0.05, 0]}>
           <mesh position={[0, -0.4, 0]}>
             <capsuleGeometry args={[0.06, 0.3, 8, 16]} />
-            <meshStandardMaterial color={skinColor} />
+            <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
           </mesh>
         </group>
         {/* Torso */}
         <mesh position={[0, 0.22, 0]}>
           <capsuleGeometry args={[0.18, 0.3, 8, 16]} />
-          <meshStandardMaterial color={sweaterColor} />
+          <meshStandardMaterial color={sweaterColor} roughness={0.4} metalness={0.05} />
         </mesh>
         {/* Arms */}
         <group ref={leftArmRef} position={[-0.22, 0.32, 0]}>
           <mesh position={[0, -0.15, 0]}>
             <capsuleGeometry args={[0.05, 0.2, 8, 16]} />
-            <meshStandardMaterial color={sweaterColor} />
+            <meshStandardMaterial color={sweaterColor} roughness={0.4} metalness={0.05} />
           </mesh>
         </group>
         <group ref={rightArmRef} position={[0.22, 0.32, 0]}>
           <mesh position={[0, -0.15, 0]}>
             <capsuleGeometry args={[0.05, 0.2, 8, 16]} />
-            <meshStandardMaterial color={sweaterColor} />
+            <meshStandardMaterial color={sweaterColor} roughness={0.4} metalness={0.05} />
           </mesh>
         </group>
         {/* Head */}
         <mesh position={[0, 0.55, 0]}>
-          <sphereGeometry args={[0.18, 16, 16]} />
-          <meshStandardMaterial color={skinColor} />
+          <sphereGeometry args={[0.18, 24, 24]} />
+          <meshStandardMaterial color={skinColor} roughness={0.3} metalness={0.1} />
         </mesh>
         {/* Hair */}
         {hairStrands.map((h, i) => (
@@ -166,6 +166,17 @@ function Character({ posRef }: { posRef: React.MutableRefObject<THREE.Vector3> }
           </mesh>
         ))}
       </group>
+    </group>
+  );
+}
+
+// ─── Rock component ───
+function Rock({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  return (
+    <group position={position} scale={scale}>
+      <RoundedBox args={[0.6, 0.4, 0.6]} radius={0.1}>
+        <meshStandardMaterial color="#4b5563" roughness={0.8} />
+      </RoundedBox>
     </group>
   );
 }
@@ -187,21 +198,21 @@ function Tree({ position, scale = 1 }: { position: [number, number, number]; sca
       {/* Trunk */}
       <mesh position={[0, 0.5, 0]}>
         <cylinderGeometry args={[0.08, 0.12, 1, 8]} />
-        <meshStandardMaterial color="#4d3220" />
+        <meshStandardMaterial color="#2d1d12" roughness={0.9} />
       </mesh>
       {/* Foliage */}
-      <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
+      <Float speed={1.5} rotationIntensity={0.3} floatIntensity={0.4}>
         <mesh position={[0, 1.2, 0]}>
-          <sphereGeometry args={[0.5, 12, 12]} />
-          <meshStandardMaterial color="#22c55e" roughness={0.8} />
+          <sphereGeometry args={[0.6, 16, 16]} />
+          <meshStandardMaterial color="#22c55e" roughness={0.6} metalness={0.1} />
         </mesh>
-        <mesh position={[0.2, 1.5, 0.1]}>
-          <sphereGeometry args={[0.4, 12, 12]} />
-          <meshStandardMaterial color="#16a34a" roughness={0.8} />
+        <mesh position={[0.3, 1.6, 0.2]}>
+          <sphereGeometry args={[0.45, 16, 16]} />
+          <meshStandardMaterial color="#16a34a" roughness={0.6} metalness={0.1} />
         </mesh>
-        <mesh position={[-0.2, 1.4, -0.1]}>
-          <sphereGeometry args={[0.45, 12, 12]} />
-          <meshStandardMaterial color="#15803d" roughness={0.8} />
+        <mesh position={[-0.3, 1.5, -0.2]}>
+          <sphereGeometry args={[0.5, 16, 16]} />
+          <meshStandardMaterial color="#15803d" roughness={0.6} metalness={0.1} />
         </mesh>
       </Float>
     </group>
@@ -210,18 +221,30 @@ function Tree({ position, scale = 1 }: { position: [number, number, number]; sca
 
 // ─── Flowing Water component ───
 function Water() {
+  const meshRef = useRef<THREE.Mesh>(null!);
+
+  useFrame(({ clock }) => {
+    if (meshRef.current) {
+      const t = clock.getElapsedTime();
+      // Animate texture offset if we had one, but for now we'll rely on distortion
+      // meshRef.current.material.distort = 0.3 + Math.sin(t) * 0.1;
+    }
+  });
+
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.4, 0]}>
-      <planeGeometry args={[20, 10, 32, 32]} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.4, 0]} ref={meshRef}>
+      <planeGeometry args={[20, 10, 64, 64]} />
       <MeshDistortMaterial
         color="#22c55e"
-        speed={2}
-        distort={0.4}
+        speed={1.5}
+        distort={0.5}
         radius={1}
-        opacity={0.6}
+        opacity={0.4}
         transparent
-        metalness={0.5}
-        roughness={0.2}
+        metalness={0.8}
+        roughness={0.1}
+        clearcoat={1}
+        clearcoatRoughness={0.1}
       />
     </mesh>
   );
@@ -263,7 +286,6 @@ function Marker({ position, label, color }: { position: [number, number, number]
           anchorY="middle"
           maxWidth={1.2}
           textAlign="center"
-          font="https://fonts.gstatic.com/s/plusjakartasans/v8/L0xPDFNoR8nv3a2W636EYKrr7_S4.woff"
         >
           {label}
         </Text>
@@ -283,9 +305,16 @@ function Scene() {
   return (
     <>
       <PerspectiveCamera makeDefault position={[0, 4, 10]} fov={40} />
-      <ambientLight intensity={0.4} />
-      <pointLight position={[10, 10, 10]} intensity={1.5} />
-      <directionalLight position={[-5, 5, 5]} intensity={0.8} />
+
+      <Environment preset="forest" />
+
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={2} color="#22c55e" />
+      <pointLight position={[-10, 5, -5]} intensity={1} color="#ffffff" />
+      <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow />
+
+      {/* Rim light for character */}
+      <spotLight position={[0, 5, -5]} intensity={2} angle={0.6} penumbra={1} color="#22c55e" />
 
       <color attach="background" args={["#0d1612"]} />
 
@@ -295,7 +324,7 @@ function Scene() {
 
       {/* Markers */}
       <Marker position={[-3.5, 0, 0.8]} label="Competitor Brand" color="#334155" />
-      <Marker position={[3.5, 0, 0.8]} label="Karbali (Your Brand)" color="#22c55e" />
+      <Marker position={[3.5, 0, 0.8]} label="Karbali (Your Brand)" color="#15803d" />
 
       {/* Trees */}
       <Tree position={[-6, -0.2, -2]} scale={1.2} />
@@ -303,6 +332,11 @@ function Scene() {
       <Tree position={[6, -0.2, -2.5]} scale={1.1} />
       <Tree position={[5, -0.2, -3.5]} scale={0.9} />
       <Tree position={[0, -0.2, -4]} scale={1.3} />
+
+      {/* Rocks */}
+      <Rock position={[-2, -0.3, 1.2]} scale={0.8} />
+      <Rock position={[2.5, -0.3, 1.5]} scale={0.6} />
+      <Rock position={[0.5, -0.3, 1.8]} scale={0.4} />
 
       {/* Character */}
       <Character posRef={charPos} />
