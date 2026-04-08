@@ -37,7 +37,7 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
           className="h-full w-full object-cover"
         />
         {/* Dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/80" />
       </div>
 
       {/* Bottom seamless fade into page background */}
