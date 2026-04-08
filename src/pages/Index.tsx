@@ -5,10 +5,10 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { GlassCard } from "@/components/ui/glass-card";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { BarChart3, Shield, Zap, DollarSign, ArrowRight, Users, Target, TrendingUp, Mail, Phone, MapPin, Sun, Moon } from "lucide-react";
+import { BarChart3, Shield, Zap, DollarSign, Mail, Phone, MapPin, Sun, Moon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
-import HeroVideo from "@/components/HeroVideo";
+import LandingHero from "@/components/landing/LandingHero";
 
 interface SiteContent {
   section_key: string;
@@ -35,7 +35,6 @@ export default function Index() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch site content
       try {
         const { data: contentData } = await supabase.from("site_content").select("section_key, title, subtitle, content, is_visible");
         if (contentData) {
@@ -49,7 +48,6 @@ export default function Index() {
         console.log("Supabase error (using defaults):", e);
       }
 
-      // Fetch real metrics
       try {
         const [advRes, campRes, eventRes] = await Promise.all([
           supabase.from("profiles").select("id", { count: "exact", head: true }),
@@ -68,6 +66,7 @@ export default function Index() {
         setMetricsLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -81,7 +80,6 @@ export default function Index() {
   ];
 
   const steps = (s("how_it_works").content || "").split(/\r?\n|\\n/).filter(Boolean);
-
   const contactLines = (s("contact").content || "").split(/\r?\n|\\n/).filter(Boolean);
   const contactIcons = [Mail, Phone, MapPin];
 
@@ -89,89 +87,47 @@ export default function Index() {
     <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
       <FluidCanvas />
 
-      {/* Nav */}
-      <header className="relative z-10 border-b border-border/30">
-        <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <Logo size={28} />
-            <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-gradient">Karbali</span>
-            </h1>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={toggleTheme}
-              className="rounded-lg p-2 text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-            <div className="hidden sm:flex items-center gap-3">
-              <Link to="/login"><GlassButton variant="ghost">Sign In</GlassButton></Link>
-              <Link to="/signup"><GlassButton variant="glow">Get Started</GlassButton></Link>
-            </div>
-            <Link to="/login" className="sm:hidden">
-              <GlassButton variant="glow" size="sm">Sign In</GlassButton>
+      <header className="relative z-10 px-4 pt-4 sm:px-6">
+        <div className="container">
+          <div className="flex h-16 items-center justify-between rounded-full border border-border/25 bg-background/40 px-4 backdrop-blur-sm sm:px-6">
+            <Link to="/" className="flex items-center gap-3">
+              <Logo size={28} />
+              <h1 className="text-xl font-bold tracking-tight">
+                <span className="text-gradient">Karbali</span>
+              </h1>
             </Link>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={toggleTheme}
+                className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                aria-label="Toggle theme"
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+
+              <div className="hidden items-center gap-3 sm:flex">
+                <Link to="/login"><GlassButton variant="ghost">Sign In</GlassButton></Link>
+                <Link to="/signup"><GlassButton variant="glow">Get Started</GlassButton></Link>
+              </div>
+
+              <Link to="/login" className="sm:hidden">
+                <GlassButton variant="glow" size="sm">Sign In</GlassButton>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Hero */}
       {s("hero").is_visible && (
-        <section className="relative z-10 container py-16 md:py-28 px-4 sm:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left">
-              <MotionWrapper>
-                <h1 className="max-w-3xl">
-                  {s("hero").title}
-                </h1>
-              </MotionWrapper>
-              <MotionWrapper delay={0.15}>
-                <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-                  {s("hero").subtitle}
-                </p>
-              </MotionWrapper>
-              <MotionWrapper delay={0.3}>
-                <div className="mt-10 flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
-                  <Link to="/signup" className="w-full sm:w-auto">
-                    <GlassButton size="lg" variant="glow" className="w-full sm:w-auto px-8">
-                      Start Free <ArrowRight className="ml-2 h-4 w-4" />
-                    </GlassButton>
-                  </Link>
-                  <Link to="/docs" className="w-full sm:w-auto">
-                    <GlassButton size="lg" variant="outline" className="w-full sm:w-auto px-8">View API Docs</GlassButton>
-                  </Link>
-                </div>
-              </MotionWrapper>
-
-              {/* Stats bar */}
-              <MotionWrapper delay={0.45}>
-                <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4 border-t border-border/30 pt-8">
-                  {[
-                    { icon: Users, label: "Active Advertisers", value: metrics.advertisers, raw: "500+" },
-                    { icon: Target, label: "Campaigns Tracked", value: metrics.campaigns, raw: "2,000+" },
-                    { icon: TrendingUp, label: "Events Processed", value: metrics.events, raw: "10M+" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="text-center lg:text-left">
-                      <stat.icon className="mx-auto lg:mx-0 mb-2 h-5 w-5 text-primary" />
-                      <p className="text-2xl font-bold text-foreground">
-                        {metricsLoading ? "..." : stat.value >= 10 ? stat.value.toLocaleString() : "Calculating"}
-                      </p>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </MotionWrapper>
-            </div>
-
-            <MotionWrapper delay={0.2} className="relative">
-              <HeroVideo />
-            </MotionWrapper>
-          </div>
-        </section>
+        <LandingHero
+          title={s("hero").title}
+          subtitle={s("hero").subtitle}
+          metrics={metrics}
+          metricsLoading={metricsLoading}
+        />
       )}
 
-      {/* About */}
       {s("about").is_visible && (
         <section id="about" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
@@ -186,7 +142,6 @@ export default function Index() {
         </section>
       )}
 
-      {/* How It Works */}
       {s("how_it_works").is_visible && (
         <section id="how-it-works" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
@@ -216,7 +171,6 @@ export default function Index() {
         </section>
       )}
 
-      {/* Features */}
       {s("features").is_visible && (
         <section id="features" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
@@ -239,7 +193,6 @@ export default function Index() {
         </section>
       )}
 
-      {/* Contact */}
       {s("contact").is_visible && (
         <section id="contact" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
@@ -264,7 +217,6 @@ export default function Index() {
         </section>
       )}
 
-      {/* Footer */}
       {s("footer").is_visible && (
         <footer className="relative z-10 border-t border-border/30 py-8 px-4 sm:px-6">
           <div className="container">

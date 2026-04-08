@@ -1,16 +1,12 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
-import { GlassInput } from "@/components/ui/glass-input";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from "@/components/ui/glass-card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import FluidCanvas from "@/components/FluidCanvas";
-import MotionWrapper from "@/components/MotionWrapper";
-import { toast } from "sonner";
-import Logo from "@/components/Logo";
+import AuthSplitShell from "@/components/auth/AuthSplitShell";
 
-// Public email providers
 const PUBLIC_EMAIL_DOMAINS = [
   "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "live.com",
   "aol.com", "icloud.com", "mail.com", "protonmail.com", "zoho.com",
@@ -19,7 +15,6 @@ const PUBLIC_EMAIL_DOMAINS = [
   "msn.com", "me.com", "mac.com", "googlemail.com",
 ];
 
-// Disposable/temporary/bot email domains
 const DISPOSABLE_DOMAINS = [
   "example.com", "example.org", "example.net", "test.com", "test.org",
   "mailinator.com", "guerrillamail.com", "guerrillamail.net", "guerrillamail.org",
@@ -71,6 +66,7 @@ export default function Signup() {
       toast.error("Please fill in all required fields");
       return;
     }
+
     if (password.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
@@ -82,7 +78,6 @@ export default function Signup() {
       return;
     }
 
-    // Block email provider domains as websites
     if (FORBIDDEN_DOMAINS.includes(websiteDomain)) {
       toast.error("Please provide a professional business website, not a public email provider.");
       return;
@@ -108,6 +103,7 @@ export default function Signup() {
           emailRedirectTo: window.location.origin,
         },
       });
+
       if (error) {
         toast.error(error.message);
       } else {
@@ -125,83 +121,117 @@ export default function Signup() {
   const isForbiddenDomain = websiteDomain && FORBIDDEN_DOMAINS.includes(websiteDomain);
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 bg-background">
-      <FluidCanvas />
-      <MotionWrapper className="relative z-10 w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link to="/">
-            <Logo size={48} className="mx-auto mb-4 cursor-pointer" />
+    <AuthSplitShell
+      eyebrow="Create account"
+      title="Sign Up"
+      description="Register with your business email to start tracking campaign outcomes."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link to="/login" className="text-primary transition-colors hover:text-primary/80">
+            Sign in
           </Link>
-          <Link to="/">
-            <h1 className="text-3xl cursor-pointer">
-              <span className="text-gradient">Karbali</span>
-            </h1>
-          </Link>
-          <p className="mt-2 text-muted-foreground">Create your advertiser account</p>
+        </>
+      }
+    >
+      <form onSubmit={handleSignup} className="space-y-5">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="full-name" className="text-sm text-foreground">
+              Full Name *
+            </Label>
+            <Input
+              id="full-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              maxLength={100}
+              required
+              autoComplete="name"
+              className="h-14 rounded-xl border-border/40 bg-background px-4"
+            />
+          </div>
+
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="company-name" className="text-sm text-foreground">
+              Company Name
+            </Label>
+            <Input
+              id="company-name"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              maxLength={100}
+              autoComplete="organization"
+              className="h-14 rounded-xl border-border/40 bg-background px-4"
+            />
+          </div>
+
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="website" className="text-sm text-foreground">
+              Website *
+            </Label>
+            <Input
+              id="website"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              maxLength={255}
+              placeholder="yourbusiness.com"
+              autoComplete="url"
+              required
+              className="h-14 rounded-xl border-border/40 bg-background px-4"
+            />
+            {isForbiddenDomain ? (
+              <p className="text-xs text-destructive">
+                Email provider domains are not accepted. Please use your business website.
+              </p>
+            ) : websiteDomain ? (
+              <p className="text-xs text-muted-foreground">Your email must end with @{websiteDomain}</p>
+            ) : null}
+          </div>
+
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="email" className="text-sm text-foreground">
+              Business Email *
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              maxLength={255}
+              required
+              autoComplete="email"
+              placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"}
+              className="h-14 rounded-xl border-border/40 bg-background px-4"
+            />
+          </div>
+
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="password" className="text-sm text-foreground">
+              Password *
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              maxLength={128}
+              required
+              autoComplete="new-password"
+              className="h-14 rounded-xl border-border/40 bg-background px-4"
+            />
+            <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
+          </div>
         </div>
-        <GlassCard variant="strong">
-          <GlassCardHeader>
-            <GlassCardTitle>Sign Up</GlassCardTitle>
-            <GlassCardDescription>Register with your business email</GlassCardDescription>
-          </GlassCardHeader>
-          <GlassCardContent>
-            <form onSubmit={handleSignup} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Full Name *</Label>
-                <GlassInput value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} required autoComplete="name" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Company Name</Label>
-                <GlassInput value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={100} autoComplete="organization" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Website *</Label>
-                <GlassInput
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  maxLength={255}
-                  placeholder="yourbusiness.com"
-                  autoComplete="url"
-                  required
-                />
-                {isForbiddenDomain ? (
-                  <p className="text-xs text-destructive">
-                    Email provider domains are not accepted. Please use your business website.
-                  </p>
-                ) : websiteDomain ? (
-                  <p className="text-xs text-muted-foreground/60">
-                    Your email must end with @{websiteDomain}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Business Email *</Label>
-                <GlassInput
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  maxLength={255}
-                  required
-                  autoComplete="email"
-                  placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Password *</Label>
-                <GlassInput type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="new-password" />
-                <p className="text-xs text-muted-foreground/60">Minimum 8 characters</p>
-              </div>
-              <GlassButton type="submit" className="w-full" variant="glow" disabled={loading || !!isForbiddenDomain}>
-                {loading ? "Creating account..." : "Create Account"}
-              </GlassButton>
-            </form>
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:text-primary/80 transition-colors">Sign in</Link>
-            </div>
-          </GlassCardContent>
-        </GlassCard>
-      </MotionWrapper>
-    </div>
+
+        <GlassButton
+          type="submit"
+          className="mt-2 h-12 w-full rounded-xl"
+          variant="glow"
+          disabled={loading || !!isForbiddenDomain}
+        >
+          {loading ? "Creating account..." : "Create Account"}
+        </GlassButton>
+      </form>
+    </AuthSplitShell>
   );
 }
