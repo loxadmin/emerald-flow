@@ -66,37 +66,4 @@ export const initSecurity = () => {
   };
   debuggerTrap();
 
-  // 5. Detect DevTools and Replace with Math Equations
-  const detectDevTools = () => {
-    // Threshold is set slightly higher to reduce false positives from sidebars
-    const threshold = 200;
-    const checkSize = () => {
-      const widthDiff = window.outerWidth - window.innerWidth > threshold;
-      const heightDiff = window.outerHeight - window.innerHeight > threshold;
-
-      if (widthDiff || heightDiff) {
-        // Only replace if DevTools are likely open (size difference is substantial)
-        document.body.innerHTML = `
-          <div style="height: 100vh; display: flex; align-items: center; justify-content: center; background: white; color: black; font-family: 'Times New Roman', serif; font-size: 2rem; padding: 2rem; text-align: center; overflow-y: auto;">
-            <div>
-              <p>∫ x dx = x²/2 + C</p>
-              <p>e^(iπ) + 1 = 0</p>
-              <p>∇ · B = 0</p>
-              <p>∇ × E = -∂B/∂t</p>
-              <p>f(x) = ∑ (a_n cos(nπx/L) + b_n sin(nπx/L))</p>
-              <p>a² + b² = c²</p>
-              <p>E = mc²</p>
-              <p>∮ E · dA = Q/ε₀</p>
-              <p>iħ ∂ψ/∂t = Ĥψ</p>
-            </div>
-          </div>
-        `;
-      }
-    };
-    window.addEventListener('resize', checkSize);
-    // Periodically check in case DevTools is toggled without resizing window
-    setInterval(checkSize, 1000);
-    checkSize();
-  };
-  detectDevTools();
 };

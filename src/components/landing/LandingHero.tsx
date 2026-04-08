@@ -36,8 +36,8 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
           preload="auto"
           className="h-full w-full object-cover"
         />
-        {/* Dark overlay for contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
+        {/* Dark overlay for contrast - same in both themes */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
         {/* Emerald tinted overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
       </div>
@@ -58,11 +58,12 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
               Performance Attribution Platform
             </div>
 
-            <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+            {/* Force white text over video regardless of theme */}
+            <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
               {title}
             </h1>
 
-            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
               {subtitle}
             </p>
 
@@ -73,7 +74,7 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                 </GlassButton>
               </Link>
               <Link to="/docs">
-                <GlassButton size="lg" variant="outline" className="px-10">
+                <GlassButton size="lg" variant="outline" className="px-10 border-white/20 text-white hover:bg-white/10">
                   View API Docs
                 </GlassButton>
               </Link>
