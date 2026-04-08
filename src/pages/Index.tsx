@@ -23,11 +23,11 @@ interface SiteContent {
 
 const defaultContent: Record<string, SiteContent> = {
   hero: { section_key: "hero", title: "Migrate Customers to Your Brand", subtitle: "The performance attribution platform that helps advertisers acquire competitors' customers and only pay for real results.", content: null, is_visible: true },
-  about: { section_key: "about", title: "About Karbali", subtitle: null, content: null, is_visible: true },
+  about: { section_key: "about", title: "About KARBALI ADS", subtitle: null, content: null, is_visible: true },
   how_it_works: { section_key: "how_it_works", title: "How It Works", subtitle: "From campaign creation to verified results in four simple steps.", content: "1. Create a Campaign: Set your budget and define what you will pay for.\n2. Integrate Our API: Add a simple tracking snippet to your app.\n3. Get Approved: Our admin team verifies your integration and activates your campaign.\n4. Track and Pay for Results: Monitor real-time analytics and only pay when users take action.", is_visible: true },
-  features: { section_key: "features", title: "Why Choose Karbali", subtitle: "Built for performance-driven advertisers who demand transparency.", content: null, is_visible: true },
+  features: { section_key: "features", title: "Why Choose KARBALI ADS", subtitle: "Built for performance-driven advertisers who demand transparency.", content: null, is_visible: true },
   contact: { section_key: "contact", title: "Get in Touch", subtitle: "Have questions? We would love to hear from you.", content: null, is_visible: true },
-  footer: { section_key: "footer", title: "Karbali", subtitle: null, content: "Performance Attribution Platform. Track real outcomes, not vanity metrics.", is_visible: true },
+  footer: { section_key: "footer", title: "KARBALI ADS", subtitle: null, content: "Performance Attribution Platform. Track real outcomes, not vanity metrics.", is_visible: true },
 };
 
 export default function Index() {
@@ -98,7 +98,7 @@ export default function Index() {
           <div className="flex h-16 items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5">
               <Logo size={28} />
-              <span className="text-xl font-bold tracking-tight text-white">Karbali</span>
+              <span className="text-xl font-bold tracking-tight text-white">KARBALI ADS</span>
             </Link>
 
             <div className="flex items-center gap-4">
@@ -144,15 +144,19 @@ export default function Index() {
 
       {/* How It Works — Redesigned Grid */}
       {s("how_it_works").is_visible && (
-        <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 bg-[#F9FAFF] dark:bg-background/20">
-          <div className="mx-auto max-w-7xl">
+        <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 bg-[#030712] overflow-hidden">
+          {/* Decorative background blobs */}
+          <div className="absolute top-0 -left-20 h-[500px] w-[500px] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-0 -right-20 h-[500px] w-[500px] rounded-full bg-emerald-600/10 blur-[120px] pointer-events-none" />
+
+          <div className="relative z-10 mx-auto max-w-7xl">
             <MotionWrapper className="mb-20 text-center">
-              <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6">Step-by-Step</span>
-              <h2 className="mb-6 text-foreground text-4xl md:text-5xl font-extrabold tracking-tight">{s("how_it_works").title}</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{s("how_it_works").subtitle}</p>
+              <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-6 border border-primary/20">Step-by-Step</span>
+              <h2 className="mb-6 text-white text-4xl md:text-5xl font-extrabold tracking-tight">{s("how_it_works").title}</h2>
+              <p className="text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">{s("how_it_works").subtitle}</p>
             </MotionWrapper>
 
-            <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4">
               {steps.map((step, i) => {
                 const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                 const stepTitle = parts[0] || step;
@@ -163,17 +167,25 @@ export default function Index() {
 
                 return (
                   <MotionWrapper key={i} delay={i * 0.1} className="relative">
-                    <div className="relative flex flex-col items-center text-center h-full rounded-[2.5rem] bg-white dark:bg-card p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/[0.02] dark:border-white/[0.02] transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:-translate-y-1">
-                      <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 shadow-inner">
-                        <Icon className="h-9 w-9" />
+                    <div className="relative flex flex-col items-start text-left h-full rounded-[2.5rem] bg-white/[0.02] backdrop-blur-3xl p-10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-white/5 transition-all duration-700 hover:bg-white/[0.05] hover:-translate-y-4 hover:border-primary/30 group overflow-hidden">
+                      {/* Animated border on hover */}
+                      <div className="absolute top-0 left-0 h-[2px] w-0 bg-gradient-to-r from-transparent via-primary to-transparent transition-all duration-700 group-hover:w-full" />
+
+                      <div className="mb-10 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-[0_0_30px_rgba(34,197,94,0.1)] transition-all duration-700 group-hover:bg-primary/20 group-hover:shadow-[0_0_40px_rgba(34,197,94,0.3)] group-hover:rotate-[10deg]">
+                        <Icon className="h-10 w-10" />
                       </div>
 
-                      <div className="absolute top-10 right-10 text-5xl font-black text-indigo-600/5 select-none italic">
-                        0{i + 1}
+                      <div className="absolute -top-4 -right-4 text-9xl font-black text-white/[0.02] select-none transition-all duration-700 group-hover:text-white/[0.08] group-hover:scale-110">
+                        {i + 1}
                       </div>
 
-                      <h3 className="mb-4 text-xl font-bold text-foreground leading-tight">{stepTitle}</h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground/80">{desc}</p>
+                      <h3 className="mb-6 text-2xl font-bold text-white leading-tight tracking-tight group-hover:text-primary transition-colors duration-500">{stepTitle}</h3>
+                      <p className="text-base font-medium leading-relaxed text-gray-400/90 group-hover:text-gray-200 transition-colors duration-500">{desc}</p>
+
+                      <div className="mt-8 flex items-center text-primary/40 group-hover:text-primary transition-colors duration-500">
+                        <span className="text-xs font-bold uppercase tracking-widest">Explore</span>
+                        <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-2 transition-transform duration-500" />
+                      </div>
                     </div>
                   </MotionWrapper>
                 );
@@ -185,15 +197,26 @@ export default function Index() {
 
       {/* CTA */}
       <section className="relative z-10 py-20 px-6 sm:px-10">
-        <div className="mx-auto max-w-3xl text-center">
-          <MotionWrapper>
-            <h2 className="mb-4 text-foreground">Ready to migrate customers?</h2>
-            <p className="mb-8 text-muted-foreground max-w-lg mx-auto">Join the next generation of performance-driven advertisers.</p>
-            <Link to="/signup">
-              <GlassButton size="lg" variant="glow" className="px-10">
-                Get Started Now <ArrowRight className="h-4 w-4" />
-              </GlassButton>
-            </Link>
+        <div className="mx-auto max-w-5xl">
+          <MotionWrapper className="relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-card p-12 md:p-20 text-center shadow-2xl border border-black/[0.05] dark:border-white/[0.05]">
+            {/* Background decorative element for CTA */}
+            <div className="absolute top-0 right-0 -mr-20 -mt-20 h-64 w-64 rounded-full bg-primary/10 blur-[80px]" />
+            <div className="absolute bottom-0 left-0 -ml-20 -mb-20 h-64 w-64 rounded-full bg-emerald-600/10 blur-[80px]" />
+
+            <div className="relative z-10">
+              <div className="mb-8 flex justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <CheckCircle2 className="h-8 w-8" />
+                </div>
+              </div>
+              <h2 className="mb-4 text-foreground text-3xl md:text-5xl font-extrabold tracking-tight">Ready to migrate customers?</h2>
+              <p className="mb-10 text-muted-foreground max-w-xl mx-auto text-lg">Join the next generation of performance-driven advertisers.</p>
+              <Link to="/signup">
+                <GlassButton size="lg" variant="glow" className="px-12 h-14 text-lg">
+                  Get Started Now <ArrowRight className="h-4 w-4 ml-2" />
+                </GlassButton>
+              </Link>
+            </div>
           </MotionWrapper>
         </div>
       </section>
@@ -263,15 +286,15 @@ export default function Index() {
 
       {/* Footer */}
       {s("footer").is_visible && (
-        <footer className="relative z-10 border-t border-border/50 py-8 px-6 sm:px-10">
+        <footer className="relative z-10 border-t border-border/50 py-16 px-6 sm:px-10">
           <div className="mx-auto max-w-7xl">
-            <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+            <div className="flex flex-col items-center justify-center text-center gap-6">
               <div className="flex items-center gap-2">
-                <Logo size={20} />
-                <span className="font-bold text-gradient">{s("footer").title}</span>
+                <Logo size={24} />
+                <span className="text-xl font-bold text-gradient">KARBALI ADS</span>
               </div>
-              <p className="text-sm text-muted-foreground">{s("footer").content}</p>
-              <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali. All rights reserved.</p>
+              <p className="text-sm text-muted-foreground max-w-md">{s("footer").content}</p>
+              <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} KARBALI ADS. All rights reserved.</p>
             </div>
           </div>
         </footer>

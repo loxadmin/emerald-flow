@@ -56,7 +56,7 @@ async function initFlutterwave(secret: string, email: string, amountNgn: number,
       redirect_url: redirectUrl,
       customer: { email },
       meta,
-      customizations: { title: "Karbali", description: "Wallet Transaction" },
+      customizations: { title: "KARBALI ADS", description: "Wallet Transaction" },
     }),
   });
   return res.json();

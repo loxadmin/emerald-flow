@@ -23,20 +23,20 @@ export default function Docs() {
               <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" /> {session ? "Back to Dashboard" : "Back to Home"}</Button>
             </Link>
             <Logo size={24} />
-            <span className="text-lg font-semibold text-gradient">Karbali API Docs</span>
+            <span className="text-lg font-semibold text-gradient">KARBALI ADS API Docs</span>
           </div>
         </MotionWrapper>
 
         <div className="space-y-6">
           <MotionWrapper delay={0.05}>
             <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-base font-semibold text-foreground mb-2">Karbali Endpoints</h2>
+              <h2 className="text-base font-semibold text-foreground mb-2">KARBALI ADS Endpoints</h2>
               <div className="space-y-2 text-sm">
                 <code className="block rounded-lg bg-muted px-4 py-2.5 text-primary break-all">{trackerScriptUrl}</code>
                 <code className="block rounded-lg bg-muted px-4 py-2.5 text-primary break-all">{trackUrl}</code>
                 <code className="block rounded-lg bg-muted px-4 py-2.5 text-primary break-all">{referralUrl}</code>
               </div>
-              <p className="text-sm text-muted-foreground mt-3">Advertisers install the Karbali loader script, receive branded referral links, and the loader handles client IDs plus event delivery for them.</p>
+              <p className="text-sm text-muted-foreground mt-3">Advertisers install the KARBALI ADS loader script, receive branded referral links, and the loader handles client IDs plus event delivery for them.</p>
             </div>
           </MotionWrapper>
 
@@ -49,26 +49,26 @@ export default function Docs() {
 
           <MotionWrapper delay={0.1}>
             <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-base font-semibold text-foreground mb-2">2. Install the Karbali loader</h2>
+              <h2 className="text-base font-semibold text-foreground mb-2">2. Install the KARBALI ADS loader</h2>
               <div className="rounded-lg bg-muted p-4 overflow-x-auto">
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Install snippet</p>
                 <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`<script>
-  window.KarbaliConfig = { apiKey: "kb_your_api_key" };
+  window.KarbaliAdsConfig = { apiKey: "kb_your_api_key" };
 </script>
 <script async src="${trackerScriptUrl}" data-api-key="kb_your_api_key"></script>`}</pre>
               </div>
-              <p className="text-sm text-muted-foreground mt-3">The loader stores the referral ID and a Karbali client ID on the advertiser domain so downloads, signups, and purchases stay tied to the same visitor journey.</p>
+              <p className="text-sm text-muted-foreground mt-3">The loader stores the referral ID and a KARBALI ADS client ID on the advertiser domain so downloads, signups, and purchases stay tied to the same visitor journey.</p>
             </div>
           </MotionWrapper>
 
           <MotionWrapper delay={0.12}>
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="text-base font-semibold text-foreground mb-2">3. Send lifecycle events</h2>
-              <p className="text-sm text-muted-foreground mb-3">Trigger Karbali when the referral visitor downloads, signs up, or completes a paid conversion.</p>
+              <p className="text-sm text-muted-foreground mb-3">Trigger KARBALI ADS when the referral visitor downloads, signs up, or completes a paid conversion.</p>
               <div className="rounded-lg bg-muted p-4 overflow-x-auto">
-                <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`window.Karbali.track("download", {});
-window.Karbali.track("signup", { user_id: "user_123" });
-window.Karbali.track("purchase", {
+                <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`window.KarbaliAds.track("download", {});
+window.KarbaliAds.track("signup", { user_id: "user_123" });
+window.KarbaliAds.track("purchase", {
   user_id: "user_123",
   amount: 49.99
 });`}</pre>
@@ -79,7 +79,7 @@ window.Karbali.track("purchase", {
           <MotionWrapper delay={0.14}>
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="text-base font-semibold text-foreground mb-2">4. Referral link flow</h2>
-              <p className="text-sm text-muted-foreground mb-3">Admins generate branded referral links. When a visitor lands through that link, Karbali appends the referral ID and client ID to the advertiser URL and the loader stores both automatically.</p>
+              <p className="text-sm text-muted-foreground mb-3">Admins generate branded referral links. When a visitor lands through that link, KARBALI ADS appends the referral ID and client ID to the advertiser URL and the loader stores both automatically.</p>
               <div className="rounded-lg bg-muted p-4 overflow-x-auto">
                 <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`${referralUrl}
 → redirects to advertiser website with
@@ -91,10 +91,10 @@ window.Karbali.track("purchase", {
           <MotionWrapper delay={0.16}>
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="text-base font-semibold text-foreground mb-2">5. Verification</h2>
-              <p className="text-sm text-muted-foreground mb-3">Verification no longer trusts the API key alone. Karbali fetches the selected verified website and checks for your loader script plus the campaign API key before marking the integration as live.</p>
+              <p className="text-sm text-muted-foreground mb-3">Verification no longer trusts the API key alone. KARBALI ADS fetches the selected verified website and checks for your loader script plus the campaign API key before marking the integration as live.</p>
               <div className="rounded-lg bg-muted p-4 overflow-x-auto">
                 <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`{ "verified": true, "domain": "example.com" }
-{ "verified": false, "error": "We couldn't detect the Karbali loader or API key on your domain yet." }`}</pre>
+{ "verified": false, "error": "We couldn't detect the KARBALI ADS loader or API key on your domain yet." }`}</pre>
               </div>
             </div>
           </MotionWrapper>

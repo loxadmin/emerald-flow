@@ -16,15 +16,19 @@ const normalizeDomain = (value: string) => value.replace(/^https?:\/\//, "").rep
 const trackerMarkers = [
   "karbali-tracker.js",
   "window.karbali",
+  "window.karbaliads",
   "window.karbaliconfig",
+  "window.karbaliadsconfig",
   "karbaliconfig",
+  "karbaliadsconfig",
   "data-api-key",
   "karbali.track",
+  "karbaliads.track",
 ];
 
 async function fetchText(url: string) {
   const response = await fetch(url, {
-    headers: { "User-Agent": "Karbali-Integration-Check/1.0" },
+    headers: { "User-Agent": "Karbali-Ads-Integration-Check/1.0" },
     signal: AbortSignal.timeout(4000),
   });
 
@@ -153,7 +157,7 @@ Deno.serve(async (req) => {
     }
 
     if (!containsTracker(textsToScan, api_key)) {
-      return json({ verified: false, error: "We couldn't detect the Karbali loader or API key on your selected website yet." });
+      return json({ verified: false, error: "We couldn't detect the KARBALI ADS loader or API key on your selected website yet." });
     }
 
     await supabase
