@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, ChevronDown } from "lucide-react";
+import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
 import LandingHero from "@/components/landing/LandingHero";
@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface SiteContent {
   section_key: string;
@@ -143,41 +142,45 @@ export default function Index() {
         </div>
       </section>
 
-      {/* How It Works — collapsible accordion */}
+      {/* How It Works — Redesigned Grid */}
       {s("how_it_works").is_visible && (
-        <section id="how-it-works" className="relative z-10 py-24 px-6 sm:px-10 lg:px-16">
-          <div className="mx-auto max-w-3xl">
-            <MotionWrapper>
-              <div className="mb-12 text-center">
-                <h2 className="mb-4 text-foreground">{s("how_it_works").title}</h2>
-                <p className="text-muted-foreground">{s("how_it_works").subtitle}</p>
-              </div>
+        <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 overflow-hidden">
+          <div className="mx-auto max-w-7xl">
+            <MotionWrapper className="mb-20 text-center">
+              <span className="futuristic-label mb-4">Process</span>
+              <h2 className="mb-4 text-foreground text-4xl md:text-5xl">{s("how_it_works").title}</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{s("how_it_works").subtitle}</p>
             </MotionWrapper>
-            <MotionStagger className="space-y-3">
+
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 relative">
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent hidden lg:block -translate-y-16" />
+
               {steps.map((step, i) => {
                 const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                 const stepTitle = parts[0] || step;
                 const desc = parts.slice(1).join(": ") || "";
+
+                const icons = [Zap, Terminal, CheckCircle2, BarChart3];
+                const Icon = icons[i] || Zap;
+
                 return (
-                  <MotionItem key={i}>
-                    <Collapsible>
-                      <CollapsibleTrigger className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-5 text-left transition-colors data-[state=open]:border-primary/30">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                          {i + 1}
-                        </div>
-                        <h3 className="flex-1 font-semibold text-foreground">{stepTitle}</h3>
-                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="px-5 pb-5 pt-2 pl-[72px]">
-                          <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </MotionItem>
+                  <MotionWrapper key={i} delay={i * 0.1} className="relative group">
+                    <div className="clay-shadow relative h-full rounded-[2.5rem] border border-border/50 bg-card/40 p-8 backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:bg-card/60">
+                      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-500">
+                        <Icon className="h-7 w-7" />
+                      </div>
+
+                      <div className="absolute top-8 right-8 text-6xl font-black text-foreground/5 select-none">
+                        0{i + 1}
+                      </div>
+
+                      <h3 className="mb-3 text-xl font-bold text-foreground">{stepTitle}</h3>
+                      <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
+                    </div>
+                  </MotionWrapper>
                 );
               })}
-            </MotionStagger>
+            </div>
           </div>
         </section>
       )}
@@ -197,33 +200,65 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Contact Form */}
+      {/* Contact Form — Redesigned Split Layout */}
       {s("contact").is_visible && (
-        <section id="contact" className="relative z-10 py-24 px-6 sm:px-10">
-          <div className="mx-auto max-w-lg">
-            <MotionWrapper>
-              <div className="text-center mb-10">
-                <h2 className="mb-4 text-foreground">{s("contact").title}</h2>
-                <p className="text-muted-foreground">{s("contact").subtitle}</p>
-              </div>
-              <form onSubmit={handleContactSubmit} className="space-y-5 rounded-2xl border border-border bg-card p-6 sm:p-8">
-                <div className="space-y-1.5">
-                  <Label htmlFor="contact-name" className="text-sm text-foreground">Name</Label>
-                  <Input id="contact-name" value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Your name" maxLength={100} required className="h-11 rounded-xl border-border/40 bg-background px-4" />
+        <section id="contact" className="relative z-10 py-32 px-6 sm:px-10 overflow-hidden">
+          <div className="mx-auto max-w-6xl">
+            <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+              <MotionWrapper className="flex flex-col justify-center">
+                <span className="futuristic-label mb-4 w-fit">Inquiry</span>
+                <h2 className="mb-6 text-foreground text-4xl md:text-5xl lg:text-6xl">{s("contact").title}</h2>
+                <p className="text-muted-foreground text-lg mb-10 max-w-md">{s("contact").subtitle}</p>
+
+                <div className="space-y-6">
+                  {[
+                    { icon: Mail, label: "Email Us", value: "hello@karbali.com" },
+                    { icon: MapPin, label: "Visit Us", value: "Stockholm, Sweden" },
+                    { icon: Globe, label: "Follow Us", value: "@karbalihq" }
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <item.icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{item.label}</p>
+                        <p className="text-foreground font-medium">{item.value}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="contact-email" className="text-sm text-foreground">Email</Label>
-                  <Input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@company.com" maxLength={255} required className="h-11 rounded-xl border-border/40 bg-background px-4" />
+              </MotionWrapper>
+
+              <MotionWrapper delay={0.2}>
+                <div className="clay-shadow relative rounded-[3rem] border border-border/50 bg-card/30 p-8 md:p-12 backdrop-blur-2xl">
+                  <form onSubmit={handleContactSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-name" className="text-sm font-medium text-foreground">Name</Label>
+                        <Input id="contact-name" value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Your name" maxLength={100} required className="h-12 rounded-2xl border-border/40 bg-background/50 px-5 focus:ring-primary/20" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-email" className="text-sm font-medium text-foreground">Email</Label>
+                        <Input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@company.com" maxLength={255} required className="h-12 rounded-2xl border-border/40 bg-background/50 px-5 focus:ring-primary/20" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-message" className="text-sm font-medium text-foreground">Message</Label>
+                      <Textarea id="contact-message" value={contactMessage} onChange={e => setContactMessage(e.target.value)} placeholder="How can we help?" maxLength={2000} required rows={4} className="min-h-[120px] rounded-2xl border-border/40 bg-background/50 px-5 py-4 focus:ring-primary/20 resize-none" />
+                    </div>
+                    <GlassButton type="submit" variant="glow" className="w-full h-12 rounded-2xl text-base font-semibold" disabled={contactSending}>
+                      {contactSending ? (
+                        <>Processing...</>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          Send Message <Send className="h-4 w-4" />
+                        </span>
+                      )}
+                    </GlassButton>
+                  </form>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="contact-message" className="text-sm text-foreground">Message</Label>
-                  <Textarea id="contact-message" value={contactMessage} onChange={e => setContactMessage(e.target.value)} placeholder="How can we help?" maxLength={2000} required rows={4} className="rounded-xl border-border/40 bg-background px-4" />
-                </div>
-                <GlassButton type="submit" variant="glow" className="w-full h-11" disabled={contactSending}>
-                  <Send className="h-4 w-4 mr-2" /> {contactSending ? "Sending..." : "Send Message"}
-                </GlassButton>
-              </form>
-            </MotionWrapper>
+              </MotionWrapper>
+            </div>
           </div>
         </section>
       )}

@@ -193,17 +193,17 @@ export default function FluidCanvas() {
     <>
       <canvas
         ref={canvasRef}
-        className="pointer-events-none fixed inset-0 z-0"
+        className="pointer-events-none fixed inset-0 z-[-10]"
       />
       {/* Glass Layer Overlay */}
       <div
-        className="pointer-events-none fixed inset-0 z-[1] backdrop-blur-[1px]"
+        className="pointer-events-none fixed inset-0 z-[-9] backdrop-blur-[1px]"
         style={{
           background: "linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.06) 100%)",
         }}
       />
       {/* Noise Texture */}
-      <div className="noise pointer-events-none fixed inset-0 z-[2] opacity-20 mix-blend-overlay" />
+      <div className="noise pointer-events-none fixed inset-0 z-[-8] opacity-20 mix-blend-overlay" />
     </>
   );
 }
