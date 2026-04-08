@@ -68,7 +68,7 @@ export default function Login() {
         </>
       }
     >
-      <form onSubmit={handleLogin} className="space-y-5">
+      <form onSubmit={handleLogin} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-sm text-foreground">Email address</Label>
           <Input
@@ -80,7 +80,7 @@ export default function Login() {
             maxLength={255}
             required
             autoComplete="email"
-            className="h-12 rounded-lg border-border bg-background px-4"
+            className="h-11 rounded-lg border-border bg-background px-4"
           />
         </div>
 
@@ -96,7 +96,7 @@ export default function Login() {
               maxLength={128}
               required
               autoComplete="current-password"
-              className="h-12 rounded-lg border-border bg-background px-4 pr-12"
+              className="h-11 rounded-lg border-border bg-background px-4 pr-12"
             />
             <button
               type="button"
@@ -109,7 +109,7 @@ export default function Login() {
           </div>
         </div>
 
-        <GlassButton type="submit" className="h-12 w-full rounded-lg" variant="glow" disabled={loading}>
+        <GlassButton type="submit" className="h-11 w-full rounded-lg" variant="glow" disabled={loading}>
           {loading ? "Signing in..." : "Log in"}
         </GlassButton>
       </form>

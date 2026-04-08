@@ -134,39 +134,41 @@ export default function Signup() {
         </>
       }
     >
-      <form onSubmit={handleSignup} className="space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="full-name" className="text-sm text-foreground">Full Name *</Label>
-          <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} required autoComplete="name" className="h-12 rounded-lg border-border bg-background px-4" />
-        </div>
+      <form onSubmit={handleSignup} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="full-name" className="text-sm text-foreground">Full Name *</Label>
+            <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} required autoComplete="name" className="h-11 rounded-lg border-border bg-background px-4" />
+          </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="company-name" className="text-sm text-foreground">Company Name</Label>
-          <Input id="company-name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={100} autoComplete="organization" className="h-12 rounded-lg border-border bg-background px-4" />
+          <div className="space-y-1.5">
+            <Label htmlFor="company-name" className="text-sm text-foreground">Company</Label>
+            <Input id="company-name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={100} autoComplete="organization" className="h-11 rounded-lg border-border bg-background px-4" />
+          </div>
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="website" className="text-sm text-foreground">Website *</Label>
-          <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} placeholder="yourbusiness.com" autoComplete="url" required className="h-12 rounded-lg border-border bg-background px-4" />
+          <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} placeholder="yourbusiness.com" autoComplete="url" required className="h-11 rounded-lg border-border bg-background px-4" />
           {isForbiddenDomain ? (
-            <p className="text-xs text-destructive">Email provider domains are not accepted.</p>
+            <p className="text-[10px] leading-none text-destructive">Email provider domains are not accepted.</p>
           ) : websiteDomain ? (
-            <p className="text-xs text-muted-foreground">Your email must end with @{websiteDomain}</p>
+            <p className="text-[10px] leading-none text-muted-foreground">Your email must end with @{websiteDomain}</p>
           ) : null}
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-sm text-foreground">Business Email *</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required autoComplete="email" placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"} className="h-12 rounded-lg border-border bg-background px-4" />
+          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required autoComplete="email" placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"} className="h-11 rounded-lg border-border bg-background px-4" />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="password" className="text-sm text-foreground">Password *</Label>
-          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="new-password" className="h-12 rounded-lg border-border bg-background px-4" />
-          <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
+          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="new-password" className="h-11 rounded-lg border-border bg-background px-4" />
+          <p className="text-[10px] leading-none text-muted-foreground">Minimum 8 characters</p>
         </div>
 
-        <GlassButton type="submit" className="mt-2 h-12 w-full rounded-lg" variant="glow" disabled={loading || !!isForbiddenDomain}>
+        <GlassButton type="submit" className="mt-2 h-11 w-full rounded-lg" variant="glow" disabled={loading || !!isForbiddenDomain}>
           {loading ? "Creating account..." : "Create Account"}
         </GlassButton>
       </form>

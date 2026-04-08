@@ -29,9 +29,9 @@ export default function AuthSplitShell({ title, description, children, footer }:
       </div>
 
       {/* Right — form panel */}
-      <div className="relative flex flex-1 flex-col">
+      <div className="relative flex flex-1 flex-col overflow-y-auto">
         {/* Close / back to home */}
-        <div className="flex items-center justify-between px-6 pt-6 sm:px-10">
+        <div className="flex items-center justify-between px-6 pt-4 sm:px-10">
           <Link to="/" className="inline-flex items-center gap-2">
             <Logo size={24} />
             <span className="text-lg font-bold tracking-tight text-gradient">Karbali</span>
@@ -45,16 +45,16 @@ export default function AuthSplitShell({ title, description, children, footer }:
           </Link>
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-6 py-10 sm:px-10 lg:px-16">
+        <div className="flex flex-1 items-center justify-center px-6 py-8 sm:px-10 lg:px-16">
           <div className="w-full max-w-sm">
-            <h1 className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="text-center text-2xl font-bold tracking-tight text-foreground">
               {title}
             </h1>
-            <p className="mt-2 text-center text-sm text-muted-foreground">
+            <p className="mt-1.5 text-center text-sm text-muted-foreground">
               {description}
             </p>
 
-            <div className="mt-8">{children}</div>
+            <div className="mt-6">{children}</div>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
               {footer}
