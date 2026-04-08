@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Activity } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { GlassButton } from "@/components/ui/glass-button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface LandingHeroProps {
   title: string | null;
@@ -17,10 +17,21 @@ interface LandingHeroProps {
 
 export default function LandingHero({ title, subtitle }: LandingHeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [wordIndex, setWordIndex] = useState(0);
+  const words = ["Brand", "Business", "Shop"];
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});
+
+    const interval = setInterval(() => {
+      setWordIndex((prev) => (prev + 1) % words.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
+
+  // Split title to allow for interchangeable word
+  const baseTitle = title?.replace(/Brand$/, "").trim() || "Migrate Customers to Your";
 
   return (
     <section className="relative z-0 overflow-hidden">
@@ -36,8 +47,9 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
           preload="auto"
           className="h-full w-full object-cover"
         />
-        {/* Dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/70" />
+        {/* Dark overlay for text contrast — darkened per user request */}
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80" />
       </div>
 
       {/* Bottom seamless fade into page background */}
@@ -45,14 +57,28 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
 
       {/* Content — left-aligned like wan.video */}
       <div className="relative z-10 flex min-h-screen items-end px-6 pb-32 pt-32 sm:px-10 lg:px-16">
-        <div className="max-w-2xl">
+        <div className="max-w-3xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           >
             <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-              {title}
+              {baseTitle}{" "}
+              <div className="inline-block relative h-[1.1em] overflow-hidden align-bottom">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={words[wordIndex]}
+                    initial={{ y: 40, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -40, opacity: 0 }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="inline-block text-primary"
+                  >
+                    {words[wordIndex]}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
             </h1>
 
             <p className="mt-6 max-w-lg text-base leading-relaxed text-white/60 sm:text-lg">
