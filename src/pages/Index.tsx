@@ -34,12 +34,22 @@ export default function Index() {
   const [content, setContent] = useState<Record<string, SiteContent>>(defaultContent);
   const [metrics, setMetrics] = useState({ advertisers: 0, campaigns: 0, events: 0 });
   const [metricsLoading, setMetricsLoading] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactMessage, setContactMessage] = useState("");
   const [contactSending, setContactSending] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,23 +102,58 @@ export default function Index() {
     <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
       <FluidCanvas />
 
-      {/* Transparent navbar overlaying the video */}
-      <header className="fixed top-0 left-0 right-0 z-30">
+      {/* Dynamic navbar overlaying the video/content */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${
+          scrolled
+            ? "bg-background/80 backdrop-blur-md border-b border-border py-2"
+            : "bg-transparent py-4"
+        }`}
+      >
         <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16">
           <div className="flex h-16 items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
               <Logo size={22} />
-              <span className="text-lg font-bold tracking-tight text-white">Karbali Ads</span>
+              <span className={`text-lg font-bold tracking-tight transition-colors ${scrolled ? "text-foreground" : "text-white"}`}>
+                Karbali Ads
+              </span>
             </Link>
 
             <div className="flex items-center gap-4">
-              <Link to="/about" className="hidden text-sm text-white/60 transition-colors hover:text-white sm:block">About</Link>
-              <Link to="/docs" className="hidden text-sm text-white/60 transition-colors hover:text-white sm:block">API</Link>
-              <button onClick={toggleTheme} className="rounded-lg p-2 text-white/60 transition-colors hover:text-white" aria-label="Toggle theme">
+              <Link
+                to="/about"
+                className={`hidden text-sm transition-colors sm:block ${
+                  scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"
+                }`}
+              >
+                About
+              </Link>
+              <Link
+                to="/docs"
+                className={`hidden text-sm transition-colors sm:block ${
+                  scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"
+                }`}
+              >
+                API
+              </Link>
+              <button
+                onClick={toggleTheme}
+                className={`rounded-lg p-2 transition-colors ${
+                  scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"
+                }`}
+                aria-label="Toggle theme"
+              >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
               <Link to="/signup">
-                <GlassButton variant="outline" size="sm" className="border-white/20 bg-white/5 text-white backdrop-blur-sm hover:bg-white/10">
+                <GlassButton
+                  variant={scrolled ? "default" : "outline"}
+                  size="sm"
+                  className={scrolled
+                    ? ""
+                    : "border-white/20 bg-white/5 text-white backdrop-blur-sm hover:bg-white/10"
+                  }
+                >
                   Get Started
                 </GlassButton>
               </Link>
@@ -123,7 +168,7 @@ export default function Index() {
       )}
 
       {/* Bottom feature cards floating over the hero fade — minimalistic redesign */}
-      <section className="relative z-10 -mt-28 px-6 sm:px-10 lg:px-16">
+      <section className="relative z-10 -mt-16 px-6 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f) => (
@@ -234,8 +279,8 @@ export default function Index() {
                 <div className="space-y-6">
                   {[
                     { icon: Mail, label: "Email Us", value: "hello@karbali.com" },
-                    { icon: MapPin, label: "Visit Us", value: "Stockholm, Sweden" },
-                    { icon: Globe, label: "Follow Us", value: "@karbalihq" }
+                    { icon: MapPin, label: "Visit Us", value: "Lagos, Nigeria" },
+                    { icon: Globe, label: "Follow Us", value: "@karbali_ads" }
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
