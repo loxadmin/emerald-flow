@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Target, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, Target, TrendingUp, Users, Activity } from "lucide-react";
 import { GlassButton } from "@/components/ui/glass-button";
 import HeroVideo from "@/components/HeroVideo";
+import { motion } from "framer-motion";
 
 interface LandingHeroProps {
   title: string | null;
@@ -22,76 +23,83 @@ export default function LandingHero({ title, subtitle, metricsLoading, metrics }
   ];
 
   const formatMetric = (value: number) => {
-    if (metricsLoading) return "Calculating";
-    return value >= 10 ? value.toLocaleString() : "Calculating";
+    if (metricsLoading) return "—";
+    return value >= 10 ? value.toLocaleString() : "—";
   };
 
   return (
-    <section className="relative z-10 px-4 pb-16 pt-8 sm:px-6 md:pb-20 md:pt-10">
-      <div className="container">
-        <div className="relative overflow-hidden rounded-[2.25rem] border border-border/25 bg-background/45 px-5 py-6 backdrop-blur-sm sm:px-8 lg:px-10 lg:py-10">
-          <div className="absolute -left-12 top-12 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-56 w-56 rounded-full bg-primary/15 blur-3xl" />
-
-          <div className="relative grid items-center gap-10 lg:grid-cols-[0.82fr_1.18fr]">
-            <div className="max-w-xl text-center lg:text-left">
-              <div className="inline-flex items-center rounded-full border border-border/30 bg-background/75 px-3 py-1 text-xs font-medium uppercase tracking-[0.26em] text-muted-foreground">
-                Performance Attribution Platform
-              </div>
-
-              <h1 className="mt-6 text-5xl font-semibold leading-[0.92] tracking-tight text-foreground sm:text-6xl xl:text-[4.6rem]">
-                {title}
-              </h1>
-
-              <p className="mt-6 max-w-lg text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-                {subtitle}
-              </p>
-
-              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-                <Link to="/signup" className="w-full sm:w-auto">
-                  <GlassButton size="lg" variant="glow" className="w-full px-8 sm:w-auto">
-                    Start Free <ArrowRight className="h-4 w-4" />
-                  </GlassButton>
-                </Link>
-                <Link to="/docs" className="w-full sm:w-auto">
-                  <GlassButton size="lg" variant="outline" className="w-full px-8 sm:w-auto">
-                    View API Docs
-                  </GlassButton>
-                </Link>
-              </div>
-
-              <div className="mt-10 grid gap-4 sm:grid-cols-3">
-                {stats.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="rounded-2xl border border-border/25 bg-background/75 p-4 text-left"
-                  >
-                    <stat.icon className="h-5 w-5 text-primary" />
-                    <p className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
-                      {formatMetric(stat.value)}
-                    </p>
-                    <p className="mt-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                      {stat.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="relative">
-              <HeroVideo />
-
-              <div className="mt-4 flex justify-center lg:justify-start">
-                <div className="inline-flex max-w-xl items-center gap-3 rounded-2xl border border-border/30 bg-card/90 px-4 py-3 text-sm text-foreground shadow-sm">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <ArrowRight className="h-4 w-4" />
-                  </span>
-                  <span>Competitor customers moving into your brand pipeline</span>
-                </div>
-              </div>
-            </div>
+    <section className="relative z-10 px-4 pt-6 pb-20 sm:px-6">
+      <div className="container max-w-7xl">
+        {/* Hero headline - centered above video */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-10 text-center"
+        >
+          <div className="futuristic-label mx-auto mb-6">
+            <Activity className="h-3 w-3" />
+            Performance Attribution Platform
           </div>
-        </div>
+
+          <h1 className="mx-auto max-w-4xl text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+            {title}
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            {subtitle}
+          </p>
+
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link to="/signup">
+              <GlassButton size="lg" variant="glow" className="px-10">
+                Start Free <ArrowRight className="h-4 w-4" />
+              </GlassButton>
+            </Link>
+            <Link to="/docs">
+              <GlassButton size="lg" variant="outline" className="px-10">
+                View API Docs
+              </GlassButton>
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* Video - cinematic full width */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <HeroVideo />
+        </motion.div>
+
+        {/* Stats row */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3"
+        >
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="group relative overflow-hidden rounded-xl neon-border bg-card/50 p-5 backdrop-blur-sm"
+            >
+              <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-primary/5 blur-2xl" />
+              <div className="relative flex items-start justify-between">
+                <div>
+                  <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+                    {formatMetric(stat.value)}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+                    {stat.label}
+                  </p>
+                </div>
+                <stat.icon className="h-5 w-5 text-primary/60" />
+              </div>
+            </div>
+          ))}
+        </motion.div>
       </div>
     </section>
   );

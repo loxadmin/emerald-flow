@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
-import { GlassCard } from "@/components/ui/glass-card";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { BarChart3, Shield, Zap, DollarSign, Mail, Phone, MapPin, Sun, Moon } from "lucide-react";
+import { BarChart3, Shield, Zap, DollarSign, Mail, Phone, MapPin, Sun, Moon, ChevronRight, ArrowRight } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
 import LandingHero from "@/components/landing/LandingHero";
@@ -87,28 +86,30 @@ export default function Index() {
     <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
       <FluidCanvas />
 
+      {/* Futuristic grid overlay */}
+      <div className="pointer-events-none fixed inset-0 z-[1] futuristic-grid" />
+
+      {/* Header */}
       <header className="relative z-10 px-4 pt-4 sm:px-6">
-        <div className="container">
-          <div className="flex h-16 items-center justify-between rounded-full border border-border/25 bg-background/40 px-4 backdrop-blur-sm sm:px-6">
-            <Link to="/" className="flex items-center gap-3">
-              <Logo size={28} />
-              <h1 className="text-xl font-bold tracking-tight">
-                <span className="text-gradient">Karbali</span>
-              </h1>
+        <div className="container max-w-7xl">
+          <div className="flex h-14 items-center justify-between rounded-2xl neon-border bg-card/40 px-5 backdrop-blur-md">
+            <Link to="/" className="flex items-center gap-2.5">
+              <Logo size={24} />
+              <span className="text-lg font-bold tracking-tight text-gradient">Karbali</span>
             </Link>
 
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={toggleTheme}
-                className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                className="rounded-lg p-2 text-muted-foreground transition-colors hover:text-foreground"
                 aria-label="Toggle theme"
               >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
 
-              <div className="hidden items-center gap-3 sm:flex">
-                <Link to="/login"><GlassButton variant="ghost">Sign In</GlassButton></Link>
-                <Link to="/signup"><GlassButton variant="glow">Get Started</GlassButton></Link>
+              <div className="hidden items-center gap-2 sm:flex">
+                <Link to="/login"><GlassButton variant="ghost" size="sm">Sign In</GlassButton></Link>
+                <Link to="/signup"><GlassButton variant="glow" size="sm">Get Started</GlassButton></Link>
               </div>
 
               <Link to="/login" className="sm:hidden">
@@ -119,6 +120,7 @@ export default function Index() {
         </div>
       </header>
 
+      {/* Hero */}
       {s("hero").is_visible && (
         <LandingHero
           title={s("hero").title}
@@ -128,41 +130,58 @@ export default function Index() {
         />
       )}
 
+      {/* About */}
       {s("about").is_visible && (
-        <section id="about" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
-          <div className="container">
-            <MotionWrapper>
-              <div className="mx-auto max-w-2xl text-center">
-                <h2 className="mb-4">{s("about").title}</h2>
-                <p className="mb-6 text-lg text-muted-foreground">{s("about").subtitle}</p>
-                <p className="text-muted-foreground/80">{s("about").content}</p>
-              </div>
-            </MotionWrapper>
+        <section id="about" className="relative z-10 py-24 px-4 sm:px-6">
+          <div className="container max-w-7xl">
+            <div className="mx-auto max-w-4xl">
+              <MotionWrapper>
+                <div className="relative overflow-hidden rounded-2xl neon-border bg-card/30 p-8 backdrop-blur-sm sm:p-12">
+                  <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/5 blur-3xl" />
+                  <div className="relative">
+                    <div className="futuristic-label mb-6">About</div>
+                    <h2 className="mb-4 text-foreground">{s("about").title}</h2>
+                    <p className="mb-6 text-lg text-muted-foreground">{s("about").subtitle}</p>
+                    <div className="h-[1px] w-full bg-gradient-to-r from-primary/30 via-primary/10 to-transparent" />
+                    <p className="mt-6 text-muted-foreground/80 leading-7">{s("about").content}</p>
+                  </div>
+                </div>
+              </MotionWrapper>
+            </div>
           </div>
         </section>
       )}
 
+      {/* How It Works */}
       {s("how_it_works").is_visible && (
-        <section id="how-it-works" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
-          <div className="container">
+        <section id="how-it-works" className="relative z-10 py-24 px-4 sm:px-6">
+          <div className="container max-w-7xl">
             <MotionWrapper>
-              <h2 className="mb-4 text-center">{s("how_it_works").title}</h2>
-              <p className="mb-12 text-center text-muted-foreground">{s("how_it_works").subtitle}</p>
+              <div className="mb-12 text-center">
+                <div className="futuristic-label mx-auto mb-4">Process</div>
+                <h2 className="mb-4 text-foreground">{s("how_it_works").title}</h2>
+                <p className="text-muted-foreground">{s("how_it_works").subtitle}</p>
+              </div>
             </MotionWrapper>
-            <MotionStagger className="mx-auto grid max-w-3xl gap-6 grid-cols-1 md:grid-cols-2">
+            <MotionStagger className="mx-auto grid max-w-4xl gap-4 grid-cols-1 md:grid-cols-2">
               {steps.map((step, i) => {
                 const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                 const title = parts[0] || step;
                 const desc = parts.slice(1).join(": ") || "";
                 return (
                   <MotionItem key={i}>
-                    <GlassCard className="h-full p-6">
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold">
+                    <div className="relative overflow-hidden rounded-xl neon-border bg-card/30 p-6 backdrop-blur-sm">
+                      <div className="absolute -right-3 -top-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/5 text-[2rem] font-black text-primary/10">
                         {i + 1}
                       </div>
-                      <h3 className="mb-2 font-semibold text-foreground">{title}</h3>
-                      <p className="text-sm text-muted-foreground">{desc}</p>
-                    </GlassCard>
+                      <div className="relative">
+                        <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
+                          {i + 1}
+                        </div>
+                        <h3 className="mb-2 font-semibold text-foreground">{title}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                      </div>
+                    </div>
                   </MotionItem>
                 );
               })}
@@ -171,21 +190,30 @@ export default function Index() {
         </section>
       )}
 
+      {/* Features */}
       {s("features").is_visible && (
-        <section id="features" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
-          <div className="container">
+        <section id="features" className="relative z-10 py-24 px-4 sm:px-6">
+          <div className="container max-w-7xl">
             <MotionWrapper>
-              <h2 className="mb-4 text-center">{s("features").title}</h2>
-              <p className="mb-12 text-center text-muted-foreground">{s("features").subtitle}</p>
+              <div className="mb-12 text-center">
+                <div className="futuristic-label mx-auto mb-4">Capabilities</div>
+                <h2 className="mb-4 text-foreground">{s("features").title}</h2>
+                <p className="text-muted-foreground">{s("features").subtitle}</p>
+              </div>
             </MotionWrapper>
-            <MotionStagger className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            <MotionStagger className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
               {features.map((f) => (
                 <MotionItem key={f.title}>
-                  <GlassCard className="h-full p-6">
-                    <f.icon className="mb-4 h-8 w-8 text-primary" />
-                    <h3 className="mb-2 font-semibold text-foreground">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground">{f.desc}</p>
-                  </GlassCard>
+                  <div className="relative overflow-hidden rounded-xl neon-border bg-card/30 p-6 backdrop-blur-sm h-full">
+                    <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-primary/5 blur-2xl" />
+                    <div className="relative">
+                      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <f.icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <h3 className="mb-2 font-semibold text-foreground">{f.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                    </div>
+                  </div>
                 </MotionItem>
               ))}
             </MotionStagger>
@@ -193,20 +221,42 @@ export default function Index() {
         </section>
       )}
 
+      {/* CTA Banner */}
+      <section className="relative z-10 py-16 px-4 sm:px-6">
+        <div className="container max-w-7xl">
+          <MotionWrapper>
+            <div className="relative overflow-hidden rounded-2xl bg-primary/5 neon-border p-10 text-center sm:p-14 backdrop-blur-sm">
+              <div className="absolute inset-0 futuristic-grid" />
+              <div className="relative">
+                <h2 className="mb-4 text-foreground">Ready to migrate customers?</h2>
+                <p className="mb-8 text-muted-foreground">Join the next generation of performance-driven advertisers.</p>
+                <Link to="/signup">
+                  <GlassButton size="lg" variant="glow" className="px-10">
+                    Get Started Now <ArrowRight className="h-4 w-4" />
+                  </GlassButton>
+                </Link>
+              </div>
+            </div>
+          </MotionWrapper>
+        </div>
+      </section>
+
+      {/* Contact */}
       {s("contact").is_visible && (
-        <section id="contact" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
-          <div className="container">
+        <section id="contact" className="relative z-10 py-24 px-4 sm:px-6">
+          <div className="container max-w-7xl">
             <MotionWrapper>
               <div className="mx-auto max-w-xl text-center">
-                <h2 className="mb-4">{s("contact").title}</h2>
+                <div className="futuristic-label mx-auto mb-4">Contact</div>
+                <h2 className="mb-4 text-foreground">{s("contact").title}</h2>
                 <p className="mb-8 text-muted-foreground">{s("contact").subtitle}</p>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {contactLines.map((line, i) => {
                     const Icon = contactIcons[i] || Mail;
                     return (
-                      <div key={i} className="flex items-center justify-center gap-3 text-muted-foreground">
+                      <div key={i} className="flex items-center justify-center gap-3 rounded-xl neon-border bg-card/30 px-4 py-3 backdrop-blur-sm">
                         <Icon className="h-4 w-4 text-primary" />
-                        <span>{line.replace(/^(Email|Phone|Address):\s*/, "")}</span>
+                        <span className="text-sm text-muted-foreground">{line.replace(/^(Email|Phone|Address):\s*/, "")}</span>
                       </div>
                     );
                   })}
@@ -217,9 +267,10 @@ export default function Index() {
         </section>
       )}
 
+      {/* Footer */}
       {s("footer").is_visible && (
-        <footer className="relative z-10 border-t border-border/30 py-8 px-4 sm:px-6">
-          <div className="container">
+        <footer className="relative z-10 border-t border-primary/10 py-8 px-4 sm:px-6">
+          <div className="container max-w-7xl">
             <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
               <div className="flex items-center gap-2">
                 <Logo size={20} />
