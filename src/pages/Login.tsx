@@ -1,15 +1,12 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
-import { GlassInput } from "@/components/ui/glass-input";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from "@/components/ui/glass-card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import FluidCanvas from "@/components/FluidCanvas";
-import MotionWrapper from "@/components/MotionWrapper";
-import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
-import Logo from "@/components/Logo";
+import AuthSplitShell from "@/components/auth/AuthSplitShell";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,22 +17,28 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) { toast.error("Please fill in all fields"); return; }
+    if (!email.trim() || !password.trim()) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
     setLoading(true);
     console.log("Starting login for:", email);
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       console.log("Login result:", { hasData: !!data, hasError: !!error });
+
       if (error) {
         toast.error(error.message);
       } else {
         console.log("Login success, checking role...");
         toast.success("Logged in successfully");
         localStorage.setItem("karbali-last-activity", String(Date.now()));
-        
-        // Check if user is admin to redirect appropriately
+
         await supabase.auth.getSession();
         const userId = data.user?.id;
+
         if (userId) {
           const { data: rolesData, error: rolesError } = await supabase
             .from("user_roles")
@@ -47,7 +50,7 @@ export default function Login() {
           }
 
           const hasAdminRole = (rolesData || []).some((role) => role.role === "admin");
-          
+
           if (hasAdminRole) {
             navigate("/admin", { replace: true });
           } else {
@@ -66,51 +69,68 @@ export default function Login() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 bg-background">
-      <FluidCanvas />
-      <MotionWrapper className="relative z-10 w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link to="/">
-            <Logo size={48} className="mx-auto mb-4 cursor-pointer" />
+    <AuthSplitShell
+      eyebrow="Welcome back"
+      title="Sign In"
+      description="Enter your credentials to access your dashboard."
+      footer={
+        <>
+          Don&apos;t have an account?{" "}
+          <Link to="/signup" className="text-primary transition-colors hover:text-primary/80">
+            Sign up
           </Link>
-          <Link to="/">
-            <h1 className="text-3xl cursor-pointer">
-              <span className="text-gradient">Karbali</span>
-            </h1>
-          </Link>
-          <p className="mt-2 text-muted-foreground">Performance Attribution Platform</p>
+        </>
+      }
+    >
+      <form onSubmit={handleLogin} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm text-foreground">
+            Email
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            maxLength={255}
+            required
+            autoComplete="email"
+            className="h-14 rounded-xl border-border/40 bg-background px-4"
+          />
         </div>
-        <GlassCard variant="strong">
-          <GlassCardHeader>
-            <GlassCardTitle>Sign In</GlassCardTitle>
-            <GlassCardDescription>Enter your credentials to access your dashboard</GlassCardDescription>
-          </GlassCardHeader>
-          <GlassCardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Email</Label>
-                <GlassInput id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required autoComplete="email" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-sm">Password</Label>
-                <div className="relative">
-                  <GlassInput id="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="current-password" />
-                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <GlassButton type="submit" className="w-full" variant="glow" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
-              </GlassButton>
-            </form>
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/signup" className="text-primary hover:text-primary/80 transition-colors">Sign up</Link>
-            </div>
-          </GlassCardContent>
-        </GlassCard>
-      </MotionWrapper>
-    </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-sm text-foreground">
+            Password
+          </Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              maxLength={128}
+              required
+              autoComplete="current-password"
+              className="h-14 rounded-xl border-border/40 bg-background px-4 pr-12"
+            />
+            <button
+              type="button"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <GlassButton type="submit" className="mt-2 h-12 w-full rounded-xl" variant="glow" disabled={loading}>
+          {loading ? "Signing in..." : "Sign In"}
+        </GlassButton>
+      </form>
+    </AuthSplitShell>
   );
 }
