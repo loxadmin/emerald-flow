@@ -123,7 +123,7 @@ export default function Index() {
       )}
 
       {/* Bottom feature cards floating over the hero fade — minimalistic redesign */}
-      <section className="relative z-10 -mt-28 px-6 sm:px-10 lg:px-16">
+      <section className="relative z-10 -mt-16 px-6 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f) => (

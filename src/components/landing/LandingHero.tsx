@@ -100,7 +100,7 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                   variant="outline"
                   className="border-white/40 bg-white/10 px-10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] group"
                 >
-                  <span className="bg-gradient-to-r from-[#22c55e] via-white to-[#22c55e] bg-clip-text text-transparent font-bold drop-shadow-[0_0_8px_rgba(34,197,94,0.5)] group-hover:drop-shadow-[0_0_12px_rgba(34,197,94,0.8)] transition-all duration-300">
+                  <span className="text-white font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] group-hover:drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)] transition-all duration-300">
                     View API Docs
                   </span>
                 </GlassButton>
