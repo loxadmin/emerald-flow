@@ -57,20 +57,20 @@ export default function Login() {
   return (
     <AuthSplitShell
       eyebrow="Welcome back"
-      title="Sign In"
+      title="Welcome to Karbali"
       description="Enter your credentials to access your dashboard."
       footer={
         <>
           Don&apos;t have an account?{" "}
-          <Link to="/signup" className="text-primary transition-colors hover:text-primary/80">
+          <Link to="/signup" className="font-medium text-primary transition-colors hover:text-primary/80">
             Sign up
           </Link>
         </>
       }
     >
       <form onSubmit={handleLogin} className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm text-foreground">Email</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-sm text-foreground">Email address</Label>
           <Input
             id="email"
             type="email"
@@ -80,11 +80,11 @@ export default function Login() {
             maxLength={255}
             required
             autoComplete="email"
-            className="h-12 rounded-xl border-border/40 bg-background px-4"
+            className="h-12 rounded-lg border-border bg-background px-4"
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="password" className="text-sm text-foreground">Password</Label>
           <div className="relative">
             <Input
@@ -96,7 +96,7 @@ export default function Login() {
               maxLength={128}
               required
               autoComplete="current-password"
-              className="h-12 rounded-xl border-border/40 bg-background px-4 pr-12"
+              className="h-12 rounded-lg border-border bg-background px-4 pr-12"
             />
             <button
               type="button"
@@ -109,8 +109,8 @@ export default function Login() {
           </div>
         </div>
 
-        <GlassButton type="submit" className="mt-2 h-12 w-full rounded-xl" variant="glow" disabled={loading}>
-          {loading ? "Signing in..." : "Sign In"}
+        <GlassButton type="submit" className="h-12 w-full rounded-lg" variant="glow" disabled={loading}>
+          {loading ? "Signing in..." : "Log in"}
         </GlassButton>
       </form>
     </AuthSplitShell>

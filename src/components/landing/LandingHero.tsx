@@ -23,8 +23,8 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
   }, []);
 
   return (
-    <section className="relative z-10 overflow-hidden -mt-16">
-      {/* Video background — starts behind the navbar */}
+    <section className="relative z-0 overflow-hidden">
+      {/* Video background — full bleed, sits behind transparent navbar */}
       <div className="absolute inset-0 z-0">
         <video
           ref={videoRef}
@@ -36,45 +36,41 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
           preload="auto"
           className="h-full w-full object-cover"
         />
-        {/* Dark overlay for contrast — forced dark regardless of theme */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/90" />
-        {/* Emerald tinted overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
+        {/* Dark overlay for text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/70" />
       </div>
 
-      {/* Bottom gradient fade — seamless transition to next section */}
-      <div className="absolute bottom-0 left-0 right-0 z-[1] h-48 bg-gradient-to-t from-background via-background/80 to-transparent" />
+      {/* Bottom seamless fade into page background */}
+      <div className="absolute bottom-0 left-0 right-0 z-[1] h-64 bg-gradient-to-t from-background via-background/90 to-transparent" />
 
-      {/* Content */}
-      <div className="relative z-10 flex min-h-[90vh] items-center justify-center px-4 pt-28 pb-20 sm:px-6">
-        <div className="mx-auto max-w-3xl text-center">
+      {/* Content — left-aligned like wan.video */}
+      <div className="relative z-10 flex min-h-screen items-end px-6 pb-32 pt-32 sm:px-10 lg:px-16">
+        <div className="max-w-2xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="futuristic-label mx-auto mb-8">
-              <Activity className="h-3 w-3" />
-              Performance Attribution Platform
-            </div>
-
-            {/* Force white text over video regardless of theme */}
             <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
               {title}
             </h1>
 
-            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
+            <p className="mt-6 max-w-lg text-base leading-relaxed text-white/60 sm:text-lg">
               {subtitle}
             </p>
 
-            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-10 flex flex-wrap items-center gap-3">
               <Link to="/signup">
                 <GlassButton size="lg" variant="glow" className="px-10">
                   Start Free <ArrowRight className="h-4 w-4" />
                 </GlassButton>
               </Link>
               <Link to="/docs">
-                <GlassButton size="lg" variant="outline" className="px-10 border-white/30 text-white hover:bg-white/10 ring-1 ring-white/20">
+                <GlassButton
+                  size="lg"
+                  variant="outline"
+                  className="border-white/20 bg-white/5 px-10 text-white backdrop-blur-sm hover:bg-white/10"
+                >
                   View API Docs
                 </GlassButton>
               </Link>
