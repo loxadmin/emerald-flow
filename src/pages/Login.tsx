@@ -57,7 +57,7 @@ export default function Login() {
   return (
     <AuthSplitShell
       eyebrow="Welcome back"
-      title="Welcome to KARBALI ADS"
+      title="Welcome to Karbali Ads"
       description="Enter your credentials to access your dashboard."
       footer={
         <>

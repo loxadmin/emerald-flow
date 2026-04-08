@@ -23,11 +23,11 @@ interface SiteContent {
 
 const defaultContent: Record<string, SiteContent> = {
   hero: { section_key: "hero", title: "Migrate Customers to Your Brand", subtitle: "The performance attribution platform that helps advertisers acquire competitors' customers and only pay for real results.", content: null, is_visible: true },
-  about: { section_key: "about", title: "About KARBALI ADS", subtitle: null, content: null, is_visible: true },
+  about: { section_key: "about", title: "About Karbali Ads", subtitle: null, content: null, is_visible: true },
   how_it_works: { section_key: "how_it_works", title: "How It Works", subtitle: "From campaign creation to verified results in four simple steps.", content: "1. Create a Campaign: Set your budget and define what you will pay for.\n2. Integrate Our API: Add a simple tracking snippet to your app.\n3. Get Approved: Our admin team verifies your integration and activates your campaign.\n4. Track and Pay for Results: Monitor real-time analytics and only pay when users take action.", is_visible: true },
-  features: { section_key: "features", title: "Why Choose KARBALI ADS", subtitle: "Built for performance-driven advertisers who demand transparency.", content: null, is_visible: true },
+  features: { section_key: "features", title: "Why Choose Karbali Ads", subtitle: "Built for performance-driven advertisers who demand transparency.", content: null, is_visible: true },
   contact: { section_key: "contact", title: "Get in Touch", subtitle: "Have questions? We would love to hear from you.", content: null, is_visible: true },
-  footer: { section_key: "footer", title: "KARBALI ADS", subtitle: null, content: "Performance Attribution Platform. Track real outcomes, not vanity metrics.", is_visible: true },
+  footer: { section_key: "footer", title: "Karbali Ads", subtitle: null, content: "Performance Attribution Platform. Track real outcomes, not vanity metrics.", is_visible: true },
 };
 
 export default function Index() {
@@ -96,9 +96,9 @@ export default function Index() {
       <header className="fixed top-0 left-0 right-0 z-30">
         <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16">
           <div className="flex h-16 items-center justify-between">
-            <Link to="/" className="flex items-center gap-2.5">
-              <Logo size={28} />
-              <span className="text-xl font-bold tracking-tight text-white">KARBALI ADS</span>
+            <Link to="/" className="flex items-center gap-2">
+              <Logo size={22} />
+              <span className="text-lg font-bold tracking-tight text-white">Karbali Ads</span>
             </Link>
 
             <div className="flex items-center gap-4">
@@ -122,20 +122,20 @@ export default function Index() {
         <LandingHero title={s("hero").title} subtitle={s("hero").subtitle} metrics={metrics} metricsLoading={metricsLoading} />
       )}
 
-      {/* Bottom feature cards floating over the hero fade — like wan.video */}
+      {/* Bottom feature cards floating over the hero fade — minimalistic redesign */}
       <section className="relative z-10 -mt-28 px-6 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f) => (
-              <div key={f.title} className="group rounded-3xl border border-black/5 bg-white dark:bg-card p-6 shadow-sm transition-all hover:shadow-md dark:border-white/5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <f.icon className="h-5 w-5" />
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+              <div key={f.title} className="group flex flex-col items-start transition-all">
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                  <f.icon className="h-6 w-6" />
                 </div>
-                <h3 className="text-base font-bold text-foreground mb-2">{f.title}</h3>
-                <p className="text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
+                <h3 className="text-lg font-bold text-foreground mb-2 flex items-center gap-2">
+                  {f.title}
+                  <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-foreground/80">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -144,16 +144,16 @@ export default function Index() {
 
       {/* How It Works — Redesigned Grid */}
       {s("how_it_works").is_visible && (
-        <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 bg-[#030712] overflow-hidden">
+        <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 bg-background overflow-hidden">
           {/* Decorative background blobs */}
-          <div className="absolute top-0 -left-20 h-[500px] w-[500px] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-0 -right-20 h-[500px] w-[500px] rounded-full bg-emerald-600/10 blur-[120px] pointer-events-none" />
+          <div className="absolute top-0 -left-20 h-[500px] w-[500px] rounded-full bg-purple-600/5 blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-0 -right-20 h-[500px] w-[500px] rounded-full bg-emerald-600/5 blur-[120px] pointer-events-none" />
 
           <div className="relative z-10 mx-auto max-w-7xl">
             <MotionWrapper className="mb-20 text-center">
               <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-6 border border-primary/20">Step-by-Step</span>
-              <h2 className="mb-6 text-white text-4xl md:text-5xl font-extrabold tracking-tight">{s("how_it_works").title}</h2>
-              <p className="text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">{s("how_it_works").subtitle}</p>
+              <h2 className="mb-6 text-foreground text-4xl md:text-5xl font-extrabold tracking-tight">{s("how_it_works").title}</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{s("how_it_works").subtitle}</p>
             </MotionWrapper>
 
             <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4">
@@ -167,7 +167,7 @@ export default function Index() {
 
                 return (
                   <MotionWrapper key={i} delay={i * 0.1} className="relative">
-                    <div className="relative flex flex-col items-start text-left h-full rounded-[2.5rem] bg-white/[0.02] backdrop-blur-3xl p-10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-white/5 transition-all duration-700 hover:bg-white/[0.05] hover:-translate-y-4 hover:border-primary/30 group overflow-hidden">
+                    <div className="relative flex flex-col items-start text-left h-full rounded-[2.5rem] bg-card/40 backdrop-blur-3xl p-10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] border border-border/50 transition-all duration-700 hover:bg-card/60 hover:-translate-y-4 hover:border-primary/30 group overflow-hidden">
                       {/* Animated border on hover */}
                       <div className="absolute top-0 left-0 h-[2px] w-0 bg-gradient-to-r from-transparent via-primary to-transparent transition-all duration-700 group-hover:w-full" />
 
@@ -175,12 +175,12 @@ export default function Index() {
                         <Icon className="h-10 w-10" />
                       </div>
 
-                      <div className="absolute -top-4 -right-4 text-9xl font-black text-white/[0.02] select-none transition-all duration-700 group-hover:text-white/[0.08] group-hover:scale-110">
+                      <div className="absolute -top-4 -right-4 text-9xl font-black text-foreground/[0.03] select-none transition-all duration-700 group-hover:text-foreground/[0.08] group-hover:scale-110">
                         {i + 1}
                       </div>
 
-                      <h3 className="mb-6 text-2xl font-bold text-white leading-tight tracking-tight group-hover:text-primary transition-colors duration-500">{stepTitle}</h3>
-                      <p className="text-base font-medium leading-relaxed text-gray-400/90 group-hover:text-gray-200 transition-colors duration-500">{desc}</p>
+                      <h3 className="mb-6 text-2xl font-bold text-foreground leading-tight tracking-tight group-hover:text-primary transition-colors duration-500">{stepTitle}</h3>
+                      <p className="text-base font-medium leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors duration-500">{desc}</p>
 
                       <div className="mt-8 flex items-center text-primary/40 group-hover:text-primary transition-colors duration-500">
                         <span className="text-xs font-bold uppercase tracking-widest">Explore</span>
@@ -290,11 +290,11 @@ export default function Index() {
           <div className="mx-auto max-w-7xl">
             <div className="flex flex-col items-center justify-center text-center gap-6">
               <div className="flex items-center gap-2">
-                <Logo size={24} />
-                <span className="text-xl font-bold text-gradient">KARBALI ADS</span>
+                <Logo size={20} />
+                <span className="text-lg font-bold text-gradient">Karbali Ads</span>
               </div>
               <p className="text-sm text-muted-foreground max-w-md">{s("footer").content}</p>
-              <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} KARBALI ADS. All rights reserved.</p>
+              <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
             </div>
           </div>
         </footer>

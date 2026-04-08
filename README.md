@@ -1,3 +1,3 @@
-# KARBALI ADS
+# Karbali Ads
 
 TODO: Document your project here
