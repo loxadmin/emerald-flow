@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
 import { GlassCard } from "@/components/ui/glass-card";
+import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { BarChart3, Shield, Zap, DollarSign, ArrowRight, Users, Target, TrendingUp, Mail, Phone, MapPin, Sun, Moon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
-import LushLandscape from "@/components/LushLandscape";
+import MigrationAnimation from "@/components/MigrationAnimation";
 import { motion } from "framer-motion";
 
 interface SiteContent {
@@ -86,167 +87,166 @@ export default function Index() {
   const contactIcons = [Mail, Phone, MapPin];
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden text-foreground font-sans">
-      <LushLandscape />
+    <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
+      <FluidCanvas />
 
       {/* Nav */}
-      <header className="relative z-20">
-        <div className="container flex h-20 items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-10">
-            <Link to="/" className="flex items-center gap-2">
-              <Logo size={32} />
-              <h1 className="text-2xl font-bold tracking-tight">
-                <span className="text-gradient">Karbali</span>
-              </h1>
-            </Link>
-
-            <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-              <Link to="#" className="hover:text-foreground transition-colors">Product</Link>
-              <Link to="#" className="hover:text-foreground transition-colors">Integrations</Link>
-              <Link to="#" className="hover:text-foreground transition-colors">Pricing</Link>
-              <Link to="/docs" className="hover:text-foreground transition-colors">Docs</Link>
-            </nav>
+      <header className="relative z-10 border-b border-border/30">
+        <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-2">
+            <Logo size={28} />
+            <h1 className="text-xl font-bold tracking-tight">
+              <span className="text-gradient">Karbali</span>
+            </h1>
           </div>
-
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-4">
-              <Link to="/login">
-                <GlassButton variant="ghost" className="text-foreground hover:bg-white/10">Sign In</GlassButton>
-              </Link>
-              <Link to="/signup">
-                <GlassButton variant="glow" className="px-6">Get Started</GlassButton>
-              </Link>
-            </div>
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={toggleTheme}
-              className="rounded-full p-2 bg-white/5 border border-white/10 text-muted-foreground hover:text-foreground transition-colors"
+              className="rounded-lg p-2 text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
+            <div className="hidden sm:flex items-center gap-3">
+              <Link to="/login"><GlassButton variant="ghost">Sign In</GlassButton></Link>
+              <Link to="/signup"><GlassButton variant="glow">Get Started</GlassButton></Link>
+            </div>
+            <Link to="/login" className="sm:hidden">
+              <GlassButton variant="glow" size="sm">Sign In</GlassButton>
+            </Link>
           </div>
         </div>
       </header>
 
       {/* Hero */}
       {s("hero").is_visible && (
-        <section className="relative z-10 container flex flex-col items-center justify-center min-h-[calc(100vh-80px)] text-center px-4 mb-20">
-          <MotionWrapper>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight max-w-4xl leading-tight">
-              {s("hero").title}
-            </h1>
-          </MotionWrapper>
-          <MotionWrapper delay={0.15}>
-            <p className="mt-8 max-w-2xl text-xl text-muted-foreground/90 font-medium">
-              {s("hero").subtitle}
-            </p>
-          </MotionWrapper>
-          <MotionWrapper delay={0.3}>
-            <div className="mt-12 flex flex-col sm:flex-row items-center gap-6">
-              <Link to="/signup">
-                <GlassButton size="lg" variant="glow" className="px-10 h-14 text-lg">
-                  Start Free <ArrowRight className="ml-2 h-4 w-4" />
-                </GlassButton>
-              </Link>
-              <Link to="/docs">
-                <GlassButton size="lg" variant="outline" className="px-10 h-14 text-lg border-white/20 bg-white/5 hover:bg-white/10">
-                  View API Docs
-                </GlassButton>
-              </Link>
-            </div>
-          </MotionWrapper>
+        <section className="relative z-10 container py-16 md:py-28 px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <MotionWrapper>
+                <h1 className="max-w-3xl">
+                  {s("hero").title}
+                </h1>
+              </MotionWrapper>
+              <MotionWrapper delay={0.15}>
+                <p className="mt-6 max-w-xl text-lg text-muted-foreground">
+                  {s("hero").subtitle}
+                </p>
+              </MotionWrapper>
+              <MotionWrapper delay={0.3}>
+                <div className="mt-10 flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
+                  <Link to="/signup" className="w-full sm:w-auto">
+                    <GlassButton size="lg" variant="glow" className="w-full sm:w-auto px-8">
+                      Start Free <ArrowRight className="ml-2 h-4 w-4" />
+                    </GlassButton>
+                  </Link>
+                  <Link to="/docs" className="w-full sm:w-auto">
+                    <GlassButton size="lg" variant="outline" className="w-full sm:w-auto px-8">View API Docs</GlassButton>
+                  </Link>
+                </div>
+              </MotionWrapper>
 
-          {/* Floating Feature Pills */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="absolute top-[20%] left-[10%] px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-sm font-medium shadow-2xl"
-            >
-              ✨ Real-time Tracking
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="absolute top-[30%] right-[15%] px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-sm font-medium shadow-2xl"
-            >
-              🛡️ Fraud Prevention
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="absolute bottom-[25%] left-[15%] px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-sm font-medium shadow-2xl"
-            >
-              📈 Growth Analytics
-            </motion.div>
+              {/* Stats bar */}
+              <MotionWrapper delay={0.45}>
+                <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4 border-t border-border/30 pt-8">
+                  {[
+                    { icon: Users, label: "Active Advertisers", value: metrics.advertisers, raw: "500+" },
+                    { icon: Target, label: "Campaigns Tracked", value: metrics.campaigns, raw: "2,000+" },
+                    { icon: TrendingUp, label: "Events Processed", value: metrics.events, raw: "10M+" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="text-center lg:text-left">
+                      <stat.icon className="mx-auto lg:mx-0 mb-2 h-5 w-5 text-primary" />
+                      <p className="text-2xl font-bold text-foreground">
+                        {metricsLoading ? "..." : stat.value >= 10 ? stat.value.toLocaleString() : "Calculating"}
+                      </p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </MotionWrapper>
+            </div>
+
+            <MotionWrapper delay={0.2} className="relative group perspective-1000">
+              <motion.div
+                whileHover={{ rotateX: 2, rotateY: -2, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="relative z-10 rounded-[3rem] border border-white/20 bg-white/5 p-2 backdrop-blur-2xl shadow-[0_32px_64px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.1)] overflow-hidden clay-shadow"
+              >
+                <div className="rounded-[2.5rem] bg-gradient-to-b from-white/5 to-transparent p-4">
+                  <MigrationAnimation />
+                </div>
+
+                {/* Decorative elements */}
+                <div className="absolute -top-12 -right-12 h-40 w-40 bg-primary/20 blur-[80px] rounded-full group-hover:bg-primary/30 transition-colors" />
+                <div className="absolute -bottom-16 -left-16 h-48 w-48 bg-primary/10 blur-[100px] rounded-full group-hover:bg-primary/20 transition-colors" />
+
+                {/* Glossy sheen */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+              </motion.div>
+            </MotionWrapper>
           </div>
         </section>
       )}
 
-      {/* About & Stats */}
+      {/* About */}
       {s("about").is_visible && (
-        <section className="relative z-10 py-24 px-4 bg-background/40 backdrop-blur-xl">
+        <section id="about" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-              <MotionWrapper>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">{s("about").title}</h2>
-                <p className="text-xl text-muted-foreground mb-4">{s("about").subtitle}</p>
-                <p className="text-muted-foreground/80 leading-relaxed">{s("about").content}</p>
-              </MotionWrapper>
+            <MotionWrapper>
+              <div className="mx-auto max-w-2xl text-center">
+                <h2 className="mb-4">{s("about").title}</h2>
+                <p className="mb-6 text-lg text-muted-foreground">{s("about").subtitle}</p>
+                <p className="text-muted-foreground/80">{s("about").content}</p>
+              </div>
+            </MotionWrapper>
+          </div>
+        </section>
+      )}
 
-              <MotionStagger className="grid grid-cols-2 gap-6">
-                <MotionItem>
-                  <GlassCard className="p-8 text-center" variant="strong">
-                    <Users className="h-8 w-8 mx-auto mb-4 text-primary" />
-                    <div className="text-3xl font-bold mb-1">
-                      {metricsLoading ? "..." : metrics.advertisers < 10 ? "Calculating" : metrics.advertisers}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Active Advertisers</div>
-                  </GlassCard>
-                </MotionItem>
-                <MotionItem>
-                  <GlassCard className="p-8 text-center" variant="strong">
-                    <Target className="h-8 w-8 mx-auto mb-4 text-primary" />
-                    <div className="text-3xl font-bold mb-1">
-                      {metricsLoading ? "..." : metrics.campaigns < 10 ? "Calculating" : metrics.campaigns}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Live Campaigns</div>
-                  </GlassCard>
-                </MotionItem>
-                <MotionItem>
-                  <GlassCard className="p-8 text-center col-span-2" variant="glow">
-                    <TrendingUp className="h-8 w-8 mx-auto mb-4 text-white" />
-                    <div className="text-3xl font-bold mb-1 text-white">
-                      {metricsLoading ? "..." : metrics.events < 10 ? "Calculating" : metrics.events}
-                    </div>
-                    <div className="text-sm text-white/80">Events Tracked</div>
-                  </GlassCard>
-                </MotionItem>
-              </MotionStagger>
-            </div>
+      {/* How It Works */}
+      {s("how_it_works").is_visible && (
+        <section id="how-it-works" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
+          <div className="container">
+            <MotionWrapper>
+              <h2 className="mb-4 text-center">{s("how_it_works").title}</h2>
+              <p className="mb-12 text-center text-muted-foreground">{s("how_it_works").subtitle}</p>
+            </MotionWrapper>
+            <MotionStagger className="mx-auto grid max-w-3xl gap-6 grid-cols-1 md:grid-cols-2">
+              {steps.map((step, i) => {
+                const parts = step.replace(/^\d+\.\s*/, "").split(": ");
+                const title = parts[0] || step;
+                const desc = parts.slice(1).join(": ") || "";
+                return (
+                  <MotionItem key={i}>
+                    <GlassCard className="h-full p-6">
+                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold">
+                        {i + 1}
+                      </div>
+                      <h3 className="mb-2 font-semibold text-foreground">{title}</h3>
+                      <p className="text-sm text-muted-foreground">{desc}</p>
+                    </GlassCard>
+                  </MotionItem>
+                );
+              })}
+            </MotionStagger>
           </div>
         </section>
       )}
 
       {/* Features */}
       {s("features").is_visible && (
-        <section className="relative z-10 py-24 px-4">
+        <section id="features" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">{s("features").title}</h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{s("features").subtitle}</p>
-            </div>
-            <MotionStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {features.map((f, i) => (
-                <MotionItem key={i}>
-                  <GlassCard className="p-8 h-full hover:translate-y-[-4px] transition-transform duration-300">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                      <f.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold mb-3">{f.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
+            <MotionWrapper>
+              <h2 className="mb-4 text-center">{s("features").title}</h2>
+              <p className="mb-12 text-center text-muted-foreground">{s("features").subtitle}</p>
+            </MotionWrapper>
+            <MotionStagger className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+              {features.map((f) => (
+                <MotionItem key={f.title}>
+                  <GlassCard className="h-full p-6">
+                    <f.icon className="mb-4 h-8 w-8 text-primary" />
+                    <h3 className="mb-2 font-semibold text-foreground">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground">{f.desc}</p>
                   </GlassCard>
                 </MotionItem>
               ))}
@@ -255,71 +255,27 @@ export default function Index() {
         </section>
       )}
 
-      {/* How it Works */}
-      {s("how_it_works").is_visible && (
-        <section className="relative z-10 py-24 px-4 bg-primary/5">
-          <div className="container">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">{s("how_it_works").title}</h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{s("how_it_works").subtitle}</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {steps.map((step, i) => {
-                const [title, ...rest] = step.split(":");
-                return (
-                  <MotionWrapper key={i} delay={i * 0.1}>
-                    <div className="relative p-6">
-                      <div className="text-6xl font-black text-primary/10 absolute -top-4 -left-2 select-none">0{i+1}</div>
-                      <h3 className="text-xl font-bold mb-3 relative z-10">{title.replace(/^\d+\.\s*/, "")}</h3>
-                      <p className="text-muted-foreground text-sm relative z-10">{rest.join(":").trim()}</p>
-                    </div>
-                  </MotionWrapper>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Contact */}
       {s("contact").is_visible && (
-        <section className="relative z-10 py-24 px-4">
+        <section id="contact" className="relative z-10 border-t border-border/30 py-20 px-4 sm:px-6">
           <div className="container">
-            <GlassCard className="max-w-4xl mx-auto p-12 overflow-hidden" variant="strong">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div>
-                  <h2 className="text-3xl font-bold mb-6">{s("contact").title}</h2>
-                  <p className="text-muted-foreground mb-8">{s("contact").subtitle}</p>
-                  <div className="space-y-6">
-                    {contactLines.map((line, i) => {
-                      const Icon = contactIcons[i] || Mail;
-                      return (
-                        <div key={i} className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Icon className="h-5 w-5 text-primary" />
-                          </div>
-                          <span className="text-sm font-medium">{line.split(":")[1]?.trim() || line}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="bg-white/5 rounded-3xl p-8 border border-white/10">
-                  <h3 className="text-xl font-bold mb-4">Send us a message</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email Address</label>
-                      <input type="email" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" placeholder="you@company.com" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Message</label>
-                      <textarea className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm min-h-[120px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" placeholder="How can we help?"></textarea>
-                    </div>
-                    <GlassButton className="w-full" variant="glow">Send Message</GlassButton>
-                  </div>
+            <MotionWrapper>
+              <div className="mx-auto max-w-xl text-center">
+                <h2 className="mb-4">{s("contact").title}</h2>
+                <p className="mb-8 text-muted-foreground">{s("contact").subtitle}</p>
+                <div className="space-y-4">
+                  {contactLines.map((line, i) => {
+                    const Icon = contactIcons[i] || Mail;
+                    return (
+                      <div key={i} className="flex items-center justify-center gap-3 text-muted-foreground">
+                        <Icon className="h-4 w-4 text-primary" />
+                        <span>{line.replace(/^(Email|Phone|Address):\s*/, "")}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </GlassCard>
+            </MotionWrapper>
           </div>
         </section>
       )}
