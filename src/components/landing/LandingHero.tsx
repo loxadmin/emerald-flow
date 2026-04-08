@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Activity } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { GlassButton } from "@/components/ui/glass-button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface LandingHeroProps {
   title: string | null;
@@ -17,9 +17,16 @@ interface LandingHeroProps {
 
 export default function LandingHero({ title, subtitle }: LandingHeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [index, setIndex] = useState(0);
+  const words = ["Brand", "Business", "Shop"];
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});
+
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % words.length);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -37,7 +44,8 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
           className="h-full w-full object-cover"
         />
         {/* Dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/70" />
+        <div className="absolute inset-0 bg-black/40 z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 z-[2]" />
       </div>
 
       {/* Bottom seamless fade into page background */}
@@ -52,7 +60,28 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           >
             <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-              {title}
+              {title?.includes("Your Brand") ? (
+                <>
+                  {title.split("Your Brand")[0]}Your{" "}
+                  <span className="inline-grid">
+                    <span className="invisible pointer-events-none col-start-1 row-start-1">Business</span>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={words[index]}
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -20, opacity: 0 }}
+                        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                        className="col-start-1 row-start-1 text-[#22c55e]"
+                      >
+                        {words[index]}
+                      </motion.span>
+                    </AnimatePresence>
+                  </span>
+                </>
+              ) : (
+                title
+              )}
             </h1>
 
             <p className="mt-6 max-w-lg text-base leading-relaxed text-white/60 sm:text-lg">

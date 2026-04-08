@@ -125,17 +125,17 @@ export default function Index() {
       {/* Bottom feature cards floating over the hero fade — like wan.video */}
       <section className="relative z-10 -mt-28 px-6 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f) => (
-              <div key={f.title} className="group rounded-2xl border border-border/50 bg-card/80 p-5 backdrop-blur-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <f.icon className="h-5 w-5 text-primary" />
-                    <h3 className="text-sm font-semibold text-foreground">{f.title}</h3>
+              <div key={f.title} className="group rounded-3xl border border-black/5 bg-white dark:bg-card p-6 shadow-sm transition-all hover:shadow-md dark:border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <f.icon className="h-5 w-5" />
                   </div>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
+                <h3 className="text-base font-bold text-foreground mb-2">{f.title}</h3>
+                <p className="text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -144,17 +144,15 @@ export default function Index() {
 
       {/* How It Works — Redesigned Grid */}
       {s("how_it_works").is_visible && (
-        <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 overflow-hidden">
+        <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 bg-[#F9FAFF] dark:bg-background/20">
           <div className="mx-auto max-w-7xl">
             <MotionWrapper className="mb-20 text-center">
-              <span className="futuristic-label mb-4">Process</span>
-              <h2 className="mb-4 text-foreground text-4xl md:text-5xl">{s("how_it_works").title}</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{s("how_it_works").subtitle}</p>
+              <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6">Step-by-Step</span>
+              <h2 className="mb-6 text-foreground text-4xl md:text-5xl font-extrabold tracking-tight">{s("how_it_works").title}</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{s("how_it_works").subtitle}</p>
             </MotionWrapper>
 
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 relative">
-              <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent hidden lg:block -translate-y-16" />
-
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
               {steps.map((step, i) => {
                 const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                 const stepTitle = parts[0] || step;
@@ -164,18 +162,18 @@ export default function Index() {
                 const Icon = icons[i] || Zap;
 
                 return (
-                  <MotionWrapper key={i} delay={i * 0.1} className="relative group">
-                    <div className="clay-shadow relative h-full rounded-[2.5rem] border border-border/50 bg-card/40 p-8 backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:bg-card/60">
-                      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-500">
-                        <Icon className="h-7 w-7" />
+                  <MotionWrapper key={i} delay={i * 0.1} className="relative">
+                    <div className="relative flex flex-col items-center text-center h-full rounded-[2.5rem] bg-white dark:bg-card p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/[0.02] dark:border-white/[0.02] transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:-translate-y-1">
+                      <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 shadow-inner">
+                        <Icon className="h-9 w-9" />
                       </div>
 
-                      <div className="absolute top-8 right-8 text-6xl font-black text-foreground/5 select-none">
+                      <div className="absolute top-10 right-10 text-5xl font-black text-indigo-600/5 select-none italic">
                         0{i + 1}
                       </div>
 
-                      <h3 className="mb-3 text-xl font-bold text-foreground">{stepTitle}</h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
+                      <h3 className="mb-4 text-xl font-bold text-foreground leading-tight">{stepTitle}</h3>
+                      <p className="text-sm leading-relaxed text-muted-foreground/80">{desc}</p>
                     </div>
                   </MotionWrapper>
                 );
@@ -230,7 +228,7 @@ export default function Index() {
               </MotionWrapper>
 
               <MotionWrapper delay={0.2}>
-                <div className="clay-shadow relative rounded-[3rem] border border-border/50 bg-card/30 p-8 md:p-12 backdrop-blur-2xl">
+                <div className="relative rounded-[3rem] bg-white dark:bg-card p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-black/[0.01] dark:border-white/[0.01]">
                   <form onSubmit={handleContactSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                       <div className="space-y-2">
