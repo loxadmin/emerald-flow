@@ -8,8 +8,7 @@ import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWra
 import { BarChart3, Shield, Zap, DollarSign, ArrowRight, Users, Target, TrendingUp, Mail, Phone, MapPin, Sun, Moon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
-import MigrationAnimation from "@/components/MigrationAnimation";
-import { motion } from "framer-motion";
+import HeroVideo from "@/components/HeroVideo";
 
 interface SiteContent {
   section_key: string;
