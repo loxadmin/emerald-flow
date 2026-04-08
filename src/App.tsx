@@ -25,6 +25,8 @@ import AdminCategories from "./pages/AdminCategories";
 import AdminAdvertisers from "./pages/AdminAdvertisers";
 import AdminWallets from "./pages/AdminWallets";
 import AdminPartnerships from "./pages/AdminPartnerships";
+import AdminMessages from "./pages/AdminMessages";
+import About from "./pages/About";
 import Docs from "./pages/Docs";
 import ReferralRedirect from "./pages/ReferralRedirect";
 import NotFound from "./pages/NotFound";
