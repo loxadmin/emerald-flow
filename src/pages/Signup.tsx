@@ -129,9 +129,7 @@ export default function Signup() {
       <FluidCanvas />
       <MotionWrapper className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link to="/">
-            <Logo size={48} className="mx-auto mb-4 hover:scale-105 transition-transform" />
-          </Link>
+          <Logo size={48} className="mx-auto mb-4" />
           <h1 className="text-3xl">
             <span className="text-gradient">Karbali</span>
           </h1>

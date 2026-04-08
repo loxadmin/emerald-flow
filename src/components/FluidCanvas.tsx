@@ -64,8 +64,8 @@ export default function FluidCanvas() {
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
 
-      // Background - Match the obsidian theme #050c09
-      ctx.fillStyle = isDark ? "#050c09" : "hsl(150, 10%, 96%)";
+      // Background
+      ctx.fillStyle = isDark ? "hsl(165, 30%, 4%)" : "hsl(150, 10%, 96%)";
       ctx.fillRect(0, 0, W, H);
 
       // === LIQUID METABALLS ===
