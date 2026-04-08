@@ -124,7 +124,7 @@ export default function Signup() {
     <AuthSplitShell
       eyebrow="Create account"
       title="Sign Up"
-      description="Register with your business email to start tracking campaign outcomes."
+      description="Register with your business email to start tracking."
       footer={
         <>
           Already have an account?{" "}
@@ -134,101 +134,39 @@ export default function Signup() {
         </>
       }
     >
-      <form onSubmit={handleSignup} className="space-y-5">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="full-name" className="text-sm text-foreground">
-              Full Name *
-            </Label>
-            <Input
-              id="full-name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              maxLength={100}
-              required
-              autoComplete="name"
-              className="h-14 rounded-xl border-border/40 bg-background px-4"
-            />
-          </div>
-
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="company-name" className="text-sm text-foreground">
-              Company Name
-            </Label>
-            <Input
-              id="company-name"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              maxLength={100}
-              autoComplete="organization"
-              className="h-14 rounded-xl border-border/40 bg-background px-4"
-            />
-          </div>
-
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="website" className="text-sm text-foreground">
-              Website *
-            </Label>
-            <Input
-              id="website"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              maxLength={255}
-              placeholder="yourbusiness.com"
-              autoComplete="url"
-              required
-              className="h-14 rounded-xl border-border/40 bg-background px-4"
-            />
-            {isForbiddenDomain ? (
-              <p className="text-xs text-destructive">
-                Email provider domains are not accepted. Please use your business website.
-              </p>
-            ) : websiteDomain ? (
-              <p className="text-xs text-muted-foreground">Your email must end with @{websiteDomain}</p>
-            ) : null}
-          </div>
-
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="email" className="text-sm text-foreground">
-              Business Email *
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              maxLength={255}
-              required
-              autoComplete="email"
-              placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"}
-              className="h-14 rounded-xl border-border/40 bg-background px-4"
-            />
-          </div>
-
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="password" className="text-sm text-foreground">
-              Password *
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              maxLength={128}
-              required
-              autoComplete="new-password"
-              className="h-14 rounded-xl border-border/40 bg-background px-4"
-            />
-            <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
-          </div>
+      <form onSubmit={handleSignup} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="full-name" className="text-sm text-foreground">Full Name *</Label>
+          <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} required autoComplete="name" className="h-11 rounded-xl border-border/40 bg-background px-4" />
         </div>
 
-        <GlassButton
-          type="submit"
-          className="mt-2 h-12 w-full rounded-xl"
-          variant="glow"
-          disabled={loading || !!isForbiddenDomain}
-        >
+        <div className="space-y-1.5">
+          <Label htmlFor="company-name" className="text-sm text-foreground">Company Name</Label>
+          <Input id="company-name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={100} autoComplete="organization" className="h-11 rounded-xl border-border/40 bg-background px-4" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="website" className="text-sm text-foreground">Website *</Label>
+          <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} placeholder="yourbusiness.com" autoComplete="url" required className="h-11 rounded-xl border-border/40 bg-background px-4" />
+          {isForbiddenDomain ? (
+            <p className="text-xs text-destructive">Email provider domains are not accepted.</p>
+          ) : websiteDomain ? (
+            <p className="text-xs text-muted-foreground">Your email must end with @{websiteDomain}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-sm text-foreground">Business Email *</Label>
+          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required autoComplete="email" placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"} className="h-11 rounded-xl border-border/40 bg-background px-4" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="password" className="text-sm text-foreground">Password *</Label>
+          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} required autoComplete="new-password" className="h-11 rounded-xl border-border/40 bg-background px-4" />
+          <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
+        </div>
+
+        <GlassButton type="submit" className="mt-2 h-12 w-full rounded-xl" variant="glow" disabled={loading || !!isForbiddenDomain}>
           {loading ? "Creating account..." : "Create Account"}
         </GlassButton>
       </form>

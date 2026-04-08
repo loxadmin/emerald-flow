@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, Shield, Target, Wallet } from "lucide-react";
-import FluidCanvas from "@/components/FluidCanvas";
+import { Shield, Target, BarChart3 } from "lucide-react";
 import Logo from "@/components/Logo";
 
 interface AuthSplitShellProps {
@@ -13,94 +12,76 @@ interface AuthSplitShellProps {
 }
 
 const benefits = [
-  {
-    icon: Target,
-    title: "Verified acquisition",
-    description: "Track migrations from competitor brands into your own growth funnel with measurable outcomes.",
-  },
-  {
-    icon: Shield,
-    title: "Domain-locked tracking",
-    description: "Keep campaign API usage tied to the exact website approved for each advertiser campaign.",
-  },
-  {
-    icon: BarChart3,
-    title: "Real analytics",
-    description: "Clicks, signups, and purchase events are built for advertisers who care about actual conversion flow.",
-  },
-  {
-    icon: Wallet,
-    title: "Wallet activation",
-    description: "Run campaigns with controlled funding, verified payment flow, and advertiser-ready account controls.",
-  },
-];
-
-const snapshots = [
-  { label: "Tracking", value: "Real-time" },
-  { label: "Security", value: "Domain locked" },
-  { label: "Payments", value: "Wallet ready" },
+  { icon: Target, text: "Verified customer acquisition" },
+  { icon: Shield, text: "Domain-locked campaign tracking" },
+  { icon: BarChart3, text: "Pay only for real conversions" },
 ];
 
 export default function AuthSplitShell({ eyebrow, title, description, children, footer }: AuthSplitShellProps) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      <FluidCanvas />
+    <div className="min-h-screen bg-background">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        {/* Left — branding panel (hidden on mobile) */}
+        <div className="relative hidden flex-col justify-between overflow-hidden bg-card p-10 lg:flex xl:p-14">
+          {/* Subtle grid */}
+          <div className="pointer-events-none absolute inset-0 futuristic-grid" />
 
-      <div className="relative z-10 min-h-screen px-4 py-4 sm:px-6 lg:px-8">
-        <div className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-border/30 bg-background/70 backdrop-blur-sm lg:grid-cols-[1.05fr_0.95fr]">
-          <section className="flex flex-col justify-between border-b border-border/20 px-6 py-8 sm:px-8 lg:border-b-0 lg:border-r lg:px-10 lg:py-10">
-            <div>
-              <Link to="/" className="inline-flex items-center gap-3">
-                <Logo size={36} />
-                <span className="text-2xl font-semibold tracking-tight text-gradient">Karbali</span>
-              </Link>
+          <div className="relative z-10">
+            <Link to="/" className="inline-flex items-center gap-2.5">
+              <Logo size={28} />
+              <span className="text-xl font-bold tracking-tight text-gradient">Karbali</span>
+            </Link>
+          </div>
 
-              <div className="mt-12 max-w-xl">
-                <p className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">
-                  Advertising infrastructure
-                </p>
-                <h2 className="mt-4 text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
-                  Acquire competitor customers with verified outcomes.
-                </h2>
-                <p className="mt-6 text-base leading-7 text-muted-foreground sm:text-lg">
-                  Domain-locked event tracking, wallet activation, and measurable growth built for serious advertisers.
-                </p>
-              </div>
+          <div className="relative z-10 max-w-md">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
+              Advertising infrastructure
+            </p>
+            <h2 className="mt-4 text-3xl font-bold leading-tight text-foreground xl:text-4xl">
+              Acquire competitor customers with verified outcomes.
+            </h2>
+            <p className="mt-4 text-base leading-7 text-muted-foreground">
+              Domain-locked tracking, wallet activation, and measurable growth for serious advertisers.
+            </p>
 
-              <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                {benefits.map(({ icon: Icon, title: benefitTitle, description: benefitDescription }) => (
-                  <div key={benefitTitle} className="rounded-[1.5rem] border border-border/25 bg-background/70 p-5">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="mt-4 text-lg font-semibold text-foreground">{benefitTitle}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{benefitDescription}</p>
+            <div className="mt-8 space-y-3">
+              {benefits.map((b) => (
+                <div key={b.text} className="flex items-center gap-3 rounded-xl border border-border/30 bg-background/50 px-4 py-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <b.icon className="h-4 w-4 text-primary" />
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-10 grid gap-4 sm:grid-cols-3">
-              {snapshots.map((item) => (
-                <div key={item.label} className="rounded-2xl border border-border/25 bg-card/90 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{item.label}</p>
-                  <p className="mt-2 text-base font-semibold text-foreground">{item.value}</p>
+                  <span className="text-sm text-foreground">{b.text}</span>
                 </div>
               ))}
             </div>
-          </section>
+          </div>
 
-          <section className="flex items-center justify-center px-4 py-8 sm:px-8 lg:px-10">
-            <div className="w-full max-w-xl rounded-[1.75rem] border border-border/25 bg-card p-6 shadow-[0_24px_80px_hsl(var(--foreground)/0.08)] sm:p-8">
-              <p className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">{eyebrow}</p>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-card-foreground sm:text-4xl">{title}</h1>
-              <p className="mt-4 text-base leading-7 text-muted-foreground">{description}</p>
+          <p className="relative z-10 text-xs text-muted-foreground/60">
+            &copy; {new Date().getFullYear()} Karbali. All rights reserved.
+          </p>
+        </div>
+
+        {/* Right — form panel */}
+        <div className="flex flex-col">
+          {/* Mobile logo bar */}
+          <div className="flex items-center justify-between px-5 pt-5 lg:hidden">
+            <Link to="/" className="inline-flex items-center gap-2">
+              <Logo size={24} />
+              <span className="text-lg font-bold tracking-tight text-gradient">Karbali</span>
+            </Link>
+          </div>
+
+          <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
+            <div className="w-full max-w-md">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">{eyebrow}</p>
+              <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{title}</h1>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
 
               <div className="mt-8">{children}</div>
 
-              <div className="mt-6 border-t border-border/20 pt-6 text-sm text-muted-foreground">{footer}</div>
+              <div className="mt-6 border-t border-border/30 pt-5 text-sm text-muted-foreground">{footer}</div>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>
