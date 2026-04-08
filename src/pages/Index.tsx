@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Zap, Target, Award } from "lucide-react";
 import Logo from "@/components/Logo";
 import LushLandscape from "@/components/LushLandscape";
+import FluidCanvas from "@/components/FluidCanvas";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Nav = () => (
@@ -160,6 +161,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-[#050c09] text-white font-sans selection:bg-[#22c55e]/30 overflow-x-hidden relative">
+      <FluidCanvas />
       {/* Background radial gradient for depth */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.03),transparent_50%)] pointer-events-none" />
 
