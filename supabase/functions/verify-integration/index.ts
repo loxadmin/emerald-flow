@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
     }
 
     if (!containsTracker(textsToScan, api_key)) {
-      return json({ verified: false, error: "We couldn't detect the KARBALI ADS loader or API key on your selected website yet." });
+      return json({ verified: false, error: "We couldn't detect the Karbali Ads loader or API key on your selected website yet." });
     }
 
     await supabase

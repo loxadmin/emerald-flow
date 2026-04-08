@@ -98,9 +98,11 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                 <GlassButton
                   size="lg"
                   variant="outline"
-                  className="border-white/40 bg-white/10 px-10 text-white backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                  className="border-white/40 bg-white/10 px-10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] group"
                 >
-                  View API Docs
+                  <span className="bg-gradient-to-r from-[#22c55e] via-white to-[#22c55e] bg-clip-text text-transparent font-bold drop-shadow-[0_0_8px_rgba(34,197,94,0.5)] group-hover:drop-shadow-[0_0_12px_rgba(34,197,94,0.8)] transition-all duration-300">
+                    View API Docs
+                  </span>
                 </GlassButton>
               </Link>
             </div>
