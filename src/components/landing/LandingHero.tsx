@@ -44,8 +44,8 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
           className="h-full w-full object-cover"
         />
         {/* Dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-black/40 z-[1]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 z-[2]" />
+        <div className="absolute inset-0 bg-black/60 z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80 z-[2]" />
       </div>
 
       {/* Bottom seamless fade into page background */}
@@ -98,7 +98,7 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                 <GlassButton
                   size="lg"
                   variant="outline"
-                  className="border-white/20 bg-white/5 px-10 text-white backdrop-blur-sm hover:bg-white/10"
+                  className="border-white/40 bg-white/10 px-10 text-white backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                 >
                   View API Docs
                 </GlassButton>

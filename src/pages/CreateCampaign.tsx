@@ -300,10 +300,10 @@ export default function CreateCampaign() {
   const downloadWordPressPlugin = async () => {
     const pluginCode = `<?php
 /**
- * Plugin Name: Karbali Tracking
- * Description: Integrates Karbali ad tracking into your WordPress site.
+ * Plugin Name: KARBALI ADS Tracking
+ * Description: Integrates KARBALI ADS tracking into your WordPress site.
  * Version: 1.0.0
- * Author: Karbali
+ * Author: KARBALI ADS
  */
 if (!defined('ABSPATH')) exit;
 class KarbaliTracking {
@@ -317,10 +317,10 @@ class KarbaliTracking {
         add_action('user_register', [$this, 'track_signup']);
         add_action('woocommerce_thankyou', [$this, 'track_purchase']);
     }
-    public function admin_menu() { add_options_page('Karbali Tracking', 'Karbali', 'manage_options', 'karbali-tracking', [$this, 'settings_page']); }
+    public function admin_menu() { add_options_page('KARBALI ADS Tracking', 'KARBALI ADS', 'manage_options', 'karbali-tracking', [$this, 'settings_page']); }
     public function register_settings() { register_setting('karbali_settings', 'karbali_api_key'); }
     public function settings_page() { ?>
-        <div class="wrap"><h1>Karbali Tracking Settings</h1>
+        <div class="wrap"><h1>KARBALI ADS Tracking Settings</h1>
         <form method="post" action="options.php"><?php settings_fields('karbali_settings'); ?>
         <table class="form-table"><tr><th>API Key</th><td><input type="text" name="karbali_api_key" value="<?php echo esc_attr(get_option('karbali_api_key')); ?>" class="regular-text" /></td></tr></table>
         <?php submit_button(); ?></form></div><?php }
@@ -337,7 +337,7 @@ new KarbaliTracking();`;
     const zip = new JSZip();
     const folder = zip.folder("karbali-tracking");
     folder!.file("karbali-tracking.php", pluginCode);
-    folder!.file("readme.txt", `=== Karbali Tracking ===\nIntegrates Karbali ad tracking into your WordPress site.\n\n== Installation ==\n1. Upload plugin folder to /wp-content/plugins/\n2. Activate via Plugins menu\n3. Settings > Karbali > Enter API key`);
+    folder!.file("readme.txt", `=== KARBALI ADS Tracking ===\nIntegrates KARBALI ADS tracking into your WordPress site.\n\n== Installation ==\n1. Upload plugin folder to /wp-content/plugins/\n2. Activate via Plugins menu\n3. Settings > KARBALI ADS > Enter API key`);
     const blob = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = "karbali-tracking.zip"; a.click();
@@ -372,7 +372,7 @@ new KarbaliTracking();`;
             <button onClick={() => { setHasExternalReferral(false); setIsPartnership(false); setStep(0); }}
               className="rounded-xl border border-border bg-card p-5 text-left hover:border-primary/30 transition-colors">
               <Code className="h-5 w-5 text-primary mb-2" />
-              <p className="text-sm font-medium text-foreground">No, use Karbali's system</p>
+              <p className="text-sm font-medium text-foreground">No, use KARBALI ADS's system</p>
               <p className="text-xs text-muted-foreground mt-1">Integrate our API or WordPress plugin</p>
             </button>
           </div>
@@ -487,7 +487,7 @@ new KarbaliTracking();`;
                   <p className="font-medium text-foreground text-sm mb-1">Installation:</p>
                   <ol className="list-decimal list-inside space-y-0.5">
                     <li>Download the plugin ZIP below</li><li>WordPress Admin → Plugins → Add New → Upload Plugin</li>
-                    <li>Activate and go to Settings → Karbali</li><li>Enter your API key and save</li>
+                    <li>Activate and go to Settings → KARBALI ADS</li><li>Enter your API key and save</li>
                   </ol>
                 </div>
                 <Button className="w-full" onClick={downloadWordPressPlugin}><Download className="mr-2 h-4 w-4" /> Download Plugin (ZIP)</Button>
@@ -497,28 +497,28 @@ new KarbaliTracking();`;
                 <p className="text-xs text-muted-foreground">Add this to your website:</p>
                 <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs text-foreground/70">
 {`<script>
-  window.KarbaliConfig = { apiKey: "${apiKey}" };
+  window.KarbaliAdsConfig = { apiKey: "${apiKey}" };
 </script>
 <script async src="${trackerScriptUrl}" data-api-key="${apiKey}"></script>
 <script>
   window.addEventListener("load", function () {
-    window.Karbali?.sync();
+    window.KarbaliAds?.sync();
   });
 
   function trackDownload() {
-    window.Karbali?.track("download", {});
+    window.KarbaliAds?.track("download", {});
   }
 
   function trackSignup(userId) {
-    window.Karbali?.track("signup", { user_id: userId });
+    window.KarbaliAds?.track("signup", { user_id: userId });
   }
 
   function trackPurchase(userId, orderTotal) {
-    window.Karbali?.track("purchase", { user_id: userId, amount: orderTotal });
+    window.KarbaliAds?.track("purchase", { user_id: userId, amount: orderTotal });
   }
 </script>`}
                 </pre>
-                <p className="text-[11px] text-muted-foreground">Visible integration stays on your Karbali loader script, while the tracker posts securely to your campaign backend.</p>
+                <p className="text-[11px] text-muted-foreground">Visible integration stays on your KARBALI ADS loader script, while the tracker posts securely to your campaign backend.</p>
               </div>
             )}
             <Button className="w-full" variant="outline" onClick={() => { saveDraft(); setStep(2); }}>I've integrated → Continue to Verify</Button>
@@ -529,7 +529,7 @@ new KarbaliTracking();`;
         {!isPartnership && step === 2 && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary" /> Verify Integration</h3>
-            <p className="text-xs text-muted-foreground mt-1">We'll scan your verified domain for the Karbali loader, your API key, and an active tracker installation: <strong className="text-foreground">{selectedDomain || websites[0]?.domain}</strong></p></div>
+            <p className="text-xs text-muted-foreground mt-1">We'll scan your verified domain for the KARBALI ADS loader, your API key, and an active tracker installation: <strong className="text-foreground">{selectedDomain || websites[0]?.domain}</strong></p></div>
             {verified ? (
               <div className="flex items-center gap-2 text-primary text-sm"><CheckCircle className="h-4 w-4" /> Integration verified!</div>
             ) : null}

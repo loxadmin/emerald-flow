@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div className="flex h-16 items-center justify-between border-b border-border/30 px-6">
         <Link to="/admin" className="flex items-center gap-2 text-xl font-bold tracking-tight">
           <Logo size={24} />
-          <span className="text-gradient">Karbali</span>
+          <span className="text-gradient">KARBALI ADS</span>
           <span className="ml-1 text-xs font-normal text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">Admin</span>
         </Link>
         <button
@@ -109,7 +109,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div className="fixed top-0 left-0 right-0 z-40 flex lg:hidden h-14 items-center justify-between px-4 glass-strong border-b border-border/30">
         <Link to="/admin" className="flex items-center gap-2 text-lg font-bold">
           <Logo size={20} />
-          <span className="text-gradient">Karbali</span>
+          <span className="text-gradient text-xs">KARBALI ADS</span>
           <span className="ml-1 text-xs font-normal text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">Admin</span>
         </Link>
         <button

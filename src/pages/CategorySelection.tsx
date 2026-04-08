@@ -94,7 +94,7 @@ export default function CategorySelection() {
 
     await refreshAccessState();
     if (status === "active") {
-      toast.success("Category activated! Welcome to Karbali.");
+      toast.success("Category activated! Welcome to KARBALI ADS.");
       navigate("/dashboard");
     } else {
       toast.info("This category requires payment activation.");

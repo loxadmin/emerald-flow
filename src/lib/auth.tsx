@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     resetAccessState();
     setIsLoading(false);
-    localStorage.removeItem("karbali-last-activity");
+    localStorage.removeItem("karbali-ads-last-activity");
   }, [resetAccessState]);
 
   const loadAccessState = useCallback(async (activeUser: User | null | undefined) => {
@@ -137,14 +137,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const updateActivity = () => {
       lastActivityRef.current = Date.now();
-      localStorage.setItem("karbali-last-activity", String(Date.now()));
+      localStorage.setItem("karbali-ads-last-activity", String(Date.now()));
     };
 
     const events = ["mousedown", "keydown", "scroll", "touchstart"];
     events.forEach((e) => window.addEventListener(e, updateActivity, { passive: true }));
 
     intervalRef.current = setInterval(() => {
-      const lastActivity = Number(localStorage.getItem("karbali-last-activity")) || Date.now();
+      const lastActivity = Number(localStorage.getItem("karbali-ads-last-activity")) || Date.now();
       if (Date.now() - lastActivity > INACTIVITY_TIMEOUT && session) {
         signOut();
       }

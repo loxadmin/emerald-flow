@@ -29,7 +29,7 @@ export default function Login() {
         toast.error(error.message);
       } else {
         toast.success("Logged in successfully");
-        localStorage.setItem("karbali-last-activity", String(Date.now()));
+        localStorage.setItem("karbali-ads-last-activity", String(Date.now()));
         await supabase.auth.getSession();
         const userId = data.user?.id;
 
@@ -57,7 +57,7 @@ export default function Login() {
   return (
     <AuthSplitShell
       eyebrow="Welcome back"
-      title="Welcome to Karbali"
+      title="Welcome to KARBALI ADS"
       description="Enter your credentials to access your dashboard."
       footer={
         <>

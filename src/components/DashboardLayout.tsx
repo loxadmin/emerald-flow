@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="flex h-14 items-center justify-between border-b border-border px-5">
         <Link to="/dashboard" className="flex items-center gap-2 text-base font-semibold">
           <Logo size={20} />
-          <span className="text-gradient">Karbali</span>
+          <span className="text-gradient text-xs">KARBALI ADS</span>
         </Link>
         <button className="lg:hidden rounded-md p-1 text-muted-foreground hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>
           <X className="h-5 w-5" />
@@ -116,7 +116,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="fixed top-0 left-0 right-0 z-40 flex lg:hidden h-12 items-center justify-between px-4 bg-card/80 backdrop-blur-xl border-b border-border">
         <Link to="/dashboard" className="flex items-center gap-2 text-sm font-semibold">
           <Logo size={18} />
-          <span className="text-gradient">Karbali</span>
+          <span className="text-gradient text-xs">KARBALI ADS</span>
         </Link>
         <button onClick={() => setMobileMenuOpen(true)} className="rounded-md p-1.5 text-muted-foreground hover:text-foreground">
           <Menu className="h-5 w-5" />

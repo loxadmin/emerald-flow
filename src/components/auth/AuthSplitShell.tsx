@@ -34,7 +34,7 @@ export default function AuthSplitShell({ title, description, children, footer }:
         <div className="flex items-center justify-between px-6 pt-4 sm:px-10">
           <Link to="/" className="inline-flex items-center gap-2">
             <Logo size={24} />
-            <span className="text-lg font-bold tracking-tight text-gradient">Karbali</span>
+            <span className="text-lg font-bold tracking-tight text-gradient">KARBALI ADS</span>
           </Link>
           <Link
             to="/"
