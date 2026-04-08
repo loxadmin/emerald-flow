@@ -122,68 +122,60 @@ export default function Index() {
         <LandingHero title={s("hero").title} subtitle={s("hero").subtitle} metrics={metrics} metricsLoading={metricsLoading} />
       )}
 
-      {/* Feature stats row */}
-      <section className="relative z-10 -mt-20 px-6 sm:px-10 lg:px-16">
-        <div className="mx-auto max-w-5xl">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {/* Bottom feature cards floating over the hero fade — like wan.video */}
+      <section className="relative z-10 -mt-28 px-6 sm:px-10 lg:px-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f) => (
-              <div key={f.title} className="rounded-2xl border border-border/40 bg-card/60 p-5 text-center backdrop-blur-sm transition-all hover:border-primary/30 hover:shadow-sm">
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <f.icon className="h-5 w-5" />
+              <div key={f.title} className="group rounded-2xl border border-border/50 bg-card/80 p-5 backdrop-blur-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <f.icon className="h-5 w-5 text-primary" />
+                    <h3 className="text-sm font-semibold text-foreground">{f.title}</h3>
+                  </div>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-                <h3 className="text-sm font-semibold text-foreground">{f.title}</h3>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works — Karbali-style alternating timeline */}
+      {/* How It Works — Redesigned Grid */}
       {s("how_it_works").is_visible && (
-        <section id="how-it-works" className="relative z-10 py-24 px-6 sm:px-10 lg:px-16">
-          <div className="mx-auto max-w-4xl">
-            <MotionWrapper className="mb-6 text-center">
-              <h2 className="text-3xl font-bold text-foreground md:text-4xl">
-                How <span className="text-primary">Karbali</span> Works
-              </h2>
-              <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-                {s("how_it_works").subtitle}
-              </p>
+        <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 overflow-hidden">
+          <div className="mx-auto max-w-7xl">
+            <MotionWrapper className="mb-20 text-center">
+              <span className="futuristic-label mb-4">Process</span>
+              <h2 className="mb-4 text-foreground text-4xl md:text-5xl">{s("how_it_works").title}</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{s("how_it_works").subtitle}</p>
             </MotionWrapper>
 
-            {/* Timeline connector */}
-            <div className="relative mt-16 space-y-0">
-              {/* Vertical line */}
-              <div className="absolute left-1/2 top-0 bottom-0 hidden w-px bg-border/60 md:block" />
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 relative">
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent hidden lg:block -translate-y-16" />
 
               {steps.map((step, i) => {
                 const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                 const stepTitle = parts[0] || step;
                 const desc = parts.slice(1).join(": ") || "";
+
                 const icons = [Zap, Terminal, CheckCircle2, BarChart3];
                 const Icon = icons[i] || Zap;
-                const isEven = i % 2 === 0;
 
                 return (
-                  <MotionWrapper key={i} delay={i * 0.1}>
-                    <div className={`flex flex-col items-center gap-6 py-6 md:flex-row ${isEven ? '' : 'md:flex-row-reverse'}`}>
-                      {/* Icon + Number */}
-                      <div className="flex flex-col items-center gap-2 md:w-16 shrink-0">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/50 bg-card text-primary shadow-sm">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <span className="text-xs font-semibold text-muted-foreground">0{i + 1}</span>
+                  <MotionWrapper key={i} delay={i * 0.1} className="relative group">
+                    <div className="clay-shadow relative h-full rounded-[2.5rem] border border-border/50 bg-card/40 p-8 backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:bg-card/60">
+                      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-500">
+                        <Icon className="h-7 w-7" />
                       </div>
 
-                      {/* Content card */}
-                      <div className={`flex-1 rounded-2xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm ${isEven ? 'md:mr-auto md:ml-8' : 'md:ml-auto md:mr-8'} max-w-lg`}>
-                        <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
-                          {stepTitle}
-                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                        </h3>
-                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{desc}</p>
+                      <div className="absolute top-8 right-8 text-6xl font-black text-foreground/5 select-none">
+                        0{i + 1}
                       </div>
+
+                      <h3 className="mb-3 text-xl font-bold text-foreground">{stepTitle}</h3>
+                      <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
                     </div>
                   </MotionWrapper>
                 );
@@ -193,95 +185,95 @@ export default function Index() {
         </section>
       )}
 
-      {/* CTA — centered card style */}
+      {/* CTA */}
       <section className="relative z-10 py-20 px-6 sm:px-10">
-        <div className="mx-auto max-w-xl">
+        <div className="mx-auto max-w-3xl text-center">
           <MotionWrapper>
-            <div className="rounded-2xl border border-border/40 bg-card/50 p-10 text-center backdrop-blur-sm">
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Zap className="h-7 w-7" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground">Ready to Start?</h2>
-              <p className="mt-3 text-muted-foreground max-w-sm mx-auto">
-                Join the next generation of performance-driven advertisers. It costs nothing to join.
-              </p>
-              <Link to="/signup" className="mt-6 inline-block">
-                <GlassButton size="lg" variant="glow" className="px-10">
-                  Get Started Now <ArrowRight className="h-4 w-4" />
-                </GlassButton>
-              </Link>
-            </div>
+            <h2 className="mb-4 text-foreground">Ready to migrate customers?</h2>
+            <p className="mb-8 text-muted-foreground max-w-lg mx-auto">Join the next generation of performance-driven advertisers.</p>
+            <Link to="/signup">
+              <GlassButton size="lg" variant="glow" className="px-10">
+                Get Started Now <ArrowRight className="h-4 w-4" />
+              </GlassButton>
+            </Link>
           </MotionWrapper>
         </div>
       </section>
 
-      {/* Contact Form — clean minimal */}
+      {/* Contact Form — Redesigned Split Layout */}
       {s("contact").is_visible && (
-        <section id="contact" className="relative z-10 py-20 px-6 sm:px-10">
-          <div className="mx-auto max-w-2xl">
-            <MotionWrapper className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-foreground md:text-4xl">{s("contact").title}</h2>
-              <p className="mt-3 text-muted-foreground">{s("contact").subtitle}</p>
-            </MotionWrapper>
+        <section id="contact" className="relative z-10 py-32 px-6 sm:px-10 overflow-hidden">
+          <div className="mx-auto max-w-6xl">
+            <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+              <MotionWrapper className="flex flex-col justify-center">
+                <span className="futuristic-label mb-4 w-fit">Inquiry</span>
+                <h2 className="mb-6 text-foreground text-4xl md:text-5xl lg:text-6xl">{s("contact").title}</h2>
+                <p className="text-muted-foreground text-lg mb-10 max-w-md">{s("contact").subtitle}</p>
 
-            <MotionWrapper delay={0.15}>
-              <div className="rounded-2xl border border-border/40 bg-card/50 p-8 backdrop-blur-sm">
-                <form onSubmit={handleContactSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="contact-name" className="text-sm font-medium text-foreground">Name</Label>
-                      <Input id="contact-name" value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Your name" maxLength={100} required className="h-11 rounded-xl border-border/40 bg-background/50 px-4" />
+                <div className="space-y-6">
+                  {[
+                    { icon: Mail, label: "Email Us", value: "hello@karbali.com" },
+                    { icon: MapPin, label: "Visit Us", value: "Stockholm, Sweden" },
+                    { icon: Globe, label: "Follow Us", value: "@karbalihq" }
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <item.icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{item.label}</p>
+                        <p className="text-foreground font-medium">{item.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </MotionWrapper>
+
+              <MotionWrapper delay={0.2}>
+                <div className="clay-shadow relative rounded-[3rem] border border-border/50 bg-card/30 p-8 md:p-12 backdrop-blur-2xl">
+                  <form onSubmit={handleContactSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-name" className="text-sm font-medium text-foreground">Name</Label>
+                        <Input id="contact-name" value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Your name" maxLength={100} required className="h-12 rounded-2xl border-border/40 bg-background/50 px-5 focus:ring-primary/20" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-email" className="text-sm font-medium text-foreground">Email</Label>
+                        <Input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@company.com" maxLength={255} required className="h-12 rounded-2xl border-border/40 bg-background/50 px-5 focus:ring-primary/20" />
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="contact-email" className="text-sm font-medium text-foreground">Email</Label>
-                      <Input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@company.com" maxLength={255} required className="h-11 rounded-xl border-border/40 bg-background/50 px-4" />
+                      <Label htmlFor="contact-message" className="text-sm font-medium text-foreground">Message</Label>
+                      <Textarea id="contact-message" value={contactMessage} onChange={e => setContactMessage(e.target.value)} placeholder="How can we help?" maxLength={2000} required rows={4} className="min-h-[120px] rounded-2xl border-border/40 bg-background/50 px-5 py-4 focus:ring-primary/20 resize-none" />
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contact-message" className="text-sm font-medium text-foreground">Message</Label>
-                    <Textarea id="contact-message" value={contactMessage} onChange={e => setContactMessage(e.target.value)} placeholder="How can we help?" maxLength={2000} required rows={4} className="min-h-[120px] rounded-xl border-border/40 bg-background/50 px-4 py-3 resize-none" />
-                  </div>
-                  <GlassButton type="submit" variant="glow" className="w-full h-11 rounded-xl text-sm font-semibold" disabled={contactSending}>
-                    {contactSending ? "Sending..." : (
-                      <span className="flex items-center justify-center gap-2">
-                        Send Message <Send className="h-4 w-4" />
-                      </span>
-                    )}
-                  </GlassButton>
-                </form>
-              </div>
-            </MotionWrapper>
+                    <GlassButton type="submit" variant="glow" className="w-full h-12 rounded-2xl text-base font-semibold" disabled={contactSending}>
+                      {contactSending ? (
+                        <>Processing...</>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          Send Message <Send className="h-4 w-4" />
+                        </span>
+                      )}
+                    </GlassButton>
+                  </form>
+                </div>
+              </MotionWrapper>
+            </div>
           </div>
         </section>
       )}
 
-      {/* Footer — 3-column Karbali style */}
+      {/* Footer */}
       {s("footer").is_visible && (
-        <footer className="relative z-10 border-t border-border/30 py-14 px-6 sm:px-10">
-          <div className="mx-auto max-w-5xl">
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-3">About Us</h4>
-                <div className="flex items-start gap-2">
-                  <Logo size={16} />
-                  <p className="text-sm text-muted-foreground">{s("footer").content}</p>
-                </div>
+        <footer className="relative z-10 border-t border-border/50 py-8 px-6 sm:px-10">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+              <div className="flex items-center gap-2">
+                <Logo size={20} />
+                <span className="font-bold text-gradient">{s("footer").title}</span>
               </div>
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-3">Contact Us</h4>
-                <p className="text-sm text-muted-foreground">Contact us at <a href="mailto:hello@karbali.com" className="text-primary hover:underline">hello@karbali.com</a></p>
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-3">Quick Links</h4>
-                <div className="space-y-2">
-                  <Link to="/about" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
-                  <Link to="/docs" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">API Docs</Link>
-                  <Link to="/login" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Login</Link>
-                </div>
-              </div>
-            </div>
-            <div className="mt-10 pt-6 border-t border-border/20 text-center">
-              <p className="text-xs text-muted-foreground/60">&copy; {new Date().getFullYear()} Karbali. All rights reserved.</p>
+              <p className="text-sm text-muted-foreground">{s("footer").content}</p>
+              <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali. All rights reserved.</p>
             </div>
           </div>
         </footer>
