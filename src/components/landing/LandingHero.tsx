@@ -1,7 +1,7 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Target, TrendingUp, Users, Activity } from "lucide-react";
+import { ArrowRight, Activity } from "lucide-react";
 import { GlassButton } from "@/components/ui/glass-button";
-import HeroVideo from "@/components/HeroVideo";
 import { motion } from "framer-motion";
 
 interface LandingHeroProps {
@@ -15,91 +15,71 @@ interface LandingHeroProps {
   };
 }
 
-export default function LandingHero({ title, subtitle, metricsLoading, metrics }: LandingHeroProps) {
-  const stats = [
-    { icon: Users, label: "Active Advertisers", value: metrics.advertisers },
-    { icon: Target, label: "Campaigns Tracked", value: metrics.campaigns },
-    { icon: TrendingUp, label: "Events Processed", value: metrics.events },
-  ];
+export default function LandingHero({ title, subtitle }: LandingHeroProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  const formatMetric = (value: number) => {
-    if (metricsLoading) return "—";
-    return value >= 10 ? value.toLocaleString() : "—";
-  };
+  useEffect(() => {
+    videoRef.current?.play().catch(() => {});
+  }, []);
 
   return (
-    <section className="relative z-10 px-4 pt-6 pb-20 sm:px-6">
-      <div className="container max-w-7xl">
-        {/* Hero headline - centered above video */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-10 text-center"
-        >
-          <div className="futuristic-label mx-auto mb-6">
-            <Activity className="h-3 w-3" />
-            Performance Attribution Platform
-          </div>
+    <section className="relative z-10 overflow-hidden">
+      {/* Video background */}
+      <div className="absolute inset-0 z-0">
+        <video
+          ref={videoRef}
+          src="/hero-animation.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="h-full w-full object-cover"
+        />
+        {/* Dark overlay for contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
+        {/* Emerald tinted overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
+      </div>
 
-          <h1 className="mx-auto max-w-4xl text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
-            {title}
-          </h1>
+      {/* Bottom gradient fade into next section */}
+      <div className="absolute bottom-0 left-0 right-0 z-[1] h-32 bg-gradient-to-t from-background to-transparent" />
 
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            {subtitle}
-          </p>
-
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link to="/signup">
-              <GlassButton size="lg" variant="glow" className="px-10">
-                Start Free <ArrowRight className="h-4 w-4" />
-              </GlassButton>
-            </Link>
-            <Link to="/docs">
-              <GlassButton size="lg" variant="outline" className="px-10">
-                View API Docs
-              </GlassButton>
-            </Link>
-          </div>
-        </motion.div>
-
-        {/* Video - cinematic full width */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <HeroVideo />
-        </motion.div>
-
-        {/* Stats row */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3"
-        >
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="group relative overflow-hidden rounded-xl neon-border bg-card/50 p-5 backdrop-blur-sm"
-            >
-              <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-primary/5 blur-2xl" />
-              <div className="relative flex items-start justify-between">
-                <div>
-                  <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
-                    {formatMetric(stat.value)}
-                  </p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-                    {stat.label}
-                  </p>
-                </div>
-                <stat.icon className="h-5 w-5 text-primary/60" />
-              </div>
+      {/* Content */}
+      <div className="relative z-10 flex min-h-[85vh] items-center justify-center px-4 py-20 sm:px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="futuristic-label mx-auto mb-8">
+              <Activity className="h-3 w-3" />
+              Performance Attribution Platform
             </div>
-          ))}
-        </motion.div>
+
+            <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+              {title}
+            </h1>
+
+            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              {subtitle}
+            </p>
+
+            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link to="/signup">
+                <GlassButton size="lg" variant="glow" className="px-10">
+                  Start Free <ArrowRight className="h-4 w-4" />
+                </GlassButton>
+              </Link>
+              <Link to="/docs">
+                <GlassButton size="lg" variant="outline" className="px-10">
+                  View API Docs
+                </GlassButton>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

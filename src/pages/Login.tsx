@@ -23,19 +23,13 @@ export default function Login() {
     }
 
     setLoading(true);
-    console.log("Starting login for:", email);
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      console.log("Login result:", { hasData: !!data, hasError: !!error });
-
       if (error) {
         toast.error(error.message);
       } else {
-        console.log("Login success, checking role...");
         toast.success("Logged in successfully");
         localStorage.setItem("karbali-last-activity", String(Date.now()));
-
         await supabase.auth.getSession();
         const userId = data.user?.id;
 
@@ -45,17 +39,9 @@ export default function Login() {
             .select("role")
             .eq("user_id", userId);
 
-          if (rolesError) {
-            console.error("Role lookup failed:", rolesError);
-          }
-
+          if (rolesError) console.error("Role lookup failed:", rolesError);
           const hasAdminRole = (rolesData || []).some((role) => role.role === "admin");
-
-          if (hasAdminRole) {
-            navigate("/admin", { replace: true });
-          } else {
-            navigate("/dashboard", { replace: true });
-          }
+          navigate(hasAdminRole ? "/admin" : "/dashboard", { replace: true });
         } else {
           navigate("/dashboard", { replace: true });
         }
@@ -84,9 +70,7 @@ export default function Login() {
     >
       <form onSubmit={handleLogin} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm text-foreground">
-            Email
-          </Label>
+          <Label htmlFor="email" className="text-sm text-foreground">Email</Label>
           <Input
             id="email"
             type="email"
@@ -96,14 +80,12 @@ export default function Login() {
             maxLength={255}
             required
             autoComplete="email"
-            className="h-14 rounded-xl border-border/40 bg-background px-4"
+            className="h-12 rounded-xl border-border/40 bg-background px-4"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm text-foreground">
-            Password
-          </Label>
+          <Label htmlFor="password" className="text-sm text-foreground">Password</Label>
           <div className="relative">
             <Input
               id="password"
@@ -114,7 +96,7 @@ export default function Login() {
               maxLength={128}
               required
               autoComplete="current-password"
-              className="h-14 rounded-xl border-border/40 bg-background px-4 pr-12"
+              className="h-12 rounded-xl border-border/40 bg-background px-4 pr-12"
             />
             <button
               type="button"
