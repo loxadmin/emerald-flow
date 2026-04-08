@@ -125,19 +125,17 @@ export default function Index() {
       {/* Bottom feature cards floating over the hero fade — like wan.video */}
       <section className="relative z-10 -mt-28 px-6 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f) => (
-              <div key={f.title} className="group rounded-2xl border border-white/10 bg-card/40 p-6 backdrop-blur-xl transition-all duration-300 hover:border-primary/20 hover:bg-card/60">
+              <div key={f.title} className="group rounded-2xl border border-border/50 bg-card/80 p-5 backdrop-blur-md">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-                      <f.icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-sm font-bold text-foreground">{f.title}</h3>
+                    <f.icon className="h-5 w-5 text-primary" />
+                    <h3 className="text-sm font-semibold text-foreground">{f.title}</h3>
                   </div>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-                <p className="mt-4 text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -154,7 +152,9 @@ export default function Index() {
               <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{s("how_it_works").subtitle}</p>
             </MotionWrapper>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 relative">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 relative">
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent hidden lg:block -translate-y-16" />
+
               {steps.map((step, i) => {
                 const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                 const stepTitle = parts[0] || step;
@@ -165,22 +165,17 @@ export default function Index() {
 
                 return (
                   <MotionWrapper key={i} delay={i * 0.1} className="relative group">
-                    <div className="relative h-full overflow-hidden rounded-3xl border border-white/10 bg-card/30 p-8 backdrop-blur-md transition-all duration-500 hover:border-primary/30 hover:bg-card/40">
-                      <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-500 group-hover:scale-110 group-hover:bg-primary/20">
-                        <Icon className="h-6 w-6" />
+                    <div className="clay-shadow relative h-full rounded-[2.5rem] border border-border/50 bg-card/40 p-8 backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:bg-card/60">
+                      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-500">
+                        <Icon className="h-7 w-7" />
                       </div>
 
-                      <div className="mb-4 flex items-center gap-3">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
-                          {i + 1}
-                        </span>
-                        <h3 className="text-xl font-bold text-foreground">{stepTitle}</h3>
+                      <div className="absolute top-8 right-8 text-6xl font-black text-foreground/5 select-none">
+                        0{i + 1}
                       </div>
 
+                      <h3 className="mb-3 text-xl font-bold text-foreground">{stepTitle}</h3>
                       <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
-
-                      {/* Decorative gradient corner */}
-                      <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition-opacity duration-500 group-hover:opacity-100 opacity-0" />
                     </div>
                   </MotionWrapper>
                 );
@@ -235,12 +230,8 @@ export default function Index() {
               </MotionWrapper>
 
               <MotionWrapper delay={0.2}>
-                <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-card/20 p-8 md:p-12 backdrop-blur-2xl">
-                  {/* Decorative backgrounds */}
-                  <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
-                  <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
-
-                  <form onSubmit={handleContactSubmit} className="relative z-10 space-y-6">
+                <div className="clay-shadow relative rounded-[3rem] border border-border/50 bg-card/30 p-8 md:p-12 backdrop-blur-2xl">
+                  <form onSubmit={handleContactSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="contact-name" className="text-sm font-medium text-foreground">Name</Label>
