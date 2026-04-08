@@ -23,8 +23,8 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
   }, []);
 
   return (
-    <section className="relative z-10 overflow-hidden">
-      {/* Video background */}
+    <section className="relative z-10 overflow-hidden -mt-16">
+      {/* Video background — starts behind the navbar */}
       <div className="absolute inset-0 z-0">
         <video
           ref={videoRef}
@@ -36,17 +36,17 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
           preload="auto"
           className="h-full w-full object-cover"
         />
-        {/* Dark overlay for contrast - same in both themes */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
+        {/* Dark overlay for contrast — forced dark regardless of theme */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/90" />
         {/* Emerald tinted overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
       </div>
 
-      {/* Bottom gradient fade into next section */}
-      <div className="absolute bottom-0 left-0 right-0 z-[1] h-32 bg-gradient-to-t from-background to-transparent" />
+      {/* Bottom gradient fade — seamless transition to next section */}
+      <div className="absolute bottom-0 left-0 right-0 z-[1] h-48 bg-gradient-to-t from-background via-background/80 to-transparent" />
 
       {/* Content */}
-      <div className="relative z-10 flex min-h-[85vh] items-center justify-center px-4 py-20 sm:px-6">
+      <div className="relative z-10 flex min-h-[90vh] items-center justify-center px-4 pt-28 pb-20 sm:px-6">
         <div className="mx-auto max-w-3xl text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -74,7 +74,7 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                 </GlassButton>
               </Link>
               <Link to="/docs">
-                <GlassButton size="lg" variant="outline" className="px-10 border-white/20 text-white hover:bg-white/10">
+                <GlassButton size="lg" variant="outline" className="px-10 border-white/30 text-white hover:bg-white/10 ring-1 ring-white/20">
                   View API Docs
                 </GlassButton>
               </Link>
