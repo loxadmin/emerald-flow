@@ -180,4 +180,52 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     background-repeat: repeat;
   }
+
+  /* Futuristic utilities */
+  .futuristic-grid {
+    background-image:
+      linear-gradient(hsla(160, 84%, 45%, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsla(160, 84%, 45%, 0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .dark .futuristic-grid {
+    background-image:
+      linear-gradient(hsla(160, 84%, 45%, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsla(160, 84%, 45%, 0.06) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .scan-line::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      hsla(160, 84%, 45%, 0.015) 2px,
+      hsla(160, 84%, 45%, 0.015) 4px
+    );
+  }
+  .neon-border {
+    border: 1px solid hsla(160, 84%, 45%, 0.2);
+    box-shadow: 0 0 15px hsla(160, 84%, 45%, 0.05), inset 0 0 15px hsla(160, 84%, 45%, 0.02);
+  }
+  .dark .neon-border {
+    border: 1px solid hsla(160, 84%, 45%, 0.15);
+    box-shadow: 0 0 20px hsla(160, 84%, 45%, 0.08), inset 0 0 20px hsla(160, 84%, 45%, 0.03);
+  }
+  .futuristic-label {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em];
+    border: 1px solid hsla(160, 84%, 45%, 0.25);
+    background: hsla(160, 84%, 45%, 0.06);
+    color: hsl(160, 84%, 45%);
+  }
+  .hero-vignette {
+    box-shadow: inset 0 0 120px 40px hsla(165, 40%, 1.5%, 0.6);
+  }
+  .light .hero-vignette {
+    box-shadow: inset 0 0 120px 40px hsla(150, 10%, 96%, 0.5);
+  }
 }
