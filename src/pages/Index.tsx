@@ -122,39 +122,37 @@ export default function Index() {
         <LandingHero title={s("hero").title} subtitle={s("hero").subtitle} metrics={metrics} metricsLoading={metricsLoading} />
       )}
 
-      {/* Bottom feature cards floating over the hero fade — like wan.video */}
+      {/* Bottom feature cards floating over the hero fade — Minimalist Redesign */}
       <section className="relative z-10 -mt-28 px-6 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-px bg-white/5 border border-white/10 sm:grid-cols-2 lg:grid-cols-4 overflow-hidden rounded-xl">
             {features.map((f) => (
-              <div key={f.title} className="group rounded-2xl border border-border/50 bg-card/80 p-5 backdrop-blur-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <f.icon className="h-5 w-5 text-primary" />
-                    <h3 className="text-sm font-semibold text-foreground">{f.title}</h3>
+              <div key={f.title} className="group bg-zinc-950 p-6 transition-colors hover:bg-zinc-900/50 backdrop-blur-md">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-300">
+                    <f.icon className="h-5 w-5" />
                   </div>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:translate-x-1 transition-transform" />
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
+                <h3 className="text-sm font-bold tracking-tight text-white mb-2">{f.title}</h3>
+                <p className="text-xs leading-relaxed text-zinc-400">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works — Redesigned Grid */}
+      {/* How It Works — Minimalist Grid Redesign */}
       {s("how_it_works").is_visible && (
         <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 overflow-hidden">
           <div className="mx-auto max-w-7xl">
-            <MotionWrapper className="mb-20 text-center">
-              <span className="futuristic-label mb-4">Process</span>
-              <h2 className="mb-4 text-foreground text-4xl md:text-5xl">{s("how_it_works").title}</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{s("how_it_works").subtitle}</p>
+            <MotionWrapper className="mb-24 text-center">
+              <span className="text-primary text-xs font-bold uppercase tracking-[0.2em] mb-4 block">Process</span>
+              <h2 className="mb-6 text-white text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">{s("how_it_works").title}</h2>
+              <p className="text-zinc-400 max-w-2xl mx-auto text-lg leading-relaxed">{s("how_it_works").subtitle}</p>
             </MotionWrapper>
 
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 relative">
-              <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent hidden lg:block -translate-y-16" />
-
+            <div className="grid grid-cols-1 gap-px bg-white/5 border border-white/10 md:grid-cols-2 lg:grid-cols-4 overflow-hidden rounded-2xl">
               {steps.map((step, i) => {
                 const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                 const stepTitle = parts[0] || step;
@@ -164,19 +162,17 @@ export default function Index() {
                 const Icon = icons[i] || Zap;
 
                 return (
-                  <MotionWrapper key={i} delay={i * 0.1} className="relative group">
-                    <div className="clay-shadow relative h-full rounded-[2.5rem] border border-border/50 bg-card/40 p-8 backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:bg-card/60">
-                      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-500">
-                        <Icon className="h-7 w-7" />
-                      </div>
-
-                      <div className="absolute top-8 right-8 text-6xl font-black text-foreground/5 select-none">
-                        0{i + 1}
-                      </div>
-
-                      <h3 className="mb-3 text-xl font-bold text-foreground">{stepTitle}</h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
+                  <MotionWrapper key={i} delay={i * 0.1} className="relative group bg-zinc-950 p-10 hover:bg-zinc-900/40 transition-colors duration-500 h-full">
+                    <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-500">
+                      <Icon className="h-8 w-8" />
                     </div>
+
+                    <div className="absolute top-10 right-10 text-5xl font-bold text-white/5 select-none font-mono">
+                      0{i + 1}
+                    </div>
+
+                    <h3 className="mb-4 text-xl font-bold text-white tracking-tight">{stepTitle}</h3>
+                    <p className="text-sm leading-relaxed text-zinc-400">{desc}</p>
                   </MotionWrapper>
                 );
               })}
@@ -185,76 +181,80 @@ export default function Index() {
         </section>
       )}
 
-      {/* CTA */}
-      <section className="relative z-10 py-20 px-6 sm:px-10">
-        <div className="mx-auto max-w-3xl text-center">
-          <MotionWrapper>
-            <h2 className="mb-4 text-foreground">Ready to migrate customers?</h2>
-            <p className="mb-8 text-muted-foreground max-w-lg mx-auto">Join the next generation of performance-driven advertisers.</p>
-            <Link to="/signup">
-              <GlassButton size="lg" variant="glow" className="px-10">
-                Get Started Now <ArrowRight className="h-4 w-4" />
-              </GlassButton>
-            </Link>
-          </MotionWrapper>
+      {/* CTA — Minimalist Redesign */}
+      <section className="relative z-10 py-32 px-6 sm:px-10">
+        <div className="mx-auto max-w-5xl">
+          <div className="relative rounded-[2rem] border border-white/10 bg-zinc-950 p-12 md:p-20 overflow-hidden text-center">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-3/4 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+            <MotionWrapper>
+              <h2 className="mb-6 text-white text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">Ready to migrate customers?</h2>
+              <p className="mb-10 text-zinc-400 max-w-lg mx-auto text-lg leading-relaxed">Join the next generation of performance-driven advertisers today.</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link to="/signup" className="w-full sm:w-auto">
+                  <button className="w-full h-14 px-10 rounded-xl bg-white text-black text-sm font-bold uppercase tracking-widest hover:bg-primary transition-colors">
+                    Get Started Now
+                  </button>
+                </Link>
+                <Link to="/about" className="w-full sm:w-auto">
+                  <button className="w-full h-14 px-10 rounded-xl border border-white/10 text-white text-sm font-bold uppercase tracking-widest hover:bg-white/5 transition-colors">
+                    Learn More
+                  </button>
+                </Link>
+              </div>
+            </MotionWrapper>
+          </div>
         </div>
       </section>
 
-      {/* Contact Form — Redesigned Split Layout */}
+      {/* Contact Form — Minimalist Redesign */}
       {s("contact").is_visible && (
         <section id="contact" className="relative z-10 py-32 px-6 sm:px-10 overflow-hidden">
-          <div className="mx-auto max-w-6xl">
-            <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid grid-cols-1 gap-20 lg:grid-cols-2">
               <MotionWrapper className="flex flex-col justify-center">
-                <span className="futuristic-label mb-4 w-fit">Inquiry</span>
-                <h2 className="mb-6 text-foreground text-4xl md:text-5xl lg:text-6xl">{s("contact").title}</h2>
-                <p className="text-muted-foreground text-lg mb-10 max-w-md">{s("contact").subtitle}</p>
+                <span className="text-primary text-xs font-bold uppercase tracking-[0.2em] mb-6 block">Inquiry</span>
+                <h2 className="mb-8 text-white text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight">{s("contact").title}</h2>
+                <p className="text-zinc-400 text-lg mb-12 max-w-md leading-relaxed">{s("contact").subtitle}</p>
 
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   {[
                     { icon: Mail, label: "Email Us", value: "hello@karbali.com" },
                     { icon: MapPin, label: "Visit Us", value: "Stockholm, Sweden" },
-                    { icon: Globe, label: "Follow Us", value: "@karbalihq" }
                   ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <div key={i} className="group">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 border border-white/5 text-primary mb-4 group-hover:border-primary/50 transition-colors">
                         <item.icon className="h-5 w-5" />
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{item.label}</p>
-                        <p className="text-foreground font-medium">{item.value}</p>
-                      </div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">{item.label}</p>
+                      <p className="text-white font-medium">{item.value}</p>
                     </div>
                   ))}
                 </div>
               </MotionWrapper>
 
               <MotionWrapper delay={0.2}>
-                <div className="clay-shadow relative rounded-[3rem] border border-border/50 bg-card/30 p-8 md:p-12 backdrop-blur-2xl">
-                  <form onSubmit={handleContactSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="contact-name" className="text-sm font-medium text-foreground">Name</Label>
-                        <Input id="contact-name" value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Your name" maxLength={100} required className="h-12 rounded-2xl border-border/40 bg-background/50 px-5 focus:ring-primary/20" />
+                <div className="relative rounded-2xl border border-white/10 bg-zinc-950 p-8 md:p-12 overflow-hidden">
+                  <div className="absolute top-0 right-0 h-32 w-32 bg-primary/5 blur-[100px]" />
+
+                  <form onSubmit={handleContactSubmit} className="relative z-10 space-y-8">
+                    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                      <div className="space-y-3">
+                        <Label htmlFor="contact-name" className="text-xs font-bold uppercase tracking-wider text-zinc-400">Name</Label>
+                        <Input id="contact-name" value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Your name" maxLength={100} required className="h-14 rounded-xl border-white/10 bg-zinc-900/50 px-5 focus:border-primary/50 focus:ring-0 transition-all text-white placeholder:text-zinc-600" />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="contact-email" className="text-sm font-medium text-foreground">Email</Label>
-                        <Input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@company.com" maxLength={255} required className="h-12 rounded-2xl border-border/40 bg-background/50 px-5 focus:ring-primary/20" />
+                      <div className="space-y-3">
+                        <Label htmlFor="contact-email" className="text-xs font-bold uppercase tracking-wider text-zinc-400">Email</Label>
+                        <Input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@company.com" maxLength={255} required className="h-14 rounded-xl border-white/10 bg-zinc-900/50 px-5 focus:border-primary/50 focus:ring-0 transition-all text-white placeholder:text-zinc-600" />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="contact-message" className="text-sm font-medium text-foreground">Message</Label>
-                      <Textarea id="contact-message" value={contactMessage} onChange={e => setContactMessage(e.target.value)} placeholder="How can we help?" maxLength={2000} required rows={4} className="min-h-[120px] rounded-2xl border-border/40 bg-background/50 px-5 py-4 focus:ring-primary/20 resize-none" />
+                    <div className="space-y-3">
+                      <Label htmlFor="contact-message" className="text-xs font-bold uppercase tracking-wider text-zinc-400">Message</Label>
+                      <Textarea id="contact-message" value={contactMessage} onChange={e => setContactMessage(e.target.value)} placeholder="How can we help?" maxLength={2000} required rows={4} className="min-h-[160px] rounded-xl border-white/10 bg-zinc-900/50 px-5 py-5 focus:border-primary/50 focus:ring-0 transition-all text-white placeholder:text-zinc-600 resize-none" />
                     </div>
-                    <GlassButton type="submit" variant="glow" className="w-full h-12 rounded-2xl text-base font-semibold" disabled={contactSending}>
-                      {contactSending ? (
-                        <>Processing...</>
-                      ) : (
-                        <span className="flex items-center justify-center gap-2">
-                          Send Message <Send className="h-4 w-4" />
-                        </span>
-                      )}
-                    </GlassButton>
+                    <button type="submit" className="w-full h-14 rounded-xl bg-white text-black text-sm font-bold uppercase tracking-widest hover:bg-primary transition-colors disabled:opacity-50" disabled={contactSending}>
+                      {contactSending ? "Processing..." : "Send Message"}
+                    </button>
                   </form>
                 </div>
               </MotionWrapper>
