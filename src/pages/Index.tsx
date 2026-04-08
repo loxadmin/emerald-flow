@@ -164,23 +164,8 @@ export default function Index() {
               </MotionWrapper>
             </div>
 
-            <MotionWrapper delay={0.2} className="relative group perspective-1000">
-              <motion.div
-                whileHover={{ rotateX: 2, rotateY: -2, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="relative z-10 rounded-[3rem] border border-white/20 bg-white/5 p-2 backdrop-blur-2xl shadow-[0_32px_64px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.1)] overflow-hidden clay-shadow"
-              >
-                <div className="rounded-[2.5rem] bg-gradient-to-b from-white/5 to-transparent p-4">
-                  <MigrationAnimation />
-                </div>
-
-                {/* Decorative elements */}
-                <div className="absolute -top-12 -right-12 h-40 w-40 bg-primary/20 blur-[80px] rounded-full group-hover:bg-primary/30 transition-colors" />
-                <div className="absolute -bottom-16 -left-16 h-48 w-48 bg-primary/10 blur-[100px] rounded-full group-hover:bg-primary/20 transition-colors" />
-
-                {/* Glossy sheen */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-50 pointer-events-none" />
-              </motion.div>
+            <MotionWrapper delay={0.2} className="relative">
+              <HeroVideo />
             </MotionWrapper>
           </div>
         </section>
