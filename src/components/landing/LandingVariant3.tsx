@@ -31,7 +31,7 @@ interface Props {
 export default function LandingVariant3({ content, onContactSubmit, contactName, setContactName, contactEmail, setContactEmail, contactMessage, setContactMessage, contactSending }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [index, setIndex] = useState(0);
-  const words = ["Brand", "Business", "Shop"];
+  const words = ["Brand", "Business", "App", "Shop"];
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});

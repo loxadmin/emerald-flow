@@ -18,7 +18,7 @@ interface LandingHeroProps {
 export default function LandingHero({ title, subtitle }: LandingHeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [index, setIndex] = useState(0);
-  const words = ["Brand", "Business", "Shop"];
+  const words = ["Brand", "Business", "App", "Shop"];
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});

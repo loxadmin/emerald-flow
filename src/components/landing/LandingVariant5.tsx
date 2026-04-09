@@ -32,7 +32,7 @@ export default function LandingVariant5({ content, onContactSubmit, contactName,
   const videoRef = useRef<HTMLVideoElement>(null);
   const [index, setIndex] = useState(0);
   const [activeStep, setActiveStep] = useState(0);
-  const words = ["Brand", "Business", "Shop"];
+  const words = ["Brand", "Business", "App", "Shop"];
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});

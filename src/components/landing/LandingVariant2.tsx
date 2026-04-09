@@ -33,7 +33,7 @@ export default function LandingVariant2({ content, onContactSubmit, contactName,
   const [index, setIndex] = useState(0);
   const [openStep, setOpenStep] = useState(0);
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
-  const words = ["Brand", "Business", "Shop"];
+  const words = ["Brand", "Business", "App", "Shop"];
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});

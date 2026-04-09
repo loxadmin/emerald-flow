@@ -32,7 +32,7 @@ export default function LandingVariant1({ content, onContactSubmit, contactName,
   const videoRef = useRef<HTMLVideoElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
-  const words = ["Brand", "Business", "Shop"];
+  const words = ["Brand", "Business", "App", "Shop"];
 
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
