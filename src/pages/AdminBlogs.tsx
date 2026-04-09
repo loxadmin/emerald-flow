@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Save, Plus, Trash2, Edit2, X } from "lucide-react";
+import { Save, Plus, Trash2, Edit2, X, Eye, Code } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
 
 interface Blog {
   id: string;
@@ -27,6 +28,7 @@ export default function AdminBlogs() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<Partial<Blog>>({
@@ -169,6 +171,23 @@ export default function AdminBlogs() {
               </GlassButton>
             </GlassCardHeader>
             <GlassCardContent className="space-y-4">
+              <div className="flex justify-end mb-2">
+                <div className="flex bg-muted rounded-lg p-1">
+                  <button
+                    onClick={() => setPreviewMode(false)}
+                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all ${!previewMode ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Code className="h-3 w-3" /> Editor
+                  </button>
+                  <button
+                    onClick={() => setPreviewMode(true)}
+                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all ${previewMode ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Eye className="h-3 w-3" /> Preview
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Title</Label>
@@ -207,12 +226,18 @@ export default function AdminBlogs() {
 
               <div className="space-y-2">
                 <Label>Content (Markdown supported)</Label>
-                <textarea
-                  className="w-full rounded-xl border border-border/50 bg-background/50 px-4 py-3 text-sm text-foreground backdrop-blur-sm focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20 min-h-[300px] resize-y font-mono"
-                  value={formData.content || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Write your article here..."
-                />
+                {previewMode ? (
+                  <div className="w-full rounded-xl border border-border/50 bg-background/30 px-6 py-6 min-h-[300px] prose prose-invert prose-emerald max-w-none overflow-y-auto">
+                    <ReactMarkdown>{formData.content || "*No content to preview*"}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <textarea
+                    className="w-full rounded-xl border border-border/50 bg-background/50 px-4 py-3 text-sm text-foreground backdrop-blur-sm focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20 min-h-[300px] resize-y font-mono"
+                    value={formData.content || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                    placeholder="Write your article here..."
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border/30 pt-4">
