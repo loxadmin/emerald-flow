@@ -134,7 +134,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* Main */}
-      <main className="relative z-10 lg:ml-56 flex-1 p-4 pt-16 lg:p-6 lg:pt-6 min-w-0">
+      <main className="relative z-10 lg:ml-56 flex-1 p-4 pt-16 lg:p-8 lg:pt-8 min-w-0 bg-background/50">
+        <div className="mx-auto max-w-7xl">
         {maintenanceMode && !walletActivated ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
@@ -150,7 +151,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <Link to="/wallet"><Button size="sm"><Wallet className="mr-2 h-4 w-4" /> Go to Wallet</Button></Link>
             )}
           </div>
-        ) : children}
+        ) : (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {children}
+          </div>
+        )}
+        </div>
       </main>
     </div>
   );
