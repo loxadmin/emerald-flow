@@ -16,6 +16,8 @@ import LandingVariant5 from "@/components/landing/LandingVariant5";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SuccessMotion, ErrorMotion } from "@/components/ui/FeedbackMotion";
 import { toast } from "sonner";
 
 interface SiteContent {
@@ -103,8 +105,15 @@ export default function Index() {
 
   if (!designReady) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background p-10 space-y-4">
+        <Skeleton className="h-12 w-64 rounded-xl" />
+        <Skeleton className="h-32 w-full max-w-2xl rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl">
+          <Skeleton className="h-48 rounded-[2.5rem]" />
+          <Skeleton className="h-48 rounded-[2.5rem]" />
+          <Skeleton className="h-48 rounded-[2.5rem]" />
+          <Skeleton className="h-48 rounded-[2.5rem]" />
+        </div>
       </div>
     );
   }
@@ -172,11 +181,11 @@ export default function Index() {
           )}
 
           {/* Feature cards */}
-          <section className="relative z-10 -mt-16 px-6 sm:px-10 lg:px-16">
+          <section className="relative z-10 -mt-16 px-6 sm:px-10 lg:px-16 mb-32">
             <div className="mx-auto max-w-6xl">
-              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              <MotionStagger className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
                 {features.map((f) => (
-                  <div key={f.title} className="group flex flex-col items-start transition-all">
+                  <MotionItem key={f.title} className="group flex flex-col items-start">
                     <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
                       <f.icon className="h-6 w-6" />
                     </div>
@@ -185,9 +194,9 @@ export default function Index() {
                       <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
                     </h3>
                     <p className="text-sm leading-relaxed text-muted-foreground/80">{f.desc}</p>
-                  </div>
+                  </MotionItem>
                 ))}
-              </div>
+              </MotionStagger>
             </div>
           </section>
 
@@ -197,13 +206,13 @@ export default function Index() {
               <div className="absolute top-0 -left-20 h-[500px] w-[500px] rounded-full bg-purple-600/5 blur-[120px] pointer-events-none" />
               <div className="absolute bottom-0 -right-20 h-[500px] w-[500px] rounded-full bg-emerald-600/5 blur-[120px] pointer-events-none" />
               <div className="relative z-10 mx-auto max-w-7xl">
-                <MotionWrapper className="mb-20 text-center">
+                <MotionWrapper className="mb-32 text-center">
                   <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-6 border border-primary/20">Step-by-Step</span>
-                  <h2 className="mb-6 text-foreground text-4xl md:text-5xl font-extrabold tracking-tight">{s("how_it_works").title}</h2>
-                  <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{s("how_it_works").subtitle}</p>
+                  <h2 className="mb-8 text-foreground text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight">{s("how_it_works").title}</h2>
+                  <p className="text-muted-foreground max-w-2xl mx-auto text-xl leading-relaxed">{s("how_it_works").subtitle}</p>
                 </MotionWrapper>
 
-                <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4">
+                <MotionStagger className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4">
                   {steps.map((step, i) => {
                     const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                     const stepTitle = parts[0] || step;
@@ -212,7 +221,7 @@ export default function Index() {
                     const Icon = icons[i] || Zap;
 
                     return (
-                      <MotionWrapper key={i} delay={i * 0.1} className="relative">
+                      <MotionItem key={i} className="relative h-full">
                         <div className="relative flex flex-col items-start text-left h-full rounded-[2.5rem] bg-card/40 backdrop-blur-3xl p-10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] border border-border/50 transition-all duration-700 hover:bg-card/60 hover:-translate-y-4 hover:border-primary/30 group overflow-hidden">
                           <div className="absolute top-0 left-0 h-[2px] w-0 bg-gradient-to-r from-transparent via-primary to-transparent transition-all duration-700 group-hover:w-full" />
                           <div className="mb-10 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-[0_0_30px_rgba(34,197,94,0.1)] transition-all duration-700 group-hover:bg-primary/20 group-hover:shadow-[0_0_40px_rgba(34,197,94,0.3)] group-hover:rotate-[10deg]">
@@ -226,18 +235,18 @@ export default function Index() {
                             <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-2 transition-transform duration-500" />
                           </div>
                         </div>
-                      </MotionWrapper>
+                      </MotionItem>
                     );
                   })}
-                </div>
+                </MotionStagger>
               </div>
             </section>
           )}
 
           {/* CTA */}
-          <section className="relative z-10 py-20 px-6 sm:px-10">
+          <section className="relative z-10 py-40 px-6 sm:px-10">
             <div className="mx-auto max-w-5xl">
-              <MotionWrapper className="relative overflow-hidden rounded-[2.5rem] bg-card p-12 md:p-20 text-center shadow-2xl border border-border/50">
+              <MotionWrapper className="relative overflow-hidden rounded-[3rem] bg-card p-16 md:p-24 text-center shadow-2xl border border-border/50">
                 <div className="absolute top-0 right-0 -mr-20 -mt-20 h-64 w-64 rounded-full bg-primary/10 blur-[80px]" />
                 <div className="absolute bottom-0 left-0 -ml-20 -mb-20 h-64 w-64 rounded-full bg-emerald-600/10 blur-[80px]" />
                 <div className="relative z-10">
@@ -246,8 +255,8 @@ export default function Index() {
                       <CheckCircle2 className="h-8 w-8" />
                     </div>
                   </div>
-                  <h2 className="mb-4 text-foreground text-3xl md:text-5xl font-extrabold tracking-tight">Ready to migrate customers?</h2>
-                  <p className="mb-10 text-muted-foreground max-w-xl mx-auto text-lg">Join the next generation of performance-driven advertisers.</p>
+                  <h2 className="mb-6 text-foreground text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">Ready to migrate customers?</h2>
+                  <p className="mb-12 text-muted-foreground max-w-xl mx-auto text-xl leading-relaxed">Join the next generation of performance-driven advertisers.</p>
                   <Link to="/signup">
                     <GlassButton size="lg" variant="glow" className="px-12 h-14 text-lg">
                       Get Started Now <ArrowRight className="h-4 w-4 ml-2" />

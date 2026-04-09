@@ -9,9 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertCircle, Handshake, Globe } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import JSZip from "jszip";
 
 interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
@@ -360,6 +362,22 @@ new KarbaliTracking();`;
     { id: "purchase", label: "Sales / Subscriptions", priceLabel: "$1.00 + 10% / sale", unitPrice: SALE_FLAT_FEE },
   ].filter((option) => allowedEvents.includes(option.id));
 
+  if (!draftLoaded) {
+    return (
+      <DashboardLayout>
+        <div className="mx-auto max-w-3xl space-y-8">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+          <div className="grid grid-cols-2 gap-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   // Partnership category: show choice first
   if (categoryPartnership && hasExternalReferral === null) {
     return (
@@ -388,29 +406,32 @@ new KarbaliTracking();`;
 
   return (
     <DashboardLayout>
-      <MotionWrapper className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-xl font-semibold text-foreground">Create Campaign</h1>
+      <MotionWrapper className="mx-auto max-w-4xl space-y-12 pb-20">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">Create Campaign</h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Set up your performance-based campaign in minutes and only pay for real actions.</p>
+        </div>
 
         {/* Stepper */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-2">
+        <div className="flex items-center justify-center gap-2 overflow-x-auto py-8">
           {STEPS.map((s, i) => (
-            <div key={s} className="flex items-center gap-1 shrink-0">
-              <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+            <div key={s} className="flex items-center gap-2 shrink-0">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-all duration-500 ${
                 i < step ? "bg-primary text-primary-foreground" :
                 i === step ? "border-2 border-primary text-primary" :
                 "bg-muted text-muted-foreground"
               }`}>
                 {i < step ? <CheckCircle className="h-3.5 w-3.5" /> : i + 1}
               </div>
-              <span className={`text-xs hidden sm:inline ${i === step ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s}</span>
-              {i < STEPS.length - 1 && <div className="w-6 sm:w-10 h-px bg-border" />}
+              <span className={`text-sm hidden sm:inline ${i === step ? "text-primary font-bold" : "text-muted-foreground font-medium"}`}>{s}</span>
+              {i < STEPS.length - 1 && <div className="w-8 sm:w-16 h-px bg-border mx-2" />}
             </div>
           ))}
         </div>
 
         {/* Website Selection (if multiple websites) */}
         {websites.length > 1 && step === 0 && !isPartnership && (
-          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <Card className="p-8 space-y-6">
             <h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Globe className="h-4 w-4 text-primary" /> Select Website</h3>
             <p className="text-xs text-muted-foreground">Which website is this campaign for?</p>
             <div className="grid gap-2">
@@ -425,12 +446,12 @@ new KarbaliTracking();`;
                 </button>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* External Referral Step 0 */}
         {isPartnership && hasExternalReferral && step === 0 && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <Card className="p-8 space-y-8">
             <div>
               <h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Handshake className="h-4 w-4 text-primary" /> External Referral Program</h3>
               <p className="text-xs text-muted-foreground mt-1">Tell us about your referral program. Admin will review and register.</p>
@@ -447,12 +468,12 @@ new KarbaliTracking();`;
             <Button className="w-full" onClick={handleExternalReferralSubmit} disabled={loading}>
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : <><Send className="mr-2 h-4 w-4" /> Submit for Review</>}
             </Button>
-          </div>
+          </Card>
         )}
 
         {/* Standard Step 0: Generate API Key */}
         {!isPartnership && step === 0 && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <Card className="p-8 space-y-8">
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Key className="h-4 w-4 text-primary" /> Generate API Key</h3><p className="text-xs text-muted-foreground mt-1">Choose integration type and generate an API key</p></div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Integration Type</Label>
@@ -472,12 +493,12 @@ new KarbaliTracking();`;
             <Button className="w-full" onClick={handleGenerateKey} disabled={loading || (websites.length > 1 && !selectedWebsiteId)}>
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Key className="mr-2 h-4 w-4" /> Generate API Key</>}
             </Button>
-          </div>
+          </Card>
         )}
 
         {/* Standard Step 1: Integration */}
         {!isPartnership && step === 1 && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <Card className="p-8 space-y-8">
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Code className="h-4 w-4 text-primary" /> Integrate</h3></div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Your API Key</Label>
@@ -527,12 +548,12 @@ new KarbaliTracking();`;
               </div>
             )}
             <Button className="w-full" variant="outline" onClick={() => { saveDraft(); setStep(2); }}>I've integrated → Continue to Verify</Button>
-          </div>
+          </Card>
         )}
 
         {/* Standard Step 2: Verify */}
         {!isPartnership && step === 2 && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <Card className="p-8 space-y-8">
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary" /> Verify Integration</h3>
             <p className="text-xs text-muted-foreground mt-1">We'll scan your verified domain for the Karbali Ads loader, your API key, and an active tracker installation: <strong className="text-foreground">{selectedDomain || websites[0]?.domain}</strong></p></div>
             {verified ? (
@@ -544,12 +565,12 @@ new KarbaliTracking();`;
               </Button>
               {verified && <Button variant="outline" onClick={() => setStep(3)}>Continue →</Button>}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Configure (standard step 3, or partnership step 1) */}
         {((!isPartnership && step === 3) || (isPartnership && hasExternalReferral && step === 1)) && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <Card className="p-8 space-y-8">
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Settings className="h-4 w-4 text-primary" /> Campaign Configuration</h3></div>
             <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Campaign Name *</Label><Input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="My Campaign" /></div>
             <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Target Users (min 100) *</Label><Input type="number" min="100" value={targetUsers} onChange={e => setTargetUsers(e.target.value)} /></div>
@@ -585,12 +606,12 @@ new KarbaliTracking();`;
               </div>
             )}
             <Button className="w-full" onClick={() => { saveDraft(); setStep(isPartnership ? 2 : 4); }} disabled={!campaignName.trim() || milestones.length === 0 || Number(targetUsers) < 100}>Review & Submit</Button>
-          </div>
+          </Card>
         )}
 
         {/* Review & Submit */}
         {((!isPartnership && step === 4) || (isPartnership && hasExternalReferral && step === 2)) && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <Card className="p-8 space-y-8">
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Send className="h-4 w-4 text-primary" /> Review & Submit</h3></div>
             <div className="rounded-lg bg-muted/50 p-4 space-y-2">
               {[
@@ -612,7 +633,7 @@ new KarbaliTracking();`;
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit for Review"}
               </Button>
             </div>
-          </div>
+          </Card>
         )}
       </MotionWrapper>
     </DashboardLayout>
