@@ -86,11 +86,6 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
       },
-      fontSize: {
-        "6xl": ["3.75rem", { lineHeight: "1.1" }],
-        "7xl": ["4.5rem", { lineHeight: "1.1" }],
-        "8xl": ["6rem", { lineHeight: "1" }],
-      },
     },
   },
   plugins: [tailwindcssAnimate],
