@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminCampaignDetail from "./pages/AdminCampaignDetail";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSettings from "./pages/AdminSettings";
+import AdminBlogs from "./pages/AdminBlogs";
 import AdminContent from "./pages/AdminContent";
 import AdminDesign from "./pages/AdminDesign";
 import AdminCategories from "./pages/AdminCategories";
@@ -29,6 +30,11 @@ import AdminPartnerships from "./pages/AdminPartnerships";
 import AdminMessages from "./pages/AdminMessages";
 import About from "./pages/About";
 import Docs from "./pages/Docs";
+import BlogList from "./pages/BlogList";
+import BlogPost from "./pages/BlogPost";
+import WhatIsKarbali from "./pages/WhatIsKarbali";
+import UseCases from "./pages/UseCases";
+import Comparison from "./pages/Comparison";
 import ReferralRedirect from "./pages/ReferralRedirect";
 import NotFound from "./pages/NotFound";
 
@@ -58,12 +64,18 @@ const App = () => (
               <Route path="/campaigns/:id" element={<RequireAuth><CampaignDetail /></RequireAuth>} />
               <Route path="/docs" element={<Docs />} />
               <Route path="/about" element={<About />} />
+              <Route path="/blog" element={<BlogList />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/what-is-karbali" element={<WhatIsKarbali />} />
+              <Route path="/use-cases" element={<UseCases />} />
+              <Route path="/vs/:competitor" element={<Comparison />} />
 
               {/* Admin routes (separate panel) */}
               <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/campaigns/:id" element={<RequireAuth><RequireAdmin><AdminCampaignDetail /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/analytics" element={<RequireAuth><RequireAdmin><AdminAnalytics /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/settings" element={<RequireAuth><RequireAdmin><AdminSettings /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/blogs" element={<RequireAuth><RequireAdmin><AdminBlogs /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/content" element={<RequireAuth><RequireAdmin><AdminContent /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/design" element={<RequireAuth><RequireAdmin><AdminDesign /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/categories" element={<RequireAuth><RequireAdmin><AdminCategories /></RequireAdmin></RequireAuth>} />

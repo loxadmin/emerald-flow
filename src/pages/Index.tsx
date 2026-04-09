@@ -27,7 +27,7 @@ interface SiteContent {
 }
 
 const defaultContent: Record<string, SiteContent> = {
-  hero: { section_key: "hero", title: "Migrate Customers to Your Brand", subtitle: "The performance attribution platform that helps advertisers acquire competitors' customers and only pay for real results.", content: null, is_visible: true },
+  hero: { section_key: "hero", title: "Get more customers, users, and sales for your business", subtitle: "The performance attribution platform that helps you acquire customers through targeted campaigns and only pay for real results.", content: null, is_visible: true },
   about: { section_key: "about", title: "About Karbali Ads", subtitle: null, content: null, is_visible: true },
   how_it_works: { section_key: "how_it_works", title: "How It Works", subtitle: "From campaign creation to verified results in four simple steps.", content: "1. Create a Campaign: Set your budget and define what you will pay for.\n2. Integrate Our API: Add a simple tracking snippet to your app.\n3. Get Approved: Our admin team verifies your integration and activates your campaign.\n4. Track and Pay for Results: Monitor real-time analytics and only pay when users take action.", is_visible: true },
   features: { section_key: "features", title: "Why Choose Karbali Ads", subtitle: "Built for performance-driven advertisers who demand transparency.", content: null, is_visible: true },
@@ -321,6 +321,14 @@ export default function Index() {
                   <span className="text-lg font-bold text-gradient">Karbali Ads</span>
                 </div>
                 <p className="text-sm text-muted-foreground max-w-md">{s("footer").content}</p>
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm text-muted-foreground">
+                  <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+                  <Link to="/about" className="hover:text-primary transition-colors">About</Link>
+                  <Link to="/blog" className="hover:text-primary transition-colors">Blog</Link>
+                  <Link to="/use-cases" className="hover:text-primary transition-colors">Use Cases</Link>
+                  <Link to="/what-is-karbali" className="hover:text-primary transition-colors">What is Karbali?</Link>
+                  <Link to="/docs" className="hover:text-primary transition-colors">API Docs</Link>
+                </div>
                 <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
               </div>
             </footer>
