@@ -244,27 +244,32 @@ export default function CreateCampaign() {
       setCampaignId(cId);
     }
 
+    // Save campaign config (still draft)
     const { error } = await supabase.from("campaigns").update({
       name: campaignName.trim(), target_users: users, selected_milestones: milestones, total_cost: totalCost,
-      budget_remaining: totalCost - prices.ad_placement_fee,
       price_download: milestones.includes("download") ? prices.price_per_download : 0,
       price_signup: milestones.includes("signup") ? prices.price_per_signup : 0,
       price_purchase: milestones.includes("purchase") ? SALE_FLAT_FEE : 0,
       integration_verified: verified, integration_type: isPartnership ? "external_referral" : integrationType,
-      status: "pending", is_draft: false,
       website_id: selectedWebsiteId,
     } as any).eq("id", cId);
     if (error) { toast.error(error.message); setLoading(false); return; }
 
-    // Deduct from wallet
-    const { data: wallet } = await supabase.from("wallets").select("id, balance").eq("advertiser_id", user.id).single();
-    if (wallet) {
-      await supabase.from("wallets").update({ balance: Number(wallet.balance) - totalCost, updated_at: new Date().toISOString() }).eq("id", wallet.id);
-      await supabase.from("wallet_transactions").insert({ wallet_id: wallet.id, amount: totalCost, type: "charge", status: "completed", description: `Campaign: ${campaignName.trim()}` });
+    // Server-side escrow: deduct wallet → fund campaign escrow atomically
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const { data: escrowResult, error: escrowError } = await supabase.functions.invoke("manage-campaign", {
+      body: { action: "submit_campaign", campaign_id: cId },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (escrowError || escrowResult?.error) {
+      toast.error(escrowResult?.error || escrowError?.message || "Failed to fund campaign escrow");
+      setLoading(false);
+      return;
     }
 
     setLoading(false);
-    toast.success("Campaign submitted for review!");
+    toast.success("Campaign submitted! Funds held in escrow until ads run.");
     navigate(`/campaigns/${cId}`);
   };
 
