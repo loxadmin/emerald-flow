@@ -1,7 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
-import PageTransition from "@/components/PageTransition";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,52 +40,6 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const AnimatedRoutes = () => {
-  const location = useLocation();
-  return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<PageTransition><Index /></PageTransition>} />
-        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
-        <Route path="/signup" element={<PageTransition><Signup /></PageTransition>} />
-        <Route path="/r/:code" element={<PageTransition><ReferralRedirect /></PageTransition>} />
-
-        {/* Advertiser routes */}
-        <Route path="/category-select" element={<RequireAuth><PageTransition><CategorySelection /></PageTransition></RequireAuth>} />
-        <Route path="/wallet" element={<RequireAuth><PageTransition><Wallet /></PageTransition></RequireAuth>} />
-        <Route path="/dashboard" element={<RequireAuth><PageTransition><Dashboard /></PageTransition></RequireAuth>} />
-        <Route path="/ads" element={<RequireAuth><PageTransition><Ads /></PageTransition></RequireAuth>} />
-        <Route path="/websites" element={<RequireAuth><PageTransition><Websites /></PageTransition></RequireAuth>} />
-        <Route path="/campaigns/create" element={<RequireAuth><PageTransition><CreateCampaign /></PageTransition></RequireAuth>} />
-        <Route path="/campaigns/:id" element={<RequireAuth><PageTransition><CampaignDetail /></PageTransition></RequireAuth>} />
-        <Route path="/docs" element={<PageTransition><Docs /></PageTransition>} />
-        <Route path="/about" element={<PageTransition><About /></PageTransition>} />
-        <Route path="/blog" element={<PageTransition><BlogList /></PageTransition>} />
-        <Route path="/blog/:slug" element={<PageTransition><BlogPost /></PageTransition>} />
-        <Route path="/what-is-karbali" element={<PageTransition><WhatIsKarbali /></PageTransition>} />
-        <Route path="/use-cases" element={<PageTransition><UseCases /></PageTransition>} />
-        <Route path="/vs/:competitor" element={<PageTransition><Comparison /></PageTransition>} />
-
-        {/* Admin routes (separate panel) */}
-        <Route path="/admin" element={<RequireAuth><RequireAdmin><PageTransition><AdminDashboard /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/campaigns/:id" element={<RequireAuth><RequireAdmin><PageTransition><AdminCampaignDetail /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/analytics" element={<RequireAuth><RequireAdmin><PageTransition><AdminAnalytics /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/settings" element={<RequireAuth><RequireAdmin><PageTransition><AdminSettings /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/blogs" element={<RequireAuth><RequireAdmin><PageTransition><AdminBlogs /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/content" element={<RequireAuth><RequireAdmin><PageTransition><AdminContent /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/design" element={<RequireAuth><RequireAdmin><PageTransition><AdminDesign /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/categories" element={<RequireAuth><RequireAdmin><PageTransition><AdminCategories /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/partnerships" element={<RequireAuth><RequireAdmin><PageTransition><AdminPartnerships /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/advertisers" element={<RequireAuth><RequireAdmin><PageTransition><AdminAdvertisers /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/wallets" element={<RequireAuth><RequireAdmin><PageTransition><AdminWallets /></PageTransition></RequireAdmin></RequireAuth>} />
-        <Route path="/admin/messages" element={<RequireAuth><RequireAdmin><PageTransition><AdminMessages /></PageTransition></RequireAdmin></RequireAuth>} />
-
-        <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
-      </Routes>
-    </AnimatePresence>
-  );
-};
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -96,7 +48,44 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <AnimatedRoutes />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/r/:code" element={<ReferralRedirect />} />
+              
+              {/* Advertiser routes */}
+              <Route path="/category-select" element={<RequireAuth><CategorySelection /></RequireAuth>} />
+              <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
+              <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+              <Route path="/ads" element={<RequireAuth><Ads /></RequireAuth>} />
+              <Route path="/websites" element={<RequireAuth><Websites /></RequireAuth>} />
+              <Route path="/campaigns/create" element={<RequireAuth><CreateCampaign /></RequireAuth>} />
+              <Route path="/campaigns/:id" element={<RequireAuth><CampaignDetail /></RequireAuth>} />
+              <Route path="/docs" element={<Docs />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/blog" element={<BlogList />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/what-is-karbali" element={<WhatIsKarbali />} />
+              <Route path="/use-cases" element={<UseCases />} />
+              <Route path="/vs/:competitor" element={<Comparison />} />
+
+              {/* Admin routes (separate panel) */}
+              <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/campaigns/:id" element={<RequireAuth><RequireAdmin><AdminCampaignDetail /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/analytics" element={<RequireAuth><RequireAdmin><AdminAnalytics /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/settings" element={<RequireAuth><RequireAdmin><AdminSettings /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/blogs" element={<RequireAuth><RequireAdmin><AdminBlogs /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/content" element={<RequireAuth><RequireAdmin><AdminContent /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/design" element={<RequireAuth><RequireAdmin><AdminDesign /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/categories" element={<RequireAuth><RequireAdmin><AdminCategories /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/partnerships" element={<RequireAuth><RequireAdmin><AdminPartnerships /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/advertisers" element={<RequireAuth><RequireAdmin><AdminAdvertisers /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/wallets" element={<RequireAuth><RequireAdmin><AdminWallets /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/messages" element={<RequireAuth><RequireAdmin><AdminMessages /></RequireAdmin></RequireAuth>} />
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
