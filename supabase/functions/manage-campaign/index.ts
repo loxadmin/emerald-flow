@@ -102,6 +102,81 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: true });
     }
 
+    if (action === "submit_campaign") {
+      if (!campaign_id) {
+        return jsonResponse({ error: "Missing campaign_id" }, 400);
+      }
+
+      const { data: campaign } = await supabase
+        .from("campaigns")
+        .select("*")
+        .eq("id", campaign_id)
+        .maybeSingle();
+
+      if (!campaign || (!isAdmin && campaign.advertiser_id !== user.id)) {
+        return jsonResponse({ error: "Forbidden" }, 403);
+      }
+
+      const totalCost = Number(campaign.total_cost);
+      if (totalCost <= 0) {
+        return jsonResponse({ error: "Campaign has no cost configured" }, 400);
+      }
+
+      // Get wallet
+      const { data: wallet } = await supabase
+        .from("wallets")
+        .select("id, balance")
+        .eq("advertiser_id", campaign.advertiser_id)
+        .single();
+
+      if (!wallet) {
+        return jsonResponse({ error: "Wallet not found" }, 404);
+      }
+
+      if (Number(wallet.balance) < totalCost) {
+        return jsonResponse({
+          error: `Insufficient balance. Need $${totalCost.toFixed(2)}, have $${Number(wallet.balance).toFixed(2)}.`,
+        }, 402);
+      }
+
+      // Atomic: deduct wallet → fund escrow
+      const newBalance = Number(wallet.balance) - totalCost;
+      const { error: walletErr } = await supabase
+        .from("wallets")
+        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+        .eq("id", wallet.id);
+      if (walletErr) throw walletErr;
+
+      // Record wallet transaction
+      const { error: txErr } = await supabase
+        .from("wallet_transactions")
+        .insert({
+          wallet_id: wallet.id,
+          amount: totalCost,
+          type: "escrow",
+          status: "completed",
+          description: `Campaign escrow: ${campaign.name}`,
+        });
+      if (txErr) throw txErr;
+
+      // Activate campaign escrow (budget_remaining) and set status
+      const { error: campErr } = await supabase
+        .from("campaigns")
+        .update({
+          budget_remaining: totalCost,
+          status: "pending",
+          is_draft: false,
+        })
+        .eq("id", campaign_id);
+      if (campErr) throw campErr;
+
+      return jsonResponse({
+        success: true,
+        escrow_balance: totalCost,
+        wallet_balance: newBalance,
+      });
+    }
+
     if (action === "create_referral") {
       if (!campaign_id || !code) {
         return jsonResponse({ error: "Missing campaign_id or code" }, 400);
