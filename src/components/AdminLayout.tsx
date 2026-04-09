@@ -31,8 +31,9 @@ const adminLinks = [
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/wallets", label: "Wallets", icon: Wallet },
   { to: "/admin/messages", label: "Messages", icon: MessageSquare },
-  { to: "/admin/content", label: "Site Content", icon: PenSquare },
-  { to: "/admin/design", label: "Page Design", icon: Layout },
+  { to: "/admin/blogs", label: "Blogs", icon: PenSquare },
+  { to: "/admin/content", label: "Site Content", icon: Layout },
+  { to: "/admin/design", label: "Page Design", icon: Layers },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
