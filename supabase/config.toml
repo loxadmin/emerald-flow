@@ -2,3 +2,6 @@ project_id = "dvkoafztquswcqniwcyf"
 
 [functions.paystack-webhook]
 verify_jwt = false
+
+[functions.ext-conversion]
+verify_jwt = false
