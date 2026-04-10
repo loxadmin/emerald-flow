@@ -2,8 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req) => {
@@ -17,7 +16,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { code } = await req.json();
+    const { code, client_id } = await req.json();
 
     if (!code) {
       return new Response(
@@ -40,26 +39,49 @@ Deno.serve(async (req) => {
     }
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    const user_agent = req.headers.get("user-agent") || "unknown";
+    const userAgent = req.headers.get("user-agent") || "unknown";
 
     await supabase.from("clicks").insert({
       referral_id: referral.id,
       ip,
-      user_agent,
+      user_agent: userAgent,
     });
 
-    let redirect_url = referral.redirect_url;
-    if (!redirect_url) {
+    const clientId = String(client_id || "").trim();
+    if (clientId) {
+      const { data: trackedUser } = await supabase
+        .from("users_tracking")
+        .select("id, referral_id")
+        .eq("campaign_id", referral.campaign_id)
+        .eq("external_user_id", clientId)
+        .maybeSingle();
+
+      if (!trackedUser) {
+        await supabase.from("users_tracking").insert({
+          campaign_id: referral.campaign_id,
+          external_user_id: clientId,
+          referral_id: referral.id,
+        });
+      } else if (!trackedUser.referral_id) {
+        await supabase
+          .from("users_tracking")
+          .update({ referral_id: referral.id })
+          .eq("id", trackedUser.id);
+      }
+    }
+
+    let redirectUrl = referral.redirect_url;
+    if (!redirectUrl) {
       const { data: sources } = await supabase
         .from("campaign_sources")
         .select("url")
         .eq("campaign_id", referral.campaign_id)
         .limit(1);
-      redirect_url = sources?.[0]?.url || null;
+      redirectUrl = sources?.[0]?.url || null;
     }
 
     return new Response(
-      JSON.stringify({ redirect_url, referral_id: referral.id }),
+      JSON.stringify({ redirect_url: redirectUrl, referral_id: referral.id, client_id: clientId || null }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: unknown) {

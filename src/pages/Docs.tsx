@@ -10,8 +10,8 @@ export default function Docs() {
   const { session } = useAuth();
   const brandedBaseUrl = "https://advertiser.karbali.com";
   const referralUrl = `${brandedBaseUrl}/r/ref_xxxxxxxx`;
-  const trackerScriptUrl = `${brandedBaseUrl}/karbali-tracker.js`;
-  const trackUrl = `${brandedBaseUrl}/api/track`;
+  const trackerScriptUrl = "https://result-link.lovable.app/karbali-tracker.js";
+  const trackUrl = "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track";
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -53,7 +53,7 @@ export default function Docs() {
               <div className="rounded-lg bg-muted p-4 overflow-x-auto">
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Install snippet</p>
                 <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`<script>
-  window.KarbaliAdsConfig = { apiKey: "kb_your_api_key" };
+  window.KarbaliConfig = { apiKey: "kb_your_api_key" };
 </script>
 <script async src="${trackerScriptUrl}" data-api-key="kb_your_api_key"></script>`}</pre>
               </div>
@@ -64,11 +64,12 @@ export default function Docs() {
           <MotionWrapper delay={0.12}>
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="text-base font-semibold text-foreground mb-2">3. Send lifecycle events</h2>
-              <p className="text-sm text-muted-foreground mb-3">Trigger Karbali Ads when the referral visitor downloads, signs up, or completes a paid conversion.</p>
+              <p className="text-sm text-muted-foreground mb-3">Trigger Karbali Ads when the referral visitor downloads, signs up, or completes a paid conversion, and identify the signed-in user as soon as you know who they are.</p>
               <div className="rounded-lg bg-muted p-4 overflow-x-auto">
-                <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`window.KarbaliAds.track("download", {});
-window.KarbaliAds.track("signup", { user_id: "user_123" });
-window.KarbaliAds.track("purchase", {
+                <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`window.Karbali.identify("user_123");
+window.Karbali.trackDownload("user_123");
+window.Karbali.trackSignup("user_123");
+window.Karbali.trackPurchase({
   user_id: "user_123",
   amount: 49.99
 });`}</pre>
@@ -110,7 +111,8 @@ window.KarbaliAds.track("purchase", {
   "user_id": "your_internal_user_id",
   "client_id": "karbali_client_id",
   "referral_id": "referral_uuid_or_code",
-  "amount": 49.99
+  "amount": 49.99,
+  "source_url": "https://yourdomain.com/signup-success"
 }`}</pre>
               </div>
             </div>

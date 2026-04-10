@@ -2,8 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, origin, referer, x-karbali-domain",
 };
 
 const jsonResponse = (body: unknown, status = 200) =>
@@ -14,9 +13,30 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 const SALE_FLAT_FEE = 1;
 const SALE_COMMISSION_RATE = 0.1;
+const VALID_EVENT_TYPES = ["download", "signup", "purchase"] as const;
 
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+const normalizeDomain = (value: string) =>
+  value
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .replace(/\/.*$/, "")
+    .trim()
+    .toLowerCase();
+
+const extractDomain = (value: string | null) => {
+  if (!value) return "";
+  try {
+    return normalizeDomain(new URL(value).hostname);
+  } catch {
+    return normalizeDomain(value);
+  }
+};
+
+const unique = (values: Array<string | null | undefined>) =>
+  [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,43 +50,46 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json();
-    const { api_key, event_type, user_id, client_id, referral_id, amount } = body;
-    const resolvedIdentity = String(user_id || client_id || "").trim();
+    const apiKey = String(body.api_key || "").trim();
+    const eventType = String(body.event_type || "").trim();
+    const userId = String(body.user_id || "").trim();
+    const clientId = String(body.client_id || "").trim();
+    const sourceUrl = String(body.source_url || "").trim();
+    const referralInput = String(body.referral_id || "").trim();
+    const amount = body.amount;
+    const identityPool = unique([userId, clientId]);
 
-    // Input validation
-    if (!api_key || !event_type || !resolvedIdentity) {
+    if (!apiKey || !eventType || identityPool.length === 0) {
       return jsonResponse({ error: "Missing required fields: api_key, event_type, and user_id or client_id" }, 400);
     }
 
-    if (!["download", "signup", "purchase"].includes(event_type)) {
+    if (!VALID_EVENT_TYPES.includes(eventType as (typeof VALID_EVENT_TYPES)[number])) {
       return jsonResponse({ error: "Invalid event_type. Must be: download, signup, purchase" }, 400);
     }
 
-    if (event_type === "purchase" && amount !== null && amount !== undefined && Number(amount) < 0) {
+    if (eventType === "purchase" && amount !== null && amount !== undefined && Number(amount) < 0) {
       return jsonResponse({ error: "Purchase amount must be zero or greater" }, 400);
     }
 
-    // Validate API key
     const { data: keyData, error: keyError } = await supabase
       .from("api_keys")
       .select("campaign_id")
-      .eq("key", api_key)
+      .eq("key", apiKey)
       .single();
 
     if (keyError || !keyData) {
       return jsonResponse({ error: "Invalid API key" }, 401);
     }
 
-    const campaign_id = keyData.campaign_id;
+    const campaignId = keyData.campaign_id;
 
-    // Get campaign
-    const { data: campaign, error: campError } = await supabase
+    const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
       .select("*")
-      .eq("id", campaign_id)
+      .eq("id", campaignId)
       .single();
 
-    if (campError || !campaign) {
+    if (campaignError || !campaign) {
       return jsonResponse({ error: "Campaign not found" }, 404);
     }
 
@@ -74,11 +97,14 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Campaign is not active" }, 403);
     }
 
-    if (Array.isArray(campaign.selected_milestones) && campaign.selected_milestones.length > 0 && !campaign.selected_milestones.includes(event_type)) {
-      return jsonResponse({ error: `This campaign is not configured for ${event_type} tracking` }, 403);
+    if (
+      Array.isArray(campaign.selected_milestones) &&
+      campaign.selected_milestones.length > 0 &&
+      !campaign.selected_milestones.includes(eventType)
+    ) {
+      return jsonResponse({ error: `This campaign is not configured for ${eventType} tracking` }, 403);
     }
 
-    // Domain lock: API key can only be used from the campaign's registered website domain
     if (campaign.website_id) {
       const { data: website } = await supabase
         .from("advertiser_websites")
@@ -87,46 +113,69 @@ Deno.serve(async (req) => {
         .single();
 
       if (website?.domain) {
-        const origin = req.headers.get("origin") || req.headers.get("referer") || "";
-        let requestDomain = "";
-        try {
-          requestDomain = new URL(origin).hostname.replace(/^www\./, "");
-        } catch {
-          requestDomain = "";
-        }
-        const allowedDomain = website.domain.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "").toLowerCase();
-        
-        if (!requestDomain || requestDomain.toLowerCase() !== allowedDomain) {
+        const requestDomain = extractDomain(
+          req.headers.get("x-karbali-domain") ||
+            sourceUrl ||
+            req.headers.get("origin") ||
+            req.headers.get("referer") ||
+            ""
+        );
+        const allowedDomain = normalizeDomain(website.domain);
+
+        if (!requestDomain || requestDomain !== allowedDomain) {
           return jsonResponse({ error: "API key is not authorized for this domain" }, 403);
         }
       }
     }
 
     let resolvedReferralId: string | null = null;
-    if (referral_id) {
-      const referralValue = String(referral_id).trim();
-      const referralQuery = supabase
+    if (referralInput) {
+      const { data: referral } = await supabase
         .from("referrals")
         .select("id, campaign_id")
-        [isUuid(referralValue) ? "eq" : "eq"](isUuid(referralValue) ? "id" : "code", referralValue)
+        [isUuid(referralInput) ? "eq" : "eq"](isUuid(referralInput) ? "id" : "code", referralInput)
         .maybeSingle();
 
-      const { data: referral } = await referralQuery;
-      if (!referral || referral.campaign_id !== campaign_id) {
+      if (!referral || referral.campaign_id !== campaignId) {
         return jsonResponse({ error: "Referral does not belong to this campaign" }, 400);
       }
       resolvedReferralId = referral.id;
     }
 
-    // Basic fraud detection: rate limiting by IP
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-               req.headers.get("x-real-ip") || "unknown";
+    const identitiesToResolve = [...identityPool];
+    const referralFromTracking = new Map<string, string | null>();
+
+    if (identitiesToResolve.length > 0) {
+      const { data: trackedUsers } = await supabase
+        .from("users_tracking")
+        .select("id, external_user_id, referral_id")
+        .eq("campaign_id", campaignId)
+        .in("external_user_id", identitiesToResolve);
+
+      trackedUsers?.forEach((entry) => {
+        referralFromTracking.set(entry.external_user_id, entry.referral_id);
+      });
+    }
+
+    if (!resolvedReferralId) {
+      for (const identity of identitiesToResolve) {
+        const referralId = referralFromTracking.get(identity);
+        if (referralId) {
+          resolvedReferralId = referralId;
+          break;
+        }
+      }
+    }
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
 
     const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
     const { count: recentEvents } = await supabase
       .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("campaign_id", campaign_id)
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaignId)
       .eq("ip", ip)
       .gte("created_at", oneMinuteAgo);
 
@@ -134,48 +183,55 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Rate limit exceeded" }, 429);
     }
 
-    // Duplicate check: same user + same event type within 5 seconds
-    const fiveSecsAgo = new Date(Date.now() - 5000).toISOString();
-    const { count: dupeCount } = await supabase
+    const duplicateIdentity = userId || clientId;
+    const duplicateWindow = new Date(Date.now() - 5000).toISOString();
+    const duplicateQuery = supabase
       .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("campaign_id", campaign_id)
-      .eq("external_user_id", resolvedIdentity)
-      .eq("event_type", event_type)
-      .gte("created_at", fiveSecsAgo);
+      .select("external_user_id", { count: "exact", head: true })
+      .eq("campaign_id", campaignId)
+      .eq("event_type", eventType)
+      .gte("created_at", duplicateWindow);
 
-    if ((dupeCount || 0) > 0) {
+    if (identityPool.length > 1) {
+      duplicateQuery.in("external_user_id", identityPool);
+    } else {
+      duplicateQuery.eq("external_user_id", duplicateIdentity);
+    }
+
+    const { count: duplicateCount } = await duplicateQuery;
+    if ((duplicateCount || 0) > 0) {
       return jsonResponse({ error: "Duplicate event detected" }, 409);
     }
 
-    // Attribution: check if user exists
-    const { data: existingUser } = await supabase
-      .from("users_tracking")
-      .select("id, referral_id")
-      .eq("campaign_id", campaign_id)
-      .eq("external_user_id", resolvedIdentity)
-      .maybeSingle();
-
-    if (!existingUser) {
-      await supabase.from("users_tracking").insert({
-        external_user_id: resolvedIdentity,
-        campaign_id,
-        referral_id: resolvedReferralId,
-      });
-    } else if (!existingUser.referral_id && resolvedReferralId) {
-      await supabase
+    for (const identity of identityPool) {
+      const { data: existingTrackedUser } = await supabase
         .from("users_tracking")
-        .update({ referral_id: resolvedReferralId })
-        .eq("id", existingUser.id);
+        .select("id, referral_id")
+        .eq("campaign_id", campaignId)
+        .eq("external_user_id", identity)
+        .maybeSingle();
+
+      if (!existingTrackedUser) {
+        await supabase.from("users_tracking").insert({
+          external_user_id: identity,
+          campaign_id: campaignId,
+          referral_id: resolvedReferralId,
+        });
+      } else if (!existingTrackedUser.referral_id && resolvedReferralId) {
+        await supabase
+          .from("users_tracking")
+          .update({ referral_id: resolvedReferralId })
+          .eq("id", existingTrackedUser.id);
+      }
     }
 
-    // Save event
+    const canonicalIdentity = userId || clientId;
     const { data: event, error: eventError } = await supabase
       .from("events")
       .insert({
-        campaign_id,
-        external_user_id: resolvedIdentity,
-        event_type,
+        campaign_id: campaignId,
+        external_user_id: canonicalIdentity,
+        event_type: eventType,
         amount: amount ?? null,
         referral_id: resolvedReferralId,
         ip,
@@ -185,52 +241,55 @@ Deno.serve(async (req) => {
 
     if (eventError) throw eventError;
 
-    // Billing engine - milestone logic
-    let chargeAmount = 0;
-
-    // Check user's event history for milestone billing
     const { data: userEvents } = await supabase
       .from("events")
       .select("id, event_type")
-      .eq("campaign_id", campaign_id)
-      .eq("external_user_id", resolvedIdentity);
+      .eq("campaign_id", campaignId)
+      .in("external_user_id", identityPool);
 
-    const hasPurchase = userEvents?.some((e) => e.event_type === "purchase" && e.id !== event.id);
-    const hasSignup = userEvents?.some((e) => e.event_type === "signup" && e.id !== event.id);
+    let chargeAmount = 0;
+    const hasPurchase = userEvents?.some((entry) => entry.event_type === "purchase" && entry.id !== event.id);
+    const hasSignup = userEvents?.some((entry) => entry.event_type === "signup" && entry.id !== event.id);
 
-    if (event_type === "purchase") {
+    if (eventType === "purchase") {
       const saleAmount = Number(amount || 0);
       chargeAmount = Number(campaign.price_purchase || SALE_FLAT_FEE) + saleAmount * SALE_COMMISSION_RATE;
-    } else if (event_type === "signup" && !hasPurchase) {
+    } else if (eventType === "signup" && !hasPurchase) {
       chargeAmount = Number(campaign.price_signup);
-    } else if (event_type === "download" && !hasSignup && !hasPurchase) {
+    } else if (eventType === "download" && !hasSignup && !hasPurchase) {
       chargeAmount = Number(campaign.price_download);
     }
 
     if (chargeAmount > 0 && Number(campaign.budget_remaining) < chargeAmount) {
-      await supabase.from("campaigns").update({ status: "rejected" }).eq("id", campaign_id);
+      await supabase.from("campaigns").update({ status: "rejected" }).eq("id", campaignId);
       return jsonResponse({ error: "Campaign budget is exhausted" }, 402);
     }
 
     if (chargeAmount > 0) {
       await supabase.from("transactions").insert({
-        campaign_id,
+        campaign_id: campaignId,
         event_id: event.id,
         amount: chargeAmount,
-        description: `${event_type} event charge`,
+        description: `${eventType} event charge`,
       });
 
       const newBudget = Number(campaign.budget_remaining) - chargeAmount;
       const updateData: Record<string, unknown> = { budget_remaining: newBudget };
-      
       if (newBudget <= 0) {
         updateData.status = "rejected";
       }
 
-      await supabase.from("campaigns").update(updateData).eq("id", campaign_id);
+      await supabase.from("campaigns").update(updateData).eq("id", campaignId);
     }
 
-    return jsonResponse({ success: true, event_id: event.id, charged: chargeAmount, referral_id: resolvedReferralId, identity: resolvedIdentity });
+    return jsonResponse({
+      success: true,
+      event_id: event.id,
+      charged: chargeAmount,
+      referral_id: resolvedReferralId,
+      identity: canonicalIdentity,
+      linked_identities: identityPool,
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return jsonResponse({ error: message }, 500);
