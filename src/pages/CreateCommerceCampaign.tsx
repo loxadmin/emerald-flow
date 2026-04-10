@@ -139,9 +139,9 @@ export default function CreateCommerceCampaign() {
     navigate(`/campaigns/${campaignId}`);
   };
 
-  const projectId = "dvkoafztquswcqniwcyf";
-  const trackerScriptUrl = "https://result-link.lovable.app/karbali-tracker.js";
-  const directTrackUrl = `https://${projectId}.supabase.co/functions/v1/track`;
+  const brandedBaseUrl = "https://advertiser.karbali.com";
+  const trackerScriptUrl = `${brandedBaseUrl}/karbali-tracker.js`;
+  const directTrackUrl = `${brandedBaseUrl}/api/track`;
 
   const downloadWordPressPlugin = async () => {
     const pluginCode = `<?php

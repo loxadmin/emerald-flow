@@ -393,9 +393,9 @@ new KarbaliTracking();`;
     toast.success("WordPress plugin downloaded as ZIP!");
   };
 
-  const projectId = "dvkoafztquswcqniwcyf";
-  const trackerScriptUrl = "https://result-link.lovable.app/karbali-tracker.js";
-  const directTrackUrl = `https://${projectId}.supabase.co/functions/v1/track`;
+  const brandedBaseUrl = "https://advertiser.karbali.com";
+  const trackerScriptUrl = `${brandedBaseUrl}/karbali-tracker.js`;
+  const directTrackUrl = `${brandedBaseUrl}/api/track`;
 
   const milestoneOptions = [
     { id: "download", label: "App Downloads", priceLabel: `$${prices.price_per_download.toFixed(2)} / user`, unitPrice: prices.price_per_download },
