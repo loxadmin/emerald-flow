@@ -501,26 +501,22 @@ new KarbaliTracking();`;
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Add this to your website:</p>
                 <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs text-foreground/70">
-{`<script>
-  window.KarbaliAdsConfig = { apiKey: "${apiKey}" };
-</script>
-<script async src="${trackerScriptUrl}" data-api-key="${apiKey}"></script>
+{`<script src="${trackerScriptUrl}" data-api-key="${apiKey}"></script>
 <script>
-  window.addEventListener("load", function () {
-    window.KarbaliAds?.sync();
+  // Auto-tracking is enabled by default for signups & purchases.
+  // For manual tracking, use:
+
+  // Track app downloads:
+  window.Karbali.track("download", {});
+
+  // Track signups (after user registers):
+  window.Karbali.track("signup", { user_id: "user_email_or_id" });
+
+  // Track purchases (after successful payment):
+  window.Karbali.track("purchase", {
+    user_id: "user_email_or_id",
+    amount: orderTotal
   });
-
-  function trackDownload() {
-    window.KarbaliAds?.track("download", {});
-  }
-
-  function trackSignup(userId) {
-    window.KarbaliAds?.track("signup", { user_id: userId });
-  }
-
-  function trackPurchase(userId, orderTotal) {
-    window.KarbaliAds?.track("purchase", { user_id: userId, amount: orderTotal });
-  }
 </script>`}
                 </pre>
                 <p className="text-[11px] text-muted-foreground">Visible integration stays on your Karbali Ads loader script, while the tracker posts securely to your campaign backend.</p>
