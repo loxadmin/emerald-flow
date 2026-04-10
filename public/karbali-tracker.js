@@ -1,5 +1,5 @@
 (function () {
-  var TRACK_ENDPOINT = "https://advertiser.karbali.com/api/track";
+  var TRACK_ENDPOINT = "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track";
   var REFERRAL_ID_KEY = "karbali_referral_id";
   var REFERRAL_CODE_KEY = "karbali_referral_code";
   var CLIENT_ID_KEY = "karbali_client_id";
