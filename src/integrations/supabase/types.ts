@@ -504,6 +504,127 @@ export type Database = {
           },
         ]
       }
+      extension_clicks: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          destination_url: string
+          ext_user_id: string
+          id: string
+          ip: string | null
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          destination_url: string
+          ext_user_id: string
+          id?: string
+          ip?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          destination_url?: string
+          ext_user_id?: string
+          id?: string
+          ip?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extension_clicks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      extension_conversions: {
+        Row: {
+          click_id: string
+          created_at: string
+          event_type: string
+          id: string
+          rewarded: boolean
+          status: string
+        }
+        Insert: {
+          click_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          rewarded?: boolean
+          status?: string
+        }
+        Update: {
+          click_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          rewarded?: boolean
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extension_conversions_click_id_fkey"
+            columns: ["click_id"]
+            isOneToOne: false
+            referencedRelation: "extension_clicks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      extension_rewards: {
+        Row: {
+          campaign_id: string
+          click_id: string | null
+          created_at: string
+          ext_user_id: string
+          id: string
+          points: number
+          reward_type: string
+        }
+        Insert: {
+          campaign_id: string
+          click_id?: string | null
+          created_at?: string
+          ext_user_id: string
+          id?: string
+          points?: number
+          reward_type: string
+        }
+        Update: {
+          campaign_id?: string
+          click_id?: string | null
+          created_at?: string
+          ext_user_id?: string
+          id?: string
+          points?: number
+          reward_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extension_rewards_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extension_rewards_click_id_fkey"
+            columns: ["click_id"]
+            isOneToOne: false
+            referencedRelation: "extension_clicks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       external_referral_programs: {
         Row: {
           activation_fee_paid: boolean

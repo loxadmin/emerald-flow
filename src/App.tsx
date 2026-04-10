@@ -39,6 +39,7 @@ import WhatIsKarbali from "./pages/WhatIsKarbali";
 import UseCases from "./pages/UseCases";
 import Comparison from "./pages/Comparison";
 import ReferralRedirect from "./pages/ReferralRedirect";
+import ExtensionDownload from "./pages/ExtensionDownload";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/what-is-karbali" element={<WhatIsKarbali />} />
               <Route path="/use-cases" element={<UseCases />} />
               <Route path="/vs/:competitor" element={<Comparison />} />
+              <Route path="/extension" element={<ExtensionDownload />} />
 
               {/* Admin routes (separate panel) */}
               <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />

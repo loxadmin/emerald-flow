@@ -5,6 +5,18 @@
       "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track"
     },
     {
+      "source": "/api/detect-offer",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/detect-offer"
+    },
+    {
+      "source": "/api/ext-track",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/ext-track"
+    },
+    {
+      "source": "/api/ext-conversion",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/ext-conversion"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
