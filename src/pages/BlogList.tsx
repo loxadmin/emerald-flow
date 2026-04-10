@@ -38,7 +38,7 @@ export default function BlogList() {
       .order("created_at", { ascending: false });
 
     if (!error) {
-      setBlogs(data || []);
+      setBlogs((data as unknown as Blog[]) || []);
     }
     setLoading(false);
   };

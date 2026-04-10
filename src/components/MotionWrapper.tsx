@@ -1,13 +1,14 @@
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
 
-interface MotionWrapperProps {
+export interface MotionWrapperProps {
   children: ReactNode;
   className?: string;
   delay?: number;
+  id?: string;
 }
 
-export default function MotionWrapper({ children, className, delay = 0 }: MotionWrapperProps) {
+export default function MotionWrapper({ children, className, delay = 0, id }: MotionWrapperProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
