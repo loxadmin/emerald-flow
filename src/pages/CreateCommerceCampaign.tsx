@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -20,6 +20,7 @@ const MIN_WALLET_BALANCE = 200;
 
 export default function CreateCommerceCampaign() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, walletActivated } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -47,9 +48,31 @@ export default function CreateCommerceCampaign() {
 
       const { data: w } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
       if (w) setWalletBalance(Number(w.balance));
+
+      // Resume draft if ?draft=<id> is present
+      const draftId = searchParams.get("draft");
+      if (draftId) {
+        const { data: draft } = await supabase.from("campaigns")
+          .select("*").eq("id", draftId).eq("advertiser_id", user.id).eq("is_draft", true).maybeSingle();
+        if (draft) {
+          setCampaignId(draft.id);
+          setCampaignName(draft.name === "Draft Commerce Campaign" ? "" : draft.name);
+          setTargetSales(String(draft.target_users || 100));
+          setIntegrationType((draft.integration_type as "custom" | "wordpress") || "custom");
+          setVerified(draft.integration_verified || false);
+          if (draft.website_id) setSelectedWebsiteId(draft.website_id);
+
+          const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", draft.id).limit(1);
+          if (keys && keys.length > 0) {
+            setApiKey(keys[0].key);
+            if (draft.integration_verified) setStep(2);
+            else if (keys[0].key) setStep(1);
+          }
+        }
+      }
     };
     fetchData();
-  }, [user]);
+  }, [user, searchParams]);
 
   useEffect(() => {
     if (!selectedWebsiteId) return;
