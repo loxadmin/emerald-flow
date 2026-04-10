@@ -10,9 +10,11 @@ export default function ReferralRedirect() {
     if (!code) return;
 
     const handleRedirect = async () => {
+      const clientId = crypto.randomUUID();
+
       // Log click via edge function (bypasses RLS)
       const { data, error: fnError } = await supabase.functions.invoke("referral-click", {
-        body: { code },
+        body: { code, client_id: clientId },
       });
 
       if (fnError || !data?.redirect_url) {
@@ -22,10 +24,9 @@ export default function ReferralRedirect() {
 
       try {
         const redirectUrl = new URL(data.redirect_url);
-        const clientId = crypto.randomUUID();
         redirectUrl.searchParams.set("ref", data.referral_id || code);
         redirectUrl.searchParams.set("ref_code", code);
-        redirectUrl.searchParams.set("client_id", clientId);
+        redirectUrl.searchParams.set("client_id", data.client_id || clientId);
         window.location.href = redirectUrl.toString();
       } catch {
         setError(true);
