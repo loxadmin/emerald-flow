@@ -20,6 +20,7 @@ const MIN_WALLET_BALANCE = 200;
 
 export default function CreateCommerceCampaign() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, walletActivated } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
