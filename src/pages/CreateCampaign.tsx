@@ -136,7 +136,7 @@ export default function CreateCampaign() {
       setDraftLoaded(true);
     };
     fetchData();
-  }, [user]);
+  }, [user, searchParams]);
 
   useEffect(() => {
     if (!selectedWebsiteId) return;
