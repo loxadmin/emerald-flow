@@ -140,7 +140,7 @@ export default function CreateCommerceCampaign() {
   };
 
   const projectId = "dvkoafztquswcqniwcyf";
-  const trackerScriptUrl = `${window.location.origin}/karbali-tracker.js`;
+  const trackerScriptUrl = "https://result-link.lovable.app/karbali-tracker.js";
   const directTrackUrl = `https://${projectId}.supabase.co/functions/v1/track`;
 
   const downloadWordPressPlugin = async () => {
@@ -148,12 +148,13 @@ export default function CreateCommerceCampaign() {
 /**
  * Plugin Name: Karbali Commerce Tracking
  * Description: Tracks sales for Karbali Commerce Ads.
- * Version: 1.0.0
+ * Version: 1.1.0
  */
 if (!defined('ABSPATH')) exit;
 class KarbaliCommerce {
     private $api_key;
     private $api_url = '${directTrackUrl}';
+    private $tracker_url = '${trackerScriptUrl}';
     public function __construct() {
         $this->api_key = get_option('karbali_api_key', '');
         add_action('admin_menu', [$this, 'admin_menu']);
@@ -168,12 +169,43 @@ class KarbaliCommerce {
         <form method="post" action="options.php"><?php settings_fields('karbali_settings'); ?>
         <table class="form-table"><tr><th>API Key</th><td><input type="text" name="karbali_api_key" value="<?php echo esc_attr(get_option('karbali_api_key')); ?>" class="regular-text" /></td></tr></table>
         <?php submit_button(); ?></form></div><?php }
+    private function browser_client_id() {
+        return isset($_COOKIE['karbali_client_id']) ? sanitize_text_field(wp_unslash($_COOKIE['karbali_client_id'])) : '';
+    }
+    private function browser_referral() {
+        if (isset($_COOKIE['karbali_referral_id'])) return sanitize_text_field(wp_unslash($_COOKIE['karbali_referral_id']));
+        if (isset($_COOKIE['karbali_referral_code'])) return sanitize_text_field(wp_unslash($_COOKIE['karbali_referral_code']));
+        return '';
+    }
     public function inject_tracking_script() { if (empty($this->api_key)) return; ?>
         <script>
-        (function(){ var p=new URLSearchParams(window.location.search); var r=p.get('ref')||p.get('referral_id'); if(r) document.cookie='karbali_ref='+r+';path=/;max-age=2592000'; })();
-        function karbaliGetRef(){var m=document.cookie.match(/karbali_ref=([^;]+)/);return m?m[1]:null;}
-        </script><?php }
-    public function track_purchase($oid) { if(empty($this->api_key)||!function_exists('wc_get_order'))return; $o=wc_get_order($oid); if(!$o)return; $r=isset($_COOKIE['karbali_ref'])?sanitize_text_field($_COOKIE['karbali_ref']):null; wp_remote_post($this->api_url,['body'=>json_encode(['api_key'=>$this->api_key,'event_type'=>'purchase','user_id'=>'wp_'.$o->get_user_id(),'referral_id'=>$r,'amount'=>$o->get_total()]),'headers'=>['Content-Type'=>'application/json'],'timeout'=>5]); }
+        window.KarbaliConfig = { apiKey: '<?php echo esc_js($this->api_key); ?>' };
+        </script>
+        <script async src="<?php echo esc_url($this->tracker_url); ?>" data-api-key="<?php echo esc_attr($this->api_key); ?>"></script><?php }
+    public function track_purchase($oid) {
+        if (empty($this->api_key) || !function_exists('wc_get_order')) return;
+        $order = wc_get_order($oid);
+        if (!$order) return;
+        $user_id = $order->get_user_id() ? 'wp_' . $order->get_user_id() : ($order->get_billing_email() ?: 'order_' . $oid);
+        wp_remote_post($this->api_url, [
+            'body' => wp_json_encode([
+                'api_key' => $this->api_key,
+                'event_type' => 'purchase',
+                'user_id' => $user_id,
+                'client_id' => $this->browser_client_id() ?: null,
+                'referral_id' => $this->browser_referral() ?: null,
+                'amount' => (float) $order->get_total(),
+                'source_url' => home_url('/'),
+            ]),
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Origin' => home_url(),
+                'Referer' => home_url('/'),
+                'X-Karbali-Domain' => wp_parse_url(home_url(), PHP_URL_HOST),
+            ],
+            'timeout' => 10,
+        ]);
+    }
 }
 new KarbaliCommerce();`;
     const zip = new JSZip();
@@ -286,10 +318,16 @@ new KarbaliCommerce();`;
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Add this to your checkout success page:</p>
                 <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs text-foreground/70">
-{`<script src="${trackerScriptUrl}" data-api-key="${apiKey}"></script>
+{`<script>
+  window.KarbaliConfig = { apiKey: "${apiKey}" };
+</script>
+<script async src="${trackerScriptUrl}" data-api-key="${apiKey}"></script>
 <script>
-  // Call after successful payment
-  window.Karbali.track("purchase", {
+  // Bridge the referral visitor to the customer identity.
+  window.Karbali.identify("customer_email_or_id");
+
+  // Call after successful payment.
+  window.Karbali.trackPurchase({
     user_id: "customer_email_or_id",
     amount: orderTotal
   });

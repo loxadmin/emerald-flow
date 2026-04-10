@@ -307,13 +307,14 @@ export default function CreateCampaign() {
 /**
  * Plugin Name: Karbali Ads Tracking
  * Description: Integrates Karbali Ads tracking into your WordPress site.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Karbali Ads
  */
 if (!defined('ABSPATH')) exit;
 class KarbaliTracking {
     private $api_key;
-    private $api_url = 'https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track';
+    private $api_url = '${directTrackUrl}';
+    private $tracker_url = '${trackerScriptUrl}';
     public function __construct() {
         $this->api_key = get_option('karbali_api_key', '');
         add_action('admin_menu', [$this, 'admin_menu']);
@@ -329,14 +330,56 @@ class KarbaliTracking {
         <form method="post" action="options.php"><?php settings_fields('karbali_settings'); ?>
         <table class="form-table"><tr><th>API Key</th><td><input type="text" name="karbali_api_key" value="<?php echo esc_attr(get_option('karbali_api_key')); ?>" class="regular-text" /></td></tr></table>
         <?php submit_button(); ?></form></div><?php }
+    private function browser_client_id() {
+        return isset($_COOKIE['karbali_client_id']) ? sanitize_text_field(wp_unslash($_COOKIE['karbali_client_id'])) : '';
+    }
+    private function browser_referral() {
+        if (isset($_COOKIE['karbali_referral_id'])) return sanitize_text_field(wp_unslash($_COOKIE['karbali_referral_id']));
+        if (isset($_COOKIE['karbali_referral_code'])) return sanitize_text_field(wp_unslash($_COOKIE['karbali_referral_code']));
+        return '';
+    }
+    private function send_event($event_type, $user_id = '', $amount = null) {
+        if (empty($this->api_key)) return;
+        $body = [
+            'api_key' => $this->api_key,
+            'event_type' => $event_type,
+            'user_id' => $user_id ?: null,
+            'client_id' => $this->browser_client_id() ?: null,
+            'referral_id' => $this->browser_referral() ?: null,
+            'amount' => $amount,
+            'source_url' => home_url('/'),
+        ];
+        wp_remote_post($this->api_url, [
+            'body' => wp_json_encode($body),
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Origin' => home_url(),
+                'Referer' => home_url('/'),
+                'X-Karbali-Domain' => wp_parse_url(home_url(), PHP_URL_HOST),
+            ],
+            'timeout' => 10,
+        ]);
+    }
     public function inject_tracking_script() { if (empty($this->api_key)) return; ?>
         <script>
-        (function(){ var p=new URLSearchParams(window.location.search); var r=p.get('ref')||p.get('referral_id'); if(r) document.cookie='karbali_ref='+r+';path=/;max-age=2592000'; })();
-        function karbaliGetRef(){var m=document.cookie.match(/karbali_ref=([^;]+)/);return m?m[1]:null;}
-        window.KarbaliTrack=function(e,u,a){ fetch('<?php echo esc_js($this->api_url); ?>', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({api_key:'<?php echo esc_js($this->api_key); ?>',event_type:e,user_id:u,referral_id:karbaliGetRef(),amount:a||null}) }); };
+        window.KarbaliConfig = { apiKey: '<?php echo esc_js($this->api_key); ?>' };
+        </script>
+        <script async src="<?php echo esc_url($this->tracker_url); ?>" data-api-key="<?php echo esc_attr($this->api_key); ?>"></script>
+        <script>
+        window.KarbaliTrack = window.KarbaliTrack || function(eventName, userId, amount) {
+          if (window.Karbali && typeof window.Karbali.track === 'function') {
+            return window.Karbali.track(eventName, { user_id: userId || null, amount: amount == null ? null : amount });
+          }
+        };
         </script><?php }
-    public function track_signup($uid) { if(empty($this->api_key))return; $r=isset($_COOKIE['karbali_ref'])?sanitize_text_field($_COOKIE['karbali_ref']):null; wp_remote_post($this->api_url,['body'=>json_encode(['api_key'=>$this->api_key,'event_type'=>'signup','user_id'=>'wp_'.$uid,'referral_id'=>$r]),'headers'=>['Content-Type'=>'application/json'],'timeout'=>5]); }
-    public function track_purchase($oid) { if(empty($this->api_key)||!function_exists('wc_get_order'))return; $o=wc_get_order($oid); if(!$o)return; $r=isset($_COOKIE['karbali_ref'])?sanitize_text_field($_COOKIE['karbali_ref']):null; wp_remote_post($this->api_url,['body'=>json_encode(['api_key'=>$this->api_key,'event_type'=>'purchase','user_id'=>'wp_'.$o->get_user_id(),'referral_id'=>$r,'amount'=>$o->get_total()]),'headers'=>['Content-Type'=>'application/json'],'timeout'=>5]); }
+    public function track_signup($uid) { $this->send_event('signup', 'wp_' . $uid, null); }
+    public function track_purchase($oid) {
+        if (empty($this->api_key) || !function_exists('wc_get_order')) return;
+        $order = wc_get_order($oid);
+        if (!$order) return;
+        $user_id = $order->get_user_id() ? 'wp_' . $order->get_user_id() : ($order->get_billing_email() ?: 'order_' . $oid);
+        $this->send_event('purchase', $user_id, (float) $order->get_total());
+    }
 }
 new KarbaliTracking();`;
     const zip = new JSZip();
@@ -351,7 +394,7 @@ new KarbaliTracking();`;
   };
 
   const projectId = "dvkoafztquswcqniwcyf";
-  const trackerScriptUrl = `${window.location.origin}/karbali-tracker.js`;
+  const trackerScriptUrl = "https://result-link.lovable.app/karbali-tracker.js";
   const directTrackUrl = `https://${projectId}.supabase.co/functions/v1/track`;
 
   const milestoneOptions = [
@@ -501,25 +544,28 @@ new KarbaliTracking();`;
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Add this to your website:</p>
                 <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs text-foreground/70">
-{`<script src="${trackerScriptUrl}" data-api-key="${apiKey}"></script>
+{`<script>
+  window.KarbaliConfig = { apiKey: "${apiKey}" };
+</script>
+<script async src="${trackerScriptUrl}" data-api-key="${apiKey}"></script>
 <script>
-  // Auto-tracking is enabled by default for signups & purchases.
-  // For manual tracking, use:
+  // Identify the signed-in user as soon as you know who they are.
+  window.Karbali.identify("user_email_or_id");
 
-  // Track app downloads:
-  window.Karbali.track("download", {});
+  // Track downloads after the referral visitor installs or starts the app.
+  window.Karbali.trackDownload("user_email_or_id");
 
-  // Track signups (after user registers):
-  window.Karbali.track("signup", { user_id: "user_email_or_id" });
+  // Track signups after registration succeeds, including Google/OAuth callbacks.
+  window.Karbali.trackSignup("user_email_or_id");
 
-  // Track purchases (after successful payment):
-  window.Karbali.track("purchase", {
+  // Track purchases after successful payment.
+  window.Karbali.trackPurchase({
     user_id: "user_email_or_id",
     amount: orderTotal
   });
 </script>`}
                 </pre>
-                <p className="text-[11px] text-muted-foreground">Visible integration stays on your Karbali Ads loader script, while the tracker posts securely to your campaign backend.</p>
+                <p className="text-[11px] text-muted-foreground">The loader now persists the referral client ID, bridges it to the eventual signed-in user, and works for direct signup flows plus Google/OAuth callback completions.</p>
               </div>
             )}
             <Button className="w-full" variant="outline" onClick={() => { saveDraft(); setStep(2); }}>I've integrated → Continue to Verify</Button>
