@@ -6,7 +6,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { Plus, BarChart3, ArrowRight, FileEdit, Clock, CheckCircle, XCircle, Play, Filter } from "lucide-react";
+import { Plus, BarChart3, ArrowRight, FileEdit, Clock, CheckCircle, XCircle, Play, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Campaign {
   id: string; name: string; status: string; budget_remaining: number; created_at: string;
@@ -22,16 +23,30 @@ export default function AdsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("all");
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchCampaigns = async () => {
     if (!user) return;
-    const fetchCampaigns = async () => {
-      const { data } = await supabase.from("campaigns").select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false });
-      setCampaigns((data as Campaign[]) || []);
-      setLoading(false);
-    };
-    fetchCampaigns();
-  }, [user]);
+    const { data } = await supabase.from("campaigns").select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false });
+    setCampaigns((data as Campaign[]) || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchCampaigns(); }, [user]);
+
+  const deleteDraft = async (e: React.MouseEvent, campaignId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("Delete this draft campaign? This cannot be undone.")) return;
+    setDeleting(campaignId);
+    // Delete related records first
+    await supabase.from("api_keys").delete().eq("campaign_id", campaignId);
+    await supabase.from("campaign_sources").delete().eq("campaign_id", campaignId);
+    const { error } = await supabase.from("campaigns").delete().eq("id", campaignId);
+    if (error) toast.error(error.message);
+    else { toast.success("Draft deleted"); fetchCampaigns(); }
+    setDeleting(null);
+  };
 
   const filtered = campaigns.filter(c => {
     if (activeTab === "all") return true;
@@ -121,35 +136,43 @@ export default function AdsPage() {
               ) : (
                 <div className="divide-y divide-border">
                   {filtered.map((c) => (
-                    <Link key={c.id} to={c.is_draft ? `/campaigns/create?draft=${c.id}` : `/campaigns/${c.id}`}
-                      className="flex items-center justify-between gap-3 py-4 group">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        {statusIcon(c.status, c.is_draft)}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                              {c.name}
-                            </p>
-                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${statusColor(c.status, c.is_draft)}`}>
-                              {c.is_draft ? "Draft" : c.status}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-3 mt-0.5">
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(c.created_at).toLocaleDateString()}
-                            </span>
-                            {c.target_users > 0 && <span className="text-xs text-muted-foreground">{c.target_users} users</span>}
-                            {c.total_cost > 0 && <span className="text-xs text-muted-foreground">${Number(c.total_cost).toFixed(2)}</span>}
-                            {c.selected_milestones?.length > 0 && (
-                              <span className="text-xs text-muted-foreground capitalize">
-                                {c.selected_milestones.join(", ")}
+                    <div key={c.id} className="flex items-center gap-3 py-4">
+                      <Link to={c.is_draft ? `/campaigns/create?draft=${c.id}` : `/campaigns/${c.id}`}
+                        className="flex items-center justify-between gap-3 flex-1 min-w-0 group">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {statusIcon(c.status, c.is_draft)}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                                {c.name}
+                              </p>
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${statusColor(c.status, c.is_draft)}`}>
+                                {c.is_draft ? "Draft" : c.status}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(c.created_at).toLocaleDateString()}
                               </span>
-                            )}
+                              {c.target_users > 0 && <span className="text-xs text-muted-foreground">{c.target_users} users</span>}
+                              {c.total_cost > 0 && <span className="text-xs text-muted-foreground">${Number(c.total_cost).toFixed(2)}</span>}
+                              {c.selected_milestones?.length > 0 && (
+                                <span className="text-xs text-muted-foreground capitalize">
+                                  {c.selected_milestones.join(", ")}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
-                    </Link>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
+                      </Link>
+                      {c.is_draft && (
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive shrink-0"
+                          disabled={deleting === c.id} onClick={(e) => deleteDraft(e, c.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
