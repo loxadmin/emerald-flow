@@ -24,6 +24,21 @@ interface CategoryChangeReq {
 
 const CHART_COLORS = ["hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)", "hsl(217, 91%, 60%)", "hsl(0, 72%, 50%)"];
 const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: 12 };
+const DRAFT_PLACEHOLDER_NAMES = new Set([
+  "draft campaign",
+  "draft commerce campaign",
+  "external referral - draft",
+]);
+
+const isAdminVisibleCampaign = (campaign: Tables<"campaigns">) => {
+  const normalizedName = String(campaign.name || "").trim().toLowerCase();
+  return (
+    !campaign.is_draft &&
+    !DRAFT_PLACEHOLDER_NAMES.has(normalizedName) &&
+    !normalizedName.startsWith("external referral - draft") &&
+    Number(campaign.total_cost || 0) > 0
+  );
+};
 
 export default function AdminDashboard() {
   const [campaigns, setCampaigns] = useState<CampaignWithProfile[]>([]);
@@ -35,16 +50,15 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     const { data: allCampaigns } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
-    const nonDraftCampaigns = (allCampaigns || []).filter((c: any) => !c.is_draft);
-    const advertiserIds = [...new Set(nonDraftCampaigns.map(c => c.advertiser_id))];
+    const visibleCampaigns = ((allCampaigns || []) as Tables<"campaigns">[]).filter(isAdminVisibleCampaign);
+    const advertiserIds = [...new Set(visibleCampaigns.map(c => c.advertiser_id))];
     const { data: profilesData } = advertiserIds.length > 0
       ? await supabase.from("profiles").select("id, email, full_name").in("id", advertiserIds)
       : { data: [] };
     const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
-    const campaignsWithProfiles = nonDraftCampaigns.map(c => ({ ...c, profiles: profilesMap.get(c.advertiser_id) || null }));
+    const campaignsWithProfiles = visibleCampaigns.map(c => ({ ...c, profiles: profilesMap.get(c.advertiser_id) || null }));
     setCampaigns(campaignsWithProfiles as CampaignWithProfile[]);
 
-    // Fetch stats in parallel
     const [eventsRes, txRes, clicksRes, advertisersRes, walletsRes, dlRes, suRes, puRes] = await Promise.all([
       supabase.from("events").select("*", { count: "exact", head: true }),
       supabase.from("transactions").select("amount"),
@@ -58,7 +72,7 @@ export default function AdminDashboard() {
 
     const totalRevenue = txRes.data?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
     setStats({
-      totalCampaigns: nonDraftCampaigns.length,
+      totalCampaigns: visibleCampaigns.length,
       totalEvents: eventsRes.count || 0,
       totalRevenue,
       totalClicks: clicksRes.count || 0,
@@ -72,7 +86,6 @@ export default function AdminDashboard() {
       { name: "Purchases", value: puRes.count || 0 },
     ]);
 
-    // 30-day trend
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const [{ data: events }, { data: txRecent }, { data: clicksRecent }] = await Promise.all([
       supabase.from("events").select("created_at").gte("created_at", thirtyDaysAgo),
@@ -90,7 +103,6 @@ export default function AdminDashboard() {
     clicksRecent?.forEach(c => { byDay[addDay(c.created_at)].clicks++; });
     setDailyData(Object.values(byDay));
 
-    // Category change requests
     const { data: reqData } = await supabase.from("category_change_requests" as any).select("*").eq("status", "pending").order("created_at", { ascending: false });
     if (reqData && (reqData as any[]).length > 0) {
       const reqs = reqData as any as CategoryChangeReq[];
@@ -116,7 +128,7 @@ export default function AdminDashboard() {
   useEffect(() => { fetchData(); }, []);
 
   const updateCampaignStatus = async (campaignId: string, status: "active" | "pending" | "rejected") => {
-    const { error } = await supabase.from("campaigns").update({ status }).eq("id", campaignId);
+    const { error } = await supabase.from("campaigns").update({ status, is_draft: false }).eq("id", campaignId);
     if (error) { toast.error(error.message); return; }
     toast.success(`Campaign ${status}`);
     if (status === "active") {
@@ -143,7 +155,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const pendingCampaigns = campaigns.filter(c => c.status === "pending");
+  const pendingCampaigns = campaigns.filter(c => c.status === "pending" && Number(c.total_cost || 0) > 0 && (c.integration_verified || c.integration_type === "external_referral"));
 
   return (
     <AdminLayout>
