@@ -55,7 +55,7 @@ export default function AdminBlogs() {
     if (error) {
       toast.error("Failed to fetch blogs");
     } else {
-      setBlogs(data || []);
+      setBlogs((data as unknown as Blog[]) || []);
     }
     setLoading(false);
   };

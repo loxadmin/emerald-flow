@@ -45,7 +45,7 @@ export default function BlogPost() {
     if (error || !data) {
       navigate("/blog");
     } else {
-      setBlog(data);
+      setBlog(data as unknown as Blog);
     }
     setLoading(false);
   };
