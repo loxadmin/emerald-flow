@@ -41,6 +41,10 @@ export type Database = {
       advertiser_categories: {
         Row: {
           advertiser_id: string
+          advertiser_subtype:
+            | Database["public"]["Enums"]["advertiser_subtype"]
+            | null
+          advertiser_type: Database["public"]["Enums"]["advertiser_type"] | null
           category_id: string
           created_at: string
           id: string
@@ -48,6 +52,12 @@ export type Database = {
         }
         Insert: {
           advertiser_id: string
+          advertiser_subtype?:
+            | Database["public"]["Enums"]["advertiser_subtype"]
+            | null
+          advertiser_type?:
+            | Database["public"]["Enums"]["advertiser_type"]
+            | null
           category_id: string
           created_at?: string
           id?: string
@@ -55,6 +65,12 @@ export type Database = {
         }
         Update: {
           advertiser_id?: string
+          advertiser_subtype?:
+            | Database["public"]["Enums"]["advertiser_subtype"]
+            | null
+          advertiser_type?:
+            | Database["public"]["Enums"]["advertiser_type"]
+            | null
           category_id?: string
           created_at?: string
           id?: string
@@ -129,6 +145,38 @@ export type Database = {
           },
         ]
       }
+      campaign_questions: {
+        Row: {
+          campaign_id: string
+          correct_answer: boolean
+          created_at: string
+          id: string
+          question: string
+        }
+        Insert: {
+          campaign_id: string
+          correct_answer: boolean
+          created_at?: string
+          id?: string
+          question: string
+        }
+        Update: {
+          campaign_id?: string
+          correct_answer?: boolean
+          created_at?: string
+          id?: string
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_questions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_sources: {
         Row: {
           campaign_id: string
@@ -166,6 +214,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          ad_type: Database["public"]["Enums"]["advertiser_type"] | null
           advertiser_id: string
           budget_remaining: number
           created_at: string
@@ -184,6 +233,7 @@ export type Database = {
           website_id: string | null
         }
         Insert: {
+          ad_type?: Database["public"]["Enums"]["advertiser_type"] | null
           advertiser_id: string
           budget_remaining?: number
           created_at?: string
@@ -202,6 +252,7 @@ export type Database = {
           website_id?: string | null
         }
         Update: {
+          ad_type?: Database["public"]["Enums"]["advertiser_type"] | null
           advertiser_id?: string
           budget_remaining?: number
           created_at?: string
@@ -352,6 +403,59 @@ export type Database = {
         }
         Relationships: []
       }
+      creative_campaigns: {
+        Row: {
+          advertiser_id: string
+          campaign_id: string
+          created_at: string
+          id: string
+          media_link: string
+          media_type: string
+          min_interactions: number
+          placement_fee: number
+          rate_per_interaction: number
+          transcription: string | null
+          transcription_confirmed: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          advertiser_id: string
+          campaign_id: string
+          created_at?: string
+          id?: string
+          media_link: string
+          media_type: string
+          min_interactions?: number
+          placement_fee?: number
+          rate_per_interaction?: number
+          transcription?: string | null
+          transcription_confirmed?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          advertiser_id?: string
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          media_link?: string
+          media_type?: string
+          min_interactions?: number
+          placement_fee?: number
+          rate_per_interaction?: number
+          transcription?: string | null
+          transcription_confirmed?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_campaigns_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           amount: number | null
@@ -452,6 +556,57 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offerwall_interactions: {
+        Row: {
+          attempt_number: number
+          campaign_id: string
+          charge_amount: number
+          created_at: string
+          external_user_id: string
+          id: string
+          is_correct: boolean
+          points_earned: number
+          question_id: string
+        }
+        Insert: {
+          attempt_number?: number
+          campaign_id: string
+          charge_amount?: number
+          created_at?: string
+          external_user_id: string
+          id?: string
+          is_correct: boolean
+          points_earned?: number
+          question_id: string
+        }
+        Update: {
+          attempt_number?: number
+          campaign_id?: string
+          charge_amount?: number
+          created_at?: string
+          external_user_id?: string
+          id?: string
+          is_correct?: boolean
+          points_earned?: number
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offerwall_interactions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offerwall_interactions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_questions"
             referencedColumns: ["id"]
           },
         ]
@@ -753,6 +908,15 @@ export type Database = {
       }
     }
     Enums: {
+      advertiser_subtype:
+        | "musician"
+        | "youtuber"
+        | "app"
+        | "website"
+        | "ecommerce"
+        | "service"
+        | "real_estate"
+      advertiser_type: "engagement" | "performance" | "commerce"
       app_role: "admin" | "user"
       campaign_status: "pending" | "active" | "rejected"
       event_type: "download" | "signup" | "purchase"
@@ -884,6 +1048,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      advertiser_subtype: [
+        "musician",
+        "youtuber",
+        "app",
+        "website",
+        "ecommerce",
+        "service",
+        "real_estate",
+      ],
+      advertiser_type: ["engagement", "performance", "commerce"],
       app_role: ["admin", "user"],
       campaign_status: ["pending", "active", "rejected"],
       event_type: ["download", "signup", "purchase"],
