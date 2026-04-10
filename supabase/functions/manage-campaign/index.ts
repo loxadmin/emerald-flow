@@ -207,6 +207,64 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: true, code });
     }
 
+    if (action === "generate_questions") {
+      if (!campaign_id) return jsonResponse({ error: "Missing campaign_id" }, 400);
+      if (!isAdmin) return jsonResponse({ error: "Admin only" }, 403);
+
+      // Get creative campaign transcription
+      const { data: creative } = await supabase
+        .from("creative_campaigns")
+        .select("transcription, media_type")
+        .eq("campaign_id", campaign_id)
+        .single();
+
+      if (!creative?.transcription) {
+        return jsonResponse({ error: "No transcription found" }, 400);
+      }
+
+      // Auto-generate 50 yes/no questions from the transcription
+      const lines = creative.transcription.split(/[.!?\n]+/).filter((l: string) => l.trim().length > 10);
+      const questions: { campaign_id: string; question: string; correct_answer: boolean }[] = [];
+      const contentType = creative.media_type === "music" ? "song" : "video";
+
+      // Generate true questions from actual content
+      for (let i = 0; i < Math.min(25, lines.length); i++) {
+        const line = lines[i].trim();
+        questions.push({
+          campaign_id,
+          question: `Does this ${contentType} mention "${line.slice(0, 50)}${line.length > 50 ? "..." : ""}"?`,
+          correct_answer: true,
+        });
+      }
+
+      // Generate false questions
+      const falsePrompts = [
+        "a spaceship going to Mars", "cooking pasta at midnight", "swimming with dolphins",
+        "building a sandcastle", "riding a unicycle", "painting the Eiffel Tower",
+        "playing chess with a robot", "dancing in the rain with penguins", "flying a kite on the moon",
+        "surfing on clouds", "racing snails", "reading books underwater",
+        "climbing Mount Everest barefoot", "singing opera to flowers", "driving a submarine",
+        "baking cookies on a volcano", "teaching cats to code", "juggling flamingos",
+        "writing letters to aliens", "knitting sweaters for trees", "skateboarding on rainbows",
+        "fishing in the desert", "gardening on Jupiter", "running a marathon backwards",
+        "photographing invisible things",
+      ];
+
+      for (let i = 0; questions.length < 50 && i < falsePrompts.length; i++) {
+        questions.push({
+          campaign_id,
+          question: `Does this ${contentType} talk about ${falsePrompts[i]}?`,
+          correct_answer: false,
+        });
+      }
+
+      // Insert questions
+      const { error: qErr } = await supabase.from("campaign_questions").insert(questions);
+      if (qErr) throw qErr;
+
+      return jsonResponse({ success: true, count: questions.length });
+    }
+
     return jsonResponse({ error: "Unknown action" }, 400);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";

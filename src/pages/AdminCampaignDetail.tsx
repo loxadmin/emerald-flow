@@ -63,9 +63,17 @@ export default function AdminCampaignDetail() {
     const { error } = await supabase.from("campaigns").update({ status }).eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success(`Campaign ${status}`);
-    if (status === "active" && referrals.length === 0) {
-      const code = `ref_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
-      await supabase.functions.invoke("manage-campaign", { body: { action: "create_referral", campaign_id: id, code } });
+    if (status === "active") {
+      // Auto-create referral link
+      if (referrals.length === 0) {
+        const code = `ref_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+        await supabase.functions.invoke("manage-campaign", { body: { action: "create_referral", campaign_id: id, code } });
+      }
+      // For engagement campaigns, auto-generate questions
+      if ((campaign as any)?.ad_type === "engagement") {
+        await supabase.functions.invoke("manage-campaign", { body: { action: "generate_questions", campaign_id: id } });
+        toast.success("Quiz questions auto-generated!");
+      }
     }
     fetchData();
   };
@@ -96,6 +104,9 @@ export default function AdminCampaignDetail() {
                 ))}
                 {(campaign as any).integration_verified && <Badge variant="outline" className="text-xs border-primary/20 text-primary">✓ Verified</Badge>}
                 <Badge variant="outline" className="text-xs capitalize border-border">{(campaign as any).integration_type || "custom"}</Badge>
+                {(campaign as any).ad_type && (
+                  <Badge variant="outline" className="text-xs capitalize border-amber-500/20 text-amber-600">{(campaign as any).ad_type} ads</Badge>
+                )}
               </div>
             </div>
             <div className="flex gap-2">
