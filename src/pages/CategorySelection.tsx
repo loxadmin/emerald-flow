@@ -5,10 +5,11 @@ import { useAuth } from "@/lib/auth";
 import { GlassButton } from "@/components/ui/glass-button";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from "@/components/ui/glass-card";
 import FluidCanvas from "@/components/FluidCanvas";
-import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
+import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
-import { CheckCircle, Lock, Loader2, Music, MonitorPlay, ShoppingBag, Globe, Smartphone, Building2, Wrench, Home, ArrowLeft } from "lucide-react";
+import { CheckCircle, Lock, Loader2, Music, MonitorPlay, ShoppingBag, Globe, Smartphone, Wrench, Home, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 type AdType = "engagement" | "performance" | "commerce";
 type Subtype = "musician" | "youtuber" | "app" | "website" | "ecommerce" | "service" | "real_estate";
@@ -72,13 +73,14 @@ interface Category {
 export default function CategorySelection() {
   const { user, refreshAccessState, hasCategory } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"type" | "subtype" | "subcategory">("type");
+  const [expandedType, setExpandedType] = useState<AdType | null>(null);
   const [selectedType, setSelectedType] = useState<AdType | null>(null);
   const [selectedSubtype, setSelectedSubtype] = useState<Subtype | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showSubcategoryPicker, setShowSubcategoryPicker] = useState(false);
 
   // Category change mode
   const [isChangeMode, setIsChangeMode] = useState(false);
@@ -106,16 +108,28 @@ export default function CategorySelection() {
     fetchCategories();
   }, [user, hasCategory]);
 
-  // For performance ads, we show existing subcategories from the categories table
   const performanceSubcategories = categories.filter(
     (c) => !["Engagement Ads", "Performance Ads", "Commerce Ads"].includes(c.name)
   );
+
+  const handleSubtypeSelect = (type: AdType, subtype: Subtype) => {
+    setSelectedType(type);
+    setSelectedSubtype(subtype);
+    setSelectedCategoryId(null);
+    setShowSubcategoryPicker(false);
+
+    if (type === "performance") {
+      setShowSubcategoryPicker(true);
+    } else {
+      const topCat = categories.find((c) => c.name === AD_TYPES.find((t) => t.id === type)?.label);
+      setSelectedCategoryId(topCat?.id || null);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!user || !selectedType || !selectedSubtype) return;
     setSubmitting(true);
 
-    // Find or use the matching top-level category
     const topLevelName = AD_TYPES.find((t) => t.id === selectedType)?.label || "";
     let categoryId = selectedCategoryId;
 
@@ -154,7 +168,6 @@ export default function CategorySelection() {
       return;
     }
 
-    // First time selection
     const category = categories.find((c) => c.id === categoryId);
     const status = category?.is_active ? "active" : "waiting_list";
     const { error } = await supabase.from("advertiser_categories").insert({
@@ -182,7 +195,12 @@ export default function CategorySelection() {
     setSubmitting(false);
   };
 
-  const selectedTypeData = AD_TYPES.find((t) => t.id === selectedType);
+  const isSelected = (type: AdType, subtype: Subtype) =>
+    selectedType === type && selectedSubtype === subtype;
+
+  const canSubmit =
+    (selectedType && selectedSubtype && selectedType !== "performance") ||
+    (selectedType === "performance" && selectedCategoryId);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 bg-background">
@@ -193,25 +211,13 @@ export default function CategorySelection() {
           <h1 className="text-3xl font-bold">
             <span className="text-gradient">{isChangeMode ? "Change Advertiser Type" : "What type of advertiser are you?"}</span>
           </h1>
-          <p className="mt-2 text-muted-foreground">
-            {step === "type" && "Select the category that best describes your business"}
-            {step === "subtype" && `Choose your specific type within ${selectedTypeData?.label}`}
-            {step === "subcategory" && "Select your business subcategory"}
-          </p>
+          <p className="mt-2 text-muted-foreground">Select your category and subcategory below</p>
         </div>
 
         <GlassCard variant="strong">
           <GlassCardHeader>
-            <GlassCardTitle>
-              {step === "type" && "Advertiser Type"}
-              {step === "subtype" && selectedTypeData?.label}
-              {step === "subcategory" && "Business Subcategory"}
-            </GlassCardTitle>
-            <GlassCardDescription>
-              {step === "type" && "This determines your campaign features and pricing"}
-              {step === "subtype" && "Select your specific role"}
-              {step === "subcategory" && "Choose the category closest to your business"}
-            </GlassCardDescription>
+            <GlassCardTitle>Choose Your Category</GlassCardTitle>
+            <GlassCardDescription>Click a category to expand and select your subcategory</GlassCardDescription>
           </GlassCardHeader>
           <GlassCardContent>
             {loading ? (
@@ -219,119 +225,97 @@ export default function CategorySelection() {
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
             ) : (
-              <>
-                {/* Step 1: Choose Ad Type */}
-                {step === "type" && (
-                  <MotionStagger className="grid gap-3">
-                    {AD_TYPES.map((type) => (
-                      <MotionItem key={type.id}>
-                        <button
-                          onClick={() => {
-                            setSelectedType(type.id);
-                            setSelectedSubtype(null);
-                            setSelectedCategoryId(null);
-                            setStep("subtype");
-                          }}
-                          className={`w-full text-left rounded-xl border p-5 transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 border-border/50`}
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                              <type.icon className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-medium text-foreground">{type.label}</p>
-                              <p className="mt-1 text-sm text-muted-foreground">{type.description}</p>
-                            </div>
+              <div className="space-y-3">
+                {AD_TYPES.map((type) => (
+                  <Collapsible
+                    key={type.id}
+                    open={expandedType === type.id}
+                    onOpenChange={(open) => setExpandedType(open ? type.id : null)}
+                  >
+                    <CollapsibleTrigger asChild>
+                      <button className={`w-full text-left rounded-xl border p-5 transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 ${
+                        expandedType === type.id ? "border-primary/40 bg-primary/5" : "border-border/50"
+                      }`}>
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                            <type.icon className="h-5 w-5 text-primary" />
                           </div>
-                        </button>
-                      </MotionItem>
-                    ))}
-                  </MotionStagger>
-                )}
-
-                {/* Step 2: Choose Subtype */}
-                {step === "subtype" && selectedTypeData && (
-                  <>
-                    <button
-                      onClick={() => { setStep("type"); setSelectedType(null); }}
-                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-                    >
-                      <ArrowLeft className="h-4 w-4" /> Back
-                    </button>
-                    <MotionStagger className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-                      {selectedTypeData.subcategories.map((sub) => (
-                        <MotionItem key={sub.id}>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground uppercase tracking-wide">{type.label}</p>
+                            <p className="mt-0.5 text-sm text-muted-foreground">{type.description}</p>
+                          </div>
+                          <ChevronDown className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                            expandedType === type.id ? "rotate-180" : ""
+                          }`} />
+                        </div>
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-2 ml-4 space-y-2 border-l-2 border-primary/20 pl-4">
+                        {type.subcategories.map((sub) => (
                           <button
-                            onClick={() => {
-                              setSelectedSubtype(sub.id);
-                              // For performance ads, show subcategory picker from existing categories
-                              if (selectedType === "performance") {
-                                setStep("subcategory");
-                              } else {
-                                // For engagement & commerce, find the top-level category and proceed
-                                const topCat = categories.find((c) => c.name === selectedTypeData.label);
-                                setSelectedCategoryId(topCat?.id || null);
-                              }
-                            }}
-                            className="w-full text-left rounded-xl border p-4 transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 border-border/50"
-                          >
-                            <div className="flex items-start gap-3">
-                              <sub.icon className="h-5 w-5 text-primary mt-0.5" />
-                              <div>
-                                <p className="font-medium text-foreground">{sub.label}</p>
-                                <p className="mt-0.5 text-sm text-muted-foreground">{sub.description}</p>
-                              </div>
-                            </div>
-                          </button>
-                        </MotionItem>
-                      ))}
-                    </MotionStagger>
-                  </>
-                )}
-
-                {/* Step 3: Subcategory for performance ads */}
-                {step === "subcategory" && selectedType === "performance" && (
-                  <>
-                    <button
-                      onClick={() => { setStep("subtype"); setSelectedSubtype(null); }}
-                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-                    >
-                      <ArrowLeft className="h-4 w-4" /> Back
-                    </button>
-                    <MotionStagger className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-                      {performanceSubcategories.filter((c) => c.id !== currentCategoryId).map((cat) => (
-                        <MotionItem key={cat.id}>
-                          <button
-                            onClick={() => setSelectedCategoryId(cat.id)}
-                            className={`w-full text-left rounded-xl border p-4 transition-all duration-200 ${
-                              selectedCategoryId === cat.id
-                                ? "border-primary/50 bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
-                                : "border-border/50 hover:border-border hover:bg-accent/5"
+                            key={sub.id}
+                            onClick={() => handleSubtypeSelect(type.id, sub.id)}
+                            className={`w-full text-left rounded-lg border p-3 transition-all duration-200 ${
+                              isSelected(type.id, sub.id)
+                                ? "border-primary/50 bg-primary/10 shadow-[0_0_15px_hsl(var(--primary)/0.1)]"
+                                : "border-border/50 hover:border-primary/20 hover:bg-accent/5"
                             }`}
                           >
-                            <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <sub.icon className={`h-4 w-4 ${isSelected(type.id, sub.id) ? "text-primary" : "text-muted-foreground"}`} />
                               <div>
-                                <p className="font-medium text-foreground">{cat.name}</p>
-                                {cat.description && <p className="mt-1 text-sm text-muted-foreground">{cat.description}</p>}
+                                <p className="font-medium text-foreground text-sm">{sub.label}</p>
+                                <p className="text-xs text-muted-foreground">{sub.description}</p>
                               </div>
-                              <div className="ml-2 mt-0.5">
-                                {cat.is_active ? (
-                                  <CheckCircle className={`h-5 w-5 ${selectedCategoryId === cat.id ? "text-primary" : "text-muted-foreground/30"}`} />
-                                ) : (
-                                  <Lock className="h-5 w-5 text-amber-500" />
-                                )}
-                              </div>
+                              {isSelected(type.id, sub.id) && (
+                                <CheckCircle className="ml-auto h-4 w-4 text-primary shrink-0" />
+                              )}
                             </div>
-                            {!cat.is_active && <p className="mt-2 text-xs text-amber-500">Requires payment activation</p>}
                           </button>
-                        </MotionItem>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+
+                {/* Performance subcategory picker */}
+                {showSubcategoryPicker && selectedType === "performance" && (
+                  <div className="mt-4 rounded-xl border border-border/50 p-4">
+                    <p className="text-sm font-medium text-foreground mb-3">Select your business subcategory</p>
+                    <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+                      {performanceSubcategories.filter((c) => c.id !== currentCategoryId).map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => setSelectedCategoryId(cat.id)}
+                          className={`w-full text-left rounded-lg border p-3 transition-all duration-200 ${
+                            selectedCategoryId === cat.id
+                              ? "border-primary/50 bg-primary/10 shadow-[0_0_15px_hsl(var(--primary)/0.1)]"
+                              : "border-border/50 hover:border-border hover:bg-accent/5"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium text-foreground text-sm">{cat.name}</p>
+                              {cat.description && <p className="mt-0.5 text-xs text-muted-foreground">{cat.description}</p>}
+                            </div>
+                            <div className="ml-2 mt-0.5">
+                              {cat.is_active ? (
+                                <CheckCircle className={`h-4 w-4 ${selectedCategoryId === cat.id ? "text-primary" : "text-muted-foreground/30"}`} />
+                              ) : (
+                                <Lock className="h-4 w-4 text-amber-500" />
+                              )}
+                            </div>
+                          </div>
+                          {!cat.is_active && <p className="mt-1 text-xs text-amber-500">Requires payment activation</p>}
+                        </button>
                       ))}
-                    </MotionStagger>
-                  </>
+                    </div>
+                  </div>
                 )}
 
                 {/* Change mode reason */}
-                {isChangeMode && (selectedCategoryId || (selectedType && selectedSubtype && selectedType !== "performance")) && (
+                {isChangeMode && canSubmit && (
                   <div className="mt-4 space-y-1.5">
                     <label className="text-sm font-medium text-foreground">Reason for change *</label>
                     <textarea
@@ -345,8 +329,7 @@ export default function CategorySelection() {
                 )}
 
                 {/* Submit button */}
-                {((selectedType && selectedSubtype && selectedType !== "performance") ||
-                  (selectedType === "performance" && selectedCategoryId)) && (
+                {canSubmit && (
                   <div className="mt-6">
                     <GlassButton
                       variant="glow"
@@ -364,18 +347,18 @@ export default function CategorySelection() {
                     </GlassButton>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </GlassCardContent>
         </GlassCard>
 
-        {(isChangeMode || step !== "type") && (
+        {isChangeMode && (
           <div className="mt-4 text-center">
             <button
-              onClick={() => isChangeMode ? navigate("/dashboard") : setStep("type")}
+              onClick={() => navigate("/dashboard")}
               className="text-sm text-muted-foreground hover:text-foreground underline"
             >
-              ← {isChangeMode ? "Back to Dashboard" : "Start Over"}
+              ← Back to Dashboard
             </button>
           </div>
         )}
