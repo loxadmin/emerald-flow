@@ -117,6 +117,21 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Forbidden" }, 403);
       }
 
+      const normalizedName = String(campaign.name || "").trim().toLowerCase();
+      if (
+        !normalizedName ||
+        normalizedName === "draft campaign" ||
+        normalizedName === "draft commerce campaign" ||
+        normalizedName === "external referral - draft" ||
+        normalizedName.startsWith("external referral - draft")
+      ) {
+        return jsonResponse({ error: "Campaign name is incomplete" }, 400);
+      }
+
+      if (campaign.integration_type !== "external_referral" && !campaign.integration_verified) {
+        return jsonResponse({ error: "Verify integration before submitting" }, 400);
+      }
+
       const totalCost = Number(campaign.total_cost);
       if (totalCost <= 0) {
         return jsonResponse({ error: "Campaign has no cost configured" }, 400);
