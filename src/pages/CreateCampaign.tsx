@@ -21,6 +21,7 @@ const SALE_FLAT_FEE = 1;
 
 export default function CreateCampaign() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, walletActivated } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -105,36 +106,34 @@ export default function CreateCampaign() {
       const { data: w } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
       if (w) setWalletBalance(Number(w.balance));
 
-      // Check for existing draft campaign and resume
-      const { data: draftCampaign } = await supabase.from("campaigns")
-        .select("*")
-        .eq("advertiser_id", user.id)
-        .eq("is_draft", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Only resume a draft if explicitly linked via ?draft=<id>
+      const draftId = searchParams.get("draft");
+      if (draftId) {
+        const { data: draftCampaign } = await supabase.from("campaigns")
+          .select("*")
+          .eq("id", draftId)
+          .eq("advertiser_id", user.id)
+          .eq("is_draft", true)
+          .maybeSingle();
 
-      if (draftCampaign) {
-        setCampaignId(draftCampaign.id);
-        setCampaignName(draftCampaign.name === "Draft Campaign" ? "" : draftCampaign.name);
-        setTargetUsers(String(draftCampaign.target_users || 100));
-        setMilestones(draftCampaign.selected_milestones || []);
-        setIntegrationType((draftCampaign.integration_type as "custom" | "wordpress") || "custom");
-        setVerified(draftCampaign.integration_verified || false);
-        if (draftCampaign.website_id) setSelectedWebsiteId(draftCampaign.website_id);
+        if (draftCampaign) {
+          setCampaignId(draftCampaign.id);
+          setCampaignName(draftCampaign.name === "Draft Campaign" ? "" : draftCampaign.name);
+          setTargetUsers(String(draftCampaign.target_users || 100));
+          setMilestones(draftCampaign.selected_milestones || []);
+          setIntegrationType((draftCampaign.integration_type as "custom" | "wordpress") || "custom");
+          setVerified(draftCampaign.integration_verified || false);
+          if (draftCampaign.website_id) setSelectedWebsiteId(draftCampaign.website_id);
 
-        // Load API key for this draft
-        const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", draftCampaign.id).limit(1);
-        if (keys && keys.length > 0) {
-          setApiKey(keys[0].key);
-          // Determine step based on progress
-          if (draftCampaign.integration_verified) setStep(3);
-          else if (keys[0].key) setStep(1);
+          const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", draftCampaign.id).limit(1);
+          if (keys && keys.length > 0) {
+            setApiKey(keys[0].key);
+            if (draftCampaign.integration_verified) setStep(3);
+            else if (keys[0].key) setStep(1);
+          }
         }
-        setDraftLoaded(true);
-      } else {
-        setDraftLoaded(true);
       }
+      setDraftLoaded(true);
     };
     fetchData();
   }, [user]);
