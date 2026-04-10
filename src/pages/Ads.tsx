@@ -121,7 +121,7 @@ export default function AdsPage() {
               ) : (
                 <div className="divide-y divide-border">
                   {filtered.map((c) => (
-                    <Link key={c.id} to={c.is_draft ? "/campaigns/create" : `/campaigns/${c.id}`}
+                    <Link key={c.id} to={c.is_draft ? `/campaigns/create?draft=${c.id}` : `/campaigns/${c.id}`}
                       className="flex items-center justify-between gap-3 py-4 group">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         {statusIcon(c.status, c.is_draft)}
