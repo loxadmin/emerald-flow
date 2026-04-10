@@ -10,8 +10,8 @@ export default function Docs() {
   const { session } = useAuth();
   const brandedBaseUrl = "https://advertiser.karbali.com";
   const referralUrl = `${brandedBaseUrl}/r/ref_xxxxxxxx`;
-  const trackerScriptUrl = "https://result-link.lovable.app/karbali-tracker.js";
-  const trackUrl = "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track";
+  const trackerScriptUrl = `${brandedBaseUrl}/karbali-tracker.js`;
+  const trackUrl = `${brandedBaseUrl}/api/track`;
 
   return (
     <div className="relative min-h-screen bg-background">
