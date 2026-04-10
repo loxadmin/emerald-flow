@@ -39,6 +39,7 @@ import WhatIsKarbali from "./pages/WhatIsKarbali";
 import UseCases from "./pages/UseCases";
 import Comparison from "./pages/Comparison";
 import ReferralRedirect from "./pages/ReferralRedirect";
+import ExtensionDownload from "./pages/ExtensionDownload";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
