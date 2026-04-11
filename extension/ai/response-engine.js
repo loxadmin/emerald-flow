@@ -1,11 +1,6 @@
 /**
  * Karbali Response Engine — Built from scratch
- * 
- * Generates contextual responses using:
- * 1. Template-based response system for known intents
- * 2. Dynamic response composition based on context + intent + state
- * 3. Savings narrative framing
- * 4. AI gateway fallback only for complex/ambiguous queries
+ * Nigerian personality, short & goofy responses
  */
 
 const KarbaliResponseEngine = (function () {
@@ -13,134 +8,129 @@ const KarbaliResponseEngine = (function () {
 
   const INTENTS = KarbaliIntentClassifier.INTENTS;
 
-  // ── Response Templates ────────────────────────────
-  // Each intent has multiple templates, randomly selected for variety
-  // Placeholders: {product}, {domain}, {category}, {points}, {price}, {query}, {savings}
-
   const TEMPLATES = {
     [INTENTS.GREETING]: {
       responses: [
-        "Hey there! 👋 I'm your Karbali AI assistant. I help you find savings while you browse. What can I help you with?",
-        "Hi! Welcome to Karbali AI 🌟 I'm here to help you save money while you shop online. Ask me anything!",
-        "Hello! 😊 Ready to help you maximize your savings. What are you looking for today?",
+        "Omo, welcome! 👋 I be your Karbali savings guy. Wetin you dey find today?",
+        "Hey hey! Na your boy Karbali AI dey here. Make we save money together 🔥",
+        "What's good! I dey here to make sure your money no waste. Ask me anything!",
       ],
     },
 
     [INTENTS.HELP]: {
       responses: [
-        "I can help you with:\n\n💰 **Check savings** — See if you're earning on this site\n🔍 **Find partners** — Discover Karbali merchant partners\n⚖️ **Compare options** — Help you choose the best deal\n🛒 **Checkout assist** — Verify you're earning savings at checkout\n\nJust tell me what you need!",
-        "Here's what I do best:\n\n• Detect savings opportunities while you browse\n• Find Karbali partner stores for what you're shopping\n• Help compare products and prices\n• Make sure you earn points at checkout\n\nWhat would you like help with?",
+        "No wahala, I fit help with:\n\n💰 **Check savings** — You dey earn here?\n🔍 **Find partners** — Where savings dey\n⚖️ **Compare** — Which one beta pass?\n🛒 **Checkout** — Make sure you dey earn\n\nWetin you want?",
+        "Abeg see wetin I fit do:\n\n• Detect savings opportunity as you browse\n• Find Karbali partner stores\n• Compare products & prices\n• Make sure you earn points for checkout\n\nJust talk to me!",
       ],
     },
 
     [INTENTS.SHOPPING]: {
       noPartner: [
-        "I see you're looking for {category} products! Let me check if there are Karbali partners that could help you save on this. Would you like me to search?",
-        "Shopping for {category}? 🛍️ I can find Karbali partner stores where you'd earn savings on similar products. Want me to look?",
-        "Looking to buy something in {category}? Let me see which Karbali partners offer savings on this type of purchase!",
+        "You dey shop for {category}? 🛍️ Make I check if Karbali partners get savings for this kain thing!",
+        "Omo, {category} shopping! Let me find where your savings go fat pass. Want?",
+        "Looking for {category}? Abeg hold on, make I check which Karbali partner fit save you money!",
       ],
       withPartner: [
-        "Great news! 🎉 This is a Karbali partner site. You can earn up to **{points} points** on your purchase here. That's real savings added to your balance!",
-        "You're on a Karbali partner site! 💰 This purchase could earn you **{points} points**. Make sure to complete your purchase to lock in those savings!",
+        "Ehen! 🎉 Na Karbali partner site be this o. You fit earn **{points} points** here. Chop life!",
+        "Bros/Sis, you don land correct site! 💰 **{points} points** dey wait for you if you buy here!",
       ],
       withProduct: [
-        "I see you're looking at **{product}**! {partnerMsg} Want me to find the best savings options?",
-        "Interested in **{product}**? {partnerMsg} I can help you get the most value!",
+        "You dey eye **{product}**? {partnerMsg} Want me find beta savings options?",
+        "**{product}** abi? {partnerMsg} Make I help you get maximum value! 🔥",
       ],
     },
 
     [INTENTS.COMPARISON]: {
       responses: [
-        "I'd love to help you compare! Here's what I can check:\n\n🏷️ Which option has better Karbali savings\n✅ Which stores are verified partners\n💰 Where you'd earn more points\n\nWhat are you comparing?",
-        "Let me help with that comparison! ⚖️ I can show you which options give you the best Karbali savings. Tell me more about what you're choosing between.",
+        "Oya drop the options! ⚖️ Make I tell you where your Karbali savings go fat pass 😂",
+        "Compare ke? Na my specialty! Tell me wetin you dey choose between, make I check savings for each.",
       ],
       withProduct: [
-        "Looking at **{product}**? I can help you compare this with similar options on Karbali partner sites where you'd earn savings. Want me to check?",
+        "You dey look **{product}**? Make I compare am with similar things wey go give you more Karbali points!",
       ],
     },
 
     [INTENTS.CHECKOUT]: {
       isPartner: [
-        "🎉 Great news! You're checking out on a Karbali partner site. You're earning **{points} points** on this purchase — that's being added to your savings balance automatically!",
-        "✅ Savings confirmed! This checkout will earn you **{points} points** in your Karbali account. Enjoy your purchase!",
+        "Oya buy am! 🎉 Na Karbali partner site — **{points} points** dey enter your account. Sharp sharp!",
+        "✅ Confirmed! This checkout go give you **{points} points**. Enjoy your purchase, baller! 💰",
       ],
       notPartner: [
-        "⚠️ This site isn't currently a Karbali partner, so you won't earn savings on this purchase. Want me to find partner alternatives where you could earn points on the same product?",
-        "Heads up — you're not earning Karbali savings on this purchase. I can show you partner stores that sell similar products where you'd earn points. Interested?",
+        "Wahala! ⚠️ This site no be Karbali partner o. You no go earn savings. Want make I find partner alternatives?",
+        "Heads up — no Karbali savings here o. But I fit show you partner stores wey sell the same thing. Interested?",
       ],
       generic: [
-        "Looks like you're about to check out! 💰 Let me verify if you're earning Karbali savings on this purchase...",
+        "Omo you dey checkout! 💰 Make I verify say you dey earn Karbali savings on this purchase sharp sharp...",
       ],
     },
 
     [INTENTS.SAVINGS_CHECK]: {
       isPartner: [
-        "✅ This site is a Karbali partner! You can earn **{points} points** (≈ ₦{savings}) on eligible purchases here. Your savings are looking good! 🌟",
-        "Good news! 💰 You're on a Karbali partner site. Eligible purchases here earn you **{points} points**. Keep shopping smart!",
+        "✅ Na Karbali partner site be this! **{points} points** (≈ ₦{savings}) dey available. Your savings dey grow! 🌟",
+        "Good news! 💰 Karbali partner site. You fit earn **{points} points** here. Money dey move!",
       ],
       notPartner: [
-        "This site isn't a Karbali partner yet, so no savings are available here. But I can find partner alternatives! Want me to look?",
-        "No savings available on this site currently. 😔 But Karbali has many partner stores — want me to find ones related to what you're browsing?",
+        "This site no dey Karbali network yet o. But I fit find partner alternatives! Want?",
+        "No savings here for now 😔 But Karbali get plenty partners — make I find some?",
       ],
     },
 
     [INTENTS.PARTNER_SEARCH]: {
       responses: [
-        "I'll look for Karbali partner stores for you! 🔍 Our network includes verified merchants across fashion, electronics, food, and more. What type of store are you looking for?",
-        "Let me search our partner network! Karbali has verified merchants where every purchase earns you savings. What category interests you?",
+        "Make I search our partner network! 🔍 We get verified merchants for fashion, electronics, food, everything. Wetin you dey find?",
+        "Oya, wetin you want buy? Make I check which Karbali partners fit hook you up with savings!",
       ],
       withCategory: [
-        "Looking for {category} partners? Let me check our network for verified {category} merchants where you can earn savings! 🔍",
-        "I can find Karbali partner stores in {category}! These are verified merchants where your purchases earn real points. Let me search...",
+        "You wan find {category} partners? Abeg hold on, make I check our network 🔍",
+        "Looking for {category}? Say less! Make I find Karbali partners wey go save you money!",
       ],
     },
 
     [INTENTS.PRICE_CHECK]: {
       responses: [
-        "I can help with pricing! While I can't check exact prices across all stores, I can tell you which Karbali partners offer savings on what you're looking for. That effectively reduces your cost! Want me to check?",
-        "Looking for better prices? 💡 The best way to save is through Karbali partners — your purchases earn points that translate to real savings. Let me find options for you!",
+        "Price check? 💡 I fit show you Karbali partners where you go earn points — na like free discount be that!",
+        "Looking for better price? The real hack na to buy from Karbali partners — you earn savings on top! Want me check?",
       ],
       withProduct: [
-        "Looking at **{product}** for {price}? I can check if there are Karbali partners offering this where you'd earn savings on top! That's like getting a discount 💰",
+        "**{product}** for {price}? Omo, make I check if Karbali partners get this — your points go reduce the cost! 💰",
       ],
     },
 
     [INTENTS.RESEARCH]: {
       isPartner: [
-        "This is a verified Karbali partner site ✅ — that means it's part of our trusted merchant network. You can shop here with confidence and earn savings!",
-        "Good question! This site is a **Karbali verified partner** ✅ which means it meets our standards and your purchases here earn savings points.",
+        "Na verified Karbali partner ✅ — you fit trust am. Plus you dey earn savings here!",
+        "This site legit! **Karbali verified partner** ✅ Your purchases here dey earn you points.",
       ],
       notPartner: [
-        "I don't have specific verification data for this site. It's not currently in the Karbali partner network. For guaranteed safe shopping with savings, I'd recommend checking our partner stores!",
-        "This site isn't a Karbali partner, so I can't vouch for it specifically. Our partner network includes verified, trusted merchants — want me to find some?",
+        "Hmm, this site no dey our partner network. I no fit vouch for am. For peace of mind, check our verified partners!",
+        "E no dey Karbali network o. Want make I find verified partner stores instead?",
       ],
     },
 
     followUp: {
       affirmative: [
-        "On it! 🚀 Let me look into that for you...",
-        "Great choice! Let me check what's available...",
-        "Sure thing! Searching for the best options...",
+        "Sharp sharp! 🚀 Make I check am for you...",
+        "Oya na! Let me find the best options...",
+        "Say less! I dey on it...",
       ],
       negative: [
-        "No problem! I'm here whenever you need help. Just ask! 😊",
-        "Got it! Feel free to ask me anything else while you browse.",
-        "Okay! I'll be right here if you change your mind or need help with something else.",
+        "No wahala! I dey here if you need me 😊",
+        "Okay boss! Just holla anytime you want help.",
+        "E be like that sometimes! I dey kampe whenever you ready.",
       ],
       continueExploring: [
-        "Would you like me to look at anything else? I can check savings, find partners, or help compare options!",
+        "Wetin else you wan check? Savings, partners, comparisons — I dey here!",
       ],
     },
 
     [INTENTS.UNKNOWN]: {
       responses: [
-        "I'm not quite sure what you mean, but I'm here to help with savings! I can:\n\n💰 Check if you're earning savings here\n🔍 Find partner stores\n⚖️ Compare shopping options\n\nWhat sounds helpful?",
-        "Hmm, could you tell me more? I specialize in helping you save money while browsing. Try asking me about savings, partner stores, or product comparisons!",
+        "Omo I no too understand 😅 But I fit help with savings, partner stores, or comparisons. Wetin you need?",
+        "Abeg come again? I dey best for savings and shopping talk. Try ask me about that!",
       ],
     },
   };
 
-  // ── Template Selection ────────────────────────────
   function pickRandom(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
   }
@@ -157,13 +147,11 @@ const KarbaliResponseEngine = (function () {
       .replace(/\{partnerMsg\}/g, data.partnerMsg || "");
   }
 
-  // ── Main Response Generator ───────────────────────
   function generate(classification, conversationState, pageContext, offer) {
     const intent = classification.intent;
     const isPartner = !!offer;
     const templates = TEMPLATES[intent];
 
-    // Build template data
     const data = {
       product: pageContext?.product?.name || classification.entities?.products?.[0] || null,
       domain: pageContext?.domain || "",
@@ -173,11 +161,10 @@ const KarbaliResponseEngine = (function () {
       query: pageContext?.searchQuery || "",
       savings: offer ? (offer.payout_naira || 0).toFixed(2) : "0",
       partnerMsg: isPartner
-        ? `This is a Karbali partner — you can earn **${offer.reward_points?.toLocaleString()} points**!`
-        : "This site isn't a Karbali partner yet.",
+        ? `Na Karbali partner — **${offer.reward_points?.toLocaleString()} points** dey wait for you!`
+        : "This site no be Karbali partner yet sha.",
     };
 
-    // Handle follow-ups
     if (conversationState.isFollowUp) {
       if (conversationState.isAffirmative) {
         return { text: pickRandom(TEMPLATES.followUp.affirmative), needsAI: true, reason: "follow_up_action" };
@@ -187,7 +174,6 @@ const KarbaliResponseEngine = (function () {
       }
     }
 
-    // Low confidence — delegate to AI
     if (classification.confidence < 0.15 && intent === INTENTS.UNKNOWN) {
       return { text: null, needsAI: true, reason: "low_confidence" };
     }
@@ -243,7 +229,6 @@ const KarbaliResponseEngine = (function () {
         } else {
           responseText = pickRandom(templates.responses);
         }
-        // Partner search always benefits from AI enrichment
         return { text: responseText, needsAI: true, reason: "partner_search" };
 
       case INTENTS.PRICE_CHECK:
@@ -264,43 +249,34 @@ const KarbaliResponseEngine = (function () {
 
       case INTENTS.UNKNOWN:
       default:
-        // Complex or ambiguous — use AI
         return { text: null, needsAI: true, reason: "unknown_intent" };
     }
 
-    // Decide if AI enhancement needed
-    // Long follow-up chains, complex entities, or multi-intent → AI
     const needsAI = (
       conversationState.followUpChain > 2 ||
       classification.secondaryIntent !== null ||
       (classification.entities?.products?.length > 0 && classification.entities?.prices?.length > 0)
     );
 
-    return {
-      text: responseText,
-      needsAI,
-      reason: needsAI ? "complex_query" : null,
-    };
+    return { text: responseText, needsAI, reason: needsAI ? "complex_query" : null };
   }
 
-  // ── Proactive Suggestions ─────────────────────────
-  // Generate suggestions based on page context without user input
   function generateProactiveSuggestion(pageContext, offer) {
     if (!pageContext) return null;
 
-    const { pageType, domain, product, searchQuery } = pageContext;
+    const { pageType, product, searchQuery } = pageContext;
 
     if (pageType === "checkout") {
       if (offer) {
         return {
           type: "checkout_savings",
-          text: `You're earning ${offer.reward_points.toLocaleString()} points on this purchase! 💰`,
+          text: `Omo you dey earn ${offer.reward_points.toLocaleString()} points on this purchase! Chop life 💰`,
           action: "view_savings",
         };
       } else {
         return {
           type: "checkout_no_savings",
-          text: "You're not earning Karbali savings on this purchase. Want to see partner alternatives?",
+          text: "Bros, you no dey earn Karbali savings here o. Want see partner alternatives?",
           action: "find_partners",
         };
       }
@@ -309,7 +285,7 @@ const KarbaliResponseEngine = (function () {
     if (pageType === "product" && offer) {
       return {
         type: "product_savings",
-        text: `Savings available! Earn ${offer.reward_points.toLocaleString()} points on ${product?.name || "this product"}.`,
+        text: `Savings dey! Earn ${offer.reward_points.toLocaleString()} points on ${product?.name || "this product"} 🔥`,
         action: "claim_offer",
       };
     }
@@ -317,7 +293,7 @@ const KarbaliResponseEngine = (function () {
     if (pageType === "search" && searchQuery) {
       return {
         type: "search_filter",
-        text: `Searching for "${searchQuery}"? Filter to see Karbali partner results!`,
+        text: `You dey search "${searchQuery}"? Filter am to see only Karbali partner results!`,
         action: "filter_search",
       };
     }
@@ -325,10 +301,7 @@ const KarbaliResponseEngine = (function () {
     return null;
   }
 
-  return {
-    generate,
-    generateProactiveSuggestion,
-  };
+  return { generate, generateProactiveSuggestion };
 })();
 
 if (typeof window !== "undefined") {
