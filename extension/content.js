@@ -293,22 +293,28 @@
     showContextualWelcome();
   }
 
-  function showContextualWelcome() {
+  async function showContextualWelcome() {
+    const token = await getToken();
+    if (!token) {
+      addMessageToUI("assistant", "👋 Omo, welcome! Sign in first to unlock savings. Click the extension icon in your toolbar → Sign In.");
+      return;
+    }
+
     const ctx = KarbaliContextParser.quickContext();
 
     let welcome;
     if (ctx.pageType === "checkout") {
       welcome = isPartnerSite
-        ? "👋 I see you're checking out! Great news — this is a Karbali partner site. Let me check your savings..."
-        : "👋 You're about to checkout. Want me to check if you could earn more savings with a Karbali partner?";
+        ? "👋 Omo you dey checkout! Na Karbali partner site be this — your points go enter sharp sharp! 💰"
+        : "👋 Wahala! You wan checkout but this site no be Karbali partner o. Make I find better alternative?";
     } else if (ctx.pageType === "product") {
       welcome = isPartnerSite
-        ? `👋 Looking at something interesting! This is a Karbali partner — you can earn savings here. Ask me for details!`
-        : "👋 Browsing products? I can help you find Karbali partner stores where you'd earn savings on similar items!";
+        ? "👋 E be like say you eye something! This na Karbali partner — savings dey here! Ask me wetin you need!"
+        : "👋 Browsing products? I fit find Karbali partner stores where you go earn savings on similar things!";
     } else if (ctx.pageType === "search") {
-      welcome = `👋 Searching for "${ctx.searchQuery || "something"}"? I can filter results to show Karbali partners where you earn savings!`;
+      welcome = `👋 You dey search for "${ctx.searchQuery || "something"}"? Make I filter am show you Karbali partners!`;
     } else {
-      welcome = "👋 Hey! I'm your Karbali AI assistant. I help you save money while you browse. Ask me anything!";
+      welcome = "👋 Omo, I be your Karbali AI guy! I dey help you save money as you dey browse. Ask me anything!";
     }
 
     addMessageToUI("assistant", welcome);
@@ -487,11 +493,17 @@
 
   // ── Initialization ─────────────────────────────────
   async function init() {
-    const token = await getToken();
-    if (!token) return;
-
-    // Initialize UI
+    // Always show floating button so users know the extension is active
     createFloatingButton();
+
+    // Listen for background messages regardless of auth
+    setupBackgroundListener();
+
+    const token = await getToken();
+    if (!token) {
+      console.log("[Karbali AI] No token — floating button visible, chat requires sign-in");
+      return;
+    }
 
     // Check partner status
     await checkPartnerStatus();
@@ -509,12 +521,8 @@
 
     // Product page proactive suggestion
     if (pageContext.pageType === "product" && isPartnerSite) {
-      // Subtle notification dot is enough; don't interrupt
       updateFloatingButtonNotification(true);
     }
-
-    // Listen for background messages
-    setupBackgroundListener();
 
     console.log("[Karbali AI] Initialized", {
       pageType: pageContext.pageType,
