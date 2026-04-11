@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { Chrome, MousePointerClick, CheckCircle, Gift, TrendingUp } from "lucide-react";
+import { Chrome, MousePointerClick, CheckCircle, Gift, TrendingUp, Download } from "lucide-react";
 
 export default function AdminExtension() {
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, rewards: 0, totalPoints: 0 });
