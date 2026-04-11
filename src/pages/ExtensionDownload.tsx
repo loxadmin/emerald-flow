@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download, Chrome, Shield, Zap, Gift, ArrowRight, CheckCircle } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
+import AdminLayout from "@/components/AdminLayout";
 
 export default function ExtensionDownload() {
   const [downloading, setDownloading] = useState(false);
@@ -24,7 +24,7 @@ export default function ExtensionDownload() {
   };
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="mx-auto max-w-4xl">
         {/* Hero */}
         <div className="relative overflow-hidden rounded-2xl border border-border bg-card/50 backdrop-blur-sm">
@@ -114,6 +114,6 @@ export default function ExtensionDownload() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }
