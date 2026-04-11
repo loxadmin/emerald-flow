@@ -145,6 +145,42 @@ export type Database = {
           },
         ]
       }
+      blogs: {
+        Row: {
+          content: string | null
+          created_at: string
+          excerpt: string | null
+          id: string
+          is_published: boolean
+          meta_description: string | null
+          meta_title: string | null
+          slug: string
+          title: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean
+          meta_description?: string | null
+          meta_title?: string | null
+          slug: string
+          title: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean
+          meta_description?: string | null
+          meta_title?: string | null
+          slug?: string
+          title?: string
+        }
+        Relationships: []
+      }
       campaign_questions: {
         Row: {
           campaign_id: string
