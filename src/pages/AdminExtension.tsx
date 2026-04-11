@@ -7,6 +7,26 @@ export default function AdminExtension() {
   const [stats, setStats] = useState({ clicks: 0, conversions: 0, rewards: 0, totalPoints: 0 });
   const [recentClicks, setRecentClicks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = () => {
+    setDownloading(true);
+    fetch("/kabali-extension.zip")
+      .then((res) => {
+        if (!res.ok) throw new Error("Download failed");
+        return res.blob();
+      })
+      .then((blob) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "kabali-extension.zip";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      })
+      .catch((err) => alert(err.message))
+      .finally(() => setDownloading(false));
+  };
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
