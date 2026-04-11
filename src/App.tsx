@@ -77,7 +77,7 @@ const App = () => (
               <Route path="/what-is-karbali" element={<WhatIsKarbali />} />
               <Route path="/use-cases" element={<UseCases />} />
               <Route path="/vs/:competitor" element={<Comparison />} />
-              <Route path="/extension" element={<ExtensionDownload />} />
+              <Route path="/extension" element={<RequireAuth><ExtensionDownload /></RequireAuth>} />
 
               {/* Admin routes (separate panel) */}
               <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />

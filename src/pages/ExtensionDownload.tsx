@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Download, Chrome, Shield, Zap, Gift, ArrowRight, CheckCircle } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
 
 export default function ExtensionDownload() {
   const [downloading, setDownloading] = useState(false);
@@ -23,39 +24,39 @@ export default function ExtensionDownload() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent" />
-        <div className="relative mx-auto max-w-4xl px-4 py-20 text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-            <Chrome className="h-4 w-4" />
-            Chrome Extension
+    <DashboardLayout>
+      <div className="mx-auto max-w-4xl">
+        {/* Hero */}
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-card/50 backdrop-blur-sm">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent" />
+          <div className="relative px-6 py-16 text-center">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+              <Chrome className="h-4 w-4" />
+              Chrome Extension
+            </div>
+            <h1 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+              Earn While You Browse
+            </h1>
+            <p className="mx-auto mb-8 max-w-2xl text-muted-foreground">
+              Kabali detects offers from brands you already visit and rewards you with points.
+              No extra effort — just browse as usual.
+            </p>
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-4 text-lg font-bold text-primary-foreground shadow-lg transition hover:opacity-90 disabled:opacity-50"
+            >
+              <Download className="h-5 w-5" />
+              {downloading ? "Downloading..." : "Download Extension"}
+            </button>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Works on Chrome, Edge, Brave, Arc & all Chromium browsers
+            </p>
           </div>
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-            Earn While You Browse
-          </h1>
-          <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
-            Kabali detects offers from brands you already visit and rewards you with points.
-            No extra effort — just browse as usual.
-          </p>
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-4 text-lg font-bold text-primary-foreground shadow-lg transition hover:opacity-90 disabled:opacity-50"
-          >
-            <Download className="h-5 w-5" />
-            {downloading ? "Downloading..." : "Download Extension"}
-          </button>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Works on Chrome, Edge, Brave, Arc & all Chromium browsers
-          </p>
         </div>
-      </div>
 
-      {/* Features */}
-      <div className="mx-auto max-w-4xl px-4 py-16">
-        <div className="grid gap-8 md:grid-cols-3">
+        {/* Features */}
+        <div className="mt-8 grid gap-6 md:grid-cols-3">
           {[
             { icon: Zap, title: "Auto-Detection", desc: "Automatically finds offers matching sites you visit" },
             { icon: Gift, title: "Earn Points", desc: "Get rewarded for signups, clicks, and purchases you'd do anyway" },
@@ -70,49 +71,49 @@ export default function ExtensionDownload() {
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Install Steps */}
-      <div className="mx-auto max-w-3xl px-4 py-16">
-        <h2 className="mb-8 text-center text-2xl font-bold text-foreground">How to Install</h2>
-        <div className="space-y-4">
-          {[
-            "Download and unzip the extension file",
-            'Open chrome://extensions in your browser',
-            "Enable Developer mode (toggle in top-right)",
-            'Click "Load unpacked" and select the unzipped folder',
-            "Sign in and start earning!",
-          ].map((step, i) => (
-            <div key={i} className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                {i + 1}
+        {/* Install Steps */}
+        <div className="mt-8">
+          <h2 className="mb-6 text-xl font-bold text-foreground">How to Install</h2>
+          <div className="space-y-3">
+            {[
+              "Download and unzip the extension file",
+              'Open chrome://extensions in your browser',
+              "Enable Developer mode (toggle in top-right)",
+              'Click "Load unpacked" and select the unzipped folder',
+              "Sign in and start earning!",
+            ].map((step, i) => (
+              <div key={i} className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                  {i + 1}
+                </div>
+                <p className="pt-1 text-foreground">{step}</p>
               </div>
-              <p className="pt-1 text-foreground">{step}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* How it works */}
-      <div className="mx-auto max-w-3xl px-4 pb-20">
-        <h2 className="mb-8 text-center text-2xl font-bold text-foreground">How It Works</h2>
-        <div className="space-y-3">
-          {[
-            "You browse the web normally",
-            "Kabali checks if the site has an active campaign",
-            "If there's an offer, you see a notification badge",
-            "Click the extension to view and claim the offer",
-            "Complete the action (signup, download, etc.)",
-            "Points are credited to your account automatically",
-          ].map((step, i) => (
-            <div key={i} className="flex items-center gap-3 text-muted-foreground">
-              <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
-              <span>{step}</span>
-              {i < 5 && <ArrowRight className="ml-auto h-4 w-4 shrink-0 opacity-30" />}
-            </div>
-          ))}
+        {/* How it works */}
+        <div className="mt-8 pb-8">
+          <h2 className="mb-6 text-xl font-bold text-foreground">How It Works</h2>
+          <div className="space-y-3">
+            {[
+              "You browse the web normally",
+              "Kabali checks if the site has an active campaign",
+              "If there's an offer, you see a notification badge",
+              "Click the extension to view and claim the offer",
+              "Complete the action (signup, download, etc.)",
+              "Points are credited to your account automatically",
+            ].map((step, i) => (
+              <div key={i} className="flex items-center gap-3 text-muted-foreground">
+                <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
+                <span>{step}</span>
+                {i < 5 && <ArrowRight className="ml-auto h-4 w-4 shrink-0 opacity-30" />}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
