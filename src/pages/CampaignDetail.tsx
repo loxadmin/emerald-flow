@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users } from "lucide-react";
+import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users, Eye, EyeOff } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -16,6 +16,7 @@ export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
   const [campaign, setCampaign] = useState<(Tables<"campaigns"> & { target_users?: number; selected_milestones?: string[]; total_cost?: number; integration_verified?: boolean; integration_type?: string }) | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [showKey, setShowKey] = useState(false);
   const [stats, setStats] = useState({ clicks: 0, downloads: 0, signups: 0, purchases: 0 });
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +88,12 @@ export default function CampaignDetail() {
             <h3 className="text-sm font-medium text-foreground mb-2">API Key</h3>
             {apiKey ? (
               <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-lg bg-muted px-3 py-2 font-mono text-sm text-primary truncate">{apiKey}</code>
+                <code className="flex-1 rounded-lg bg-muted px-3 py-2 font-mono text-sm text-primary truncate">
+                  {showKey ? apiKey : "•".repeat(Math.min(apiKey.length, 40))}
+                </code>
+                <Button variant="outline" size="sm" onClick={() => setShowKey(!showKey)}>
+                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(apiKey); toast.success("Copied!"); }}><Copy className="h-4 w-4" /></Button>
               </div>
             ) : <p className="text-sm text-muted-foreground">Not generated yet.</p>}

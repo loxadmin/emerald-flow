@@ -40,12 +40,34 @@ export default function AdsPage() {
     const label = campaign.is_draft ? "draft" : "campaign";
     if (!confirm(`Delete this ${label}? This cannot be undone.`)) return;
     setDeleting(campaign.id);
+
+    // Refund unused escrow to wallet if campaign had funds
+    if (!campaign.is_draft && campaign.budget_remaining > 0) {
+      const { data: wallet } = await supabase
+        .from("wallets")
+        .select("id, balance")
+        .eq("advertiser_id", user!.id)
+        .single();
+      if (wallet) {
+        const newBalance = Number(wallet.balance) + Number(campaign.budget_remaining);
+        await supabase.from("wallets").update({ balance: newBalance, updated_at: new Date().toISOString() }).eq("id", wallet.id);
+        await supabase.from("wallet_transactions").insert({
+          wallet_id: wallet.id,
+          amount: Number(campaign.budget_remaining),
+          type: "refund",
+          status: "completed",
+          description: `Refund from deleted campaign: ${campaign.name}`,
+        });
+      }
+    }
+
+    // Delete related records then campaign
     await supabase.from("api_keys").delete().eq("campaign_id", campaign.id);
     await supabase.from("campaign_sources").delete().eq("campaign_id", campaign.id);
     await supabase.from("referrals").delete().eq("campaign_id", campaign.id);
     const { error } = await supabase.from("campaigns").delete().eq("id", campaign.id);
     if (error) toast.error(error.message);
-    else { toast.success(`${campaign.is_draft ? "Draft" : "Campaign"} deleted`); fetchCampaigns(); }
+    else { toast.success(campaign.budget_remaining > 0 && !campaign.is_draft ? `Campaign deleted. $${Number(campaign.budget_remaining).toFixed(2)} refunded.` : `${campaign.is_draft ? "Draft" : "Campaign"} deleted`); fetchCampaigns(); }
     setDeleting(null);
   };
 
