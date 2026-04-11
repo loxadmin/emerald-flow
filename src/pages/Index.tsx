@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe } from "lucide-react";
+import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe, Chrome } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useTheme } from "@/lib/theme";
 import LandingHero from "@/components/landing/LandingHero";
@@ -144,6 +144,7 @@ export default function Index() {
             <div className="flex items-center gap-4">
               <Link to="/about" className={`hidden text-sm transition-colors sm:block ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`}>About</Link>
               <Link to="/docs" className={`hidden text-sm transition-colors sm:block ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`}>API</Link>
+              <Link to="/extension" className={`hidden text-sm transition-colors sm:flex items-center gap-1 ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`}><Chrome className="h-3.5 w-3.5" />Extension</Link>
               <button onClick={toggleTheme} className={`rounded-lg p-2 transition-colors ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`} aria-label="Toggle theme">
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
@@ -327,6 +328,7 @@ export default function Index() {
                   <Link to="/blog" className="hover:text-primary transition-colors">Blog</Link>
                   <Link to="/use-cases" className="hover:text-primary transition-colors">Use Cases</Link>
                   <Link to="/what-is-karbali" className="hover:text-primary transition-colors">What is Karbali?</Link>
+                  <Link to="/extension" className="hover:text-primary transition-colors">Chrome Extension</Link>
                   <Link to="/docs" className="hover:text-primary transition-colors">API Docs</Link>
                 </div>
                 <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
