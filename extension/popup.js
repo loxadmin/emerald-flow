@@ -30,7 +30,7 @@ function renderAuthScreen() {
 
   document.getElementById("signInBtn").addEventListener("click", () => {
     // Open external auth page
-    chrome.tabs.create({ url: "https://result-link.lovable.app/extension-auth" });
+    chrome.tabs.create({ url: "https://karbali.com/extension-auth" });
   });
 
   document.getElementById("tokenBtn").addEventListener("click", () => {
