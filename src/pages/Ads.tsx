@@ -167,12 +167,10 @@ export default function AdsPage() {
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
                       </Link>
-                      {c.is_draft && (
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive shrink-0"
-                          disabled={deleting === c.id} onClick={(e) => deleteDraft(e, c.id)}>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive shrink-0"
+                          disabled={deleting === c.id} onClick={(e) => deleteCampaign(e, c)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
                     </div>
                   ))}
                 </div>
