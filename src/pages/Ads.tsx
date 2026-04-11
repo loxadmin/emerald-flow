@@ -34,17 +34,18 @@ export default function AdsPage() {
 
   useEffect(() => { fetchCampaigns(); }, [user]);
 
-  const deleteDraft = async (e: React.MouseEvent, campaignId: string) => {
+  const deleteCampaign = async (e: React.MouseEvent, campaign: Campaign) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm("Delete this draft campaign? This cannot be undone.")) return;
-    setDeleting(campaignId);
-    // Delete related records first
-    await supabase.from("api_keys").delete().eq("campaign_id", campaignId);
-    await supabase.from("campaign_sources").delete().eq("campaign_id", campaignId);
-    const { error } = await supabase.from("campaigns").delete().eq("id", campaignId);
+    const label = campaign.is_draft ? "draft" : "campaign";
+    if (!confirm(`Delete this ${label}? This cannot be undone.`)) return;
+    setDeleting(campaign.id);
+    await supabase.from("api_keys").delete().eq("campaign_id", campaign.id);
+    await supabase.from("campaign_sources").delete().eq("campaign_id", campaign.id);
+    await supabase.from("referrals").delete().eq("campaign_id", campaign.id);
+    const { error } = await supabase.from("campaigns").delete().eq("id", campaign.id);
     if (error) toast.error(error.message);
-    else { toast.success("Draft deleted"); fetchCampaigns(); }
+    else { toast.success(`${campaign.is_draft ? "Draft" : "Campaign"} deleted`); fetchCampaigns(); }
     setDeleting(null);
   };
 
@@ -166,12 +167,10 @@ export default function AdsPage() {
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
                       </Link>
-                      {c.is_draft && (
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive shrink-0"
-                          disabled={deleting === c.id} onClick={(e) => deleteDraft(e, c.id)}>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive shrink-0"
+                          disabled={deleting === c.id} onClick={(e) => deleteCampaign(e, c)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
                     </div>
                   ))}
                 </div>
