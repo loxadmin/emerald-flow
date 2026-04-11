@@ -18,11 +18,11 @@ function renderAuthScreen() {
     <div class="auth-screen">
       <div class="logo" style="justify-content:center;margin-bottom:20px;">
         <div class="logo-icon">K</div>
-        <span>Kabali</span>
+        <span>Karbali</span>
       </div>
       <h2>Earn While You Browse</h2>
       <p>Sign in to discover offers and earn points from the sites you already visit.</p>
-      <button class="btn btn-primary" id="signInBtn">Sign in with Kabali</button>
+      <button class="btn btn-primary" id="signInBtn">Sign in with Karbali</button>
       <br>
       <button class="btn btn-ghost" id="tokenBtn">Enter token manually</button>
     </div>
@@ -43,9 +43,9 @@ function renderTokenInput() {
     <div class="content">
       <div class="logo" style="margin-bottom:16px;">
         <div class="logo-icon">K</div>
-        <span>Kabali</span>
+        <span>Karbali</span>
       </div>
-      <p style="font-size:13px;color:#94A3B8;margin-bottom:12px;">Paste your access token from the Kabali app:</p>
+      <p style="font-size:13px;color:#94A3B8;margin-bottom:12px;">Paste your access token from the Karbali app:</p>
       <textarea id="tokenInput" style="width:100%;height:80px;background:#1E293B;border:1px solid #334155;border-radius:8px;color:#E2E8F0;padding:10px;font-size:12px;resize:none;" placeholder="Paste your JWT token here..."></textarea>
       <button class="btn-claim" id="saveTokenBtn" style="margin-top:12px;">Save & Connect</button>
       <button class="btn btn-ghost" id="backBtn" style="display:block;width:100%;text-align:center;">Back</button>
@@ -97,7 +97,7 @@ async function renderMainScreen(email) {
     <div class="header">
       <div class="logo">
         <div class="logo-icon">K</div>
-        <span>Kabali</span>
+        <span>Karbali</span>
       </div>
       <div class="points-badge" id="pointsBadge">⚡ Active</div>
     </div>
@@ -105,7 +105,7 @@ async function renderMainScreen(email) {
       ${offer ? renderOfferCard(offer) : renderNoOffer()}
     </div>
     <div class="footer">
-      <a class="footer-link" href="https://result-link.lovable.app" target="_blank">kabali.com</a>
+      <a class="footer-link" href="https://karbali.com" target="_blank">karbali.com</a>
       <a class="footer-link" id="logoutBtn">Sign out</a>
     </div>
   `;
