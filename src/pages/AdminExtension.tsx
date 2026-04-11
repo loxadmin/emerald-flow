@@ -65,6 +65,32 @@ export default function AdminExtension() {
           <h1 className="text-2xl font-bold text-foreground">Chrome Extension</h1>
         </div>
 
+        {/* Download Section */}
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-foreground">Download Extension</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Download the Kabali Chrome Extension ZIP, then sideload it in any Chromium browser.
+              </p>
+              <ol className="mt-3 space-y-1 text-xs text-muted-foreground list-decimal list-inside">
+                <li>Unzip the downloaded file</li>
+                <li>Open <code className="rounded bg-muted px-1">chrome://extensions</code></li>
+                <li>Enable <strong>Developer mode</strong> (top-right toggle)</li>
+                <li>Click <strong>Load unpacked</strong> → select the unzipped folder</li>
+              </ol>
+            </div>
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              {downloading ? "Downloading…" : "Download ZIP"}
+            </button>
+          </div>
+        </div>
+
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : (
