@@ -1,9 +1,49 @@
 const API_BASE = "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1";
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2a29hZnp0cXVzd2Nxbml3Y3lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMzc3ODcsImV4cCI6MjA4OTkxMzc4N30.tisSwPAmALxSQx1tJ5TFcGfLVZWyhQXCfsfWBzIPiQM";
+const CONTENT_SCRIPT_FILES = [
+  "ai/intent-classifier.js",
+  "ai/context-parser.js",
+  "ai/conversation-manager.js",
+  "ai/response-engine.js",
+  "content.js",
+];
+const CONTENT_STYLE_FILES = ["content.css"];
+
+function isInjectableUrl(url) {
+  return typeof url === "string" && /^https?:\/\//.test(url);
+}
+
+async function ensureAssistantInjected(tabId, url) {
+  if (!tabId || !isInjectableUrl(url)) return;
+
+  try {
+    await chrome.scripting.insertCSS({ target: { tabId }, files: CONTENT_STYLE_FILES });
+  } catch (_) {}
+
+  try {
+    await chrome.scripting.executeScript({ target: { tabId }, files: CONTENT_SCRIPT_FILES });
+  } catch (err) {
+    console.debug("Karbali assistant injection skipped:", err?.message || err);
+  }
+}
+
+async function injectIntoOpenTabs() {
+  const tabs = await chrome.tabs.query({});
+  await Promise.all(tabs.map((tab) => ensureAssistantInjected(tab.id, tab.url)));
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  injectIntoOpenTabs().catch((err) => console.error("Karbali initial injection failed:", err));
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  injectIntoOpenTabs().catch((err) => console.error("Karbali startup injection failed:", err));
+});
 
 // Listen for tab updates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url) {
+    ensureAssistantInjected(tabId, tab.url);
     checkForOffers(tab.url, tabId);
   }
 });
@@ -12,6 +52,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   const tab = await chrome.tabs.get(activeInfo.tabId);
   if (tab.url) {
+    ensureAssistantInjected(activeInfo.tabId, tab.url);
     checkForOffers(tab.url, activeInfo.tabId);
   }
 });
