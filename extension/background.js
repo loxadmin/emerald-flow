@@ -17,7 +17,6 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 });
 
 async function checkForOffers(url, tabId) {
-  // Skip internal pages
   if (url.startsWith("chrome://") || url.startsWith("chrome-extension://") || url.startsWith("about:")) {
     chrome.action.setBadgeText({ text: "", tabId });
     return;
@@ -34,8 +33,8 @@ async function checkForOffers(url, tabId) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${access_token}`,
-        "apikey": ANON_KEY,
+        Authorization: `Bearer ${access_token}`,
+        apikey: ANON_KEY,
       },
       body: JSON.stringify({ url }),
     });
@@ -43,20 +42,24 @@ async function checkForOffers(url, tabId) {
     const data = await response.json();
 
     if (data.offer) {
-      // Store offer for popup
       await chrome.storage.local.set({ [`offer_${tabId}`]: data.offer });
       chrome.action.setBadgeText({ text: "💰", tabId });
       chrome.action.setBadgeBackgroundColor({ color: "#10B981", tabId });
+
+      // Notify content script
+      chrome.tabs.sendMessage(tabId, { type: "OFFER_FOUND", offer: data.offer }).catch(() => {});
     } else {
       await chrome.storage.local.remove(`offer_${tabId}`);
       chrome.action.setBadgeText({ text: "", tabId });
+
+      chrome.tabs.sendMessage(tabId, { type: "OFFER_CLEARED" }).catch(() => {});
     }
   } catch (err) {
-    console.error("Kabali offer check failed:", err);
+    console.error("Karbali offer check failed:", err);
   }
 }
 
-// Handle messages from popup
+// Handle messages from popup and content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "TRACK_CLICK") {
     handleTrackClick(message.campaign_id).then(sendResponse);
@@ -65,6 +68,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "LOGOUT") {
     chrome.storage.local.clear().then(() => sendResponse({ success: true }));
     return true;
+  }
+  if (message.type === "GET_PAGE_CONTEXT") {
+    // Return stored offer for requesting tab
+    const tabId = sender.tab?.id;
+    if (tabId) {
+      chrome.storage.local.get(`offer_${tabId}`).then((stored) => {
+        sendResponse({ offer: stored[`offer_${tabId}`] || null });
+      });
+      return true;
+    }
+    sendResponse({ offer: null });
+    return false;
   }
 });
 
@@ -77,8 +92,8 @@ async function handleTrackClick(campaign_id) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${access_token}`,
-        "apikey": ANON_KEY,
+        Authorization: `Bearer ${access_token}`,
+        apikey: ANON_KEY,
       },
       body: JSON.stringify({ campaign_id }),
     });
