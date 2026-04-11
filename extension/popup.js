@@ -29,7 +29,7 @@ function renderAuthScreen() {
   `;
 
   document.getElementById("signInBtn").addEventListener("click", () => {
-    chrome.tabs.create({ url: "https://www.karbali.com/extension-auth" });
+    chrome.tabs.create({ url: "https://www.karbali.com/auth" });
   });
 
   document.getElementById("tokenBtn").addEventListener("click", () => {
