@@ -8,6 +8,7 @@ const CONTENT_SCRIPT_FILES = [
   "content.js",
 ];
 const CONTENT_STYLE_FILES = ["content.css"];
+const AUTH_STORAGE_KEYS = ["access_token", "user_email", "user_name", "user_id", "user_avatar_url"];
 
 function isInjectableUrl(url) {
   return typeof url === "string" && /^https?:\/\//.test(url);
@@ -30,6 +31,115 @@ async function ensureAssistantInjected(tabId, url) {
 async function injectIntoOpenTabs() {
   const tabs = await chrome.tabs.query({});
   await Promise.all(tabs.map((tab) => ensureAssistantInjected(tab.id, tab.url)));
+}
+
+function getDisplayName(user) {
+  return user?.name || user?.email || "Connected";
+}
+
+async function fetchExtensionSession(accessToken) {
+  const response = await fetch(`${API_BASE}/ext-session`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: ANON_KEY,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.error || "Failed to load extension session");
+    error.status = response.status;
+    throw error;
+  }
+
+  return data.user || null;
+}
+
+async function storeExtensionSession(accessToken, user) {
+  await chrome.storage.local.set({
+    access_token: accessToken,
+    user_email: user?.email || null,
+    user_name: getDisplayName(user),
+    user_id: user?.id || null,
+    user_avatar_url: user?.avatar_url || null,
+  });
+}
+
+async function clearExtensionSession() {
+  await chrome.storage.local.clear();
+
+  const tabs = await chrome.tabs.query({});
+  await Promise.all(
+    tabs.map(async (tab) => {
+      if (!tab.id) return;
+
+      await chrome.action.setBadgeText({ text: "", tabId: tab.id });
+      chrome.tabs.sendMessage(tab.id, { type: "OFFER_CLEARED" }).catch(() => {});
+    })
+  );
+}
+
+async function refreshOffersForOpenTabs() {
+  const tabs = await chrome.tabs.query({});
+  await Promise.all(
+    tabs.map(async (tab) => {
+      if (!tab.id || !tab.url) return;
+      await ensureAssistantInjected(tab.id, tab.url);
+      await checkForOffers(tab.url, tab.id);
+    })
+  );
+}
+
+async function syncAuthSession(accessToken) {
+  const user = await fetchExtensionSession(accessToken);
+  await storeExtensionSession(accessToken, user);
+  await refreshOffersForOpenTabs();
+
+  return {
+    success: true,
+    authenticated: true,
+    user,
+  };
+}
+
+async function refreshAuthSession() {
+  const stored = await chrome.storage.local.get(AUTH_STORAGE_KEYS);
+  const accessToken = stored.access_token;
+
+  if (!accessToken) {
+    return { authenticated: false };
+  }
+
+  try {
+    const user = await fetchExtensionSession(accessToken);
+    await storeExtensionSession(accessToken, user);
+
+    return {
+      authenticated: true,
+      user,
+    };
+  } catch (err) {
+    if (err?.status === 401) {
+      await clearExtensionSession();
+      return {
+        authenticated: false,
+        error: err.message,
+      };
+    }
+
+    return {
+      authenticated: true,
+      stale: true,
+      user: {
+        id: stored.user_id || null,
+        email: stored.user_email || null,
+        name: stored.user_name || stored.user_email || "Connected",
+        avatar_url: stored.user_avatar_url || null,
+      },
+    };
+  }
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -80,7 +190,16 @@ async function checkForOffers(url, tabId) {
       body: JSON.stringify({ url }),
     });
 
+    if (response.status === 401) {
+      await clearExtensionSession();
+      return;
+    }
+
     const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Offer check failed");
+    }
 
     if (data.offer) {
       await chrome.storage.local.set({ [`offer_${tabId}`]: data.offer });
@@ -102,12 +221,22 @@ async function checkForOffers(url, tabId) {
 
 // Handle messages from popup and content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "SYNC_AUTH_SESSION") {
+    syncAuthSession(message.access_token).then(sendResponse).catch((err) => {
+      sendResponse({ success: false, error: err?.message || "Failed to sync login" });
+    });
+    return true;
+  }
+  if (message.type === "REFRESH_AUTH_SESSION") {
+    refreshAuthSession().then(sendResponse);
+    return true;
+  }
   if (message.type === "TRACK_CLICK") {
     handleTrackClick(message.campaign_id).then(sendResponse);
     return true;
   }
   if (message.type === "LOGOUT") {
-    chrome.storage.local.clear().then(() => sendResponse({ success: true }));
+    clearExtensionSession().then(() => sendResponse({ success: true }));
     return true;
   }
   if (message.type === "GET_PAGE_CONTEXT") {
@@ -139,7 +268,18 @@ async function handleTrackClick(campaign_id) {
       body: JSON.stringify({ campaign_id }),
     });
 
-    return await response.json();
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      await clearExtensionSession();
+      return { error: "Session expired. Please sign in again." };
+    }
+
+    if (!response.ok) {
+      return { error: data.error || "Failed to claim offer" };
+    }
+
+    return data;
   } catch (err) {
     return { error: err.message };
   }
