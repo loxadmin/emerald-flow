@@ -7,7 +7,7 @@ import FluidCanvas from "@/components/FluidCanvas";
 import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
-  Menu, X, Lock, AlertCircle, Megaphone, Globe, Chrome,
+  Menu, X, Lock, AlertCircle, Megaphone, Globe,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
@@ -17,7 +17,6 @@ const advertiserLinks = [
   { to: "/campaigns/create", label: "New Campaign", icon: Plus },
   { to: "/websites", label: "Websites", icon: Globe },
   { to: "/wallet", label: "Wallet", icon: Wallet },
-  { to: "/extension", label: "Extension", icon: Chrome },
   { to: "/docs", label: "API Docs", icon: FileText },
 ];
 
@@ -32,7 +31,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const isCategoryActive = categoryStatus === "active";
 
   const isPageLocked = (path: string) => {
-    if (path === "/wallet" || path === "/docs" || path === "/websites" || path === "/extension") return false;
+    if (path === "/wallet" || path === "/docs" || path === "/websites") return false;
     if (isCategoryInactive) return true;
     if (isWalletNotActivated) return true;
     return false;
