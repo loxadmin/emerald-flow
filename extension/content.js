@@ -26,6 +26,8 @@
   let checkoutPromptShown = false;
   let searchFilterVisible = false;
   let pageContext = null;
+  let authBridgeInterval = null;
+  let lastSyncedAuthToken = null;
 
   // ── Helpers ────────────────────────────────────────
   function escapeHtml(str) {
@@ -44,6 +46,127 @@
   async function getToken() {
     const { access_token } = await chrome.storage.local.get("access_token");
     return access_token || null;
+  }
+
+  function isKarbaliHost() {
+    return /(^|\.)karbali\.com$/i.test(location.hostname);
+  }
+
+  function safeJsonParse(value) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+
+  function extractStoredSession(candidate) {
+    if (!candidate) return null;
+
+    if (typeof candidate === "string") {
+      const parsed = safeJsonParse(candidate);
+      if (parsed) return extractStoredSession(parsed);
+
+      if (/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(candidate)) {
+        return { access_token: candidate, user: null };
+      }
+
+      return null;
+    }
+
+    if (Array.isArray(candidate)) {
+      for (const item of candidate) {
+        const result = extractStoredSession(item);
+        if (result?.access_token) return result;
+      }
+      return null;
+    }
+
+    if (typeof candidate === "object") {
+      const token = candidate.access_token || candidate.accessToken;
+      const user = candidate.user || candidate.currentUser || candidate.session?.user || null;
+
+      if (typeof token === "string" && token) {
+        return { access_token: token, user };
+      }
+
+      const priorityKeys = ["currentSession", "session", "data", "value"];
+      for (const key of priorityKeys) {
+        if (candidate[key]) {
+          const result = extractStoredSession(candidate[key]);
+          if (result?.access_token) return result;
+        }
+      }
+
+      for (const value of Object.values(candidate)) {
+        const result = extractStoredSession(value);
+        if (result?.access_token) return result;
+      }
+    }
+
+    return null;
+  }
+
+  function readSessionFromStorage(storage) {
+    if (!storage) return null;
+
+    for (let index = 0; index < storage.length; index += 1) {
+      const key = storage.key(index);
+      if (!key || !/(sb-|supabase|auth|token|session)/i.test(key)) continue;
+
+      const rawValue = storage.getItem(key);
+      if (!rawValue) continue;
+
+      const session = extractStoredSession(rawValue);
+      if (session?.access_token) return session;
+    }
+
+    return null;
+  }
+
+  function getWebsiteAuthSession() {
+    return readSessionFromStorage(window.localStorage) || readSessionFromStorage(window.sessionStorage);
+  }
+
+  async function syncAuthFromWebsite() {
+    if (!isKarbaliHost()) return false;
+
+    const session = getWebsiteAuthSession();
+    if (!session?.access_token || session.access_token === lastSyncedAuthToken) {
+      return false;
+    }
+
+    try {
+      const result = await chrome.runtime.sendMessage({
+        type: "SYNC_AUTH_SESSION",
+        access_token: session.access_token,
+      });
+
+      if (result?.success) {
+        lastSyncedAuthToken = session.access_token;
+        console.log("[Karbali AI] Extension login synced from karbali.com");
+        return true;
+      }
+    } catch (err) {
+      console.error("[Karbali AI] Failed to sync auth from karbali.com:", err);
+    }
+
+    return false;
+  }
+
+  function startAuthBridgeWatcher() {
+    if (!isKarbaliHost() || authBridgeInterval) return;
+
+    let attempts = 0;
+    authBridgeInterval = window.setInterval(async () => {
+      attempts += 1;
+      const synced = await syncAuthFromWebsite();
+
+      if (synced || attempts >= 120) {
+        window.clearInterval(authBridgeInterval);
+        authBridgeInterval = null;
+      }
+    }, 1000);
   }
 
   // ── NLP Pipeline ───────────────────────────────────
@@ -491,6 +614,29 @@
     });
   }
 
+  function setupStorageListener() {
+    chrome.storage.onChanged.addListener(async (changes, areaName) => {
+      if (areaName !== "local" || !changes.access_token) return;
+
+      if (changes.access_token.newValue) {
+        await checkPartnerStatus();
+        pageContext = KarbaliContextParser.parse();
+
+        if (isSearchPage()) {
+          createSearchFilter();
+        }
+
+        return;
+      }
+
+      currentOffer = null;
+      isPartnerSite = false;
+      checkoutPromptShown = false;
+      removePartnerBadge();
+      updateFloatingButtonNotification(false);
+    });
+  }
+
   // ── Initialization ─────────────────────────────────
   async function init() {
     // Always show floating button so users know the extension is active
@@ -498,6 +644,12 @@
 
     // Listen for background messages regardless of auth
     setupBackgroundListener();
+    setupStorageListener();
+
+    if (isKarbaliHost()) {
+      await syncAuthFromWebsite();
+      startAuthBridgeWatcher();
+    }
 
     const token = await getToken();
     if (!token) {

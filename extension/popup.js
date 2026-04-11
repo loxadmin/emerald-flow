@@ -1,15 +1,38 @@
 const API_BASE = "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1";
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2a29hZnp0cXVzd2Nxbml3Y3lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMzc3ODcsImV4cCI6MjA4OTkxMzc4N30.tisSwPAmALxSQx1tJ5TFcGfLVZWyhQXCfsfWBzIPiQM";
+const AUTH_URL = "https://www.karbali.com/auth?extension=1";
+const AUTH_STORAGE_KEYS = ["access_token", "user_email", "user_name", "user_id", "user_avatar_url"];
 
 const app = document.getElementById("app");
 
-async function init() {
-  const { access_token, user_email } = await chrome.storage.local.get(["access_token", "user_email"]);
+async function refreshAuthState() {
+  try {
+    return await chrome.runtime.sendMessage({ type: "REFRESH_AUTH_SESSION" });
+  } catch {
+    return null;
+  }
+}
 
-  if (!access_token) {
+async function init() {
+  const stored = await chrome.storage.local.get(AUTH_STORAGE_KEYS);
+
+  if (!stored.access_token) {
     renderAuthScreen();
   } else {
-    renderMainScreen(user_email || "User");
+    const authState = await refreshAuthState();
+
+    if (authState && !authState.authenticated) {
+      renderAuthScreen();
+      return;
+    }
+
+    renderMainScreen(
+      authState?.user?.name ||
+      authState?.user?.email ||
+      stored.user_name ||
+      stored.user_email ||
+      "Connected"
+    );
   }
 }
 
@@ -29,7 +52,7 @@ function renderAuthScreen() {
   `;
 
   document.getElementById("signInBtn").addEventListener("click", () => {
-    chrome.tabs.create({ url: "https://www.karbali.com/auth" });
+    chrome.tabs.create({ url: AUTH_URL });
   });
 
   document.getElementById("tokenBtn").addEventListener("click", () => {
@@ -55,24 +78,17 @@ function renderTokenInput() {
     const token = document.getElementById("tokenInput").value.trim();
     if (!token) return;
 
-    // Validate token by calling detect-offer with a dummy URL
     try {
-      const resp = await fetch(`${API_BASE}/detect-offer`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-          "apikey": ANON_KEY,
-        },
-        body: JSON.stringify({ url: "https://test.com" }),
+      const result = await chrome.runtime.sendMessage({
+        type: "SYNC_AUTH_SESSION",
+        access_token: token,
       });
 
-      if (resp.status === 401) {
-        alert("Invalid token. Please check and try again.");
+      if (!result?.success) {
+        alert(result?.error || "Invalid token. Please check and try again.");
         return;
       }
 
-      await chrome.storage.local.set({ access_token: token, user_email: "Connected" });
       init();
     } catch {
       alert("Failed to validate token. Check your connection.");
@@ -101,6 +117,7 @@ async function renderMainScreen(email) {
       <div class="points-badge" id="pointsBadge">⚡ Active</div>
     </div>
     <div class="content" id="offerArea">
+      <div style="font-size:12px;color:#94A3B8;margin-bottom:12px;">Signed in as ${escapeHtml(email)}</div>
       ${offer ? renderOfferCard(offer) : renderNoOffer()}
     </div>
     <div class="footer">
@@ -114,7 +131,7 @@ async function renderMainScreen(email) {
   }
 
   document.getElementById("logoutBtn").addEventListener("click", async () => {
-    await chrome.storage.local.clear();
+    await chrome.runtime.sendMessage({ type: "LOGOUT" });
     init();
   });
 }
