@@ -1,7 +1,13 @@
 /**
- * Karbali AI Assistant — Content Script
- * Injected on every page to provide floating AI button, chat panel,
- * partner badge, checkout detection, and search filtering.
+ * Karbali AI Assistant — Content Script (v2.0)
+ * 
+ * Uses the from-scratch NLP pipeline:
+ * 1. KarbaliIntentClassifier — intent detection, entity extraction
+ * 2. KarbaliContextParser — DOM/URL page context analysis
+ * 3. KarbaliConversationManager — session memory, state machine
+ * 4. KarbaliResponseEngine — template-based + AI fallback responses
+ * 
+ * AI Gateway is only used as a fallback for complex/ambiguous queries.
  */
 
 (function () {
@@ -14,12 +20,12 @@
 
   // ── State ──────────────────────────────────────────
   let chatOpen = false;
-  let chatMessages = [];
-  let isTyping = false;
+  let isProcessing = false;
   let currentOffer = null;
   let isPartnerSite = false;
   let checkoutPromptShown = false;
   let searchFilterVisible = false;
+  let pageContext = null;
 
   // ── Helpers ────────────────────────────────────────
   function escapeHtml(str) {
@@ -28,40 +34,45 @@
     return d.innerHTML;
   }
 
+  // Simple markdown-like formatting for responses
+  function formatResponse(text) {
+    return escapeHtml(text)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n/g, "<br>");
+  }
+
   async function getToken() {
     const { access_token } = await chrome.storage.local.get("access_token");
     return access_token || null;
   }
 
-  function getPageContext() {
-    const url = location.href;
-    const title = document.title;
-    const isSearch = /google\.|bing\.|yahoo\.|duckduckgo\./.test(location.hostname);
-    const isCheckout = /checkout|cart|payment|order|pay/i.test(url + " " + title);
-    const isProduct = /product|item|shop|buy|store/i.test(url + " " + title);
+  // ── NLP Pipeline ───────────────────────────────────
+  function processUserInput(text) {
+    // 1. Parse page context
+    pageContext = KarbaliContextParser.parse();
 
-    let pageType = "browsing";
-    if (isSearch) pageType = "search";
-    else if (isCheckout) pageType = "checkout";
-    else if (isProduct) pageType = "product";
+    // 2. Classify intent
+    const classification = KarbaliIntentClassifier.classify(text, {
+      pageType: pageContext.pageType,
+      isPartner: isPartnerSite,
+    });
 
-    return { url, title, pageType, isPartner: isPartnerSite, offer: currentOffer };
+    // 3. Process through conversation manager
+    const convState = KarbaliConversationManager.processTurn(text, classification, pageContext);
+
+    // 4. Generate response
+    const response = KarbaliResponseEngine.generate(classification, convState, pageContext, currentOffer);
+
+    return { classification, convState, response, pageContext };
   }
 
-  function isSearchPage() {
-    return /google\.|bing\.|yahoo\.|duckduckgo\./.test(location.hostname);
-  }
-
-  function isCheckoutPage() {
-    return /checkout|cart|payment|order-confirm|pay\b/i.test(location.href + " " + document.title);
-  }
-
-  // ── API Calls ──────────────────────────────────────
-  async function callAI(userMessage) {
+  // ── AI Gateway Fallback ────────────────────────────
+  async function callAIGateway(userMessage) {
     const token = await getToken();
     if (!token) return "Please sign in to use Karbali AI. Click the extension icon in your toolbar.";
 
-    chatMessages.push({ role: "user", content: userMessage });
+    const messages = KarbaliConversationManager.getMessagesForAI();
+    const summary = KarbaliConversationManager.getConversationSummary();
 
     try {
       const resp = await fetch(`${API_BASE}/extension-ai-chat`, {
@@ -72,29 +83,76 @@
           apikey: ANON_KEY,
         },
         body: JSON.stringify({
-          messages: chatMessages.slice(-10), // last 10 for context window
-          page_context: getPageContext(),
+          messages,
+          page_context: {
+            url: pageContext?.url,
+            title: pageContext?.title,
+            pageType: pageContext?.pageType,
+            isPartner: isPartnerSite,
+            offer: currentOffer,
+            product: pageContext?.product,
+            searchQuery: pageContext?.searchQuery,
+            conversationState: summary.state,
+            activeCategory: summary.activeCategory,
+          },
         }),
       });
 
-      if (resp.status === 401) {
-        return "Your session expired. Please sign in again via the extension popup.";
-      }
+      if (resp.status === 401) return "Your session expired. Please sign in again via the extension popup.";
       if (!resp.ok) {
         const d = await resp.json().catch(() => ({}));
         return d.error || "Something went wrong. Try again!";
       }
 
       const data = await resp.json();
-      const reply = data.reply || "I'm not sure how to help with that.";
-      chatMessages.push({ role: "assistant", content: reply });
-      return reply;
+      return data.reply || "I'm not sure how to help with that.";
     } catch (e) {
-      console.error("Karbali AI error:", e);
+      console.error("Karbali AI Gateway error:", e);
       return "Connection issue. Please check your internet and try again.";
     }
   }
 
+  // ── Main Message Handler ───────────────────────────
+  async function handleUserMessage(text) {
+    // Run NLP pipeline
+    const { classification, convState, response } = processUserInput(text);
+
+    console.log("[Karbali NLP]", {
+      intent: classification.intent,
+      confidence: classification.confidence,
+      category: classification.category,
+      state: convState.state,
+      needsAI: response.needsAI,
+      reason: response.reason,
+    });
+
+    let finalResponse;
+
+    if (response.text && !response.needsAI) {
+      // Local NLP handled it fully
+      finalResponse = response.text;
+    } else if (response.text && response.needsAI) {
+      // Show local response immediately, then enhance with AI
+      addMessageToUI("assistant", response.text);
+
+      // Call AI for richer follow-up
+      const aiResponse = await callAIGateway(text);
+      finalResponse = aiResponse;
+    } else {
+      // Full AI fallback
+      finalResponse = await callAIGateway(text);
+    }
+
+    // Store assistant response in conversation manager
+    KarbaliConversationManager.addAssistantTurn(finalResponse, {
+      intent: classification.intent,
+      wasAIFallback: response.needsAI,
+    });
+
+    return finalResponse;
+  }
+
+  // ── Partner Check ──────────────────────────────────
   async function checkPartnerStatus() {
     const token = await getToken();
     if (!token) return;
@@ -139,13 +197,20 @@
       <span class="karbali-btn-icon">K</span>
       <span class="karbali-notification-dot"></span>
     `;
-    btn.addEventListener("click", toggleChatPanel);
+    btn.addEventListener("click", () => {
+      toggleChatPanel();
+      if (isSearchPage()) toggleSearchFilter();
+    });
     document.body.appendChild(btn);
   }
 
   function updateFloatingButtonNotification(active) {
     const dot = document.querySelector("#karbali-floating-btn .karbali-notification-dot");
     if (dot) dot.classList.toggle("active", active);
+  }
+
+  function isSearchPage() {
+    return /google\.|bing\.|yahoo\.|duckduckgo\./.test(location.hostname);
   }
 
   // ── UI: Partner Badge ──────────────────────────────
@@ -156,7 +221,13 @@
     badge.innerHTML = `✔ Karbali Partner &nbsp;·&nbsp; 💰 ${offer.reward_points.toLocaleString()} pts available`;
     badge.addEventListener("click", () => {
       openChatPanel();
-      sendQuickMessage("Tell me about the savings available on this site");
+      setTimeout(() => {
+        const input = document.getElementById("karbali-input");
+        if (input) {
+          input.value = "Tell me about the savings available on this site";
+          handleSend();
+        }
+      }, 300);
     });
     document.body.appendChild(badge);
   }
@@ -198,7 +269,6 @@
     `;
     document.body.appendChild(panel);
 
-    // Event listeners
     document.getElementById("karbali-close-chat").addEventListener("click", closeChatPanel);
     document.getElementById("karbali-send").addEventListener("click", handleSend);
     document.getElementById("karbali-input").addEventListener("keydown", (e) => {
@@ -211,12 +281,37 @@
     // Quick actions
     document.querySelectorAll(".karbali-quick-action").forEach((btn) => {
       btn.addEventListener("click", () => {
-        sendQuickMessage(btn.dataset.msg);
+        const input = document.getElementById("karbali-input");
+        if (input) {
+          input.value = btn.dataset.msg;
+          handleSend();
+        }
       });
     });
 
-    // Welcome message
-    addMessageToUI("assistant", "Hey! 👋 I'm your Karbali AI assistant. I help you find savings while you browse. What are you looking for today?");
+    // Show contextual welcome based on NLP page analysis
+    showContextualWelcome();
+  }
+
+  function showContextualWelcome() {
+    const ctx = KarbaliContextParser.quickContext();
+
+    let welcome;
+    if (ctx.pageType === "checkout") {
+      welcome = isPartnerSite
+        ? "👋 I see you're checking out! Great news — this is a Karbali partner site. Let me check your savings..."
+        : "👋 You're about to checkout. Want me to check if you could earn more savings with a Karbali partner?";
+    } else if (ctx.pageType === "product") {
+      welcome = isPartnerSite
+        ? `👋 Looking at something interesting! This is a Karbali partner — you can earn savings here. Ask me for details!`
+        : "👋 Browsing products? I can help you find Karbali partner stores where you'd earn savings on similar items!";
+    } else if (ctx.pageType === "search") {
+      welcome = `👋 Searching for "${ctx.searchQuery || "something"}"? I can filter results to show Karbali partners where you earn savings!`;
+    } else {
+      welcome = "👋 Hey! I'm your Karbali AI assistant. I help you save money while you browse. Ask me anything!";
+    }
+
+    addMessageToUI("assistant", welcome);
   }
 
   function toggleChatPanel() {
@@ -225,17 +320,14 @@
 
   function openChatPanel() {
     createChatPanel();
-    const panel = document.getElementById("karbali-chat-panel");
-    setTimeout(() => panel.classList.add("open"), 10);
+    setTimeout(() => document.getElementById("karbali-chat-panel")?.classList.add("open"), 10);
     chatOpen = true;
   }
 
   function closeChatPanel() {
     const panel = document.getElementById("karbali-chat-panel");
-    if (panel) {
-      panel.classList.remove("open");
-      chatOpen = false;
-    }
+    if (panel) panel.classList.remove("open");
+    chatOpen = false;
   }
 
   function addMessageToUI(role, content) {
@@ -244,15 +336,14 @@
 
     const msg = document.createElement("div");
     msg.className = `karbali-msg ${role}`;
-    msg.innerHTML = escapeHtml(content);
+    msg.innerHTML = formatResponse(content);
     container.appendChild(msg);
     container.scrollTop = container.scrollHeight;
   }
 
-  function showTypingIndicator() {
+  function showTyping() {
     const container = document.getElementById("karbali-messages");
     if (!container) return;
-
     const typing = document.createElement("div");
     typing.className = "karbali-typing";
     typing.id = "karbali-typing";
@@ -261,37 +352,27 @@
     container.scrollTop = container.scrollHeight;
   }
 
-  function removeTypingIndicator() {
+  function removeTyping() {
     document.getElementById("karbali-typing")?.remove();
   }
 
   async function handleSend() {
     const input = document.getElementById("karbali-input");
     const text = input.value.trim();
-    if (!text || isTyping) return;
+    if (!text || isProcessing) return;
 
     input.value = "";
     addMessageToUI("user", text);
-
-    isTyping = true;
+    isProcessing = true;
     document.getElementById("karbali-send").disabled = true;
-    showTypingIndicator();
+    showTyping();
 
-    const reply = await callAI(text);
+    const reply = await handleUserMessage(text);
 
-    removeTypingIndicator();
+    removeTyping();
     addMessageToUI("assistant", reply);
-    isTyping = false;
+    isProcessing = false;
     document.getElementById("karbali-send").disabled = false;
-  }
-
-  function sendQuickMessage(msg) {
-    openChatPanel();
-    const input = document.getElementById("karbali-input");
-    if (input) {
-      input.value = msg;
-      handleSend();
-    }
   }
 
   // ── UI: Checkout Prompt ────────────────────────────
@@ -299,17 +380,18 @@
     if (checkoutPromptShown || document.getElementById("karbali-checkout-prompt")) return;
     checkoutPromptShown = true;
 
+    const suggestion = KarbaliResponseEngine.generateProactiveSuggestion(
+      KarbaliContextParser.quickContext(),
+      currentOffer
+    );
+    if (!suggestion) return;
+
     const prompt = document.createElement("div");
     prompt.id = "karbali-checkout-prompt";
     prompt.innerHTML = `
       <button class="karbali-checkout-close" id="karbali-checkout-dismiss">×</button>
       <div class="karbali-checkout-title">💰 Karbali Savings Check</div>
-      <div class="karbali-checkout-text">
-        ${isPartnerSite
-          ? "Great news! This is a Karbali partner site. You could be earning savings on this purchase!"
-          : "This site isn't a Karbali partner yet. Want to see partner alternatives that could boost your savings?"
-        }
-      </div>
+      <div class="karbali-checkout-text">${escapeHtml(suggestion.text)}</div>
       <div class="karbali-checkout-actions">
         <button class="karbali-checkout-btn primary" id="karbali-checkout-check">
           ${isPartnerSite ? "View Savings" : "Find Alternatives"}
@@ -321,10 +403,16 @@
 
     document.getElementById("karbali-checkout-check").addEventListener("click", () => {
       prompt.remove();
-      const msg = isPartnerSite
-        ? "I'm about to checkout. How much am I earning in savings from this purchase?"
-        : "I'm about to buy something here. Can you show me Karbali partner alternatives where I'd earn savings?";
-      sendQuickMessage(msg);
+      openChatPanel();
+      setTimeout(() => {
+        const input = document.getElementById("karbali-input");
+        if (input) {
+          input.value = isPartnerSite
+            ? "How much am I earning in savings from this purchase?"
+            : "Show me Karbali partner alternatives for what I'm buying";
+          handleSend();
+        }
+      }, 300);
     });
 
     document.getElementById("karbali-checkout-skip").addEventListener("click", () => prompt.remove());
@@ -355,12 +443,18 @@
     `;
     document.body.appendChild(filter);
 
-    // Toggling filters triggers AI search
     filter.querySelectorAll(".karbali-filter-checkbox").forEach((cb) => {
       cb.addEventListener("change", () => {
-        const searchQuery = getSearchQuery();
-        if (searchQuery) {
-          sendQuickMessage(`Find Karbali partners for: "${searchQuery}"`);
+        const query = KarbaliContextParser.extractSearchQuery(location.href);
+        if (query) {
+          openChatPanel();
+          setTimeout(() => {
+            const input = document.getElementById("karbali-input");
+            if (input) {
+              input.value = `Find Karbali partners for: "${query}"`;
+              handleSend();
+            }
+          }, 300);
         }
       });
     });
@@ -373,34 +467,8 @@
     filter.classList.toggle("visible", searchFilterVisible);
   }
 
-  function getSearchQuery() {
-    // Extract from Google/Bing search input
-    const searchInput = document.querySelector('input[name="q"], input[name="search"], input[type="search"]');
-    return searchInput?.value || "";
-  }
-
-  // ── Initialization ─────────────────────────────────
-  async function init() {
-    const token = await getToken();
-    if (!token) return; // Not authenticated, don't show anything
-
-    // Create UI elements
-    createFloatingButton();
-
-    // Check partner status
-    await checkPartnerStatus();
-
-    // Search page: create filter panel
-    if (isSearchPage()) {
-      createSearchFilter();
-    }
-
-    // Checkout detection
-    if (isCheckoutPage()) {
-      setTimeout(showCheckoutPrompt, 2000);
-    }
-
-    // Listen for messages from background
+  // ── Background Communication ───────────────────────
+  function setupBackgroundListener() {
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg.type === "OFFER_FOUND") {
         currentOffer = msg.offer;
@@ -415,18 +483,44 @@
         updateFloatingButtonNotification(false);
       }
     });
+  }
 
-    // Override floating button click on search pages to also toggle filter
-    if (isSearchPage()) {
-      const btn = document.getElementById("karbali-floating-btn");
-      if (btn) {
-        btn.removeEventListener("click", toggleChatPanel);
-        btn.addEventListener("click", () => {
-          toggleSearchFilter();
-          toggleChatPanel();
-        });
-      }
+  // ── Initialization ─────────────────────────────────
+  async function init() {
+    const token = await getToken();
+    if (!token) return;
+
+    // Initialize UI
+    createFloatingButton();
+
+    // Check partner status
+    await checkPartnerStatus();
+
+    // Parse initial page context
+    pageContext = KarbaliContextParser.parse();
+
+    // Search page: create filter
+    if (isSearchPage()) createSearchFilter();
+
+    // Checkout detection with proactive prompt
+    if (pageContext.pageType === "checkout") {
+      setTimeout(showCheckoutPrompt, 2000);
     }
+
+    // Product page proactive suggestion
+    if (pageContext.pageType === "product" && isPartnerSite) {
+      // Subtle notification dot is enough; don't interrupt
+      updateFloatingButtonNotification(true);
+    }
+
+    // Listen for background messages
+    setupBackgroundListener();
+
+    console.log("[Karbali AI] Initialized", {
+      pageType: pageContext.pageType,
+      isPartner: isPartnerSite,
+      domain: pageContext.domain,
+    });
   }
 
   // Run

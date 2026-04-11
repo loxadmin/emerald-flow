@@ -18,7 +18,13 @@
     {
       "matches": ["<all_urls>"],
       "css": ["content.css"],
-      "js": ["content.js"],
+      "js": [
+        "ai/intent-classifier.js",
+        "ai/context-parser.js",
+        "ai/conversation-manager.js",
+        "ai/response-engine.js",
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
