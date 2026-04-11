@@ -26,7 +26,6 @@ export default function AdminExtension() {
       .catch((err) => alert(err.message))
       .finally(() => setDownloading(false));
   };
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
