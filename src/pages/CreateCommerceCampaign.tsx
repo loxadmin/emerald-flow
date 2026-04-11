@@ -271,7 +271,7 @@ new KarbaliCommerce();`;
         </div>
 
         {/* Website Selection */}
-        {websites.length > 1 && step === 0 && (
+        {websites.length >= 1 && step === 0 && (
           <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Globe className="h-4 w-4 text-primary" /> Select Website</h3>
             <div className="grid gap-2">

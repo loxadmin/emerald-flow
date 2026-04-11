@@ -450,8 +450,8 @@ new KarbaliTracking();`;
           ))}
         </div>
 
-        {/* Website Selection (if multiple websites) */}
-        {websites.length > 1 && step === 0 && !isPartnership && (
+        {/* Website Selection */}
+        {websites.length >= 1 && step === 0 && !isPartnership && (
           <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Globe className="h-4 w-4 text-primary" /> Select Website</h3>
             <p className="text-xs text-muted-foreground">Which website is this campaign for?</p>
