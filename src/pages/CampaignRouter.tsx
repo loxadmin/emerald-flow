@@ -14,11 +14,37 @@ export default function CampaignRouter() {
   useEffect(() => {
     if (!user) return;
     const route = async () => {
-      const draftId = searchParams.get("draft");
+      let draftId = searchParams.get("draft");
       let adType: string | null = null;
 
-      // If resuming a draft, get the ad_type from that campaign
-      if (draftId) {
+      // If no explicit draft param, check for an existing draft with an API key (i.e. work in progress)
+      if (!draftId) {
+        const { data: existingDrafts } = await supabase
+          .from("campaigns")
+          .select("id, ad_type")
+          .eq("advertiser_id", user.id)
+          .eq("is_draft", true)
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (existingDrafts && existingDrafts.length > 0) {
+          // Find a draft that has an API key (meaning real work was started)
+          for (const draft of existingDrafts) {
+            const { count } = await supabase
+              .from("api_keys")
+              .select("id", { count: "exact", head: true })
+              .eq("campaign_id", draft.id);
+            if (count && count > 0) {
+              draftId = draft.id;
+              adType = (draft as any).ad_type || null;
+              break;
+            }
+          }
+        }
+      }
+
+      // If resuming a specific draft, get its ad_type
+      if (draftId && !adType) {
         const { data: draft } = await supabase
           .from("campaigns")
           .select("ad_type")
