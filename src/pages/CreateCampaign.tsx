@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertCircle, Handshake, Globe } from "lucide-react";
+import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertCircle, Handshake, Globe, RotateCcw } from "lucide-react";
 import JSZip from "jszip";
 
 interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }

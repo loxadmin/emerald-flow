@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, ShoppingBag, Download } from "lucide-react";
+import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, ShoppingBag, Download, RotateCcw } from "lucide-react";
 import JSZip from "jszip";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
