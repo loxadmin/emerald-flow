@@ -107,6 +107,14 @@ export default function Signup() {
       if (error) {
         toast.error(error.message);
       } else {
+        // Fire signup tracking event
+        try {
+          const w = window as any;
+          if (w.Karbali && w.Karbali.trackSignup) {
+            w.Karbali.trackSignup({ user_id: email.trim() });
+          }
+        } catch (_e) { /* tracking is best-effort */ }
+        
         toast.success("Account created! Check your email to confirm.");
         navigate("/login");
       }
