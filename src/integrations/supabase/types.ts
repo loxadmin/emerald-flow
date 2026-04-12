@@ -1063,6 +1063,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      refund_campaign_escrow: {
+        Args: { _campaign_id: string }
+        Returns: number
+      }
     }
     Enums: {
       advertiser_subtype:

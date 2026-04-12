@@ -41,24 +41,12 @@ export default function AdsPage() {
     if (!confirm(`Delete this ${label}? This cannot be undone.`)) return;
     setDeleting(campaign.id);
 
-    // Refund unused escrow to wallet if campaign had funds
+    // Refund unused escrow to wallet via secure server function
+    let refundedAmount = 0;
     if (!campaign.is_draft && campaign.budget_remaining > 0) {
-      const { data: wallet } = await supabase
-        .from("wallets")
-        .select("id, balance")
-        .eq("advertiser_id", user!.id)
-        .single();
-      if (wallet) {
-        const newBalance = Number(wallet.balance) + Number(campaign.budget_remaining);
-        await supabase.from("wallets").update({ balance: newBalance, updated_at: new Date().toISOString() }).eq("id", wallet.id);
-        await supabase.from("wallet_transactions").insert({
-          wallet_id: wallet.id,
-          amount: Number(campaign.budget_remaining),
-          type: "refund",
-          status: "completed",
-          description: `Refund from deleted campaign: ${campaign.name}`,
-        });
-      }
+      const { data, error: refundError } = await supabase.rpc("refund_campaign_escrow", { _campaign_id: campaign.id });
+      if (refundError) { toast.error("Refund failed: " + refundError.message); setDeleting(null); return; }
+      refundedAmount = Number(data) || 0;
     }
 
     // Delete related records then campaign
@@ -67,7 +55,7 @@ export default function AdsPage() {
     await supabase.from("referrals").delete().eq("campaign_id", campaign.id);
     const { error } = await supabase.from("campaigns").delete().eq("id", campaign.id);
     if (error) toast.error(error.message);
-    else { toast.success(campaign.budget_remaining > 0 && !campaign.is_draft ? `Campaign deleted. $${Number(campaign.budget_remaining).toFixed(2)} refunded.` : `${campaign.is_draft ? "Draft" : "Campaign"} deleted`); fetchCampaigns(); }
+    else { toast.success(refundedAmount > 0 ? `Campaign deleted. $${refundedAmount.toFixed(2)} refunded.` : `${campaign.is_draft ? "Draft" : "Campaign"} deleted`); fetchCampaigns(); }
     setDeleting(null);
   };
 
