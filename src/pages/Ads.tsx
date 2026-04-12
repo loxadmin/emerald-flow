@@ -55,7 +55,7 @@ export default function AdsPage() {
     await supabase.from("referrals").delete().eq("campaign_id", campaign.id);
     const { error } = await supabase.from("campaigns").delete().eq("id", campaign.id);
     if (error) toast.error(error.message);
-    else { toast.success(campaign.budget_remaining > 0 && !campaign.is_draft ? `Campaign deleted. $${Number(campaign.budget_remaining).toFixed(2)} refunded.` : `${campaign.is_draft ? "Draft" : "Campaign"} deleted`); fetchCampaigns(); }
+    else { toast.success(refundedAmount > 0 ? `Campaign deleted. $${refundedAmount.toFixed(2)} refunded.` : `${campaign.is_draft ? "Draft" : "Campaign"} deleted`); fetchCampaigns(); }
     setDeleting(null);
   };
 
