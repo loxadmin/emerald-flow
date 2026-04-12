@@ -72,7 +72,8 @@ export default function CreateCommerceCampaign() {
       }
     };
     fetchData();
-  }, [user, searchParams]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, searchParams]);
 
   useEffect(() => {
     if (!selectedWebsiteId) return;
