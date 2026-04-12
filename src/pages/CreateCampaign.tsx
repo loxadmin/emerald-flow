@@ -23,6 +23,8 @@ export default function CreateCampaign() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, walletActivated } = useAuth();
+  const draftParam = searchParams.get("draft");
+  const stepParam = searchParams.get("step");
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isPartnership, setIsPartnership] = useState(false);
@@ -56,6 +58,17 @@ export default function CreateCampaign() {
 
   // Draft loading
   const [draftLoaded, setDraftLoaded] = useState(false);
+
+  const syncDraftUrl = (draftId: string, nextStep: number) => {
+    const currentStep = Number(stepParam ?? "0");
+    if (draftParam === draftId && currentStep === nextStep) return;
+    navigate(`/campaigns/create/performance?draft=${draftId}&step=${nextStep}`, { replace: true });
+  };
+
+  const goToStep = (nextStep: number, draftId = campaignId) => {
+    setStep(nextStep);
+    if (draftId) syncDraftUrl(draftId, nextStep);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -106,8 +119,34 @@ export default function CreateCampaign() {
       const { data: w } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
       if (w) setWalletBalance(Number(w.balance));
 
-      // Only resume a draft if explicitly linked via ?draft=<id>
-      const draftId = searchParams.get("draft");
+      let draftId = draftParam;
+      const requestedStep = Number(stepParam ?? "0");
+
+      if (!draftId) {
+        const { data: existingDrafts } = await supabase
+          .from("campaigns")
+          .select("id")
+          .eq("advertiser_id", user.id)
+          .eq("is_draft", true)
+          .or("ad_type.eq.performance,ad_type.is.null")
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (existingDrafts?.length) {
+          for (const draft of existingDrafts) {
+            const { count } = await supabase
+              .from("api_keys")
+              .select("id", { count: "exact", head: true })
+              .eq("campaign_id", draft.id);
+
+            if (count && count > 0) {
+              draftId = draft.id;
+              break;
+            }
+          }
+        }
+      }
+
       if (draftId) {
         const { data: draftCampaign } = await supabase.from("campaigns")
           .select("*")
@@ -128,8 +167,13 @@ export default function CreateCampaign() {
           const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", draftCampaign.id).limit(1);
           if (keys && keys.length > 0) {
             setApiKey(keys[0].key);
-            if (draftCampaign.integration_verified) setStep(3);
-            else if (keys[0].key) setStep(1);
+            let nextStep = requestedStep >= 1 && requestedStep <= 4 ? requestedStep : 1;
+            if (!draftCampaign.integration_verified) {
+              nextStep = Math.min(nextStep, 2);
+            } else {
+              nextStep = Math.max(nextStep, 3);
+            }
+            goToStep(nextStep, draftCampaign.id);
           }
         }
       }
@@ -137,7 +181,7 @@ export default function CreateCampaign() {
     };
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, searchParams]);
+  }, [user?.id, draftParam, stepParam]);
 
   useEffect(() => {
     if (!selectedWebsiteId) return;
@@ -188,6 +232,7 @@ export default function CreateCampaign() {
     const { data: campaign, error } = await supabase.from("campaigns").insert({
       advertiser_id: user.id, name: "Draft Campaign", budget_remaining: 0,
       integration_type: integrationType, is_draft: true,
+      ad_type: "performance",
       website_id: selectedWebsiteId,
     } as any).select().single();
     if (error) { toast.error(error.message); setLoading(false); return; }
@@ -199,7 +244,7 @@ export default function CreateCampaign() {
     if (keyError) { toast.error("Failed to generate API key"); return; }
     setApiKey(key); setCampaignId(campaign.id);
     toast.success("API key generated!");
-    setStep(1);
+    goToStep(1, campaign.id);
   };
 
   const handleVerify = async () => {
@@ -216,7 +261,7 @@ export default function CreateCampaign() {
         setVerified(true);
         toast.success("Integration verified!");
         await saveDraft({ integration_verified: true });
-        setStep(3);
+        goToStep(3, campaignId);
       } else toast.error(payload?.error || "Verification failed");
     } catch (err: unknown) { toast.error((err as Error).message || "Verification failed"); }
     finally { setVerifying(false); }
@@ -590,7 +635,7 @@ new KarbaliTracking();`;
                 <p className="text-[11px] text-muted-foreground">The loader now persists the referral client ID, bridges it to the eventual signed-in user, and works for direct signup flows plus Google/OAuth callback completions.</p>
               </div>
             )}
-            <Button className="w-full" variant="outline" onClick={() => { saveDraft(); setStep(2); }}>I've integrated → Continue to Verify</Button>
+            <Button className="w-full" variant="outline" onClick={() => { saveDraft(); goToStep(2); }}>I've integrated → Continue to Verify</Button>
           </div>
         )}
 
@@ -606,7 +651,7 @@ new KarbaliTracking();`;
               <Button className="flex-1" onClick={handleVerify} disabled={verifying || verified}>
                 {verifying ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</> : verified ? "Verified ✓" : <><Send className="mr-2 h-4 w-4" /> Verify</>}
               </Button>
-              {verified && <Button variant="outline" onClick={() => setStep(3)}>Continue →</Button>}
+              {verified && <Button variant="outline" onClick={() => goToStep(3)}>Continue →</Button>}
             </div>
           </div>
         )}
@@ -648,7 +693,14 @@ new KarbaliTracking();`;
                 <AlertCircle className="h-4 w-4 shrink-0" /><p>Need ${totalCost.toFixed(2)}, have ${walletBalance.toFixed(2)}. <button onClick={() => navigate("/wallet")} className="underline">Fund wallet</button></p>
               </div>
             )}
-            <Button className="w-full" onClick={() => { saveDraft(); setStep(isPartnership ? 2 : 4); }} disabled={!campaignName.trim() || milestones.length === 0 || Number(targetUsers) < 100}>Review & Submit</Button>
+            <Button className="w-full" onClick={() => {
+              saveDraft();
+              if (isPartnership) {
+                setStep(2);
+                return;
+              }
+              goToStep(4);
+            }} disabled={!campaignName.trim() || milestones.length === 0 || Number(targetUsers) < 100}>Review & Submit</Button>
           </div>
         )}
 
