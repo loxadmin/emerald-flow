@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
       const { data: referral } = await supabase
         .from("referrals")
         .select("id, campaign_id")
-        [isUuid(referralInput) ? "eq" : "eq"](isUuid(referralInput) ? "id" : "code", referralInput)
+        .eq(isUuid(referralInput) ? "id" : "code", referralInput)
         .maybeSingle();
 
       if (!referral || referral.campaign_id !== campaignId) {
@@ -165,6 +165,21 @@ Deno.serve(async (req) => {
           break;
         }
       }
+    }
+
+    let referredByCode: string | null = null;
+    if (!resolvedReferralId && clientId) {
+      const { data: sessionReferral } = await supabase
+        .from("tracking_sessions")
+        .select("referral_id, referral_code")
+        .eq("campaign_id", campaignId)
+        .eq("tid", clientId)
+        .maybeSingle();
+
+      if (sessionReferral?.referral_id) {
+        resolvedReferralId = sessionReferral.referral_id;
+      }
+      referredByCode = sessionReferral?.referral_code || null;
     }
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -216,11 +231,13 @@ Deno.serve(async (req) => {
           external_user_id: identity,
           campaign_id: campaignId,
           referral_id: resolvedReferralId,
+          tid: clientId || null,
+          referred_by: referredByCode,
         });
       } else if (!existingTrackedUser.referral_id && resolvedReferralId) {
         await supabase
           .from("users_tracking")
-          .update({ referral_id: resolvedReferralId })
+          .update({ referral_id: resolvedReferralId, tid: clientId || null, referred_by: referredByCode })
           .eq("id", existingTrackedUser.id);
       }
     }
@@ -287,8 +304,6 @@ Deno.serve(async (req) => {
       event_id: event.id,
       charged: chargeAmount,
       referral_id: resolvedReferralId,
-      identity: canonicalIdentity,
-      linked_identities: identityPool,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";

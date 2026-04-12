@@ -5,11 +5,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/**
- * Server-side conversion tracking endpoint.
- * Called by advertiser backends after confirmed signup/purchase events.
- * This is the DETERMINISTIC path — no guessing, no pattern matching.
- */
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,33 +25,23 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const apiKey = String(body.api_key || "").trim();
     const eventType = String(body.event_type || body.event || "").trim();
-    const clientId = String(body.client_id || body.tid || "").trim();
+    const suppliedTid = String(body.client_id || body.tid || "").trim();
     const userId = String(body.user_id || "").trim();
     const amount = body.amount != null ? Number(body.amount) : null;
 
     if (!apiKey || !eventType) {
-      return new Response(
-        JSON.stringify({ error: "Missing api_key and event_type" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Missing api_key and event_type" }, 400);
     }
 
-    if (!clientId && !userId) {
-      return new Response(
-        JSON.stringify({ error: "Missing client_id or user_id" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!suppliedTid && !userId) {
+      return json({ error: "Missing tid/client_id or user_id" }, 400);
     }
 
     const validEvents = ["signup", "purchase", "download"];
     if (!validEvents.includes(eventType)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid event_type. Must be: signup, purchase, or download" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Invalid event_type. Must be: signup, purchase, or download" }, 400);
     }
 
-    // Validate API key
     const { data: keyData, error: keyError } = await supabase
       .from("api_keys")
       .select("campaign_id")
@@ -58,34 +49,93 @@ Deno.serve(async (req) => {
       .single();
 
     if (keyError || !keyData) {
-      return new Response(
-        JSON.stringify({ error: "Invalid API key" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Invalid API key" }, 401);
     }
 
     const campaignId = keyData.campaign_id;
 
-    // Look up referral from users_tracking
-    const identities = [clientId, userId].filter(Boolean);
-    let referralId: string | null = null;
+    let trackingSession:
+      | { tid: string; referral_id: string | null; referral_code: string | null }
+      | null = null;
 
-    if (identities.length > 0) {
-      const { data: tracked } = await supabase
+    // If user already exists in users_tracking, pull canonical tid from there (cross-device continuity)
+    if (userId) {
+      const { data: trackedUser } = await supabase
         .from("users_tracking")
-        .select("referral_id")
+        .select("tid, referral_id, referred_by")
         .eq("campaign_id", campaignId)
-        .in("external_user_id", identities);
+        .eq("external_user_id", userId)
+        .maybeSingle();
 
-      for (const t of tracked || []) {
-        if (t.referral_id) {
-          referralId = t.referral_id;
-          break;
-        }
+      if (trackedUser?.tid) {
+        trackingSession = {
+          tid: trackedUser.tid,
+          referral_id: trackedUser.referral_id,
+          referral_code: trackedUser.referred_by,
+        };
       }
     }
 
-    // Forward to the main track function via internal call
+    const tid = trackingSession?.tid || suppliedTid;
+
+    if (!trackingSession && tid) {
+      const { data: session } = await supabase
+        .from("tracking_sessions")
+        .select("tid, referral_id, referral_code")
+        .eq("campaign_id", campaignId)
+        .eq("tid", tid)
+        .maybeSingle();
+
+      if (session) trackingSession = session;
+    }
+
+    // Persist identity continuity (bind user -> tid + referred_by)
+    if (userId) {
+      const { data: existingUserRow } = await supabase
+        .from("users_tracking")
+        .select("id")
+        .eq("campaign_id", campaignId)
+        .eq("external_user_id", userId)
+        .maybeSingle();
+
+      const userTrackingPayload = {
+        campaign_id: campaignId,
+        external_user_id: userId,
+        tid: tid || null,
+        referral_id: trackingSession?.referral_id || null,
+        referred_by: trackingSession?.referral_code || null,
+      };
+
+      if (existingUserRow?.id) {
+        await supabase.from("users_tracking").update(userTrackingPayload).eq("id", existingUserRow.id);
+      } else {
+        await supabase.from("users_tracking").insert(userTrackingPayload);
+      }
+    }
+
+    if (tid) {
+      const { data: existingTidRow } = await supabase
+        .from("users_tracking")
+        .select("id")
+        .eq("campaign_id", campaignId)
+        .eq("external_user_id", tid)
+        .maybeSingle();
+
+      const tidPayload = {
+        campaign_id: campaignId,
+        external_user_id: tid,
+        tid,
+        referral_id: trackingSession?.referral_id || null,
+        referred_by: trackingSession?.referral_code || null,
+      };
+
+      if (existingTidRow?.id) {
+        await supabase.from("users_tracking").update(tidPayload).eq("id", existingTidRow.id);
+      } else {
+        await supabase.from("users_tracking").insert(tidPayload);
+      }
+    }
+
     const trackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/track`;
     const trackResponse = await fetch(trackUrl, {
       method: "POST",
@@ -97,24 +147,22 @@ Deno.serve(async (req) => {
         api_key: apiKey,
         event_type: eventType,
         user_id: userId || null,
-        client_id: clientId || null,
-        referral_id: referralId || body.referral_id || null,
-        amount: amount,
+        client_id: tid || null,
+        referral_id: trackingSession?.referral_id || body.referral_id || null,
+        amount,
         source_url: body.source_url || "server-side",
       }),
     });
 
     const result = await trackResponse.json().catch(() => ({}));
+    if (result && typeof result === "object") {
+      delete (result as Record<string, unknown>).identity;
+      delete (result as Record<string, unknown>).linked_identities;
+    }
 
-    return new Response(
-      JSON.stringify(result),
-      { status: trackResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json(result, trackResponse.status);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ error: message }, 500);
   }
 });

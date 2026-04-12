@@ -2,6 +2,7 @@
   "use strict";
 
   var TRACK_ENDPOINT = "https://advertiser.karbali.com/api/track";
+  var TRACK_SESSION_ENDPOINT = "https://advertiser.karbali.com/api/track/session";
   var PING_ENDPOINT = "https://advertiser.karbali.com/api/track-ping";
 
   // Storage keys
@@ -95,8 +96,35 @@
     if (refCode) setStorage(REFERRAL_CODE_KEY, refCode);
     if (clientId) setStorage(CLIENT_ID_KEY, clientId);
 
-    // Ensure client_id always exists
+    // Ensure client_id always exists and persist server session
     getClientId();
+    ensureTrackingSession();
+  }
+
+
+
+  async function ensureTrackingSession() {
+    var apiKey = getApiKey();
+    if (!apiKey) return;
+
+    var params = new URLSearchParams(window.location.search);
+    var referralCode = params.get("ref_code") || getStorage(REFERRAL_CODE_KEY) || null;
+
+    try {
+      await fetch(TRACK_SESSION_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_key: apiKey,
+          tid: getClientId(),
+          referral_code: referralCode,
+          referral_id: getReferralId() || null,
+        }),
+        keepalive: true,
+        mode: "cors",
+        credentials: "omit",
+      });
+    } catch (_) {}
   }
 
   // Patch history for SPA navigation
@@ -291,7 +319,9 @@
 
   var api = {
     endpoint: TRACK_ENDPOINT,
+    sessionEndpoint: TRACK_SESSION_ENDPOINT,
     sync: syncAttribution,
+    ensureSession: ensureTrackingSession,
     identify: identify,
     getApiKey: function () { return getApiKey(); },
     getClientId: function () { return getClientId(); },

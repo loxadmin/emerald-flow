@@ -5,6 +5,14 @@
       "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track"
     },
     {
+      "source": "/api/track/session",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track-session"
+    },
+    {
+      "source": "/api/track/conversion",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track-conversion"
+    },
+    {
       "source": "/api/detect-offer",
       "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/detect-offer"
     },
