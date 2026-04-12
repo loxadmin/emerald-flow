@@ -22,6 +22,8 @@ export default function CreateCommerceCampaign() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, walletActivated } = useAuth();
+  const draftParam = searchParams.get("draft");
+  const stepParam = searchParams.get("step");
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +39,17 @@ export default function CreateCommerceCampaign() {
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState("");
 
+  const syncDraftUrl = (draftId: string, nextStep: number) => {
+    const currentStep = Number(stepParam ?? "0");
+    if (draftParam === draftId && currentStep === nextStep) return;
+    navigate(`/campaigns/create/commerce?draft=${draftId}&step=${nextStep}`, { replace: true });
+  };
+
+  const goToStep = (nextStep: number, draftId = campaignId) => {
+    setStep(nextStep);
+    if (draftId) syncDraftUrl(draftId, nextStep);
+  };
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
@@ -49,8 +62,33 @@ export default function CreateCommerceCampaign() {
       const { data: w } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
       if (w) setWalletBalance(Number(w.balance));
 
-      // Resume draft if ?draft=<id> is present
-      const draftId = searchParams.get("draft");
+      let draftId = draftParam;
+      const requestedStep = Number(stepParam ?? "0");
+
+      if (!draftId) {
+        const { data: existingDrafts } = await supabase.from("campaigns")
+          .select("id")
+          .eq("advertiser_id", user.id)
+          .eq("is_draft", true)
+          .eq("ad_type", "commerce")
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (existingDrafts?.length) {
+          for (const draft of existingDrafts) {
+            const { count } = await supabase
+              .from("api_keys")
+              .select("id", { count: "exact", head: true })
+              .eq("campaign_id", draft.id);
+
+            if (count && count > 0) {
+              draftId = draft.id;
+              break;
+            }
+          }
+        }
+      }
+
       if (draftId) {
         const { data: draft } = await supabase.from("campaigns")
           .select("*").eq("id", draftId).eq("advertiser_id", user.id).eq("is_draft", true).maybeSingle();
@@ -65,15 +103,20 @@ export default function CreateCommerceCampaign() {
           const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", draft.id).limit(1);
           if (keys && keys.length > 0) {
             setApiKey(keys[0].key);
-            if (draft.integration_verified) setStep(2);
-            else if (keys[0].key) setStep(1);
+            let nextStep = requestedStep >= 1 && requestedStep <= 4 ? requestedStep : 1;
+            if (!draft.integration_verified) {
+              nextStep = Math.min(nextStep, 2);
+            } else {
+              nextStep = Math.max(nextStep, 3);
+            }
+            goToStep(nextStep, draft.id);
           }
         }
       }
     };
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, searchParams]);
+  }, [user?.id, draftParam, stepParam]);
 
   useEffect(() => {
     if (!selectedWebsiteId) return;
@@ -110,7 +153,7 @@ export default function CreateCommerceCampaign() {
 
     setApiKey(key); setCampaignId(campaign.id);
     toast.success("API key generated!");
-    setStep(1);
+    goToStep(1, campaign.id);
     setLoading(false);
   };
 
@@ -126,7 +169,7 @@ export default function CreateCommerceCampaign() {
       if (payload?.verified) {
         setVerified(true);
         toast.success("Integration verified!");
-        setStep(3);
+        goToStep(3, campaignId);
       } else toast.error(payload?.error || "Verification failed");
     } catch (err: unknown) { toast.error((err as Error).message); }
     finally { setVerifying(false); }
@@ -380,7 +423,7 @@ new KarbaliCommerce();`;
                 </pre>
               </div>
             )}
-            <Button className="w-full" variant="outline" onClick={() => setStep(2)}>I've integrated → Verify</Button>
+            <Button className="w-full" variant="outline" onClick={() => goToStep(2)}>I've integrated → Verify</Button>
           </div>
         )}
 
@@ -394,7 +437,7 @@ new KarbaliCommerce();`;
               <Button className="flex-1" onClick={handleVerify} disabled={verifying || verified}>
                 {verifying ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</> : verified ? "Verified ✓" : "Verify"}
               </Button>
-              {verified && <Button variant="outline" onClick={() => setStep(3)}>Continue →</Button>}
+              {verified && <Button variant="outline" onClick={() => goToStep(3)}>Continue →</Button>}
             </div>
           </div>
         )}
@@ -423,7 +466,7 @@ new KarbaliCommerce();`;
                 <span className={walletBalance >= totalCost ? "text-primary" : "text-destructive"}>${walletBalance.toFixed(2)}</span>
               </div>
             </div>
-            <Button className="w-full" onClick={() => setStep(4)} disabled={!campaignName.trim() || sales < 100}>Review →</Button>
+            <Button className="w-full" onClick={() => goToStep(4)} disabled={!campaignName.trim() || sales < 100}>Review →</Button>
           </div>
         )}
 
