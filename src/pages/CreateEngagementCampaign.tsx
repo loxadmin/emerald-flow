@@ -38,7 +38,8 @@ export default function CreateEngagementCampaign() {
     if (!user) return;
     supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle()
       .then(({ data }) => { if (data) setWalletBalance(Number(data.balance)); });
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const rate = mediaType ? RATES[mediaType] : 0;
   const interactions = Math.max(MIN_INTERACTIONS, Number(targetInteractions) || MIN_INTERACTIONS);

@@ -106,7 +106,8 @@ export default function CategorySelection() {
       setLoading(false);
     };
     fetchCategories();
-  }, [user, hasCategory]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, hasCategory]);
 
   const performanceSubcategories = categories.filter(
     (c) => !["Engagement Ads", "Performance Ads", "Commerce Ads"].includes(c.name)

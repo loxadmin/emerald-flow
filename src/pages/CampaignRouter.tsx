@@ -50,7 +50,8 @@ export default function CampaignRouter() {
       setLoading(false);
     };
     route();
-  }, [user, navigate, searchParams]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, navigate, searchParams]);
 
   if (loading) {
     return (
