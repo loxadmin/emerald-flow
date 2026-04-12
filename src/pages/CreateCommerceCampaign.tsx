@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, ShoppingBag, Download } from "lucide-react";
+import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, ShoppingBag, Download, RotateCcw } from "lucide-react";
 import JSZip from "jszip";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
@@ -242,16 +242,37 @@ new KarbaliCommerce();`;
     toast.success("WordPress plugin downloaded!");
   };
 
+  const handleStartOver = async () => {
+    if (!campaignId) return;
+    if (!confirm("Delete this draft and start a new campaign? This cannot be undone.")) return;
+    setLoading(true);
+    await supabase.from("api_keys").delete().eq("campaign_id", campaignId);
+    await supabase.from("campaign_sources").delete().eq("campaign_id", campaignId);
+    await supabase.from("campaigns").delete().eq("id", campaignId);
+    setLoading(false);
+    toast.success("Draft deleted");
+    navigate("/campaigns/create", { replace: true });
+    setCampaignId(null); setApiKey(null); setStep(0); setVerified(false);
+    setCampaignName(""); setTargetSales("100");
+  };
+
   const STEPS = ["Generate API Key", "Integrate", "Verify", "Configure", "Submit"];
 
   return (
     <DashboardLayout>
       <MotionWrapper className="mx-auto max-w-3xl space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-primary" /> Create Commerce Campaign
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">Sales tracking with $1 flat fee + 10% commission per sale</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <ShoppingBag className="h-5 w-5 text-primary" /> Create Commerce Campaign
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">Sales tracking with $1 flat fee + 10% commission per sale</p>
+          </div>
+          {campaignId && (
+            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive gap-1.5" onClick={handleStartOver} disabled={loading}>
+              <RotateCcw className="h-3.5 w-3.5" /> Start Over
+            </Button>
+          )}
         </div>
 
         {/* Stepper */}
