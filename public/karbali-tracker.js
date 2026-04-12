@@ -4,9 +4,28 @@
   var REFERRAL_CODE_KEY = "karbali_referral_code";
   var CLIENT_ID_KEY = "karbali_client_id";
   var USER_ID_KEY = "karbali_user_id";
+  var SIGNUP_TRACKED_KEY = "karbali_signup_tracked";
   var recentAutoTracks = {};
   var cachedApiKey = null;
-  var SIGNUP_PATTERNS = ["/auth/v1/signup", "signup", "sign-up", "register"];
+
+  // Expanded signup patterns to include OAuth token exchange and callback flows
+  var SIGNUP_PATTERNS = [
+    "/auth/v1/signup",
+    "/auth/v1/token",
+    "/auth/v1/callback",
+    "/auth/callback",
+    "/callback",
+    "signup",
+    "sign-up",
+    "register",
+    "oauth/token",
+    "oauth2/token",
+    "/token?grant_type",
+  ];
+
+  // Patterns that indicate an OAuth grant exchange (not a regular API call)
+  var OAUTH_TOKEN_INDICATORS = ["grant_type=pkce", "grant_type=authorization_code", "grant_type=id_token"];
+
   var PURCHASE_PATTERNS = ["purchase", "checkout", "subscribe", "subscription", "payment", "payments", "orders", "paystack"];
   var PURCHASE_SUCCESS_PATTERNS = ["verify", "success", "complete", "completed", "callback"];
   var DOWNLOAD_PATTERNS = ["play.google.com", "apps.apple.com", "/download"];
@@ -70,8 +89,13 @@
       data.user && data.user.email,
       data.data && data.data.user_id,
       data.data && data.data.id,
+      data.data && data.data.email,
       data.record && data.record.user_id,
       data.record && data.record.id,
+      // Supabase auth response structures
+      data.access_token && data.user && data.user.id,
+      data.session && data.session.user && data.session.user.id,
+      data.session && data.session.user && data.session.user.email,
     ]);
   }
 
@@ -255,6 +279,54 @@
     return normalizedStatus === "success" || normalizedStatus === "succeeded" || normalizedStatus === "paid" || normalizedStatus === "completed";
   }
 
+  // Check if a response looks like a successful Supabase auth session
+  function isAuthSessionResponse(data) {
+    if (!data || typeof data !== "object") return false;
+    // Supabase returns { access_token, user: { id, email } } or { session: { access_token, user: { ... } } }
+    if (data.access_token && data.user && data.user.id) return true;
+    if (data.session && data.session.access_token && data.session.user) return true;
+    return false;
+  }
+
+  // Check if a URL + body indicates an OAuth token exchange (not a regular token refresh)
+  function isOAuthTokenExchange(url, requestData) {
+    var normalizedUrl = normalizeUrl(url);
+    // Must be a token endpoint
+    if (normalizedUrl.indexOf("/auth/v1/token") === -1 && normalizedUrl.indexOf("oauth/token") === -1) return false;
+    
+    // Check if it's an OAuth grant (not a refresh)
+    var bodyStr = "";
+    if (requestData && typeof requestData === "object") {
+      bodyStr = JSON.stringify(requestData).toLowerCase();
+    }
+    var urlStr = normalizedUrl;
+    
+    for (var i = 0; i < OAUTH_TOKEN_INDICATORS.length; i++) {
+      if (bodyStr.indexOf(OAUTH_TOKEN_INDICATORS[i]) !== -1 || urlStr.indexOf(OAUTH_TOKEN_INDICATORS[i]) !== -1) {
+        return true;
+      }
+    }
+    
+    // If grant_type is present but it's "refresh_token", it's NOT a new signup/login
+    if (bodyStr.indexOf("grant_type") !== -1 && bodyStr.indexOf("refresh_token") !== -1) {
+      return false;
+    }
+    
+    // If it has grant_type at all, it's likely an auth flow
+    if (bodyStr.indexOf("grant_type") !== -1) return true;
+    if (urlStr.indexOf("grant_type") !== -1 && urlStr.indexOf("refresh_token") === -1) return true;
+    
+    return false;
+  }
+
+  function hasSignupBeenTracked() {
+    return getStorageValue(SIGNUP_TRACKED_KEY) === "1";
+  }
+
+  function markSignupTracked() {
+    setStorageValue(SIGNUP_TRACKED_KEY, "1");
+  }
+
   async function track(eventName, data) {
     syncAttribution();
 
@@ -292,6 +364,10 @@
     }
 
     if (body.user_id) rememberUserId(body.user_id);
+    
+    // Mark signup as tracked to prevent duplicates
+    if (eventName === "signup") markSignupTracked();
+    
     return result;
   }
 
@@ -341,8 +417,33 @@
   function inspectRequest(url, requestData, responseData) {
     var normalizedRequestUrl = normalizeUrl(url);
 
+    // Skip tracking our own requests to avoid loops
+    if (normalizedRequestUrl.indexOf("karbali") !== -1 && normalizedRequestUrl.indexOf("/track") !== -1) return;
+
+    // Check for OAuth token exchange (Google login, etc.)
+    if (isOAuthTokenExchange(normalizedRequestUrl, requestData) && isAuthSessionResponse(responseData)) {
+      if (!hasSignupBeenTracked()) {
+        autoTrack("signup", requestData, responseData);
+      }
+      return;
+    }
+
+    // Check for standard signup patterns
     if (hasPattern(normalizedRequestUrl, SIGNUP_PATTERNS)) {
-      autoTrack("signup", requestData, responseData);
+      // For /auth/v1/token, only track if it's NOT a refresh_token grant
+      if (normalizedRequestUrl.indexOf("/auth/v1/token") !== -1) {
+        var bodyStr = requestData ? JSON.stringify(requestData).toLowerCase() : "";
+        if (bodyStr.indexOf("refresh_token") !== -1) return; // skip token refreshes
+      }
+      
+      if (isAuthSessionResponse(responseData) || !normalizedRequestUrl.indexOf("/auth/v1/")) {
+        if (!hasSignupBeenTracked()) {
+          autoTrack("signup", requestData, responseData);
+        }
+      } else if (normalizedRequestUrl.indexOf("/auth/v1/") === -1) {
+        // Non-Supabase signup endpoints
+        autoTrack("signup", requestData, responseData);
+      }
       return;
     }
 
@@ -354,6 +455,71 @@
     }
 
     autoTrack("purchase", requestData, responseData);
+  }
+
+  // Detect OAuth return via URL hash (Supabase implicit grant flow)
+  function detectOAuthReturn() {
+    var hash = window.location.hash;
+    if (!hash) return;
+
+    // Supabase OAuth returns with #access_token=...&type=...
+    if (hash.indexOf("access_token=") !== -1) {
+      // Extract user info from hash params
+      var hashParams = new URLSearchParams(hash.substring(1));
+      var accessToken = hashParams.get("access_token");
+      var type = hashParams.get("type");
+      
+      // Only track if we haven't already tracked this signup
+      if (accessToken && !hasSignupBeenTracked()) {
+        // Try to get user info from the token (JWT payload)
+        var userId = null;
+        try {
+          var payload = JSON.parse(atob(accessToken.split(".")[1]));
+          userId = payload.sub || payload.email || null;
+        } catch (_e) {}
+
+        if (userId) rememberUserId(userId);
+        
+        // Small delay to let the app process the auth state
+        setTimeout(function () {
+          if (!hasSignupBeenTracked()) {
+            autoTrack("signup", null, { user: { id: userId } });
+          }
+        }, 500);
+      }
+    }
+  }
+
+  // Listen for Supabase auth state changes if supabase client is available
+  function listenForAuthChanges() {
+    // Poll for supabase client availability (it may load after our script)
+    var attempts = 0;
+    var maxAttempts = 20;
+    
+    var checkInterval = setInterval(function () {
+      attempts++;
+      if (attempts > maxAttempts) {
+        clearInterval(checkInterval);
+        return;
+      }
+
+      // Check for global supabase client (common patterns)
+      var sb = window.__supabase || window.supabase;
+      if (!sb || !sb.auth || !sb.auth.onAuthStateChange) return;
+      
+      clearInterval(checkInterval);
+      
+      sb.auth.onAuthStateChange(function (event, session) {
+        if (event === "SIGNED_IN" && session && session.user) {
+          var userId = session.user.id || session.user.email;
+          if (userId) rememberUserId(userId);
+          
+          if (!hasSignupBeenTracked()) {
+            autoTrack("signup", null, { user: session.user });
+          }
+        }
+      });
+    }, 1000);
   }
 
   function patchFetch() {
@@ -440,12 +606,15 @@
     }, true);
   }
 
+  // Initialize
   syncAttribution();
   getApiKey(null);
   patchHistory();
   patchFetch();
   patchXhr();
   bindClickTracking();
+  detectOAuthReturn();
+  listenForAuthChanges();
 
   var api = Object.assign(window.Karbali || {}, {
     endpoint: TRACK_ENDPOINT,
