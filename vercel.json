@@ -13,6 +13,10 @@
       "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/ext-track"
     },
     {
+      "source": "/api/track-ping",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track-ping"
+    },
+    {
       "source": "/api/ext-conversion",
       "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/ext-conversion"
     },
