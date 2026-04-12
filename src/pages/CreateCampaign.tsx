@@ -393,6 +393,21 @@ new KarbaliTracking();`;
     toast.success("WordPress plugin downloaded as ZIP!");
   };
 
+  const handleStartOver = async () => {
+    if (!campaignId) return;
+    if (!confirm("Delete this draft and start a new campaign? This cannot be undone.")) return;
+    setLoading(true);
+    await supabase.from("api_keys").delete().eq("campaign_id", campaignId);
+    await supabase.from("campaign_sources").delete().eq("campaign_id", campaignId);
+    await supabase.from("campaigns").delete().eq("id", campaignId);
+    setLoading(false);
+    toast.success("Draft deleted");
+    navigate("/campaigns/create", { replace: true });
+    // Reset local state
+    setCampaignId(null); setApiKey(null); setStep(0); setVerified(false);
+    setCampaignName(""); setTargetUsers("100"); setMilestones([]);
+  };
+
   const brandedBaseUrl = "https://advertiser.karbali.com";
   const trackerScriptUrl = `${brandedBaseUrl}/karbali-tracker.js`;
   const directTrackUrl = `${brandedBaseUrl}/api/track`;
@@ -432,7 +447,14 @@ new KarbaliTracking();`;
   return (
     <DashboardLayout>
       <MotionWrapper className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-xl font-semibold text-foreground">Create Campaign</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-foreground">Create Campaign</h1>
+          {campaignId && (
+            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive gap-1.5" onClick={handleStartOver} disabled={loading}>
+              <RotateCcw className="h-3.5 w-3.5" /> Start Over
+            </Button>
+          )}
+        </div>
 
         {/* Stepper */}
         <div className="flex items-center gap-1 overflow-x-auto pb-2">
