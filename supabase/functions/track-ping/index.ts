@@ -5,6 +5,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,13 +25,9 @@ Deno.serve(async (req) => {
     const { api_key, domain, timestamp } = await req.json();
 
     if (!api_key || !domain) {
-      return new Response(
-        JSON.stringify({ error: "Missing api_key or domain" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Missing api_key or domain" }, 400);
     }
 
-    // Validate API key
     const { data: keyData, error: keyError } = await supabase
       .from("api_keys")
       .select("campaign_id")
@@ -33,47 +35,41 @@ Deno.serve(async (req) => {
       .single();
 
     if (keyError || !keyData) {
-      return new Response(
-        JSON.stringify({ error: "Invalid API key" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Invalid API key" }, 401);
     }
 
-    // Update campaign's last ping timestamp via admin_settings or a dedicated field
-    // For now, store in admin_settings as a simple key-value
-    const pingKey = `ping_${keyData.campaign_id}`;
+    const campaignId = keyData.campaign_id;
+    const pingAt = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString();
+
     const { data: existing } = await supabase
-      .from("admin_settings")
-      .select("id")
-      .eq("key", pingKey)
+      .from("campaign_script_health")
+      .select("campaign_id, last_ping_at, status")
+      .eq("campaign_id", campaignId)
       .maybeSingle();
 
-    const pingValue = JSON.stringify({ domain, timestamp: timestamp || new Date().toISOString() });
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const stale = !!existing?.last_ping_at && existing.last_ping_at < fiveMinutesAgo;
 
-    if (existing) {
-      await supabase
-        .from("admin_settings")
-        .update({ value: pingValue, updated_at: new Date().toISOString() })
-        .eq("id", existing.id);
-    } else {
-      await supabase
-        .from("admin_settings")
-        .insert({
-          key: pingKey,
-          value: pingValue,
-          description: `Last script ping for campaign ${keyData.campaign_id}`,
-        });
-    }
+    const status = stale ? "under_review" : "healthy";
+    const flaggedReason = stale
+      ? "Tracker heartbeat recovered after inactivity > 5 minutes. Review possible uninstall/tampering."
+      : null;
 
-    return new Response(
-      JSON.stringify({ ok: true }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    await supabase
+      .from("campaign_script_health")
+      .upsert({
+        campaign_id: campaignId,
+        domain,
+        last_ping_at: pingAt,
+        status,
+        flagged_reason: flaggedReason,
+        flagged_at: stale ? pingAt : null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "campaign_id" });
+
+    return json({ ok: true, status });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ error: message }, 500);
   }
 });
