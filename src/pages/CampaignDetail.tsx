@@ -6,11 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users, Eye, EyeOff } from "lucide-react";
+import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users, Eye, EyeOff, RefreshCw, KeyRound } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface DailyData { date: string; downloads: number; signups: number; purchases: number; }
+
+const SUPABASE_URL = "https://dvkoafztquswcqniwcyf.supabase.co";
+
+const edgeFnUrl = (fnName: string, subPath?: string) =>
+  `${SUPABASE_URL}/functions/v1/${fnName}${subPath ? subPath : ""}`;
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
@@ -23,51 +28,75 @@ export default function CampaignDetail() {
   const [trackerStatus, setTrackerStatus] = useState<any>(null);
   const [trackerSnippet, setTrackerSnippet] = useState<string>("");
   const [regenerating, setRegenerating] = useState(false);
+  const [regeneratingKey, setRegeneratingKey] = useState(false);
+
+  const getAccessToken = async () => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token || null;
+  };
+
+  const fetchTrackerInfo = async (campaignId: string) => {
+    try {
+      const token = await getAccessToken();
+      if (!token) return;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        apikey: supabase["supabaseKey"] || "",
+      };
+
+      const [statusRes, snippetRes] = await Promise.all([
+        fetch(edgeFnUrl("tracker-management", `/api/campaign/${campaignId}/tracker/status`), { headers }),
+        fetch(edgeFnUrl("tracker-management", `/api/campaign/${campaignId}/tracker/snippet`), { headers }),
+      ]);
+      if (statusRes.ok) setTrackerStatus(await statusRes.json());
+      if (snippetRes.ok) {
+        const payload = await snippetRes.json();
+        setTrackerSnippet(payload.snippet || "");
+      }
+    } catch (err) {
+      console.warn("Tracker info fetch failed:", err);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
     const fetchData = async () => {
-      const { data: c } = await supabase.from("campaigns").select("*").eq("id", id).single();
-      setCampaign(c as any);
-      const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", id).limit(1);
-      if (keys && keys.length > 0) setApiKey(keys[0].key);
-      const { count: dl } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "download");
-      const { count: su } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "signup");
-      const { count: pu } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "purchase");
-      const { data: campaignReferrals } = await supabase.from("referrals").select("id").eq("campaign_id", id);
-      const referralIds = campaignReferrals?.map((referral) => referral.id) || [];
-      const { count: clickCount } = referralIds.length > 0
-        ? await supabase.from("clicks").select("*", { count: "exact", head: true }).in("referral_id", referralIds)
-        : { count: 0 };
-      setStats({ clicks: clickCount || 0, downloads: dl || 0, signups: su || 0, purchases: pu || 0 });
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: events } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo).order("created_at");
-      if (events && events.length > 0) {
-        const byDay: Record<string, DailyData> = {};
-        events.forEach((e) => {
-          const day = new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-          if (!byDay[day]) byDay[day] = { date: day, downloads: 0, signups: 0, purchases: 0 };
-          if (e.event_type === "download") byDay[day].downloads++;
-          else if (e.event_type === "signup") byDay[day].signups++;
-          else if (e.event_type === "purchase") byDay[day].purchases++;
-        });
-        setDailyData(Object.values(byDay));
-      }
+      try {
+        const { data: c } = await supabase.from("campaigns").select("*").eq("id", id).single();
+        setCampaign(c as any);
+        const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", id).order("created_at", { ascending: false }).limit(1);
+        if (keys && keys.length > 0) setApiKey(keys[0].key);
 
-      const { data: authData } = await supabase.auth.getSession();
-      const accessToken = authData.session?.access_token;
-      if (accessToken) {
-        const [statusRes, snippetRes] = await Promise.all([
-          fetch(`/api/campaign/${id}/tracker/status`, { headers: { Authorization: `Bearer ${accessToken}` } }),
-          fetch(`/api/campaign/${id}/tracker/snippet`, { headers: { Authorization: `Bearer ${accessToken}` } }),
-        ]);
-        if (statusRes.ok) setTrackerStatus(await statusRes.json());
-        if (snippetRes.ok) {
-          const payload = await snippetRes.json();
-          setTrackerSnippet(payload.snippet || "");
+        const { count: dl } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "download");
+        const { count: su } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "signup");
+        const { count: pu } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "purchase");
+        const { data: campaignReferrals } = await supabase.from("referrals").select("id").eq("campaign_id", id);
+        const referralIds = campaignReferrals?.map((r) => r.id) || [];
+        const { count: clickCount } = referralIds.length > 0
+          ? await supabase.from("clicks").select("*", { count: "exact", head: true }).in("referral_id", referralIds)
+          : { count: 0 };
+        setStats({ clicks: clickCount || 0, downloads: dl || 0, signups: su || 0, purchases: pu || 0 });
+
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: events } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo).order("created_at");
+        if (events && events.length > 0) {
+          const byDay: Record<string, DailyData> = {};
+          events.forEach((e) => {
+            const day = new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            if (!byDay[day]) byDay[day] = { date: day, downloads: 0, signups: 0, purchases: 0 };
+            if (e.event_type === "download") byDay[day].downloads++;
+            else if (e.event_type === "signup") byDay[day].signups++;
+            else if (e.event_type === "purchase") byDay[day].purchases++;
+          });
+          setDailyData(Object.values(byDay));
         }
+
+        await fetchTrackerInfo(id);
+      } catch (err) {
+        console.error("Error loading campaign:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchData();
   }, [id]);
@@ -76,25 +105,46 @@ export default function CampaignDetail() {
     if (!id) return;
     setRegenerating(true);
     try {
-      const { data: authData } = await supabase.auth.getSession();
-      const accessToken = authData.session?.access_token;
-      if (!accessToken) throw new Error("Missing auth session");
+      const token = await getAccessToken();
+      if (!token) throw new Error("Missing auth session");
 
-      const response = await fetch(`/api/campaign/${id}/tracker/regenerate`, {
+      const res = await fetch(edgeFnUrl("tracker-management", `/api/campaign/${id}/tracker/regenerate`), {
         method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${token}`, apikey: supabase["supabaseKey"] || "" },
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Regeneration failed");
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "Regeneration failed");
       toast.success("Script regenerated to latest stable tracker release");
       setTrackerSnippet(payload.snippet || "");
-
-      const statusRes = await fetch(`/api/campaign/${id}/tracker/status`, { headers: { Authorization: `Bearer ${accessToken}` } });
-      if (statusRes.ok) setTrackerStatus(await statusRes.json());
+      await fetchTrackerInfo(id);
     } catch (err: any) {
       toast.error(err.message || "Failed to regenerate script");
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  const handleRegenerateApiKey = async () => {
+    if (!id) return;
+    setRegeneratingKey(true);
+    try {
+      // Delete old keys
+      await supabase.from("api_keys").delete().eq("campaign_id", id);
+
+      // Generate new key
+      const newKey = `kb_${crypto.randomUUID().replace(/-/g, "")}`;
+
+      const { error } = await supabase.functions.invoke("manage-campaign", {
+        body: { action: "create_api_key", campaign_id: id, api_key: newKey },
+      });
+      if (error) throw error;
+
+      setApiKey(newKey);
+      toast.success("API key regenerated. Update your integration with the new key.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to regenerate API key");
+    } finally {
+      setRegeneratingKey(false);
     }
   };
 
@@ -128,7 +178,13 @@ export default function CampaignDetail() {
         {/* API Key */}
         <MotionWrapper delay={0.05}>
           <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="text-sm font-medium text-foreground mb-2">API Key</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-foreground">API Key</h3>
+              <Button variant="outline" size="sm" onClick={handleRegenerateApiKey} disabled={regeneratingKey}>
+                <KeyRound className="h-3.5 w-3.5 mr-1.5" />
+                {regeneratingKey ? "Regenerating..." : "Regenerate Key"}
+              </Button>
+            </div>
             {apiKey ? (
               <div className="flex items-center gap-2">
                 <code className="flex-1 rounded-lg bg-muted px-3 py-2 font-mono text-sm text-primary truncate">
@@ -143,6 +199,7 @@ export default function CampaignDetail() {
           </div>
         </MotionWrapper>
 
+        {/* Tracker Script Lifecycle */}
         <MotionWrapper delay={0.08}>
           <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -150,7 +207,8 @@ export default function CampaignDetail() {
                 <h3 className="text-sm font-medium text-foreground">Tracker Script Lifecycle</h3>
                 <p className="text-xs text-muted-foreground">Regenerate script to latest stable release without recreating this campaign.</p>
               </div>
-              <Button onClick={handleRegenerateScript} disabled={regenerating || !id}>
+              <Button onClick={handleRegenerateScript} disabled={regenerating || !id} size="sm">
+                <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${regenerating ? "animate-spin" : ""}`} />
                 {regenerating ? "Regenerating..." : "Regenerate Script"}
               </Button>
             </div>
@@ -161,7 +219,12 @@ export default function CampaignDetail() {
             </div>
             {trackerSnippet && (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Latest generated snippet</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">Latest generated snippet</p>
+                  <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(trackerSnippet); toast.success("Snippet copied!"); }}>
+                    <Copy className="h-3.5 w-3.5 mr-1" /> Copy
+                  </Button>
+                </div>
                 <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs text-foreground/70 whitespace-pre-wrap">{trackerSnippet}</pre>
               </div>
             )}
