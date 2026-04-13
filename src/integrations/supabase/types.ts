@@ -213,6 +213,69 @@ export type Database = {
           },
         ]
       }
+      campaign_script_health: {
+        Row: {
+          campaign_id: string
+          campaign_tracker_install_id: string | null
+          domain: string | null
+          flagged_at: string | null
+          flagged_reason: string | null
+          id: string
+          install_integrity: string | null
+          integrity_message: string | null
+          last_ping_at: string | null
+          last_script_signature: string | null
+          last_tracker_version: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          campaign_tracker_install_id?: string | null
+          domain?: string | null
+          flagged_at?: string | null
+          flagged_reason?: string | null
+          id?: string
+          install_integrity?: string | null
+          integrity_message?: string | null
+          last_ping_at?: string | null
+          last_script_signature?: string | null
+          last_tracker_version?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          campaign_tracker_install_id?: string | null
+          domain?: string | null
+          flagged_at?: string | null
+          flagged_reason?: string | null
+          id?: string
+          install_integrity?: string | null
+          integrity_message?: string | null
+          last_ping_at?: string | null
+          last_script_signature?: string | null
+          last_tracker_version?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_script_health_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_script_health_campaign_tracker_install_id_fkey"
+            columns: ["campaign_tracker_install_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_tracker_installs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_sources: {
         Row: {
           campaign_id: string
@@ -244,6 +307,42 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_tracker_installs: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          release_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          release_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          release_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_tracker_installs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_tracker_installs_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_releases"
             referencedColumns: ["id"]
           },
         ]
@@ -860,6 +959,78 @@ export type Database = {
         }
         Relationships: []
       }
+      tracker_releases: {
+        Row: {
+          bundle_path: string
+          created_at: string
+          id: string
+          version: string
+        }
+        Insert: {
+          bundle_path: string
+          created_at?: string
+          id?: string
+          version: string
+        }
+        Update: {
+          bundle_path?: string
+          created_at?: string
+          id?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      tracking_sessions: {
+        Row: {
+          advertiser_id: string | null
+          campaign_id: string | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          metadata: Json | null
+          referral_code: string | null
+          referral_id: string | null
+          tid: string
+        }
+        Insert: {
+          advertiser_id?: string | null
+          campaign_id?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          metadata?: Json | null
+          referral_code?: string | null
+          referral_id?: string | null
+          tid: string
+        }
+        Update: {
+          advertiser_id?: string | null
+          campaign_id?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          metadata?: Json | null
+          referral_code?: string | null
+          referral_id?: string | null
+          tid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_sessions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_sessions_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -927,6 +1098,8 @@ export type Database = {
           first_seen_at: string
           id: string
           referral_id: string | null
+          referred_by: string | null
+          tid: string | null
         }
         Insert: {
           campaign_id: string
@@ -934,6 +1107,8 @@ export type Database = {
           first_seen_at?: string
           id?: string
           referral_id?: string | null
+          referred_by?: string | null
+          tid?: string | null
         }
         Update: {
           campaign_id?: string
@@ -941,6 +1116,8 @@ export type Database = {
           first_seen_at?: string
           id?: string
           referral_id?: string | null
+          referred_by?: string | null
+          tid?: string | null
         }
         Relationships: [
           {
