@@ -10,7 +10,9 @@ export default function Docs() {
   const { session } = useAuth();
   const brandedBaseUrl = "https://advertiser.karbali.com";
   const referralUrl = `${brandedBaseUrl}/r/ref_xxxxxxxx`;
-  const trackerScriptUrl = `${brandedBaseUrl}/karbali-tracker.js`;
+  const trackerScriptUrl = `${brandedBaseUrl}/karbali-tracker/c/cmp_your_campaign_id.js`;
+  const versionPinnedTrackerScriptUrl = `${brandedBaseUrl}/karbali-tracker/v/v1.2.3.js`;
+  const legacyTrackerScriptUrl = `${brandedBaseUrl}/karbali-tracker.js`;
   const trackUrl = `${brandedBaseUrl}/api/track`;
 
   return (
@@ -33,6 +35,8 @@ export default function Docs() {
               <h2 className="text-base font-semibold text-foreground mb-2">Karbali Ads Endpoints</h2>
               <div className="space-y-2 text-sm">
                 <code className="block rounded-lg bg-muted px-4 py-2.5 text-primary break-all">{trackerScriptUrl}</code>
+                <code className="block rounded-lg bg-muted px-4 py-2.5 text-primary break-all">{versionPinnedTrackerScriptUrl}</code>
+                <code className="block rounded-lg bg-muted px-4 py-2.5 text-primary break-all">{legacyTrackerScriptUrl}</code>
                 <code className="block rounded-lg bg-muted px-4 py-2.5 text-primary break-all">{trackUrl}</code>
                 <code className="block rounded-lg bg-muted px-4 py-2.5 text-primary break-all">{referralUrl}</code>
               </div>
@@ -53,11 +57,11 @@ export default function Docs() {
               <div className="rounded-lg bg-muted p-4 overflow-x-auto">
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Install snippet</p>
                 <pre className="text-sm text-foreground/70 whitespace-pre-wrap">{`<script>
-  window.KarbaliConfig = { apiKey: "kb_your_api_key" };
+  window.KarbaliConfig = { apiKey: "kb_your_api_key", campaignId: "cmp_your_campaign_id" };
 </script>
-<script async src="${trackerScriptUrl}" data-api-key="kb_your_api_key"></script>`}</pre>
+<script async src="https://advertiser.karbali.com/karbali-tracker/c/cmp_your_campaign_id.js"></script>`}</pre>
               </div>
-              <p className="text-sm text-muted-foreground mt-3">The loader stores the referral ID and a Karbali Ads client ID on the advertiser domain so downloads, signups, and purchases stay tied to the same visitor journey.</p>
+              <p className="text-sm text-muted-foreground mt-3">The loader stores the referral ID and a Karbali Ads client ID on the advertiser domain so downloads, signups, and purchases stay tied to the same visitor journey. Campaign-pointer scripts let you regenerate live installs safely, while the legacy script remains supported.</p>
             </div>
           </MotionWrapper>
 
@@ -74,6 +78,7 @@ window.Karbali.trackPurchase({
   amount: 49.99
 });`}</pre>
               </div>
+              <p className="text-xs text-muted-foreground mt-3">Best practice: trigger signup/purchase tracking on your server confirmation endpoint and optionally call <code className="text-primary">{`${brandedBaseUrl}/api/track/conversion`}</code> as a server-to-server fallback after payment success.</p>
             </div>
           </MotionWrapper>
 
@@ -86,6 +91,20 @@ window.Karbali.trackPurchase({
 → redirects to advertiser website with
 ?ref=<referral_id>&ref_code=<referral_code>&client_id=<karbali_client_id>`}</pre>
               </div>
+            </div>
+          </MotionWrapper>
+
+
+
+          <MotionWrapper delay={0.15}>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-base font-semibold text-foreground mb-2">9. Script versioning + regeneration</h2>
+              <ul className="text-sm text-muted-foreground space-y-1.5 list-disc list-inside">
+                <li>Use <code className="text-primary">/karbali-tracker/c/&lt;campaign_id&gt;.js</code> for managed upgrades.</li>
+                <li>Use <code className="text-primary">/karbali-tracker/v/&lt;version&gt;.js</code> to pin a specific tracker release.</li>
+                <li>Keep <code className="text-primary">/karbali-tracker.js</code> only for backward-compatible legacy installs.</li>
+                <li>When a newer stable release exists, regenerate from Dashboard → Campaign → Regenerate Script.</li>
+              </ul>
             </div>
           </MotionWrapper>
 
@@ -158,7 +177,7 @@ window.Karbali.trackPurchase({
 
           <MotionWrapper delay={0.24}>
             <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-base font-semibold text-foreground mb-2">9. Rate Limits</h2>
+              <h2 className="text-base font-semibold text-foreground mb-2">10. Rate Limits</h2>
               <ul className="text-sm text-muted-foreground space-y-1.5 list-disc list-inside">
                 <li>Maximum 10 events per IP per minute per campaign</li>
                 <li>Duplicate events (same user + event type) within 5 seconds are rejected</li>

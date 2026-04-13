@@ -13,6 +13,19 @@
   var SIGNUP_TRACKED_KEY = "karbali_signup_tracked";
 
   var cachedApiKey = null;
+  var cachedCampaignId = null;
+
+  function getTrackerVersion() {
+    if (window.KarbaliConfig && window.KarbaliConfig.trackerVersion) return String(window.KarbaliConfig.trackerVersion);
+    var script = document.currentScript || document.querySelector('script[src*="karbali-tracker"]');
+    if (!script) return "legacy";
+    var src = script.getAttribute("src") || "";
+    var campaignMatch = src.match(/\/karbali-tracker\/c\/([a-z0-9-]+)\.js/i);
+    if (campaignMatch) return "campaign-pointer";
+    var versionMatch = src.match(/\/karbali-tracker\/v\/([^/]+)\.js/i);
+    if (versionMatch) return versionMatch[1];
+    return "legacy";
+  }
 
   // ─── Storage helpers (triple-layer: localStorage + cookie + sessionStorage) ───
 
@@ -44,6 +57,14 @@
       return window.crypto.randomUUID();
     }
     return "kb_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
+
+  function getCampaignId() {
+    if (cachedCampaignId) return cachedCampaignId;
+    var cfg = window.KarbaliConfig || {};
+    var cid = cfg.campaignId || cfg.campaign_id || null;
+    if (cid) cachedCampaignId = String(cid);
+    return cachedCampaignId;
   }
 
   function getApiKey() {
@@ -163,6 +184,8 @@
     if (userId) setUserId(userId);
 
     var body = {
+      campaign_id: payload.campaign_id || payload.campaignId || getCampaignId() || null,
+      tracker_version: payload.tracker_version || payload.trackerVersion || getTrackerVersion(),
       api_key: apiKey,
       event_type: eventType,
       user_id: userId || null,
@@ -292,6 +315,9 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             api_key: apiKey,
+            campaign_id: getCampaignId(),
+            tracker_version: getTrackerVersion(),
+            script_signature: [getCampaignId() || "unknown", getTrackerVersion(), "karbali-tracker"].join(":"),
             domain: window.location.hostname,
             timestamp: new Date().toISOString(),
           }),
@@ -324,6 +350,8 @@
     ensureSession: ensureTrackingSession,
     identify: identify,
     getApiKey: function () { return getApiKey(); },
+    getCampaignId: function () { return getCampaignId(); },
+    getTrackerVersion: function () { return getTrackerVersion(); },
     getClientId: function () { return getClientId(); },
     getUserId: function () { return getUserId(); },
     getReferralId: function () { return getReferralId(); },

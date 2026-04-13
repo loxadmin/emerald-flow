@@ -15,6 +15,9 @@ const normalizeDomain = (value: string) => value.replace(/^https?:\/\//, "").rep
 
 const trackerMarkers = [
   "karbali-tracker.js",
+  "karbali-tracker/c/",
+  "karbali-tracker/v/",
+  "campaignid",
   "window.karbali",
   "window.karbaliads",
   "window.karbaliconfig",

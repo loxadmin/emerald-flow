@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { api_key, domain, timestamp } = await req.json();
+    const { api_key, domain, timestamp, campaign_id, tracker_version, script_signature } = await req.json();
 
     if (!api_key || !domain) {
       return json({ error: "Missing api_key or domain" }, 400);
@@ -39,6 +39,10 @@ Deno.serve(async (req) => {
     }
 
     const campaignId = keyData.campaign_id;
+    if (campaign_id && campaign_id !== campaignId) {
+      return json({ error: "campaign_id does not match api_key" }, 400);
+    }
+
     const pingAt = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString();
 
     const { data: existing } = await supabase
@@ -47,27 +51,61 @@ Deno.serve(async (req) => {
       .eq("campaign_id", campaignId)
       .maybeSingle();
 
+    const { data: install } = await supabase
+      .from("campaign_tracker_installs")
+      .select("id, tracker_releases(version)")
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+
+    const installedVersion = (install?.tracker_releases as { version?: string } | null)?.version || null;
+
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const stale = !!existing?.last_ping_at && existing.last_ping_at < fiveMinutesAgo;
+
+    let integrity: "unknown" | "ok" | "outdated" | "tampered" = "unknown";
+    let integrityMessage: string | null = null;
+
+    if (tracker_version && installedVersion && tracker_version !== installedVersion) {
+      integrity = "outdated";
+      integrityMessage = `Heartbeat version ${tracker_version} differs from installed ${installedVersion}`;
+    } else if (!script_signature) {
+      integrity = "unknown";
+      integrityMessage = "Missing script signature in heartbeat payload";
+    } else {
+      const expectedSignature = [campaignId, installedVersion || "legacy", "karbali-tracker"].join(":");
+      if (script_signature !== expectedSignature) {
+        integrity = "tampered";
+        integrityMessage = "Script signature mismatch detected";
+      } else {
+        integrity = "ok";
+      }
+    }
 
     const status = stale ? "under_review" : "healthy";
     const flaggedReason = stale
       ? "Tracker heartbeat recovered after inactivity > 5 minutes. Review possible uninstall/tampering."
-      : null;
+      : integrity === "tampered"
+        ? integrityMessage
+        : null;
 
     await supabase
       .from("campaign_script_health")
       .upsert({
         campaign_id: campaignId,
+        campaign_tracker_install_id: install?.id || null,
         domain,
         last_ping_at: pingAt,
         status,
         flagged_reason: flaggedReason,
-        flagged_at: stale ? pingAt : null,
+        flagged_at: stale || integrity === "tampered" ? pingAt : null,
+        last_tracker_version: tracker_version || installedVersion,
+        last_script_signature: script_signature || null,
+        install_integrity: integrity,
+        integrity_message: integrityMessage,
         updated_at: new Date().toISOString(),
       }, { onConflict: "campaign_id" });
 
-    return json({ ok: true, status });
+    return json({ ok: true, status, install_integrity: integrity });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return json({ error: message }, 500);

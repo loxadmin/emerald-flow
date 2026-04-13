@@ -33,6 +33,22 @@
       "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/ext-conversion"
     },
     {
+      "source": "/api/tracker/release",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/tracker-management"
+    },
+    {
+      "source": "/api/campaign/:id/tracker/:action",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/tracker-management"
+    },
+    {
+      "source": "/karbali-tracker/v/:version.js",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/tracker-script"
+    },
+    {
+      "source": "/karbali-tracker/c/:campaign.js",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/tracker-script"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

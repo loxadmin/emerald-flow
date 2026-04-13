@@ -17,3 +17,10 @@ verify_jwt = false
 
 [functions.track-ping]
 verify_jwt = false
+
+
+[functions.tracker-script]
+verify_jwt = false
+
+[functions.tracker-management]
+verify_jwt = false
