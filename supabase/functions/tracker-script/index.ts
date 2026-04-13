@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
         .eq("campaign_id", campaignId)
         .maybeSingle();
 
-      const release = (install?.tracker_releases as { version: string; bundle_path: string } | null) || null;
+      const release = (install?.tracker_releases as unknown as { version: string; bundle_path: string } | null) || null;
       const resolvedVersion = release?.version || "v1.0.0";
       const resolvedBundlePath = release?.bundle_path || LEGACY_TRACKER_URL;
       const script = await fetchBundle(resolvedBundlePath);
