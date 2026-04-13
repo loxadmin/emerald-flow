@@ -612,9 +612,9 @@ new KarbaliTracking();`;
                 <p className="text-xs text-muted-foreground">Add this to your website:</p>
                 <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs text-foreground/70">
 {`<script>
-  window.KarbaliConfig = { apiKey: "${apiKey}" };
+  window.KarbaliConfig = { apiKey: "${apiKey}", campaignId: "${campaignId}" };
 </script>
-<script async src="${trackerScriptUrl}" data-api-key="${apiKey}"></script>
+<script async src="${brandedBaseUrl}/karbali-tracker/c/${campaignId}.js"></script>
 <script>
   // Identify the signed-in user as soon as you know who they are.
   window.Karbali.identify("user_email_or_id");

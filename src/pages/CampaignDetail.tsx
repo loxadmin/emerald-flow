@@ -20,6 +20,9 @@ export default function CampaignDetail() {
   const [stats, setStats] = useState({ clicks: 0, downloads: 0, signups: 0, purchases: 0 });
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trackerStatus, setTrackerStatus] = useState<any>(null);
+  const [trackerSnippet, setTrackerSnippet] = useState<string>("");
+  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -50,10 +53,50 @@ export default function CampaignDetail() {
         });
         setDailyData(Object.values(byDay));
       }
+
+      const { data: authData } = await supabase.auth.getSession();
+      const accessToken = authData.session?.access_token;
+      if (accessToken) {
+        const [statusRes, snippetRes] = await Promise.all([
+          fetch(`/api/campaign/${id}/tracker/status`, { headers: { Authorization: `Bearer ${accessToken}` } }),
+          fetch(`/api/campaign/${id}/tracker/snippet`, { headers: { Authorization: `Bearer ${accessToken}` } }),
+        ]);
+        if (statusRes.ok) setTrackerStatus(await statusRes.json());
+        if (snippetRes.ok) {
+          const payload = await snippetRes.json();
+          setTrackerSnippet(payload.snippet || "");
+        }
+      }
       setLoading(false);
     };
     fetchData();
   }, [id]);
+
+  const handleRegenerateScript = async () => {
+    if (!id) return;
+    setRegenerating(true);
+    try {
+      const { data: authData } = await supabase.auth.getSession();
+      const accessToken = authData.session?.access_token;
+      if (!accessToken) throw new Error("Missing auth session");
+
+      const response = await fetch(`/api/campaign/${id}/tracker/regenerate`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Regeneration failed");
+      toast.success("Script regenerated to latest stable tracker release");
+      setTrackerSnippet(payload.snippet || "");
+
+      const statusRes = await fetch(`/api/campaign/${id}/tracker/status`, { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (statusRes.ok) setTrackerStatus(await statusRes.json());
+    } catch (err: any) {
+      toast.error(err.message || "Failed to regenerate script");
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   if (loading) return <DashboardLayout><div className="flex items-center justify-center py-20"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></DashboardLayout>;
   if (!campaign) return <DashboardLayout><p className="text-muted-foreground">Campaign not found.</p></DashboardLayout>;
@@ -97,6 +140,31 @@ export default function CampaignDetail() {
                 <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(apiKey); toast.success("Copied!"); }}><Copy className="h-4 w-4" /></Button>
               </div>
             ) : <p className="text-sm text-muted-foreground">Not generated yet.</p>}
+          </div>
+        </MotionWrapper>
+
+        <MotionWrapper delay={0.08}>
+          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-medium text-foreground">Tracker Script Lifecycle</h3>
+                <p className="text-xs text-muted-foreground">Regenerate script to latest stable release without recreating this campaign.</p>
+              </div>
+              <Button onClick={handleRegenerateScript} disabled={regenerating || !id}>
+                {regenerating ? "Regenerating..." : "Regenerate Script"}
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge variant="outline">Current: {trackerStatus?.current_version || "legacy"}</Badge>
+              <Badge variant="outline">Latest stable: {trackerStatus?.latest_stable_version || "unknown"}</Badge>
+              <Badge variant="outline" className="capitalize">{trackerStatus?.upgrade_badge || "up-to-date"}</Badge>
+            </div>
+            {trackerSnippet && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Latest generated snippet</p>
+                <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs text-foreground/70 whitespace-pre-wrap">{trackerSnippet}</pre>
+              </div>
+            )}
           </div>
         </MotionWrapper>
 

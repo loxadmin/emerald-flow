@@ -21,6 +21,10 @@ interface CategoryChangeReq {
   requested_category_id: string; reason: string; status: string; created_at: string;
   advertiser_email?: string; current_name?: string; requested_name?: string;
 }
+interface TrackerVersionDistribution {
+  version: string;
+  campaigns: number;
+}
 
 const CHART_COLORS = ["hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)", "hsl(217, 91%, 60%)", "hsl(0, 72%, 50%)"];
 const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: 12 };
@@ -47,6 +51,7 @@ export default function AdminDashboard() {
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [eventBreakdown, setEventBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [categoryRequests, setCategoryRequests] = useState<CategoryChangeReq[]>([]);
+  const [trackerDistribution, setTrackerDistribution] = useState<TrackerVersionDistribution[]>([]);
 
   const fetchData = async () => {
     const { data: allCampaigns } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
@@ -121,6 +126,20 @@ export default function AdminDashboard() {
         requested_name: catMap.get(r.requested_category_id) || "Unknown",
       })));
     }
+
+    const { data: installs } = await supabase
+      .from("campaign_tracker_installs" as any)
+      .select("tracker_releases(version)");
+    const distributionMap = new Map<string, number>();
+    (installs || []).forEach((row: any) => {
+      const version = row?.tracker_releases?.version || "legacy";
+      distributionMap.set(version, (distributionMap.get(version) || 0) + 1);
+    });
+    setTrackerDistribution(
+      Array.from(distributionMap.entries())
+        .map(([version, campaigns]) => ({ version, campaigns }))
+        .sort((a, b) => b.campaigns - a.campaigns)
+    );
 
     setLoading(false);
   };
@@ -240,6 +259,25 @@ export default function AdminDashboard() {
             </div>
           </MotionWrapper>
         </div>
+
+        {/* Category Change Requests */}
+        <MotionWrapper delay={0.11}>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h3 className="text-sm font-medium text-foreground mb-3">Tracker Version Distribution</h3>
+            {trackerDistribution.length > 0 ? (
+              <div className="space-y-2">
+                {trackerDistribution.map((item) => (
+                  <div key={item.version} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
+                    <span className="font-medium text-foreground">{item.version}</span>
+                    <Badge variant="outline">{item.campaigns} campaign{item.campaigns === 1 ? "" : "s"}</Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No tracker installs yet.</p>
+            )}
+          </div>
+        </MotionWrapper>
 
         {/* Category Change Requests */}
         {categoryRequests.length > 0 && (
