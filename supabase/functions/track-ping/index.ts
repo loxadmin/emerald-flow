@@ -11,6 +11,12 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const isMissingRelation = (error: { code?: string; message?: string } | null) =>
+  !!error && (
+    error.code === "PGRST205" ||
+    error.message?.toLowerCase().includes("could not find the table")
+  );
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -45,11 +51,17 @@ Deno.serve(async (req) => {
 
     const pingAt = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString();
 
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("campaign_script_health")
       .select("campaign_id, last_ping_at, status")
       .eq("campaign_id", campaignId)
       .maybeSingle();
+
+    if (existingError && !isMissingRelation(existingError)) {
+      return json({ error: existingError.message }, 500);
+    }
+
+    const healthTableAvailable = !isMissingRelation(existingError);
 
     const { data: install } = await supabase
       .from("campaign_tracker_installs")
@@ -88,24 +100,35 @@ Deno.serve(async (req) => {
         ? integrityMessage
         : null;
 
-    await supabase
-      .from("campaign_script_health")
-      .upsert({
-        campaign_id: campaignId,
-        campaign_tracker_install_id: install?.id || null,
-        domain,
-        last_ping_at: pingAt,
-        status,
-        flagged_reason: flaggedReason,
-        flagged_at: stale || integrity === "tampered" ? pingAt : null,
-        last_tracker_version: tracker_version || installedVersion,
-        last_script_signature: script_signature || null,
-        install_integrity: integrity,
-        integrity_message: integrityMessage,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "campaign_id" });
+    if (healthTableAvailable) {
+      const { error: upsertError } = await supabase
+        .from("campaign_script_health")
+        .upsert({
+          campaign_id: campaignId,
+          campaign_tracker_install_id: install?.id || null,
+          domain,
+          last_ping_at: pingAt,
+          status,
+          flagged_reason: flaggedReason,
+          flagged_at: stale || integrity === "tampered" ? pingAt : null,
+          last_tracker_version: tracker_version || installedVersion,
+          last_script_signature: script_signature || null,
+          install_integrity: integrity,
+          integrity_message: integrityMessage,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "campaign_id" });
 
-    return json({ ok: true, status, install_integrity: integrity });
+      if (upsertError && !isMissingRelation(upsertError)) {
+        return json({ error: upsertError.message }, 500);
+      }
+    }
+
+    return json({
+      ok: true,
+      status,
+      install_integrity: integrity,
+      health_tracking_enabled: healthTableAvailable,
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return json({ error: message }, 500);
