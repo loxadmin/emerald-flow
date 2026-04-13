@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       .eq("campaign_id", campaignId)
       .maybeSingle();
 
-    const installedVersion = (install?.tracker_releases as { version?: string } | null)?.version || null;
+    const installedVersion = (install?.tracker_releases as unknown as { version?: string } | null)?.version || null;
 
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const stale = !!existing?.last_ping_at && existing.last_ping_at < fiveMinutesAgo;
