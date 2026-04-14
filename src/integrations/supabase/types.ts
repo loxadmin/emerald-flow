@@ -313,22 +313,37 @@ export type Database = {
       }
       campaign_tracker_installs: {
         Row: {
+          api_key_snapshot: string | null
           campaign_id: string
           created_at: string
           id: string
+          installed_at: string | null
           release_id: string
+          snippet: string | null
+          status: string
+          tracker_release_id: string | null
         }
         Insert: {
+          api_key_snapshot?: string | null
           campaign_id: string
           created_at?: string
           id?: string
+          installed_at?: string | null
           release_id: string
+          snippet?: string | null
+          status?: string
+          tracker_release_id?: string | null
         }
         Update: {
+          api_key_snapshot?: string | null
           campaign_id?: string
           created_at?: string
           id?: string
+          installed_at?: string | null
           release_id?: string
+          snippet?: string | null
+          status?: string
+          tracker_release_id?: string | null
         }
         Relationships: [
           {
