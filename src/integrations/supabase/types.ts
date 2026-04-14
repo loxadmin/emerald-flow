@@ -322,6 +322,7 @@ export type Database = {
           snippet: string | null
           status: string
           tracker_release_id: string | null
+          updated_at: string | null
         }
         Insert: {
           api_key_snapshot?: string | null
@@ -333,6 +334,7 @@ export type Database = {
           snippet?: string | null
           status?: string
           tracker_release_id?: string | null
+          updated_at?: string | null
         }
         Update: {
           api_key_snapshot?: string | null
@@ -344,6 +346,7 @@ export type Database = {
           snippet?: string | null
           status?: string
           tracker_release_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -358,6 +361,54 @@ export type Database = {
             columns: ["release_id"]
             isOneToOne: false
             referencedRelation: "tracker_releases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_tracker_installs_tracker_release_id_fkey"
+            columns: ["tracker_release_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_upgrade_notices: {
+        Row: {
+          acknowledged: boolean
+          campaign_id: string
+          created_at: string
+          from_version: string | null
+          id: string
+          message: string | null
+          severity: string
+          to_version: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          campaign_id: string
+          created_at?: string
+          from_version?: string | null
+          id?: string
+          message?: string | null
+          severity?: string
+          to_version: string
+        }
+        Update: {
+          acknowledged?: boolean
+          campaign_id?: string
+          created_at?: string
+          from_version?: string | null
+          id?: string
+          message?: string | null
+          severity?: string
+          to_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_upgrade_notices_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]
@@ -977,20 +1028,32 @@ export type Database = {
       tracker_releases: {
         Row: {
           bundle_path: string
+          changelog: string | null
           created_at: string
+          force_upgrade: boolean
           id: string
+          is_stable: boolean
+          release_policy: string
           version: string
         }
         Insert: {
           bundle_path: string
+          changelog?: string | null
           created_at?: string
+          force_upgrade?: boolean
           id?: string
+          is_stable?: boolean
+          release_policy?: string
           version: string
         }
         Update: {
           bundle_path?: string
+          changelog?: string | null
           created_at?: string
+          force_upgrade?: boolean
           id?: string
+          is_stable?: boolean
+          release_policy?: string
           version?: string
         }
         Relationships: []
