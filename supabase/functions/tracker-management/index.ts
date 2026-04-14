@@ -111,11 +111,11 @@ Deno.serve(async (req) => {
 
     const { data: install } = await supabase
       .from("campaign_tracker_installs")
-      .select("id, status, api_key_snapshot, snippet, installed_at, tracker_releases(version)")
+      .select("id, status, api_key_snapshot, snippet, installed_at, release:tracker_releases!campaign_tracker_installs_release_id_fkey(version)")
       .eq("campaign_id", campaignId)
       .maybeSingle();
 
-    const currentVersion = (install?.tracker_releases as { version?: string } | null)?.version || "v1.0.0";
+    const currentVersion = (install?.release as { version?: string } | null)?.version || "v1.0.0";
     const stableVersion = latestStable?.version || currentVersion;
     const hasUpgrade = currentVersion !== stableVersion;
     if (hasUpgrade && latestStable?.release_policy === "critical") {
@@ -199,6 +199,7 @@ Deno.serve(async (req) => {
         await supabase
           .from("campaign_tracker_installs")
           .update({
+            release_id: latestStable.id,
             tracker_release_id: latestStable.id,
             api_key_snapshot: key,
             snippet: newSnippet,
@@ -211,10 +212,12 @@ Deno.serve(async (req) => {
           .from("campaign_tracker_installs")
           .insert({
             campaign_id: campaignId,
+            release_id: latestStable.id,
             tracker_release_id: latestStable.id,
             api_key_snapshot: key,
             snippet: newSnippet,
             status: "active",
+            installed_at: new Date().toISOString(),
           });
       }
 

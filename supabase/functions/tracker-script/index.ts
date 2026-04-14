@@ -76,11 +76,11 @@ Deno.serve(async (req) => {
     if (campaignId) {
       const { data: install } = await supabase
         .from("campaign_tracker_installs")
-        .select("campaign_id, tracker_releases(version, bundle_path)")
+        .select("campaign_id, release:tracker_releases!campaign_tracker_installs_release_id_fkey(version, bundle_path)")
         .eq("campaign_id", campaignId)
         .maybeSingle();
 
-      const release = (install?.tracker_releases as unknown as { version: string; bundle_path: string } | null) || null;
+      const release = (install?.release as unknown as { version: string; bundle_path: string } | null) || null;
       const resolvedVersion = release?.version || "v1.0.0";
       const resolvedBundlePath = release?.bundle_path || LEGACY_TRACKER_URL;
       const script = await fetchBundle(resolvedBundlePath);

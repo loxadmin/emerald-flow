@@ -65,11 +65,11 @@ Deno.serve(async (req) => {
 
     const { data: install } = await supabase
       .from("campaign_tracker_installs")
-      .select("id, tracker_releases(version)")
+      .select("id, release:tracker_releases!campaign_tracker_installs_release_id_fkey(version)")
       .eq("campaign_id", campaignId)
       .maybeSingle();
 
-    const installedVersion = (install?.tracker_releases as unknown as { version?: string } | null)?.version || null;
+    const installedVersion = (install?.release as unknown as { version?: string } | null)?.version || null;
 
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const stale = !!existing?.last_ping_at && existing.last_ping_at < fiveMinutesAgo;
