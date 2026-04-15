@@ -13,13 +13,26 @@ const normalizeVersion = (input: string) => {
   return raw.startsWith("v") ? raw : `v${raw}`;
 };
 
+const resolveBundleUrl = (bundlePath: string) => {
+  const raw = String(bundlePath || "").trim();
+  if (!raw) return LEGACY_TRACKER_URL;
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  try {
+    return new URL(raw, LEGACY_TRACKER_URL).toString();
+  } catch {
+    return LEGACY_TRACKER_URL;
+  }
+};
+
 const fetchBundle = async (bundlePath: string) => {
-  const response = await fetch(bundlePath, {
+  const bundleUrl = resolveBundleUrl(bundlePath);
+  const response = await fetch(bundleUrl, {
     headers: { "User-Agent": "Karbali-Tracker-Server/1.0" },
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok) {
-    throw new Error(`Could not fetch tracker bundle (${response.status})`);
+    throw new Error(`Could not fetch tracker bundle (${response.status}) from ${bundleUrl}`);
   }
   return await response.text();
 };
