@@ -3,6 +3,7 @@ import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { CheckCircle2, Shield, Zap, BarChart3, HelpCircle, ArrowRight } from "lucide-react";
 import Logo from "@/components/Logo";
+import Footer from "@/components/Footer";
 import { GlassButton } from "@/components/ui/glass-button";
 import { useTheme } from "@/lib/theme";
 import { Sun, Moon } from "lucide-react";
@@ -17,16 +18,20 @@ export default function WhatIsKarbali() {
       a: "Karbali is a performance-based customer acquisition and advertising platform. We help businesses grow by connecting them with customers through targeted campaigns, where you only pay when a real sale or milestone occurs."
     },
     {
-      q: "How does Karbali work?",
-      a: "We use a financial behavioral mapping assistant to understand user spending patterns. We then direct these users to switch to partner brands that offer better value. Advertisers only pay Karbali after a successful sale is verified."
+      q: "How does Karbali's financial assistant work?",
+      a: "Our specialized financial assistant maps out user spending habits—from rent and food to data and subscriptions. It gets to know users personally to identify which brands they currently patronize and where they can find better value."
     },
     {
-      q: "Who is Karbali for?",
-      a: "Karbali is designed for startups, fintechs, e-commerce brands, and service providers who want to acquire high-quality users without wasting budget on clicks that don't convert."
+      q: "How do I get customers fast with Karbali?",
+      a: "Karbali directs users to switch from their current brands to your business based on their actual spending patterns. Because users are incentivized to stay with advertiser brands, you gain high-intent customers who are ready to buy."
     },
     {
-      q: "Why is Karbali different?",
-      a: "Unlike traditional platforms that charge for impressions or clicks, Karbali focuses on outcomes. Our unique incentive model rewards users for trying new services, depositing budget directly into their savings for every transaction."
+      q: "Is Karbali better than traditional advertising?",
+      a: "Yes, because you only pay after a sale happens. Traditional platforms charge for views or clicks that might never convert. Karbali ensures every dollar spent results in a verified transaction."
+    },
+    {
+      q: "How are users incentivized to stay with my brand?",
+      a: "Each transaction a user makes with your brand serves as a monetary deposit into their yearly savings account. Instead of depositing money themselves, their daily spending helps grow their savings, creating extreme loyalty."
     }
   ];
 
@@ -81,7 +86,7 @@ export default function WhatIsKarbali() {
           <MotionWrapper className="text-center mb-16">
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">What is Karbali?</h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Karbali is the world's first **incentivized migration platform** designed to help businesses acquire customers from competitors using real-world financial intelligence.
+              Karbali is the world's first **incentivized migration platform** and customer acquisition solution. We help businesses acquire high-quality users from competitors using real-world financial intelligence.
             </p>
           </MotionWrapper>
 
@@ -106,24 +111,50 @@ export default function WhatIsKarbali() {
 
           <MotionWrapper className="mb-20">
             <div className="p-10 md:p-16 rounded-[2.5rem] bg-gradient-to-br from-primary/10 to-transparent border border-primary/20">
-              <h2 className="text-3xl font-extrabold mb-8">How It Works for Businesses</h2>
-              <div className="space-y-8">
-                {[
-                  { step: "1", title: "Define Your Target", desc: "Tell us what kind of customers you need and what milestones you're willing to pay for." },
-                  { step: "2", title: "Financial Intelligence Mapping", desc: "Our AI assistant identifies users currently spending with competitors in your niche." },
-                  { step: "3", title: "Strategic Migration", desc: "We present your brand as the superior alternative, incentivizing users to switch." },
-                  { step: "4", title: "Pay Only for Sales", desc: "When the user completes a purchase or signup, your budget is released. No sale, no fee." }
-                ].map((s, i) => (
-                  <div key={i} className="flex gap-6">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                      {s.step}
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold mb-2">{s.title}</h4>
-                      <p className="text-muted-foreground">{s.desc}</p>
-                    </div>
+              <h2 className="text-3xl font-extrabold mb-8 text-center">How Karbali Scales Your Business</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
+                <div>
+                  <h3 className="text-xl font-bold mb-4 text-primary">For Advertisers</h3>
+                  <div className="space-y-6">
+                    {[
+                      { step: "1", title: "Integration", desc: "Sync with our API and define your target customer profile." },
+                      { step: "2", title: "Intent Mapping", desc: "We identify users already spending money in your category (fintech, health, etc.)." },
+                      { step: "3", title: "Direct Migration", desc: "We guide users to switch from their current providers to your brand." },
+                      { step: "4", title: "Pay After Sale", desc: "You only pay us after a successful transaction is verified. Zero risk." }
+                    ].map((s, i) => (
+                      <div key={i} className="flex gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">
+                          {s.step}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-sm mb-1">{s.title}</h4>
+                          <p className="text-xs text-muted-foreground">{s.desc}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-4 text-primary">For Your Customers</h3>
+                  <div className="space-y-6">
+                    {[
+                      { step: "1", title: "Personal Assistant", desc: "Users get a financial mapping tool that understands their daily needs." },
+                      { step: "2", title: "Smart Switching", desc: "We recommend better brand alternatives based on their spending profile." },
+                      { step: "3", title: "Yearly Savings", desc: "Every transaction with your brand earns them deposits into a savings account." },
+                      { step: "4", title: "Extreme Loyalty", desc: "Users stay because they save money simply by using your services." }
+                    ].map((s, i) => (
+                      <div key={i} className="flex gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">
+                          {s.step}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-sm mb-1">{s.title}</h4>
+                          <p className="text-xs text-muted-foreground">{s.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </MotionWrapper>
@@ -152,21 +183,7 @@ export default function WhatIsKarbali() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-border/50 py-16 px-6">
-        <div className="mx-auto max-w-7xl flex flex-col items-center justify-center text-center gap-6">
-          <div className="flex items-center gap-2">
-            <Logo size={20} />
-            <span className="text-lg font-bold text-gradient">Karbali Ads</span>
-          </div>
-          <p className="text-sm text-muted-foreground max-w-md">Performance Attribution Platform. Track real outcomes, not vanity metrics.</p>
-          <div className="flex gap-8 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-            <Link to="/blog" className="hover:text-primary transition-colors">Blog</Link>
-            <Link to="/docs" className="hover:text-primary transition-colors">API Docs</Link>
-          </div>
-          <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

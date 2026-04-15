@@ -5,6 +5,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { motion, AnimatePresence } from "framer-motion";
 import MotionWrapper from "@/components/MotionWrapper";
 import Logo from "@/components/Logo";
+import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -281,16 +282,7 @@ export default function LandingVariant5({ content, onContactSubmit, contactName,
 
       {/* FOOTER */}
       {s("footer")?.is_visible !== false && (
-        <footer className="relative z-10 border-t border-border/30 py-14 px-6">
-          <div className="mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-            <div className="flex items-center gap-2">
-              <Logo size={20} />
-              <span className="font-bold text-foreground font-mono">Karbali</span>
-            </div>
-            <p className="text-sm text-muted-foreground text-center">{s("footer")?.content}</p>
-            <p className="text-xs text-muted-foreground/40 md:text-right">&copy; {new Date().getFullYear()} Karbali Ads</p>
-          </div>
-        </footer>
+        <Footer content={s("footer")?.content} />
       )}
     </>
   );

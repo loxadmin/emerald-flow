@@ -6,7 +6,9 @@ import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe } from "lucide-react";
 import Logo from "@/components/Logo";
+import Footer from "@/components/Footer";
 import { useTheme } from "@/lib/theme";
+import { Helmet } from "react-helmet-async";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingVariant1 from "@/components/landing/LandingVariant1";
 import LandingVariant2 from "@/components/landing/LandingVariant2";
@@ -120,6 +122,34 @@ export default function Index() {
     contactSending,
   };
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Karbali Ads",
+    "url": "https://karbali.com",
+    "logo": "https://karbali.com/logo.png",
+    "description": "Karbali is a customer acquisition and advertising platform that helps businesses get users through targeted campaigns and performance-based marketing.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Lagos",
+      "addressCountry": "Nigeria"
+    },
+    "sameAs": [
+      "https://twitter.com/karbali_ads"
+    ]
+  };
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Karbali Customer Acquisition Solution",
+    "description": "Performance-based customer acquisition platform with financial intent mapping and pay-after-sale billing.",
+    "brand": {
+      "@type": "Brand",
+      "name": "Karbali"
+    }
+  };
+
   const features = [
     { icon: BarChart3, title: "Real-Time Analytics", desc: "Track every event as it happens across web and mobile platforms" },
     { icon: DollarSign, title: "Milestone Billing", desc: "Charge per download, signup, or purchase with no double counting" },
@@ -131,6 +161,12 @@ export default function Index() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
+      <Helmet>
+        <title>Karbali Ads | Customer Acquisition & Performance Marketing</title>
+        <meta name="description" content="Get customers, users, and sales for your business. Karbali is the customer acquisition solution that lets you pay only after real results happen." />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+        <script type="application/ld+json">{JSON.stringify(productJsonLd)}</script>
+      </Helmet>
       <FluidCanvas />
 
       {/* Navbar */}
@@ -315,25 +351,7 @@ export default function Index() {
 
           {/* Footer */}
           {s("footer").is_visible && (
-            <footer className="relative z-10 border-t border-border/50 py-16 px-6 sm:px-10">
-              <div className="mx-auto max-w-7xl flex flex-col items-center justify-center text-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Logo size={20} />
-                  <span className="text-lg font-bold text-gradient">Karbali Ads</span>
-                </div>
-                <p className="text-sm text-muted-foreground max-w-md">{s("footer").content}</p>
-                <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm text-muted-foreground">
-                  <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-                  <Link to="/about" className="hover:text-primary transition-colors">About</Link>
-                  <Link to="/blog" className="hover:text-primary transition-colors">Blog</Link>
-                  <Link to="/use-cases" className="hover:text-primary transition-colors">Use Cases</Link>
-                  <Link to="/what-is-karbali" className="hover:text-primary transition-colors">What is Karbali?</Link>
-                  <Link to="/blog" className="hover:text-primary transition-colors">Blog</Link>
-                  <Link to="/docs" className="hover:text-primary transition-colors">API Docs</Link>
-                </div>
-                <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
-              </div>
-            </footer>
+            <Footer content={s("footer").content} />
           )}
         </>
       ) : null}
