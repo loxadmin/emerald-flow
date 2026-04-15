@@ -49,9 +49,24 @@ Deno.serve(async (req) => {
 
     const clientId = String(client_id || "").trim();
     if (clientId) {
+      const now = new Date().toISOString();
+      await supabase.from("tracking_sessions").upsert({
+        tid: clientId,
+        campaign_id: referral.campaign_id,
+        referral_id: referral.id,
+        referral_code: referral.code,
+        first_seen_at: now,
+        last_seen_at: now,
+        metadata: {
+          source: "referral-click",
+          user_agent: userAgent,
+          ip,
+        },
+      }, { onConflict: "tid" });
+
       const { data: trackedUser } = await supabase
         .from("users_tracking")
-        .select("id, referral_id")
+        .select("id, referral_id, referred_by, tid")
         .eq("campaign_id", referral.campaign_id)
         .eq("external_user_id", clientId)
         .maybeSingle();
@@ -61,11 +76,13 @@ Deno.serve(async (req) => {
           campaign_id: referral.campaign_id,
           external_user_id: clientId,
           referral_id: referral.id,
+          referred_by: referral.code,
+          tid: clientId,
         });
       } else if (!trackedUser.referral_id) {
         await supabase
           .from("users_tracking")
-          .update({ referral_id: referral.id })
+          .update({ referral_id: referral.id, referred_by: trackedUser.referred_by || referral.code, tid: trackedUser.tid || clientId })
           .eq("id", trackedUser.id);
       }
     }

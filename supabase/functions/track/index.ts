@@ -38,6 +38,14 @@ const extractDomain = (value: string | null) => {
 const unique = (values: Array<string | null | undefined>) =>
   [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
 
+type TrackingRow = {
+  id: string;
+  external_user_id: string;
+  referral_id: string | null;
+  tid: string | null;
+  referred_by: string | null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -144,17 +152,34 @@ Deno.serve(async (req) => {
 
     const identitiesToResolve = [...identityPool];
     const referralFromTracking = new Map<string, string | null>();
+    const trackedByIdentity = new Map<string, TrackingRow>();
+    const trackedRows: TrackingRow[] = [];
 
     if (identitiesToResolve.length > 0) {
       const { data: trackedUsers } = await supabase
         .from("users_tracking")
-        .select("id, external_user_id, referral_id")
+        .select("id, external_user_id, referral_id, tid, referred_by")
         .eq("campaign_id", campaignId)
         .in("external_user_id", identitiesToResolve);
 
-      trackedUsers?.forEach((entry) => {
+      for (const entry of (trackedUsers || []) as TrackingRow[]) {
+        trackedRows.push(entry);
+        trackedByIdentity.set(entry.external_user_id, entry);
         referralFromTracking.set(entry.external_user_id, entry.referral_id);
-      });
+      }
+    }
+
+    if (userId) {
+      const { data: trackedByTid } = await supabase
+        .from("users_tracking")
+        .select("id, external_user_id, referral_id, tid, referred_by")
+        .eq("campaign_id", campaignId)
+        .eq("tid", clientId || userId);
+
+      for (const entry of (trackedByTid || []) as TrackingRow[]) {
+        trackedRows.push(entry);
+        referralFromTracking.set(entry.external_user_id, entry.referral_id);
+      }
     }
 
     if (!resolvedReferralId) {
@@ -168,6 +193,14 @@ Deno.serve(async (req) => {
     }
 
     let referredByCode: string | null = null;
+    if (!resolvedReferralId) {
+      const trackedReferral = trackedRows.find((row) => row.referral_id);
+      if (trackedReferral?.referral_id) {
+        resolvedReferralId = trackedReferral.referral_id;
+      }
+      referredByCode = trackedRows.find((row) => row.referred_by)?.referred_by || null;
+    }
+
     if (!resolvedReferralId && clientId) {
       const { data: sessionReferral } = await supabase
         .from("tracking_sessions")
@@ -218,27 +251,44 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Duplicate event detected" }, 409);
     }
 
+    const canonicalTid = clientId || trackedRows.find((row) => row.tid)?.tid || null;
     for (const identity of identityPool) {
-      const { data: existingTrackedUser } = await supabase
-        .from("users_tracking")
-        .select("id, referral_id")
-        .eq("campaign_id", campaignId)
-        .eq("external_user_id", identity)
-        .maybeSingle();
+      const existingTrackedUser = trackedByIdentity.get(identity);
+      const payload = {
+        external_user_id: identity,
+        campaign_id: campaignId,
+        referral_id: existingTrackedUser?.referral_id || resolvedReferralId,
+        tid: canonicalTid,
+        referred_by: existingTrackedUser?.referred_by || referredByCode,
+      };
 
       if (!existingTrackedUser) {
-        await supabase.from("users_tracking").insert({
-          external_user_id: identity,
-          campaign_id: campaignId,
-          referral_id: resolvedReferralId,
-          tid: clientId || null,
-          referred_by: referredByCode,
-        });
-      } else if (!existingTrackedUser.referral_id && resolvedReferralId) {
-        await supabase
-          .from("users_tracking")
-          .update({ referral_id: resolvedReferralId, tid: clientId || null, referred_by: referredByCode })
-          .eq("id", existingTrackedUser.id);
+        await supabase.from("users_tracking").insert(payload);
+      } else {
+        await supabase.from("users_tracking").update(payload).eq("id", existingTrackedUser.id);
+      }
+    }
+
+    if (canonicalTid && !identityPool.includes(canonicalTid)) {
+      const { data: existingTidRow } = await supabase
+        .from("users_tracking")
+        .select("id, referral_id, referred_by")
+        .eq("campaign_id", campaignId)
+        .eq("external_user_id", canonicalTid)
+        .maybeSingle();
+
+      const tidPayload = {
+        external_user_id: canonicalTid,
+        campaign_id: campaignId,
+        referral_id: existingTidRow?.referral_id || resolvedReferralId,
+        tid: canonicalTid,
+        referred_by: existingTidRow?.referred_by || referredByCode,
+      };
+
+      if (existingTidRow?.id) {
+        await supabase.from("users_tracking").update(tidPayload).eq("id", existingTidRow.id);
+      } else {
+        await supabase.from("users_tracking").insert(tidPayload);
       }
     }
 

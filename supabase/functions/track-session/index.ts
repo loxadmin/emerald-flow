@@ -71,21 +71,26 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await supabase
       .from("tracking_sessions")
-      .select("id")
+      .select("id, referral_code, referral_id, campaign_id, advertiser_id, metadata")
       .eq("tid", tid)
       .maybeSingle();
 
+    const mergedMetadata = {
+      ...((existing?.metadata as Record<string, unknown> | null) || {}),
+      user_agent: req.headers.get("user-agent") || null,
+      source: "tracker",
+      last_seen_via: "track-session",
+    };
+
     const writePayload = {
       tid,
-      referral_code: referralCode,
-      referral_id: resolvedReferralId,
-      campaign_id: campaignId,
-      advertiser_id: advertiserId,
+      // first-touch lock: never wipe an existing referral/campaign with null payloads
+      referral_code: existing?.referral_code || referralCode,
+      referral_id: existing?.referral_id || resolvedReferralId,
+      campaign_id: existing?.campaign_id || campaignId,
+      advertiser_id: existing?.advertiser_id || advertiserId,
       last_seen_at: now,
-      metadata: {
-        user_agent: req.headers.get("user-agent") || null,
-        source: "tracker",
-      },
+      metadata: mergedMetadata,
     };
 
     if (existing?.id) {
@@ -102,32 +107,45 @@ Deno.serve(async (req) => {
         });
     }
 
-    // Identity stitching: if user_id provided, link client_id → user_id in users_tracking
-    if (userId && campaignId) {
-      const { data: existingUser } = await supabase
+    const finalReferralId = writePayload.referral_id || null;
+    const finalReferralCode = writePayload.referral_code || null;
+    const finalCampaignId = writePayload.campaign_id || campaignId;
+
+    const upsertIdentity = async (identity: string) => {
+      if (!identity || !finalCampaignId) return;
+
+      const { data: existingTrackedUser } = await supabase
         .from("users_tracking")
-        .select("id, referral_id")
-        .eq("campaign_id", campaignId)
-        .eq("external_user_id", userId)
+        .select("id, referral_id, tid, referred_by")
+        .eq("campaign_id", finalCampaignId)
+        .eq("external_user_id", identity)
         .maybeSingle();
 
-      if (!existingUser) {
-        await supabase.from("users_tracking").insert({
-          campaign_id: campaignId,
-          external_user_id: userId,
-          tid,
-          referral_id: resolvedReferralId,
-          referred_by: referralCode,
-        });
-      } else if (!existingUser.referral_id && resolvedReferralId) {
+      const payload = {
+        campaign_id: finalCampaignId,
+        external_user_id: identity,
+        tid,
+        referral_id: existingTrackedUser?.referral_id || finalReferralId,
+        referred_by: existingTrackedUser?.referred_by || finalReferralCode,
+      };
+
+      if (!existingTrackedUser) {
+        await supabase.from("users_tracking").insert(payload);
+      } else {
         await supabase
           .from("users_tracking")
-          .update({ referral_id: resolvedReferralId, tid, referred_by: referralCode })
-          .eq("id", existingUser.id);
+          .update(payload)
+          .eq("id", existingTrackedUser.id);
       }
+    };
+
+    // Identity stitching: always keep both user_id and tid bound for cross-device continuity.
+    await upsertIdentity(tid);
+    if (userId) {
+      await upsertIdentity(userId);
     }
 
-    return jsonResponse({ success: true });
+    return jsonResponse({ success: true, tid, campaign_id: finalCampaignId, referral_id: finalReferralId });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return jsonResponse({ error: message }, 500);
