@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
     const referralCode = String(body.referral_code || "").trim() || null;
     const referralInput = String(body.referral_id || body.ref || "").trim();
     const apiKey = String(body.api_key || "").trim();
+    const userId = String(body.user_id || "").trim() || null;
 
     if (!tid) {
       return jsonResponse({ error: "Missing tid" }, 400);
