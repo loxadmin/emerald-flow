@@ -15,6 +15,22 @@
   var cachedApiKey = null;
   var cachedCampaignId = null;
 
+  // ─── Debug mode ───
+
+  function log() {
+    if (window.KarbaliDebug) {
+      var args = ["[Karbali]"].concat(Array.prototype.slice.call(arguments));
+      console.log.apply(console, args);
+    }
+  }
+
+  function warn() {
+    var args = ["[Karbali]"].concat(Array.prototype.slice.call(arguments));
+    if (window.KarbaliDebug) {
+      console.warn.apply(console, args);
+    }
+  }
+
   function getTrackerVersion() {
     if (window.KarbaliConfig && window.KarbaliConfig.trackerVersion) return String(window.KarbaliConfig.trackerVersion);
     var script = document.currentScript || document.querySelector('script[src*="karbali-tracker"]');
@@ -48,6 +64,20 @@
     } catch (_) {}
     var m = document.cookie.match(new RegExp("(?:^|; )" + key + "=([^;]+)"));
     return m ? decodeURIComponent(m[1]) : null;
+  }
+
+  // ─── First-touch lock: only set referral if not already stored ───
+
+  function setStorageOnce(key, value) {
+    if (value == null || value === "") return false;
+    var existing = getStorage(key);
+    if (existing) {
+      log("First-touch lock: keeping existing", key, "=", existing, "(ignored new:", value, ")");
+      return false;
+    }
+    setStorage(key, value);
+    log("First-touch set:", key, "=", value);
+    return true;
   }
 
   // ─── Utility ───
@@ -86,6 +116,7 @@
     if (!id) {
       id = createClientId();
       setStorage(CLIENT_ID_KEY, id);
+      log("Generated new client_id:", id);
     }
     return id;
   }
@@ -98,6 +129,9 @@
     if (!uid) return null;
     var id = String(uid);
     setStorage(USER_ID_KEY, id);
+    log("User identified:", id);
+    // Sync identity to server immediately
+    syncIdentityToServer(id);
     return id;
   }
 
@@ -105,7 +139,33 @@
     return getStorage(REFERRAL_ID_KEY) || getStorage(REFERRAL_CODE_KEY);
   }
 
-  // ─── Attribution sync (captures URL params on every navigation) ───
+  // ─── Identity stitching: link client_id to user_id on server ───
+
+  function syncIdentityToServer(userId) {
+    var apiKey = getApiKey();
+    if (!apiKey || !userId) return;
+
+    log("Syncing identity to server: client_id =", getClientId(), "user_id =", userId);
+
+    try {
+      fetch(TRACK_SESSION_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_key: apiKey,
+          tid: getClientId(),
+          referral_code: getStorage(REFERRAL_CODE_KEY) || null,
+          referral_id: getStorage(REFERRAL_ID_KEY) || null,
+          user_id: userId,
+        }),
+        keepalive: true,
+        mode: "cors",
+        credentials: "omit",
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
+  // ─── Attribution sync (captures URL params — first-touch for referrals) ───
 
   function syncAttribution() {
     var params = new URLSearchParams(window.location.search);
@@ -113,23 +173,27 @@
     var refCode = params.get("ref_code") || params.get("code");
     var clientId = params.get("client_id") || params.get("kb_client_id");
 
-    if (ref) setStorage(REFERRAL_ID_KEY, ref);
-    if (refCode) setStorage(REFERRAL_CODE_KEY, refCode);
+    // FIRST-TOUCH LOCK: only store referral if not already present
+    if (ref) setStorageOnce(REFERRAL_ID_KEY, ref);
+    if (refCode) setStorageOnce(REFERRAL_CODE_KEY, refCode);
+
+    // client_id from URL always overwrites (for cross-device continuity)
     if (clientId) setStorage(CLIENT_ID_KEY, clientId);
 
     // Ensure client_id always exists and persist server session
     getClientId();
     ensureTrackingSession();
+
+    log("Attribution synced — referral:", getReferralId(), "client:", getClientId());
   }
-
-
 
   async function ensureTrackingSession() {
     var apiKey = getApiKey();
     if (!apiKey) return;
 
-    var params = new URLSearchParams(window.location.search);
-    var referralCode = params.get("ref_code") || getStorage(REFERRAL_CODE_KEY) || null;
+    var referralCode = getStorage(REFERRAL_CODE_KEY) || null;
+
+    log("Ensuring tracking session — tid:", getClientId(), "referral:", getReferralId());
 
     try {
       await fetch(TRACK_SESSION_ENDPOINT, {
@@ -176,7 +240,7 @@
     var apiKey = payload.api_key || payload.apiKey || getApiKey();
 
     if (!apiKey) {
-      console.warn("[Karbali] Missing API key — cannot track");
+      warn("Missing API key — cannot track");
       return { error: "Missing API key" };
     }
 
@@ -195,6 +259,8 @@
       source_url: payload.source_url || payload.sourceUrl || window.location.href,
     };
 
+    log("Tracking event:", eventType, body);
+
     try {
       var response = await fetch(TRACK_ENDPOINT, {
         method: "POST",
@@ -208,9 +274,11 @@
       var result = await response.json().catch(function () { return {}; });
 
       if (!response.ok) {
-        console.warn("[Karbali] Track failed:", result.error || response.status);
+        warn("Track failed:", result.error || response.status);
         return result;
       }
+
+      log("Track success:", eventType, result);
 
       // Mark signup tracked to prevent duplicates
       if (eventType === "signup") {
@@ -219,7 +287,7 @@
 
       return result;
     } catch (err) {
-      console.warn("[Karbali] Track error:", err.message);
+      warn("Track error:", err.message);
       return { error: err.message };
     }
   }
@@ -271,14 +339,17 @@
       // Explicit data-attribute tracking
       var explicitEvent = element.getAttribute("data-karbali-event");
       if (explicitEvent === "download") {
+        log("Auto-detected download click via data attribute");
         trackDownload(element.getAttribute("data-karbali-user-id") || null);
         return;
       }
       if (explicitEvent === "signup") {
+        log("Auto-detected signup click via data attribute");
         trackSignup(element.getAttribute("data-karbali-user-id") || null);
         return;
       }
       if (explicitEvent === "purchase") {
+        log("Auto-detected purchase click via data attribute");
         trackPurchase({
           user_id: element.getAttribute("data-karbali-user-id") || null,
           amount: element.getAttribute("data-karbali-amount") ? Number(element.getAttribute("data-karbali-amount")) : null,
@@ -296,6 +367,7 @@
           }
         }
         if (isDownload) {
+          log("Auto-detected download link:", href);
           trackDownload(getUserId());
         }
       }
@@ -309,6 +381,7 @@
     if (!apiKey) return;
 
     function ping() {
+      log("Sending heartbeat ping");
       try {
         fetch(PING_ENDPOINT, {
           method: "POST",
@@ -333,13 +406,33 @@
     setInterval(ping, 300000);
   }
 
+  // ─── Clear referral (for testing / manual reset) ───
+
+  function clearReferral() {
+    try { localStorage.removeItem(REFERRAL_ID_KEY); } catch (_) {}
+    try { localStorage.removeItem(REFERRAL_CODE_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(REFERRAL_ID_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(REFERRAL_CODE_KEY); } catch (_) {}
+    document.cookie = REFERRAL_ID_KEY + "=;path=/;max-age=0";
+    document.cookie = REFERRAL_CODE_KEY + "=;path=/;max-age=0";
+    log("Referral data cleared");
+  }
+
   // ─── Initialize ───
+
+  log("Karbali tracker initializing — version:", getTrackerVersion());
 
   syncAttribution();
   getApiKey();
   patchHistory();
   bindDownloadClicks();
   startHeartbeat();
+
+  log("Karbali tracker ready — API key:", getApiKey() ? "found" : "MISSING",
+    "| Campaign:", getCampaignId() || "not set",
+    "| Client:", getClientId(),
+    "| User:", getUserId() || "anonymous",
+    "| Referral:", getReferralId() || "none");
 
   // ─── Public API ───
 
@@ -359,6 +452,11 @@
     trackSignup: trackSignup,
     trackPurchase: trackPurchase,
     trackDownload: trackDownload,
+    clearReferral: clearReferral,
+    debug: function (enabled) {
+      window.KarbaliDebug = enabled !== false;
+      log("Debug mode", window.KarbaliDebug ? "enabled" : "disabled");
+    },
   };
 
   window.Karbali = api;
