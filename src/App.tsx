@@ -39,6 +39,7 @@ import BlogPost from "./pages/BlogPost";
 import WhatIsKarbali from "./pages/WhatIsKarbali";
 import UseCases from "./pages/UseCases";
 import Comparison from "./pages/Comparison";
+import ProblemSolution from "./pages/ProblemSolution";
 import ReferralRedirect from "./pages/ReferralRedirect";
 import NotFound from "./pages/NotFound";
 
@@ -76,6 +77,13 @@ const App = () => (
               <Route path="/what-is-karbali" element={<WhatIsKarbali />} />
               <Route path="/use-cases" element={<UseCases />} />
               <Route path="/vs/:competitor" element={<Comparison />} />
+
+              {/* Problem -> Solution SEO routes */}
+              <Route path="/get-customers-for-my-business" element={<ProblemSolution />} />
+              <Route path="/how-to-get-users-for-my-app" element={<ProblemSolution />} />
+              <Route path="/how-to-increase-sales-online" element={<ProblemSolution />} />
+              <Route path="/how-to-get-first-100-customers" element={<ProblemSolution />} />
+              <Route path="/customer-acquisition-for-startups" element={<ProblemSolution />} />
 
               {/* Admin routes (separate panel) */}
               <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />

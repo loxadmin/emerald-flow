@@ -3,6 +3,7 @@ import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { ArrowRight, Smartphone, Globe, Briefcase, ShoppingBag, Rocket } from "lucide-react";
 import Logo from "@/components/Logo";
+import Footer from "@/components/Footer";
 import { GlassButton } from "@/components/ui/glass-button";
 import { useTheme } from "@/lib/theme";
 import { Sun, Moon } from "lucide-react";
@@ -15,8 +16,8 @@ export default function UseCases() {
     {
       icon: Rocket,
       title: "For Startups",
-      description: "Get your first 1,000 users without burning through your seed funding. Pay only when users actually sign up and experience your product.",
-      benefits: ["Low risk acquisition", "High quality users", "Performance tracking"]
+      description: "Get your first 1,000 users without burning through your seed funding. Our customer acquisition solution identifies high-intent users and only charges you after they sign up.",
+      benefits: ["Low risk acquisition", "High quality users", "Pay-after-signup model"]
     },
     {
       icon: Smartphone,
@@ -27,8 +28,8 @@ export default function UseCases() {
     {
       icon: ShoppingBag,
       title: "For E-commerce",
-      description: "Direct shoppers from competitors to your store. Pay a commission only after a successful transaction is completed.",
-      benefits: ["ROAS-focused", "Incentivized switching", "Basket size tracking"]
+      description: "Direct shoppers from competitors to your store using our financial assistant mapping. Pay a commission only after a successful sale happens.",
+      benefits: ["ROAS-focused", "Financial behavior targeting", "Pay-after-sale model"]
     },
     {
       icon: Briefcase,
@@ -73,7 +74,7 @@ export default function UseCases() {
           <MotionWrapper className="text-center mb-20">
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">Built for Every Growth Stage</h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Explore how different industries use Karbali Ads to acquire users and scale revenue with zero wasted ad spend.
+              Karbali is more than an advertising platform—it's a customer acquisition solution. Explore how different industries acquire users and scale revenue with zero risk.
             </p>
           </MotionWrapper>
 
@@ -137,21 +138,7 @@ export default function UseCases() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-border/50 py-16 px-6">
-        <div className="mx-auto max-w-7xl flex flex-col items-center justify-center text-center gap-6">
-          <div className="flex items-center gap-2">
-            <Logo size={20} />
-            <span className="text-lg font-bold text-gradient">Karbali Ads</span>
-          </div>
-          <p className="text-sm text-muted-foreground max-w-md">Performance Attribution Platform. Track real outcomes, not vanity metrics.</p>
-          <div className="flex gap-8 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-            <Link to="/blog" className="hover:text-primary transition-colors">Blog</Link>
-            <Link to="/what-is-karbali" className="hover:text-primary transition-colors">What is Karbali?</Link>
-          </div>
-          <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

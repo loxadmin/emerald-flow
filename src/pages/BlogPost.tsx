@@ -5,6 +5,7 @@ import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper from "@/components/MotionWrapper";
 import { ArrowLeft, Calendar, User, Share2, MessageCircle, Send, Link2, CheckCircle2 } from "lucide-react";
 import Logo from "@/components/Logo";
+import Footer from "@/components/Footer";
 import { GlassButton } from "@/components/ui/glass-button";
 import { useTheme } from "@/lib/theme";
 import { Sun, Moon } from "lucide-react";
@@ -183,22 +184,7 @@ export default function BlogPost() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-border/50 py-16 px-6">
-        <div className="mx-auto max-w-7xl flex flex-col items-center justify-center text-center gap-6">
-          <div className="flex items-center gap-2">
-            <Logo size={20} />
-            <span className="text-lg font-bold text-gradient">Karbali Ads</span>
-          </div>
-          <p className="text-sm text-muted-foreground max-w-md">Performance Attribution Platform. Track real outcomes, not vanity metrics.</p>
-          <div className="flex gap-8 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-            <Link to="/blog" className="hover:text-primary transition-colors">Blog</Link>
-            <Link to="/docs" className="hover:text-primary transition-colors">API Docs</Link>
-            <Link to="/what-is-karbali" className="hover:text-primary transition-colors">What is Karbali?</Link>
-          </div>
-          <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

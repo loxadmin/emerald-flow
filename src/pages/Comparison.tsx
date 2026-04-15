@@ -3,6 +3,7 @@ import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper from "@/components/MotionWrapper";
 import { Check, X, ArrowRight, Zap, DollarSign, Shield, BarChart3 } from "lucide-react";
 import Logo from "@/components/Logo";
+import Footer from "@/components/Footer";
 import { GlassButton } from "@/components/ui/glass-button";
 import { useTheme } from "@/lib/theme";
 import { Sun, Moon } from "lucide-react";
@@ -15,11 +16,11 @@ export default function Comparison() {
   const competitorName = competitor?.charAt(0).toUpperCase() + competitor?.slice(1).replace("-", " ") || "Other Platforms";
 
   const comparisonData = [
-    { feature: "Billing Model", karbali: "Pay-per-sale/action", other: "Pay-per-click/impression" },
-    { feature: "Targeting", karbali: "Financial behavioral mapping", other: "Interests & Demographics" },
-    { feature: "Budget Efficiency", karbali: "100% (Zero waste)", other: "40-60% (Estimated waste)" },
-    { feature: "Fraud Protection", karbali: "Verified action verification", other: "Click-level filtering" },
-    { feature: "User Incentive", karbali: "Cash-back to savings", other: "None (Intrusive ads)" },
+    { feature: "Billing Model", karbali: "Pay After Sale Happens", other: "Pay-per-click/impression" },
+    { feature: "Primary Focus", karbali: "Customer Acquisition Solution", other: "Advertising Platform" },
+    { feature: "Targeting Method", karbali: "Financial spending mapping", other: "Estimated interests" },
+    { feature: "Budget Risk", karbali: "Zero (Only pay for results)", other: "High (Pay regardless of sales)" },
+    { feature: "User Retention", karbali: "Incentivized Yearly Savings", other: "None (One-time interaction)" },
   ];
 
   return (
@@ -116,13 +117,13 @@ export default function Comparison() {
             </MotionWrapper>
 
             <MotionWrapper className="bg-primary/5 p-10 rounded-[2.5rem] border border-primary/10 flex flex-col justify-center">
-              <h3 className="text-2xl font-extrabold mb-4">Make the switch today.</h3>
+              <h3 className="text-2xl font-extrabold mb-4">Stop Paying for Clicks.</h3>
               <p className="text-muted-foreground mb-8">
-                Leading startups are already seeing a 40% reduction in Customer Acquisition Cost (CAC) by moving their budget to Karbali.
+                Traditional advertising is a gamble. Karbali is a solution. Switch to a platform that only wins when you make a sale.
               </p>
               <Link to="/signup">
                 <GlassButton variant="glow" className="w-full h-14 rounded-2xl text-lg">
-                  Start Your First Campaign <ArrowRight className="ml-2 h-4 w-4" />
+                  Start Getting Sales Now <ArrowRight className="ml-2 h-4 w-4" />
                 </GlassButton>
               </Link>
             </MotionWrapper>
@@ -130,21 +131,7 @@ export default function Comparison() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-border/50 py-16 px-6">
-        <div className="mx-auto max-w-7xl flex flex-col items-center justify-center text-center gap-6">
-          <div className="flex items-center gap-2">
-            <Logo size={20} />
-            <span className="text-lg font-bold text-gradient">Karbali Ads</span>
-          </div>
-          <p className="text-sm text-muted-foreground max-w-md">Performance Attribution Platform. Track real outcomes, not vanity metrics.</p>
-          <div className="flex gap-8 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-            <Link to="/blog" className="hover:text-primary transition-colors">Blog</Link>
-            <Link to="/what-is-karbali" className="hover:text-primary transition-colors">What is Karbali?</Link>
-          </div>
-          <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

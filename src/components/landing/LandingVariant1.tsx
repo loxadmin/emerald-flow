@@ -5,6 +5,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import MotionWrapper from "@/components/MotionWrapper";
 import Logo from "@/components/Logo";
+import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -240,11 +241,7 @@ export default function LandingVariant1({ content, onContactSubmit, contactName,
 
       {/* FOOTER */}
       {s("footer")?.is_visible !== false && (
-        <footer className="relative z-10 border-t border-border/30 py-14 px-6 text-center">
-          <Logo size={24} />
-          <p className="mt-4 text-sm text-muted-foreground max-w-md mx-auto">{s("footer")?.content}</p>
-          <p className="mt-3 text-xs text-muted-foreground/40">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
-        </footer>
+        <Footer content={s("footer")?.content} />
       )}
     </>
   );
