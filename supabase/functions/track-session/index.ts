@@ -102,6 +102,31 @@ Deno.serve(async (req) => {
         });
     }
 
+    // Identity stitching: if user_id provided, link client_id → user_id in users_tracking
+    if (userId && campaignId) {
+      const { data: existingUser } = await supabase
+        .from("users_tracking")
+        .select("id, referral_id")
+        .eq("campaign_id", campaignId)
+        .eq("external_user_id", userId)
+        .maybeSingle();
+
+      if (!existingUser) {
+        await supabase.from("users_tracking").insert({
+          campaign_id: campaignId,
+          external_user_id: userId,
+          tid,
+          referral_id: resolvedReferralId,
+          referred_by: referralCode,
+        });
+      } else if (!existingUser.referral_id && resolvedReferralId) {
+        await supabase
+          .from("users_tracking")
+          .update({ referral_id: resolvedReferralId, tid, referred_by: referralCode })
+          .eq("id", existingUser.id);
+      }
+    }
+
     return jsonResponse({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
