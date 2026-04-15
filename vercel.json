@@ -42,11 +42,11 @@
     },
     {
       "source": "/karbali-tracker/v/:version.js",
-      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/tracker-script"
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/tracker-script/karbali-tracker/v/:version.js"
     },
     {
       "source": "/karbali-tracker/c/:campaign.js",
-      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/tracker-script"
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/tracker-script/karbali-tracker/c/:campaign.js"
     },
     {
       "source": "/(.*)",
