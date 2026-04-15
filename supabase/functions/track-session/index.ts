@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
     const referralCode = String(body.referral_code || "").trim() || null;
     const referralInput = String(body.referral_id || body.ref || "").trim();
     const apiKey = String(body.api_key || "").trim();
+    const userId = String(body.user_id || "").trim() || null;
 
     if (!tid) {
       return jsonResponse({ error: "Missing tid" }, 400);
@@ -99,6 +100,31 @@ Deno.serve(async (req) => {
           ...writePayload,
           first_seen_at: now,
         });
+    }
+
+    // Identity stitching: if user_id provided, link client_id → user_id in users_tracking
+    if (userId && campaignId) {
+      const { data: existingUser } = await supabase
+        .from("users_tracking")
+        .select("id, referral_id")
+        .eq("campaign_id", campaignId)
+        .eq("external_user_id", userId)
+        .maybeSingle();
+
+      if (!existingUser) {
+        await supabase.from("users_tracking").insert({
+          campaign_id: campaignId,
+          external_user_id: userId,
+          tid,
+          referral_id: resolvedReferralId,
+          referred_by: referralCode,
+        });
+      } else if (!existingUser.referral_id && resolvedReferralId) {
+        await supabase
+          .from("users_tracking")
+          .update({ referral_id: resolvedReferralId, tid, referred_by: referralCode })
+          .eq("id", existingUser.id);
+      }
     }
 
     return jsonResponse({ success: true });
