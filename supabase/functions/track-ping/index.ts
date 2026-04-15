@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       .from("api_keys")
       .select("campaign_id")
       .eq("key", api_key)
-      .single();
+      .maybeSingle();
 
     if (keyError || !keyData) {
       return json({ error: "Invalid API key" }, 401);
