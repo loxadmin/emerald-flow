@@ -178,7 +178,8 @@ export default function CampaignDetail() {
           </div>
         </MotionWrapper>
 
-        {/* API Key */}
+        {/* API Key - only for non-manual campaigns */}
+        {!isManual && (
         <MotionWrapper delay={0.05}>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center justify-between mb-2">
@@ -201,6 +202,7 @@ export default function CampaignDetail() {
             ) : <p className="text-sm text-muted-foreground">Not generated yet.</p>}
           </div>
         </MotionWrapper>
+        )}
 
         {/* Tracker Script Lifecycle */}
         <MotionWrapper delay={0.08}>
