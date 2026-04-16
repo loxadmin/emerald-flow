@@ -204,7 +204,8 @@ export default function CampaignDetail() {
         </MotionWrapper>
         )}
 
-        {/* Tracker Script Lifecycle */}
+        {/* Tracker Script Lifecycle - only for non-manual campaigns */}
+        {!isManual && (
         <MotionWrapper delay={0.08}>
           <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -235,6 +236,7 @@ export default function CampaignDetail() {
             )}
           </div>
         </MotionWrapper>
+        )}
 
         {/* Stats */}
         <MotionStagger className="grid gap-3 grid-cols-2 md:grid-cols-5">
