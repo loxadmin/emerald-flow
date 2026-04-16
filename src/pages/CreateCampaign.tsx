@@ -11,11 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertCircle, Handshake, Globe, RotateCcw } from "lucide-react";
+import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertCircle, Handshake, Globe, RotateCcw, Smartphone } from "lucide-react";
 import JSZip from "jszip";
 
 interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
 interface Website { id: string; domain: string; is_verified: boolean; }
+type PlatformType = "website" | "mobile_app";
 
 const SALE_FLAT_FEE = 1;
 
@@ -30,6 +31,8 @@ export default function CreateCampaign() {
   const [isPartnership, setIsPartnership] = useState(false);
   const [categoryPartnership, setCategoryPartnership] = useState<boolean | null>(null);
   const [allowedEvents, setAllowedEvents] = useState<string[]>(["download", "signup", "purchase"]);
+  const [platformType, setPlatformType] = useState<PlatformType>("website");
+  const [appLink, setAppLink] = useState("");
 
   // Standard flow
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -77,10 +80,14 @@ export default function CreateCampaign() {
       // Check category
       const { data: catData } = await supabase
         .from("advertiser_categories")
-        .select("category_id")
+        .select("category_id, advertiser_subtype")
         .eq("advertiser_id", user.id)
         .maybeSingle();
       if (catData) {
+        const subtype = (catData as any)?.advertiser_subtype;
+        const selectedPlatform: PlatformType = subtype === "app" ? "mobile_app" : "website";
+        setPlatformType(selectedPlatform);
+
         const { data: cat } = await supabase.from("categories").select("is_partnership").eq("id", catData.category_id).single();
         setCategoryPartnership((cat as any)?.is_partnership ?? false);
 
@@ -89,7 +96,12 @@ export default function CreateCampaign() {
         });
         const eventPayload = typeof eventsData === "string" ? JSON.parse(eventsData) : eventsData;
         if (Array.isArray(eventPayload?.events) && eventPayload.events.length > 0) {
-          setAllowedEvents(eventPayload.events);
+          const categoryEvents = eventPayload.events as string[];
+          setAllowedEvents(
+            selectedPlatform === "website"
+              ? categoryEvents.filter((event) => event !== "download")
+              : categoryEvents
+          );
         }
       }
 
@@ -119,33 +131,8 @@ export default function CreateCampaign() {
       const { data: w } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
       if (w) setWalletBalance(Number(w.balance));
 
-      let draftId = draftParam;
+      const draftId = draftParam;
       const requestedStep = Number(stepParam ?? "0");
-
-      if (!draftId) {
-        const { data: existingDrafts } = await supabase
-          .from("campaigns")
-          .select("id")
-          .eq("advertiser_id", user.id)
-          .eq("is_draft", true)
-          .or("ad_type.eq.performance,ad_type.is.null")
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        if (existingDrafts?.length) {
-          for (const draft of existingDrafts) {
-            const { count } = await supabase
-              .from("api_keys")
-              .select("id", { count: "exact", head: true })
-              .eq("campaign_id", draft.id);
-
-            if (count && count > 0) {
-              draftId = draft.id;
-              break;
-            }
-          }
-        }
-      }
 
       if (draftId) {
         const { data: draftCampaign } = await supabase.from("campaigns")
@@ -160,6 +147,8 @@ export default function CreateCampaign() {
           setCampaignName(draftCampaign.name === "Draft Campaign" ? "" : draftCampaign.name);
           setTargetUsers(String(draftCampaign.target_users || 100));
           setMilestones(draftCampaign.selected_milestones || []);
+          setPlatformType((draftCampaign.platform_type as PlatformType) || platformType);
+          setAppLink((draftCampaign.app_link as string) || "");
           setIntegrationType((draftCampaign.integration_type as "custom" | "wordpress") || "custom");
           setVerified(draftCampaign.integration_verified || false);
           if (draftCampaign.website_id) setSelectedWebsiteId(draftCampaign.website_id);
@@ -195,6 +184,25 @@ export default function CreateCampaign() {
     setMilestones((current) => current.filter((milestone) => allowedEvents.includes(milestone)));
   }, [allowedEvents]);
 
+  useEffect(() => {
+    if (platformType === "website") {
+      setMilestones((current) => current.filter((milestone) => milestone !== "download"));
+    }
+    if (platformType === "mobile_app" && milestones.includes("signup") && !milestones.includes("download")) {
+      setMilestones((current) => [...current, "download"]);
+    }
+  }, [platformType, milestones]);
+
+  const isValidAppLink = (link: string) => {
+    const lower = link.toLowerCase();
+    return (
+      lower.includes("play.google.com") ||
+      lower.includes("apps.apple.com") ||
+      lower.includes("itunes.apple.com") ||
+      lower.includes("testflight.apple.com")
+    );
+  };
+
   const totalCost = (() => {
     const users = Math.max(100, Number(targetUsers) || 100);
     let milestoneTotal = 0;
@@ -218,6 +226,8 @@ export default function CreateCampaign() {
       integration_type: isPartnership ? "external_referral" : integrationType,
       integration_verified: verified,
       website_id: selectedWebsiteId,
+      platform_type: platformType,
+      app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
       is_draft: true,
       ...updates,
     }).eq("id", campaignId);
@@ -234,6 +244,8 @@ export default function CreateCampaign() {
       integration_type: integrationType, is_draft: true,
       ad_type: "performance",
       website_id: selectedWebsiteId,
+      platform_type: platformType,
+      app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
     } as any).select().single();
     if (error) { toast.error(error.message); setLoading(false); return; }
     const key = `kb_${crypto.randomUUID().replace(/-/g, "")}`;
@@ -272,6 +284,12 @@ export default function CreateCampaign() {
     if (!campaignName.trim()) { toast.error("Enter a campaign name"); return; }
     if (milestones.length === 0) { toast.error("Select at least one milestone"); return; }
     if (!isPartnership && !verified) { toast.error("Verify your integration before submitting"); return; }
+    if (platformType === "mobile_app" && milestones.includes("download")) {
+      if (!appLink.trim() || !isValidAppLink(appLink)) {
+        toast.error("Please enter a valid App Store or Play Store link");
+        return;
+      }
+    }
     const users = Number(targetUsers);
     if (users < 100) { toast.error("Minimum 100 target users"); return; }
     if (walletBalance < totalCost) { toast.error(`Insufficient balance. Need $${totalCost.toFixed(2)}, have $${walletBalance.toFixed(2)}.`); return; }
@@ -283,6 +301,8 @@ export default function CreateCampaign() {
         advertiser_id: user.id, name: campaignName.trim(), budget_remaining: 0,
         integration_type: isPartnership ? "external_referral" : integrationType,
         website_id: selectedWebsiteId,
+        platform_type: platformType,
+        app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
       } as any).select().single();
       if (error) { toast.error(error.message); setLoading(false); return; }
       cId = campaign.id;
@@ -297,6 +317,8 @@ export default function CreateCampaign() {
       price_purchase: milestones.includes("purchase") ? SALE_FLAT_FEE : 0,
       integration_verified: verified, integration_type: isPartnership ? "external_referral" : integrationType,
       website_id: selectedWebsiteId,
+      platform_type: platformType,
+      app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
     } as any).eq("id", cId);
     if (error) { toast.error(error.message); setLoading(false); return; }
 
@@ -538,6 +560,17 @@ new KarbaliTracking();`;
           </div>
         )}
 
+        {step === 0 && !isPartnership && (
+          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+            <h3 className="text-sm font-medium text-foreground">Campaign Platform</h3>
+            <p className="text-xs text-muted-foreground">Selected from your advertiser category.</p>
+            <div className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+              {platformType === "mobile_app" ? <Smartphone className="h-3.5 w-3.5 text-primary" /> : <Globe className="h-3.5 w-3.5 text-primary" />}
+              <span className="text-foreground">{platformType === "mobile_app" ? "Mobile App (downloads available)" : "Website (downloads hidden)"}</span>
+            </div>
+          </div>
+        )}
+
         {/* External Referral Step 0 */}
         {isPartnership && hasExternalReferral && step === 0 && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-5">
@@ -662,6 +695,13 @@ new KarbaliTracking();`;
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Settings className="h-4 w-4 text-primary" /> Campaign Configuration</h3></div>
             <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Campaign Name *</Label><Input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="My Campaign" /></div>
             <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Target Users (min 100) *</Label><Input type="number" min="100" value={targetUsers} onChange={e => setTargetUsers(e.target.value)} /></div>
+            {platformType === "mobile_app" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">App Store / Play Store Link {milestones.includes("download") ? "*" : ""}</Label>
+                <Input value={appLink} onChange={e => setAppLink(e.target.value)} placeholder="https://play.google.com/store/apps/... or https://apps.apple.com/..." />
+                {appLink && !isValidAppLink(appLink) && <p className="text-xs text-destructive">Must be an Apple App Store or Google Play Store link.</p>}
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Milestones *</Label>
               {milestoneOptions.map(m => (
@@ -673,6 +713,9 @@ new KarbaliTracking();`;
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0">{m.priceLabel}</Badge>
                 </label>
               ))}
+              {platformType === "mobile_app" && milestones.includes("signup") && (
+                <p className="text-[11px] text-muted-foreground">Download is auto-selected for app signup campaigns.</p>
+              )}
             </div>
             {milestones.length > 0 && (
               <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 text-sm">
@@ -700,7 +743,12 @@ new KarbaliTracking();`;
                 return;
               }
               goToStep(4);
-            }} disabled={!campaignName.trim() || milestones.length === 0 || Number(targetUsers) < 100}>Review & Submit</Button>
+            }} disabled={
+              !campaignName.trim() ||
+              milestones.length === 0 ||
+              Number(targetUsers) < 100 ||
+              (platformType === "mobile_app" && milestones.includes("download") && (!appLink.trim() || !isValidAppLink(appLink)))
+            }>Review & Submit</Button>
           </div>
         )}
 
@@ -711,7 +759,9 @@ new KarbaliTracking();`;
             <div className="rounded-lg bg-muted/50 p-4 space-y-2">
               {[
                 { l: "Campaign Name", v: campaignName },
+                { l: "Platform", v: platformType === "mobile_app" ? "Mobile App" : "Website" },
                 { l: "Website", v: selectedDomain || websites[0]?.domain || "—" },
+                ...(platformType === "mobile_app" && appLink ? [{ l: "App Link", v: appLink }] : []),
                 { l: "Type", v: isPartnership ? "External Referral" : integrationType === "wordpress" ? "WordPress" : "Custom API" },
                 ...(isPartnership ? [] : [{ l: "Verified", v: verified ? "Yes ✓" : "Pending" }]),
                 { l: "Target Users", v: targetUsers },
