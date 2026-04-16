@@ -241,12 +241,12 @@ export default function CampaignDetail() {
         {/* Stats */}
         <MotionStagger className="grid gap-3 grid-cols-2 md:grid-cols-5">
           {[
-            { icon: MousePointerClick, label: "Clicks", value: stats.clicks },
-            { icon: Download, label: "Downloads", value: stats.downloads },
-            { icon: UserPlus, label: "Signups", value: stats.signups },
-            { icon: ShoppingCart, label: "Purchases", value: stats.purchases },
-            { icon: Wallet, label: "Budget Left", value: `$${Number(campaign.budget_remaining).toFixed(2)}` },
-            { icon: Users, label: "Target", value: (campaign as any).target_users || "—" },
+            { icon: MousePointerClick, label: "Clicks", value: stats.clicks, metric: false },
+            { icon: Download, label: "Downloads", value: stats.downloads, metric: true },
+            { icon: UserPlus, label: "Signups", value: stats.signups, metric: true },
+            { icon: ShoppingCart, label: "Purchases", value: stats.purchases, metric: true },
+            { icon: Wallet, label: "Budget Left", value: `$${Number(campaign.budget_remaining).toFixed(2)}`, metric: false },
+            { icon: Users, label: "Target", value: (campaign as any).target_users || "N/A", metric: false },
           ].map((s) => (
             <MotionItem key={s.label}>
               <div className="rounded-xl border border-border bg-card p-4">
@@ -254,7 +254,11 @@ export default function CampaignDetail() {
                   <s.icon className="h-4 w-4 text-muted-foreground/60" />
                   <span className="text-xs text-muted-foreground">{s.label}</span>
                 </div>
-                <p className="text-lg font-semibold text-foreground">{s.value}</p>
+                <p className="text-lg font-semibold text-foreground">
+                  {s.metric && totalMetrics < 10 && totalMetrics >= 0
+                    ? <span className="text-sm text-muted-foreground italic">Calculating...</span>
+                    : s.value}
+                </p>
               </div>
             </MotionItem>
           ))}
