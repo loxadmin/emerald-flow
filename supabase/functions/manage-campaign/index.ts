@@ -13,6 +13,7 @@ const jsonResponse = (body: unknown, status = 200) =>
   });
 
 const DEFAULT_CATEGORY_EVENTS = ["download", "signup", "purchase"];
+const INTEGRATION_TYPES_REQUIRING_VERIFICATION = new Set(["custom", "wordpress"]);
 
 function parseCategoryEvents(value: string | null | undefined) {
   try {
@@ -128,7 +129,10 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Campaign name is incomplete" }, 400);
       }
 
-      if (campaign.integration_type !== "external_referral" && !campaign.integration_verified) {
+      const requiresIntegrationVerification =
+        INTEGRATION_TYPES_REQUIRING_VERIFICATION.has(String(campaign.integration_type || "").toLowerCase());
+
+      if (requiresIntegrationVerification && !campaign.integration_verified) {
         return jsonResponse({ error: "Verify integration before submitting" }, 400);
       }
 
