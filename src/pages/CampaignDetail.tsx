@@ -151,6 +151,9 @@ export default function CampaignDetail() {
   if (loading) return <DashboardLayout><div className="flex items-center justify-center py-20"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></DashboardLayout>;
   if (!campaign) return <DashboardLayout><p className="text-muted-foreground">Campaign not found.</p></DashboardLayout>;
 
+  const isManual = (campaign as any).campaign_mode === "manual";
+  const totalMetrics = stats.downloads + stats.signups + stats.purchases;
+
   const statusColor = campaign.status === "active" ? "text-primary border-primary/20 bg-primary/5" :
     campaign.status === "pending" ? "text-amber-600 border-amber-500/20 bg-amber-500/5" :
     "text-destructive border-destructive/20 bg-destructive/5";
