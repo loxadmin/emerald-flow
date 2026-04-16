@@ -1,0 +1,407 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import MotionWrapper from "@/components/MotionWrapper";
+import { toast } from "sonner";
+import {
+  Globe, Smartphone, CheckCircle, Send, Loader2, Settings, Download, UserPlus, ShoppingCart, AlertCircle,
+} from "lucide-react";
+
+interface Website { id: string; domain: string; is_verified: boolean; }
+interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
+
+const SALE_FLAT_FEE = 1;
+
+export default function CreateManualCampaign() {
+  const navigate = useNavigate();
+  const { user, walletActivated } = useAuth();
+  const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // Platform
+  const [platformType, setPlatformType] = useState<"website" | "mobile_app" | null>(null);
+
+  // Website
+  const [websites, setWebsites] = useState<Website[]>([]);
+  const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState("");
+
+  // Campaign config
+  const [campaignName, setCampaignName] = useState("");
+  const [targetUsers, setTargetUsers] = useState("100");
+  const [milestones, setMilestones] = useState<string[]>([]);
+  const [appLink, setAppLink] = useState("");
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [prices, setPrices] = useState<AdminPrices>({
+    price_per_download: 1, price_per_signup: 2, price_per_purchase: 5, ad_placement_fee: 2,
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchData = async () => {
+      const { data: ws } = await supabase
+        .from("advertiser_websites" as any)
+        .select("id, domain, is_verified")
+        .eq("advertiser_id", user.id)
+        .eq("is_verified", true);
+      const websites = (ws as any as Website[]) || [];
+      setWebsites(websites);
+      if (websites.length === 1) {
+        setSelectedWebsiteId(websites[0].id);
+        setSelectedDomain(websites[0].domain);
+      }
+
+      const { data } = await supabase
+        .from("admin_settings")
+        .select("key, value")
+        .in("key", ["price_per_download", "price_per_signup", "price_per_purchase", "ad_placement_fee"]);
+      if (data) {
+        const p = { ...prices };
+        data.forEach((s: { key: string; value: string }) => {
+          if (s.key in p) (p as Record<string, number>)[s.key] = Number(s.value);
+        });
+        setPrices(p);
+      }
+
+      const { data: w } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
+      if (w) setWalletBalance(Number(w.balance));
+    };
+    fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Auto-select download for mobile apps with signup
+  useEffect(() => {
+    if (platformType === "mobile_app" && milestones.includes("signup") && !milestones.includes("download")) {
+      setMilestones((prev) => [...prev, "download"]);
+    }
+  }, [milestones, platformType]);
+
+  const totalCost = (() => {
+    const users = Math.max(100, Number(targetUsers) || 100);
+    let milestoneTotal = 0;
+    if (milestones.includes("download")) milestoneTotal += prices.price_per_download;
+    if (milestones.includes("signup")) milestoneTotal += prices.price_per_signup;
+    if (milestones.includes("purchase")) milestoneTotal += SALE_FLAT_FEE;
+    return milestoneTotal * users + prices.ad_placement_fee;
+  })();
+
+  const milestoneOptions = [
+    ...(platformType === "mobile_app"
+      ? [{ id: "download", label: "App Downloads", priceLabel: `$${prices.price_per_download.toFixed(2)} / user`, icon: Download }]
+      : []),
+    { id: "signup", label: "Sign Ups", priceLabel: `$${prices.price_per_signup.toFixed(2)} / user`, icon: UserPlus },
+    { id: "purchase", label: "Purchases", priceLabel: "$1.00 + 10% / sale", icon: ShoppingCart },
+  ];
+
+  const isValidAppLink = (link: string) => {
+    const lower = link.toLowerCase();
+    return (
+      lower.includes("play.google.com") ||
+      lower.includes("apps.apple.com") ||
+      lower.includes("itunes.apple.com") ||
+      lower.includes("testflight.apple.com")
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!user) return;
+    if (!campaignName.trim()) { toast.error("Enter a campaign name"); return; }
+    if (milestones.length === 0) { toast.error("Select at least one goal"); return; }
+    if (websites.length === 0) { toast.error("Please add and verify a website first"); navigate("/websites"); return; }
+    if (!selectedWebsiteId) { toast.error("Please select a website"); return; }
+    if (platformType === "mobile_app" && milestones.includes("download")) {
+      if (!appLink.trim() || !isValidAppLink(appLink)) {
+        toast.error("Please enter a valid App Store or Play Store link");
+        return;
+      }
+    }
+    const users = Number(targetUsers);
+    if (users < 100) { toast.error("Minimum 100 target users"); return; }
+    if (walletBalance < totalCost) {
+      toast.error(`Insufficient balance. Need $${totalCost.toFixed(2)}, have $${walletBalance.toFixed(2)}.`);
+      return;
+    }
+
+    setLoading(true);
+
+    // Create the campaign in manual mode
+    const { data: campaign, error: campErr } = await supabase.from("campaigns").insert({
+      advertiser_id: user.id,
+      name: campaignName.trim(),
+      budget_remaining: 0,
+      integration_type: "manual",
+      integration_verified: true, // manual campaigns don't need verification
+      is_draft: false,
+      ad_type: "performance",
+      website_id: selectedWebsiteId,
+      campaign_mode: "manual",
+      platform_type: platformType,
+      app_link: platformType === "mobile_app" ? appLink.trim() : null,
+      target_users: users,
+      selected_milestones: milestones,
+      total_cost: totalCost,
+      price_download: milestones.includes("download") ? prices.price_per_download : 0,
+      price_signup: milestones.includes("signup") ? prices.price_per_signup : 0,
+      price_purchase: milestones.includes("purchase") ? SALE_FLAT_FEE : 0,
+    } as any).select().single();
+
+    if (campErr) { toast.error(campErr.message); setLoading(false); return; }
+
+    // Submit for escrow
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const { data: escrowResult, error: escrowError } = await supabase.functions.invoke("manage-campaign", {
+      body: { action: "submit_campaign", campaign_id: campaign.id },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (escrowError || escrowResult?.error) {
+      toast.error(escrowResult?.error || escrowError?.message || "Failed to fund campaign escrow");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    toast.success("Campaign submitted for approval!");
+    navigate(`/campaigns/${campaign.id}`);
+  };
+
+  const STEPS = ["Platform", "Website", "Configure", "Submit"];
+
+  return (
+    <DashboardLayout>
+      <MotionWrapper className="mx-auto max-w-3xl space-y-6">
+        <h1 className="text-xl font-semibold text-foreground">Create Campaign</h1>
+
+        {/* Stepper */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-2">
+          {STEPS.map((s, i) => (
+            <div key={s} className="flex items-center gap-1 shrink-0">
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+                i < step ? "bg-primary text-primary-foreground" :
+                i === step ? "border-2 border-primary text-primary" :
+                "bg-muted text-muted-foreground"
+              }`}>
+                {i < step ? <CheckCircle className="h-3.5 w-3.5" /> : i + 1}
+              </div>
+              <span className={`text-xs hidden sm:inline ${i === step ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s}</span>
+              {i < STEPS.length - 1 && <div className="w-6 sm:w-10 h-px bg-border" />}
+            </div>
+          ))}
+        </div>
+
+        {/* Step 0: Platform Type */}
+        {step === 0 && (
+          <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+            <div>
+              <h3 className="text-sm font-medium text-foreground">What type of platform is your campaign for?</h3>
+              <p className="text-xs text-muted-foreground mt-1">This determines what goals are available</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => { setPlatformType("website"); setStep(1); setMilestones([]); }}
+                className="rounded-xl border border-border bg-card p-5 text-left hover:border-primary/30 transition-colors"
+              >
+                <Globe className="h-6 w-6 text-primary mb-2" />
+                <p className="text-sm font-medium text-foreground">Website</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Sign ups & purchases</p>
+              </button>
+              <button
+                onClick={() => { setPlatformType("mobile_app"); setStep(1); setMilestones([]); }}
+                className="rounded-xl border border-border bg-card p-5 text-left hover:border-primary/30 transition-colors"
+              >
+                <Smartphone className="h-6 w-6 text-primary mb-2" />
+                <p className="text-sm font-medium text-foreground">Mobile App</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Downloads, sign ups & purchases</p>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 1: Select Website */}
+        {step === 1 && (
+          <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+            <div>
+              <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Globe className="h-4 w-4 text-primary" /> Select Your Website
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Choose the verified website for this campaign</p>
+            </div>
+            {websites.length === 0 ? (
+              <div className="text-center py-5">
+                <p className="text-sm text-muted-foreground mb-3">No verified websites found</p>
+                <Button variant="outline" size="sm" onClick={() => navigate("/websites")}>Add Website</Button>
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                {websites.map((w) => (
+                  <button
+                    key={w.id}
+                    onClick={() => { setSelectedWebsiteId(w.id); setSelectedDomain(w.domain); }}
+                    className={`flex items-center gap-2 rounded-lg border p-3 text-left transition-colors ${
+                      selectedWebsiteId === w.id ? "border-primary bg-primary/5" : "border-border hover:border-border/80"
+                    }`}
+                  >
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">{w.domain}</span>
+                    {selectedWebsiteId === w.id && <CheckCircle className="h-4 w-4 text-primary ml-auto" />}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep(0)}>Back</Button>
+              <Button className="flex-1" onClick={() => setStep(2)} disabled={!selectedWebsiteId}>
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Configure */}
+        {step === 2 && (
+          <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+            <div>
+              <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Settings className="h-4 w-4 text-primary" /> Campaign Configuration
+              </h3>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Campaign Name *</Label>
+              <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="My Campaign" />
+            </div>
+
+            {platformType === "mobile_app" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">App Store / Play Store Link *</Label>
+                <Input
+                  value={appLink}
+                  onChange={(e) => setAppLink(e.target.value)}
+                  placeholder="https://play.google.com/store/apps/... or https://apps.apple.com/..."
+                />
+                {appLink && !isValidAppLink(appLink) && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" /> Must be an Apple App Store or Google Play Store link
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Target Users (min 100) *</Label>
+              <Input type="number" min="100" value={targetUsers} onChange={(e) => setTargetUsers(e.target.value)} />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Campaign Goals *</Label>
+              {milestoneOptions.map((m) => (
+                <label
+                  key={m.id}
+                  className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors ${
+                    milestones.includes(m.id) ? "border-primary bg-primary/5" : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={milestones.includes(m.id)}
+                      onCheckedChange={(checked) =>
+                        setMilestones(checked ? [...milestones, m.id] : milestones.filter((x) => x !== m.id))
+                      }
+                    />
+                    <m.icon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">{m.label}</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">{m.priceLabel}</Badge>
+                </label>
+              ))}
+              {platformType === "mobile_app" && milestones.includes("signup") && (
+                <p className="text-xs text-muted-foreground">
+                  Download milestone auto-selected since your app requires installation before signup
+                </p>
+              )}
+            </div>
+
+            {/* Cost Breakdown */}
+            <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 text-sm">
+              <p className="font-medium text-foreground text-xs">Cost Breakdown</p>
+              {milestones.map((m) => {
+                const opt = milestoneOptions.find((o) => o.id === m);
+                return opt ? (
+                  <div key={m} className="flex justify-between text-xs text-muted-foreground">
+                    <span>{opt.label}</span>
+                    <span className="text-foreground">{opt.priceLabel}</span>
+                  </div>
+                ) : null;
+              })}
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Ad Placement Fee</span>
+                <span className="text-foreground">${prices.ad_placement_fee.toFixed(2)}</span>
+              </div>
+              <div className="border-t border-border pt-1.5 flex justify-between text-xs font-medium text-foreground">
+                <span>Total</span>
+                <span className="text-primary">${totalCost.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>Balance</span>
+                <span className={walletBalance >= totalCost ? "text-primary" : "text-destructive"}>
+                  ${walletBalance.toFixed(2)} {walletBalance < totalCost && "(Insufficient)"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+              <Button className="flex-1" onClick={() => setStep(3)} disabled={milestones.length === 0 || !campaignName.trim()}>
+                Review & Submit
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Review & Submit */}
+        {step === 3 && (
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Send className="h-4 w-4 text-primary" /> Review & Submit
+              </h3>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+              {[
+                { l: "Campaign Name", v: campaignName },
+                { l: "Platform", v: platformType === "mobile_app" ? "Mobile App" : "Website" },
+                { l: "Website", v: selectedDomain },
+                ...(platformType === "mobile_app" && appLink ? [{ l: "App Link", v: appLink }] : []),
+                { l: "Target Users", v: String(Number(targetUsers)) },
+                { l: "Goals", v: milestones.map((m) => m.charAt(0).toUpperCase() + m.slice(1)).join(", ") },
+                { l: "Total Cost", v: `$${totalCost.toFixed(2)}` },
+              ].map((r) => (
+                <div key={r.l} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{r.l}</span>
+                  <span className="text-foreground font-medium truncate ml-2 max-w-[200px]">{r.v}</span>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+              <p>Your campaign will be submitted for admin approval. Once approved, a referral link will be auto-generated and your campaign will go live.</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+              <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>
+                {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit for Approval"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </MotionWrapper>
+    </DashboardLayout>
+  );
+}
