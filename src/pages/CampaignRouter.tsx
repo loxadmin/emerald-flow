@@ -17,7 +17,37 @@ export default function CampaignRouter() {
       let draftId = searchParams.get("draft");
       let adType: string | null = null;
 
-      // If no explicit draft param, check for an existing draft with an API key (i.e. work in progress)
+      // Check if manual mode is enabled
+      const { data: manualSetting } = await supabase
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "manual_mode_enabled")
+        .maybeSingle();
+      const manualModeEnabled = manualSetting?.value === "true";
+
+      // Check advertiser category - engagement ads should always go to engagement flow
+      const { data: catData } = await supabase
+        .from("advertiser_categories")
+        .select("advertiser_type")
+        .eq("advertiser_id", user.id)
+        .maybeSingle();
+      adType = (catData as any)?.advertiser_type || null;
+
+      // If engagement type, always go to engagement flow (no API/SDK needed)
+      if (adType === "engagement") {
+        navigate(`/campaigns/create/engagement`, { replace: true });
+        setLoading(false);
+        return;
+      }
+
+      // If manual mode is enabled and not engagement, go to manual flow
+      if (manualModeEnabled) {
+        navigate(`/campaigns/create/manual`, { replace: true });
+        setLoading(false);
+        return;
+      }
+
+      // If no explicit draft param, check for an existing draft with an API key
       if (!draftId) {
         const { data: existingDrafts } = await supabase
           .from("campaigns")
@@ -28,7 +58,6 @@ export default function CampaignRouter() {
           .limit(5);
 
         if (existingDrafts && existingDrafts.length > 0) {
-          // Find a draft that has an API key (meaning real work was started)
           for (const draft of existingDrafts) {
             const { count } = await supabase
               .from("api_keys")
@@ -54,21 +83,9 @@ export default function CampaignRouter() {
         adType = (draft as any)?.ad_type || null;
       }
 
-      // Fallback to advertiser category type
-      if (!adType) {
-        const { data } = await supabase
-          .from("advertiser_categories")
-          .select("advertiser_type")
-          .eq("advertiser_id", user.id)
-          .maybeSingle();
-        adType = (data as any)?.advertiser_type || null;
-      }
-
       const draftQuery = draftId ? `?draft=${draftId}` : "";
 
-      if (adType === "engagement") {
-        navigate(`/campaigns/create/engagement${draftQuery}`, { replace: true });
-      } else if (adType === "commerce") {
+      if (adType === "commerce") {
         navigate(`/campaigns/create/commerce${draftQuery}`, { replace: true });
       } else {
         navigate(`/campaigns/create/performance${draftQuery}`, { replace: true });

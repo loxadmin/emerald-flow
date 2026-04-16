@@ -417,13 +417,16 @@ export type Database = {
         Row: {
           ad_type: Database["public"]["Enums"]["advertiser_type"] | null
           advertiser_id: string
+          app_link: string | null
           budget_remaining: number
+          campaign_mode: string
           created_at: string
           id: string
           integration_type: string
           integration_verified: boolean
           is_draft: boolean
           name: string
+          platform_type: string
           price_download: number
           price_purchase: number
           price_signup: number
@@ -436,13 +439,16 @@ export type Database = {
         Insert: {
           ad_type?: Database["public"]["Enums"]["advertiser_type"] | null
           advertiser_id: string
+          app_link?: string | null
           budget_remaining?: number
+          campaign_mode?: string
           created_at?: string
           id?: string
           integration_type?: string
           integration_verified?: boolean
           is_draft?: boolean
           name: string
+          platform_type?: string
           price_download?: number
           price_purchase?: number
           price_signup?: number
@@ -455,13 +461,16 @@ export type Database = {
         Update: {
           ad_type?: Database["public"]["Enums"]["advertiser_type"] | null
           advertiser_id?: string
+          app_link?: string | null
           budget_remaining?: number
+          campaign_mode?: string
           created_at?: string
           id?: string
           integration_type?: string
           integration_verified?: boolean
           is_draft?: boolean
           name?: string
+          platform_type?: string
           price_download?: number
           price_purchase?: number
           price_signup?: number
@@ -875,6 +884,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "external_referral_programs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_events: {
+        Row: {
+          campaign_id: string
+          count: number
+          created_at: string
+          event_type: string
+          id: string
+          notes: string | null
+          purchase_amount: number | null
+          recorded_by: string
+          total_deducted: number
+        }
+        Insert: {
+          campaign_id: string
+          count?: number
+          created_at?: string
+          event_type: string
+          id?: string
+          notes?: string | null
+          purchase_amount?: number | null
+          recorded_by: string
+          total_deducted?: number
+        }
+        Update: {
+          campaign_id?: string
+          count?: number
+          created_at?: string
+          event_type?: string
+          id?: string
+          notes?: string | null
+          purchase_amount?: number | null
+          recorded_by?: string
+          total_deducted?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_events_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"

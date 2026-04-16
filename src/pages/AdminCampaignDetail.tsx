@@ -5,9 +5,12 @@ import AdminLayout from "@/components/AdminLayout";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Copy, Link as LinkIcon } from "lucide-react";
+import { CheckCircle, XCircle, Copy, Link as LinkIcon, Plus, Loader2 } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -15,13 +18,21 @@ interface DailyData { date: string; downloads: number; signups: number; purchase
 
 export default function AdminCampaignDetail() {
   const { id } = useParams<{ id: string }>();
-  const [campaign, setCampaign] = useState<(Tables<"campaigns"> & { target_users?: number; selected_milestones?: string[]; total_cost?: number; integration_verified?: boolean; integration_type?: string }) | null>(null);
+  const [campaign, setCampaign] = useState<(Tables<"campaigns"> & { target_users?: number; selected_milestones?: string[]; total_cost?: number; integration_verified?: boolean; integration_type?: string; campaign_mode?: string; platform_type?: string; app_link?: string }) | null>(null);
   const [sources, setSources] = useState<Tables<"campaign_sources">[]>([]);
   const [referrals, setReferrals] = useState<Tables<"referrals">[]>([]);
   const [events, setEvents] = useState<Tables<"events">[]>([]);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [clickCount, setClickCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Manual event form
+  const [manualEventType, setManualEventType] = useState("signup");
+  const [manualCount, setManualCount] = useState("1");
+  const [manualPurchaseAmount, setManualPurchaseAmount] = useState("");
+  const [manualNotes, setManualNotes] = useState("");
+  const [recordingEvent, setRecordingEvent] = useState(false);
+  const [manualEvents, setManualEvents] = useState<any[]>([]);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -38,6 +49,10 @@ export default function AdminCampaignDetail() {
     setClickCount(trackedClicks || 0);
     const { data: e } = await supabase.from("events").select("*").eq("campaign_id", id).order("created_at", { ascending: false }).limit(20);
     setEvents(e || []);
+
+    // Manual events
+    const { data: me } = await supabase.from("manual_events" as any).select("*").eq("campaign_id", id).order("created_at", { ascending: false });
+    setManualEvents((me as any[]) || []);
 
     // Chart
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -85,9 +100,47 @@ export default function AdminCampaignDetail() {
     if (error) toast.error("Failed to create referral"); else { toast.success("Referral link created!"); fetchData(); }
   };
 
+  const handleRecordManualEvent = async () => {
+    if (!id) return;
+    const count = Number(manualCount);
+    if (count < 1) { toast.error("Count must be at least 1"); return; }
+    if (manualEventType === "purchase" && (!manualPurchaseAmount || Number(manualPurchaseAmount) <= 0)) {
+      toast.error("Enter a purchase amount"); return;
+    }
+
+    setRecordingEvent(true);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const { data, error } = await supabase.functions.invoke("manage-manual-events", {
+        body: {
+          action: "record_events",
+          campaign_id: id,
+          event_type: manualEventType,
+          count,
+          purchase_amount: manualEventType === "purchase" ? Number(manualPurchaseAmount) : null,
+          notes: manualNotes || null,
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (result.error) throw new Error(result.error);
+      toast.success(`Recorded ${count} ${manualEventType}(s). Deducted $${result.deducted?.toFixed(2)} from escrow.`);
+      setManualCount("1");
+      setManualPurchaseAmount("");
+      setManualNotes("");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to record events");
+    } finally {
+      setRecordingEvent(false);
+    }
+  };
+
   if (loading) return <AdminLayout><div className="flex justify-center py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></AdminLayout>;
   if (!campaign) return <AdminLayout><p className="text-muted-foreground">Campaign not found.</p></AdminLayout>;
 
+  const isManual = (campaign as any).campaign_mode === "manual";
   const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", color: "hsl(var(--foreground))" };
 
   return (
@@ -98,16 +151,25 @@ export default function AdminCampaignDetail() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">{campaign.name}</h1>
               <p className="text-sm text-muted-foreground">ID: {campaign.id}</p>
-              <div className="flex gap-1 mt-1">
+              <div className="flex gap-1 mt-1 flex-wrap">
                 {((campaign as any).selected_milestones || []).map((m: string) => (
                   <Badge key={m} variant="outline" className="text-xs capitalize border-primary/20 text-primary/80">{m}</Badge>
                 ))}
-                {(campaign as any).integration_verified && <Badge variant="outline" className="text-xs border-primary/20 text-primary">✓ Verified</Badge>}
+                {(campaign as any).integration_verified && <Badge variant="outline" className="text-xs border-primary/20 text-primary">Verified</Badge>}
                 <Badge variant="outline" className="text-xs capitalize border-border">{(campaign as any).integration_type || "custom"}</Badge>
                 {(campaign as any).ad_type && (
                   <Badge variant="outline" className="text-xs capitalize border-amber-500/20 text-amber-600">{(campaign as any).ad_type} ads</Badge>
                 )}
+                {isManual && (
+                  <Badge variant="outline" className="text-xs border-purple-500/20 text-purple-600 bg-purple-500/5">Manual Mode</Badge>
+                )}
+                {(campaign as any).platform_type === "mobile_app" && (
+                  <Badge variant="outline" className="text-xs border-blue-500/20 text-blue-600">Mobile App</Badge>
+                )}
               </div>
+              {(campaign as any).app_link && (
+                <p className="text-xs text-muted-foreground mt-1">App: <a href={(campaign as any).app_link} target="_blank" rel="noopener noreferrer" className="text-primary underline">{(campaign as any).app_link}</a></p>
+              )}
             </div>
             <div className="flex gap-2">
               {campaign.status !== "active" && <GlassButton size="sm" variant="glow" onClick={() => updateStatus("active")}><CheckCircle className="mr-1 h-4 w-4" /> Approve</GlassButton>}
@@ -125,7 +187,7 @@ export default function AdminCampaignDetail() {
                   { l: "Status", v: <Badge variant="outline" className="border-border">{campaign.status}</Badge> },
                   { l: "Budget Remaining", v: `$${Number(campaign.budget_remaining).toFixed(2)}` },
                   { l: "Total Cost", v: `$${Number((campaign as any).total_cost || 0).toFixed(2)}` },
-                  { l: "Target Users", v: String((campaign as any).target_users || "—") },
+                  { l: "Target Users", v: String((campaign as any).target_users || "N/A") },
                   { l: "Clicks", v: String(clickCount) },
                   { l: "Download Price", v: `$${Number(campaign.price_download).toFixed(2)}` },
                   { l: "Signup Price", v: `$${Number(campaign.price_signup).toFixed(2)}` },
@@ -158,6 +220,82 @@ export default function AdminCampaignDetail() {
             </GlassCard>
           </MotionWrapper>
         </div>
+
+        {/* Manual Event Recording (admin only, manual campaigns only) */}
+        {isManual && campaign.status === "active" && (
+          <MotionWrapper delay={0.17}>
+            <GlassCard variant="glow">
+              <GlassCardHeader>
+                <GlassCardTitle className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" /> Record Manual Events
+                </GlassCardTitle>
+              </GlassCardHeader>
+              <GlassCardContent className="space-y-4">
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Event Type</Label>
+                    <Select value={manualEventType} onValueChange={setManualEventType}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {((campaign as any).selected_milestones || []).map((m: string) => (
+                          <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Count</Label>
+                    <Input type="number" min="1" value={manualCount} onChange={(e) => setManualCount(e.target.value)} />
+                  </div>
+                  {manualEventType === "purchase" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Purchase Amount ($)</Label>
+                      <Input type="number" min="0" step="0.01" value={manualPurchaseAmount} onChange={(e) => setManualPurchaseAmount(e.target.value)} placeholder="0.00" />
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
+                    <Input value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Batch note..." />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Estimated deduction: <span className="text-foreground font-medium">
+                      ${(() => {
+                        const count = Number(manualCount) || 0;
+                        if (manualEventType === "download") return (Number(campaign.price_download) * count).toFixed(2);
+                        if (manualEventType === "signup") return (Number(campaign.price_signup) * count).toFixed(2);
+                        if (manualEventType === "purchase") return ((1 + Number(manualPurchaseAmount || 0) * 0.10) * count).toFixed(2);
+                        return "0.00";
+                      })()}
+                    </span>
+                  </p>
+                  <GlassButton size="sm" variant="glow" onClick={handleRecordManualEvent} disabled={recordingEvent}>
+                    {recordingEvent ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                    Record Events
+                  </GlassButton>
+                </div>
+
+                {/* Manual events history */}
+                {manualEvents.length > 0 && (
+                  <div className="border-t border-border pt-3 space-y-2">
+                    <p className="text-xs font-medium text-foreground">Recent Manual Entries</p>
+                    {manualEvents.slice(0, 10).map((me: any) => (
+                      <div key={me.id} className="flex items-center justify-between text-xs rounded-lg border border-border/50 p-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] capitalize">{me.event_type}</Badge>
+                          <span className="text-muted-foreground">x{me.count}</span>
+                          {me.notes && <span className="text-muted-foreground/60 truncate max-w-[150px]">{me.notes}</span>}
+                        </div>
+                        <span className="text-foreground font-medium">-${Number(me.total_deducted).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </GlassCardContent>
+            </GlassCard>
+          </MotionWrapper>
+        )}
 
         {/* Analytics chart */}
         {dailyData.length > 0 && (

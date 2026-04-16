@@ -19,7 +19,7 @@ const edgeFnUrl = (fnName: string, subPath?: string) =>
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
-  const [campaign, setCampaign] = useState<(Tables<"campaigns"> & { target_users?: number; selected_milestones?: string[]; total_cost?: number; integration_verified?: boolean; integration_type?: string }) | null>(null);
+  const [campaign, setCampaign] = useState<(Tables<"campaigns"> & { target_users?: number; selected_milestones?: string[]; total_cost?: number; integration_verified?: boolean; integration_type?: string; campaign_mode?: string; platform_type?: string; app_link?: string }) | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [stats, setStats] = useState({ clicks: 0, downloads: 0, signups: 0, purchases: 0 });
@@ -151,6 +151,9 @@ export default function CampaignDetail() {
   if (loading) return <DashboardLayout><div className="flex items-center justify-center py-20"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></DashboardLayout>;
   if (!campaign) return <DashboardLayout><p className="text-muted-foreground">Campaign not found.</p></DashboardLayout>;
 
+  const isManual = (campaign as any).campaign_mode === "manual";
+  const totalMetrics = stats.downloads + stats.signups + stats.purchases;
+
   const statusColor = campaign.status === "active" ? "text-primary border-primary/20 bg-primary/5" :
     campaign.status === "pending" ? "text-amber-600 border-amber-500/20 bg-amber-500/5" :
     "text-destructive border-destructive/20 bg-destructive/5";
@@ -175,7 +178,8 @@ export default function CampaignDetail() {
           </div>
         </MotionWrapper>
 
-        {/* API Key */}
+        {/* API Key - only for non-manual campaigns */}
+        {!isManual && (
         <MotionWrapper delay={0.05}>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center justify-between mb-2">
@@ -198,8 +202,10 @@ export default function CampaignDetail() {
             ) : <p className="text-sm text-muted-foreground">Not generated yet.</p>}
           </div>
         </MotionWrapper>
+        )}
 
-        {/* Tracker Script Lifecycle */}
+        {/* Tracker Script Lifecycle - only for non-manual campaigns */}
+        {!isManual && (
         <MotionWrapper delay={0.08}>
           <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -230,16 +236,17 @@ export default function CampaignDetail() {
             )}
           </div>
         </MotionWrapper>
+        )}
 
         {/* Stats */}
         <MotionStagger className="grid gap-3 grid-cols-2 md:grid-cols-5">
           {[
-            { icon: MousePointerClick, label: "Clicks", value: stats.clicks },
-            { icon: Download, label: "Downloads", value: stats.downloads },
-            { icon: UserPlus, label: "Signups", value: stats.signups },
-            { icon: ShoppingCart, label: "Purchases", value: stats.purchases },
-            { icon: Wallet, label: "Budget Left", value: `$${Number(campaign.budget_remaining).toFixed(2)}` },
-            { icon: Users, label: "Target", value: (campaign as any).target_users || "—" },
+            { icon: MousePointerClick, label: "Clicks", value: stats.clicks, metric: false },
+            { icon: Download, label: "Downloads", value: stats.downloads, metric: true },
+            { icon: UserPlus, label: "Signups", value: stats.signups, metric: true },
+            { icon: ShoppingCart, label: "Purchases", value: stats.purchases, metric: true },
+            { icon: Wallet, label: "Budget Left", value: `$${Number(campaign.budget_remaining).toFixed(2)}`, metric: false },
+            { icon: Users, label: "Target", value: (campaign as any).target_users || "N/A", metric: false },
           ].map((s) => (
             <MotionItem key={s.label}>
               <div className="rounded-xl border border-border bg-card p-4">
@@ -247,7 +254,11 @@ export default function CampaignDetail() {
                   <s.icon className="h-4 w-4 text-muted-foreground/60" />
                   <span className="text-xs text-muted-foreground">{s.label}</span>
                 </div>
-                <p className="text-lg font-semibold text-foreground">{s.value}</p>
+                <p className="text-lg font-semibold text-foreground">
+                  {s.metric && totalMetrics < 10 && totalMetrics >= 0
+                    ? <span className="text-sm text-muted-foreground italic">Calculating...</span>
+                    : s.value}
+                </p>
               </div>
             </MotionItem>
           ))}
