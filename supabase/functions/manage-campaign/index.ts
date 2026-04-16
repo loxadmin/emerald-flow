@@ -15,6 +15,16 @@ const jsonResponse = (body: unknown, status = 200) =>
 const DEFAULT_CATEGORY_EVENTS = ["download", "signup", "purchase"];
 const INTEGRATION_TYPES_REQUIRING_VERIFICATION = new Set(["custom", "wordpress"]);
 
+function toBoolean(value: unknown) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes";
+  }
+  return false;
+}
+
 function parseCategoryEvents(value: string | null | undefined) {
   try {
     const parsed = JSON.parse(value || "[]");
@@ -132,8 +142,27 @@ Deno.serve(async (req) => {
       const requiresIntegrationVerification =
         INTEGRATION_TYPES_REQUIRING_VERIFICATION.has(String(campaign.integration_type || "").toLowerCase());
 
-      if (requiresIntegrationVerification && !campaign.integration_verified) {
-        return jsonResponse({ error: "Verify integration before submitting" }, 400);
+      const isIntegrationVerified = toBoolean(campaign.integration_verified);
+
+      if (requiresIntegrationVerification && !isIntegrationVerified) {
+        // Fallback for older/inconsistent drafts where a verified source exists
+        // but integration_verified was not persisted correctly.
+        const { data: verifiedSource } = await supabase
+          .from("campaign_sources")
+          .select("id")
+          .eq("campaign_id", campaign_id)
+          .eq("verified", true)
+          .maybeSingle();
+
+        if (!verifiedSource) {
+          return jsonResponse({ error: "Verify integration before submitting" }, 400);
+        }
+
+        const { error: markVerifiedErr } = await supabase
+          .from("campaigns")
+          .update({ integration_verified: true })
+          .eq("id", campaign_id);
+        if (markVerifiedErr) throw markVerifiedErr;
       }
 
       const totalCost = Number(campaign.total_cost);
