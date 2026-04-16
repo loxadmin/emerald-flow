@@ -40,6 +40,7 @@ export default function AdminSettings() {
 
   const activeGateway = editValues["active_payment_gateway"] || "paystack";
   const isMaintenanceOn = editValues["maintenance_mode"] === "true";
+  const isManualModeOn = editValues["manual_mode_enabled"] === "true";
 
   const toggleMaintenanceMode = async () => {
     const newVal = isMaintenanceOn ? "false" : "true";
@@ -52,6 +53,13 @@ export default function AdminSettings() {
     setEditValues({ ...editValues, active_payment_gateway: gateway });
     const { error } = await supabase.from("admin_settings").update({ value: gateway, updated_at: new Date().toISOString() }).eq("key", "active_payment_gateway");
     if (error) toast.error(error.message); else toast.success(`Payment gateway switched to ${gateway}`);
+  };
+
+  const toggleManualMode = async () => {
+    const newVal = isManualModeOn ? "false" : "true";
+    setEditValues({ ...editValues, manual_mode_enabled: newVal });
+    const { error } = await supabase.from("admin_settings").update({ value: newVal, updated_at: new Date().toISOString() }).eq("key", "manual_mode_enabled");
+    if (error) toast.error(error.message); else toast.success(`Manual campaign mode ${newVal === "true" ? "enabled" : "disabled"}`);
   };
 
   const paystackSettings = settings.filter(s => s.key.includes("paystack"));
@@ -99,6 +107,20 @@ export default function AdminSettings() {
                   </div>
                 </div>
                 <Switch checked={isMaintenanceOn} onCheckedChange={toggleMaintenanceMode} />
+              </div>
+            </div>
+
+            {/* Manual Campaign Mode */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <ToggleRight className="h-5 w-5 text-primary" />
+                  <div>
+                    <h3 className="text-sm font-medium text-foreground">Manual Campaign Mode</h3>
+                    <p className="text-xs text-muted-foreground">When enabled, advertisers create campaigns without API keys and admins record conversion events manually.</p>
+                  </div>
+                </div>
+                <Switch checked={isManualModeOn} onCheckedChange={toggleManualMode} />
               </div>
             </div>
 

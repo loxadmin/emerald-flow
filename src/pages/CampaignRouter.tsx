@@ -14,7 +14,7 @@ export default function CampaignRouter() {
   useEffect(() => {
     if (!user) return;
     const route = async () => {
-      let draftId = searchParams.get("draft");
+      const draftId = searchParams.get("draft");
       let adType: string | null = null;
 
       // Check if manual mode is enabled
@@ -28,10 +28,23 @@ export default function CampaignRouter() {
       // Check advertiser category - engagement ads should always go to engagement flow
       const { data: catData } = await supabase
         .from("advertiser_categories")
-        .select("advertiser_type")
+        .select("advertiser_type, category_id")
         .eq("advertiser_id", user.id)
         .maybeSingle();
       adType = (catData as any)?.advertiser_type || null;
+      const categoryId = (catData as any)?.category_id || null;
+
+      if (!adType && categoryId) {
+        const { data: category } = await supabase
+          .from("categories")
+          .select("name")
+          .eq("id", categoryId)
+          .maybeSingle();
+        const categoryName = String((category as any)?.name || "").toLowerCase();
+        if (categoryName.includes("engagement")) adType = "engagement";
+        else if (categoryName.includes("commerce")) adType = "commerce";
+        else adType = "performance";
+      }
 
       // If engagement type, always go to engagement flow (no API/SDK needed)
       if (adType === "engagement") {
@@ -45,31 +58,6 @@ export default function CampaignRouter() {
         navigate(`/campaigns/create/manual`, { replace: true });
         setLoading(false);
         return;
-      }
-
-      // If no explicit draft param, check for an existing draft with an API key
-      if (!draftId) {
-        const { data: existingDrafts } = await supabase
-          .from("campaigns")
-          .select("id, ad_type")
-          .eq("advertiser_id", user.id)
-          .eq("is_draft", true)
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        if (existingDrafts && existingDrafts.length > 0) {
-          for (const draft of existingDrafts) {
-            const { count } = await supabase
-              .from("api_keys")
-              .select("id", { count: "exact", head: true })
-              .eq("campaign_id", draft.id);
-            if (count && count > 0) {
-              draftId = draft.id;
-              adType = (draft as any).ad_type || null;
-              break;
-            }
-          }
-        }
       }
 
       // If resuming a specific draft, get its ad_type
