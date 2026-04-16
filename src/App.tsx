@@ -14,6 +14,7 @@ import CampaignRouter from "./pages/CampaignRouter";
 import CreateCampaign from "./pages/CreateCampaign";
 import CreateEngagementCampaign from "./pages/CreateEngagementCampaign";
 import CreateCommerceCampaign from "./pages/CreateCommerceCampaign";
+import CreateManualCampaign from "./pages/CreateManualCampaign";
 import CampaignDetail from "./pages/CampaignDetail";
 import CategorySelection from "./pages/CategorySelection";
 import Ads from "./pages/Ads";
@@ -69,6 +70,7 @@ const App = () => (
               <Route path="/campaigns/create/performance" element={<RequireAuth><CreateCampaign /></RequireAuth>} />
               <Route path="/campaigns/create/engagement" element={<RequireAuth><CreateEngagementCampaign /></RequireAuth>} />
               <Route path="/campaigns/create/commerce" element={<RequireAuth><CreateCommerceCampaign /></RequireAuth>} />
+              <Route path="/campaigns/create/manual" element={<RequireAuth><CreateManualCampaign /></RequireAuth>} />
               <Route path="/campaigns/:id" element={<RequireAuth><CampaignDetail /></RequireAuth>} />
               <Route path="/docs" element={<Docs />} />
               <Route path="/about" element={<About />} />
