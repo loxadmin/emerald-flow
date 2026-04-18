@@ -33,6 +33,7 @@ import AdminWallets from "./pages/AdminWallets";
 import AdminPartnerships from "./pages/AdminPartnerships";
 import AdminMessages from "./pages/AdminMessages";
 import AdminExtension from "./pages/AdminExtension";
+import AdminOfferwall from "./pages/AdminOfferwall";
 import About from "./pages/About";
 import Docs from "./pages/Docs";
 import BlogList from "./pages/BlogList";
