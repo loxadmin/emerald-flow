@@ -139,7 +139,9 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Campaign name is incomplete" }, 400);
       }
 
+      const isManualMode = String(campaign.campaign_mode || "api").toLowerCase() === "manual";
       const requiresIntegrationVerification =
+        !isManualMode &&
         INTEGRATION_TYPES_REQUIRING_VERIFICATION.has(String(campaign.integration_type || "").toLowerCase());
 
       const isIntegrationVerified = toBoolean(campaign.integration_verified);
