@@ -347,12 +347,67 @@ export default function CampaignDetail() {
                         <span className="text-xs text-muted-foreground shrink-0">{i + 1}.</span>
                         <p className="text-sm text-foreground flex-1">{q.question}</p>
                         <Badge variant="outline" className="text-[10px] shrink-0">{q.correct_answer ? "True" : "False"}</Badge>
+                        <button
+                          onClick={() => { setRequestQuestion(q); setRequestReason(""); }}
+                          className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+                          title="Request changes"
+                        >
+                          <MessageSquareWarning className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     ))}
                   </div>
                 )}
+                <p className="text-xs text-muted-foreground/70 mt-3">
+                  Questions are managed by Karbali admins. Click the flag icon to request a change.
+                </p>
               </div>
             </MotionWrapper>
+
+            {/* Request changes dialog */}
+            <Dialog open={!!requestQuestion} onOpenChange={(open) => !open && setRequestQuestion(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Request changes to this question</DialogTitle>
+                  <DialogDescription>
+                    Tell our admin team what's wrong or what should be changed. They'll review and update if appropriate.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="rounded-lg bg-muted/40 p-3">
+                    <p className="text-sm text-foreground">{requestQuestion?.question}</p>
+                  </div>
+                  <Textarea
+                    value={requestReason}
+                    onChange={(e) => setRequestReason(e.target.value)}
+                    placeholder="e.g. The correct answer should be False, not True, because…"
+                    rows={4}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setRequestQuestion(null)}>Cancel</Button>
+                  <Button
+                    disabled={!requestReason.trim() || submittingRequest || !user?.id || !id}
+                    onClick={async () => {
+                      if (!user?.id || !id || !requestQuestion) return;
+                      setSubmittingRequest(true);
+                      const { error } = await supabase.from("quiz_change_requests" as any).insert({
+                        campaign_id: id,
+                        question_id: requestQuestion.id,
+                        advertiser_id: user.id,
+                        reason: requestReason.trim(),
+                      });
+                      setSubmittingRequest(false);
+                      if (error) { toast.error(error.message); return; }
+                      toast.success("Request submitted. Admin will review shortly.");
+                      setRequestQuestion(null);
+                    }}
+                  >
+                    {submittingRequest ? "Submitting…" : "Submit request"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </>
         ) : (
           <>
