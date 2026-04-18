@@ -67,34 +67,56 @@ export default function CampaignDetail() {
       try {
         const { data: c } = await supabase.from("campaigns").select("*").eq("id", id).single();
         setCampaign(c as any);
-        const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", id).order("created_at", { ascending: false }).limit(1);
-        if (keys && keys.length > 0) setApiKey(keys[0].key);
+        const isEngagement = (c as any)?.ad_type === "engagement";
+        const isManualMode = (c as any)?.campaign_mode === "manual";
 
-        const { count: dl } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "download");
-        const { count: su } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "signup");
-        const { count: pu } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "purchase");
+        if (!isEngagement && !isManualMode) {
+          const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", id).order("created_at", { ascending: false }).limit(1);
+          if (keys && keys.length > 0) setApiKey(keys[0].key);
+        }
+
         const { data: campaignReferrals } = await supabase.from("referrals").select("id").eq("campaign_id", id);
         const referralIds = campaignReferrals?.map((r) => r.id) || [];
         const { count: clickCount } = referralIds.length > 0
           ? await supabase.from("clicks").select("*", { count: "exact", head: true }).in("referral_id", referralIds)
           : { count: 0 };
-        setStats({ clicks: clickCount || 0, downloads: dl || 0, signups: su || 0, purchases: pu || 0 });
 
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        const { data: events } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo).order("created_at");
-        if (events && events.length > 0) {
-          const byDay: Record<string, DailyData> = {};
-          events.forEach((e) => {
-            const day = new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            if (!byDay[day]) byDay[day] = { date: day, downloads: 0, signups: 0, purchases: 0 };
-            if (e.event_type === "download") byDay[day].downloads++;
-            else if (e.event_type === "signup") byDay[day].signups++;
-            else if (e.event_type === "purchase") byDay[day].purchases++;
-          });
-          setDailyData(Object.values(byDay));
+        if (isEngagement) {
+          const [{ data: cc }, { data: qs }, { data: interactions }] = await Promise.all([
+            supabase.from("creative_campaigns" as any).select("*").eq("campaign_id", id).maybeSingle(),
+            supabase.from("campaign_questions").select("*").eq("campaign_id", id).order("created_at"),
+            supabase.from("offerwall_interactions").select("is_correct, points_earned").eq("campaign_id", id),
+          ]);
+          setCreative(cc);
+          setQuestions(qs || []);
+          const correct = (interactions || []).filter((i: any) => i.is_correct).length;
+          const points = (interactions || []).reduce((s: number, i: any) => s + Number(i.points_earned || 0), 0);
+          setEngagementStats({ interactions: interactions?.length || 0, correct, points });
+          setStats({ clicks: clickCount || 0, downloads: 0, signups: 0, purchases: 0 });
+        } else {
+          const { count: dl } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "download");
+          const { count: su } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "signup");
+          const { count: pu } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "purchase");
+          setStats({ clicks: clickCount || 0, downloads: dl || 0, signups: su || 0, purchases: pu || 0 });
+
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          const { data: events } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo).order("created_at");
+          if (events && events.length > 0) {
+            const byDay: Record<string, DailyData> = {};
+            events.forEach((e) => {
+              const day = new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              if (!byDay[day]) byDay[day] = { date: day, downloads: 0, signups: 0, purchases: 0 };
+              if (e.event_type === "download") byDay[day].downloads++;
+              else if (e.event_type === "signup") byDay[day].signups++;
+              else if (e.event_type === "purchase") byDay[day].purchases++;
+            });
+            setDailyData(Object.values(byDay));
+          }
         }
 
-        await fetchTrackerInfo(id);
+        if (!isEngagement && !isManualMode) {
+          await fetchTrackerInfo(id);
+        }
       } catch (err) {
         console.error("Error loading campaign:", err);
       } finally {
