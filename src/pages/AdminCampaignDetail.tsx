@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type ChangeEvent } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
@@ -34,6 +34,9 @@ export default function AdminCampaignDetail() {
   const [manualNotes, setManualNotes] = useState("");
   const [recordingEvent, setRecordingEvent] = useState(false);
   const [manualEvents, setManualEvents] = useState<any[]>([]);
+  const [uploadingMetrics, setUploadingMetrics] = useState(false);
+  const [metricsUploadNotes, setMetricsUploadNotes] = useState("");
+  const [metricsFileName, setMetricsFileName] = useState("");
 
   // Engagement: questions + change requests
   const [questions, setQuestions] = useState<any[]>([]);
@@ -187,6 +190,105 @@ export default function AdminCampaignDetail() {
     }
   };
 
+  const parseMetricsCsv = (csvContent: string) => {
+    const rows = csvContent
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (rows.length < 2) {
+      throw new Error("CSV file must include a header and at least one row");
+    }
+
+    const header = rows[0].split(",").map((col) => col.trim().toLowerCase());
+    const requiredColumns = ["event_type", "count"];
+    const missingColumns = requiredColumns.filter((column) => !header.includes(column));
+
+    if (missingColumns.length > 0) {
+      throw new Error(`Missing required CSV columns: ${missingColumns.join(", ")}`);
+    }
+
+    const eventTypeIndex = header.indexOf("event_type");
+    const countIndex = header.indexOf("count");
+    const purchaseAmountIndex = header.indexOf("purchase_amount");
+    const notesIndex = header.indexOf("notes");
+
+    const parsedRows = rows.slice(1).map((line, rowIndex) => {
+      const values = line.split(",").map((value) => value.trim());
+      const eventType = values[eventTypeIndex]?.toLowerCase();
+      const count = Number(values[countIndex] || 0);
+      const purchaseAmountRaw = purchaseAmountIndex >= 0 ? values[purchaseAmountIndex] : "";
+      const purchaseAmount = purchaseAmountRaw ? Number(purchaseAmountRaw) : undefined;
+      const notes = notesIndex >= 0 ? values[notesIndex] : undefined;
+
+      if (!eventType || !["download", "signup", "purchase"].includes(eventType)) {
+        throw new Error(`Row ${rowIndex + 2}: event_type must be download, signup, or purchase`);
+      }
+      if (!Number.isFinite(count) || count < 1) {
+        throw new Error(`Row ${rowIndex + 2}: count must be at least 1`);
+      }
+      if (eventType === "purchase" && (!Number.isFinite(purchaseAmount) || purchaseAmount! <= 0)) {
+        throw new Error(`Row ${rowIndex + 2}: purchase rows must include purchase_amount > 0`);
+      }
+
+      return {
+        event_type: eventType,
+        count,
+        purchase_amount: eventType === "purchase" ? purchaseAmount : null,
+        notes: notes || null,
+      };
+    });
+
+    return parsedRows;
+  };
+
+  const handleMetricsFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!id) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setMetricsFileName(file.name);
+    setUploadingMetrics(true);
+
+    try {
+      const parsed = parseMetricsCsv(await file.text());
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+
+      const uploadResults = await Promise.all(parsed.map(async (entry) => {
+        const { data, error } = await supabase.functions.invoke("manage-manual-events", {
+          body: {
+            action: "record_events",
+            campaign_id: id,
+            event_type: entry.event_type,
+            count: entry.count,
+            purchase_amount: entry.purchase_amount,
+            notes: [metricsUploadNotes.trim(), entry.notes].filter(Boolean).join(" | ") || null,
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (error) throw error;
+        const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+        if (parsedData.error) {
+          throw new Error(parsedData.error);
+        }
+        return parsedData;
+      }));
+
+      const totalDeduction = uploadResults.reduce((sum, result) => sum + Number(result.deducted || 0), 0);
+      const totalEvents = uploadResults.reduce((sum, result) => sum + Number(result.events_recorded || 0), 0);
+
+      toast.success(`Uploaded metrics from ${file.name}: ${totalEvents} events recorded, $${totalDeduction.toFixed(2)} deducted.`);
+      setMetricsUploadNotes("");
+      event.target.value = "";
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload event metrics");
+    } finally {
+      setUploadingMetrics(false);
+    }
+  };
+
   if (loading) return <AdminLayout><div className="flex justify-center py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></AdminLayout>;
   if (!campaign) return <AdminLayout><p className="text-muted-foreground">Campaign not found.</p></AdminLayout>;
 
@@ -326,6 +428,39 @@ export default function AdminCampaignDetail() {
                     {recordingEvent ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
                     Record Events
                   </GlassButton>
+                </div>
+
+                <div className="border-t border-border pt-3 space-y-3">
+                  <p className="text-xs font-medium text-foreground">Upload Metrics CSV</p>
+                  <p className="text-xs text-muted-foreground">
+                    CSV format: <span className="font-mono">event_type,count,purchase_amount,notes</span>. Required columns are{" "}
+                    <span className="font-mono">event_type</span> and <span className="font-mono">count</span>.
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Batch Note (optional)</Label>
+                      <Input
+                        value={metricsUploadNotes}
+                        onChange={(e) => setMetricsUploadNotes(e.target.value)}
+                        placeholder="Imported from partner report..."
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Choose CSV</Label>
+                      <Input
+                        type="file"
+                        accept=".csv,text/csv"
+                        disabled={uploadingMetrics}
+                        onChange={handleMetricsFileUpload}
+                      />
+                    </div>
+                  </div>
+                  {uploadingMetrics && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Uploading metrics{metricsFileName ? ` from ${metricsFileName}` : ""}...
+                    </div>
+                  )}
                 </div>
 
                 {/* Manual events history */}
