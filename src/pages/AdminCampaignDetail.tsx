@@ -191,6 +191,8 @@ export default function AdminCampaignDetail() {
   if (!campaign) return <AdminLayout><p className="text-muted-foreground">Campaign not found.</p></AdminLayout>;
 
   const isManual = (campaign as any).campaign_mode === "manual";
+  const isEngagement = (campaign as any).ad_type === "engagement";
+  const pendingRequests = changeRequests.filter((r) => r.status === "pending");
   const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", color: "hsl(var(--foreground))" };
 
   return (
