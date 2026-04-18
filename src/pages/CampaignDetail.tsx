@@ -22,6 +22,10 @@ const edgeFnUrl = (fnName: string, subPath?: string) =>
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const [requestQuestion, setRequestQuestion] = useState<any>(null);
+  const [requestReason, setRequestReason] = useState("");
+  const [submittingRequest, setSubmittingRequest] = useState(false);
   const [campaign, setCampaign] = useState<(Tables<"campaigns"> & { target_users?: number; selected_milestones?: string[]; total_cost?: number; integration_verified?: boolean; integration_type?: string; campaign_mode?: string; platform_type?: string; app_link?: string }) | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
