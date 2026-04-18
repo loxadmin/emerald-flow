@@ -36,6 +36,7 @@ const adminLinks = [
   { to: "/admin/blogs", label: "Blogs", icon: PenSquare },
   { to: "/admin/content", label: "Site Content", icon: Layout },
   { to: "/admin/design", label: "Page Design", icon: Layers },
+  { to: "/admin/offerwall", label: "Offerwall", icon: Gamepad2 },
   { to: "/admin/extension", label: "Extension", icon: Chrome },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
