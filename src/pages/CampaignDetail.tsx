@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users, Eye, EyeOff, RefreshCw, KeyRound } from "lucide-react";
+import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users, Eye, EyeOff, RefreshCw, KeyRound, Music, MonitorPlay, HelpCircle, CheckCircle2 } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -29,6 +29,9 @@ export default function CampaignDetail() {
   const [trackerSnippet, setTrackerSnippet] = useState<string>("");
   const [regenerating, setRegenerating] = useState(false);
   const [regeneratingKey, setRegeneratingKey] = useState(false);
+  const [creative, setCreative] = useState<any>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [engagementStats, setEngagementStats] = useState({ interactions: 0, correct: 0, points: 0 });
 
   const getAccessToken = async () => {
     const { data } = await supabase.auth.getSession();
@@ -64,34 +67,56 @@ export default function CampaignDetail() {
       try {
         const { data: c } = await supabase.from("campaigns").select("*").eq("id", id).single();
         setCampaign(c as any);
-        const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", id).order("created_at", { ascending: false }).limit(1);
-        if (keys && keys.length > 0) setApiKey(keys[0].key);
+        const isEngagement = (c as any)?.ad_type === "engagement";
+        const isManualMode = (c as any)?.campaign_mode === "manual";
 
-        const { count: dl } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "download");
-        const { count: su } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "signup");
-        const { count: pu } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "purchase");
+        if (!isEngagement && !isManualMode) {
+          const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", id).order("created_at", { ascending: false }).limit(1);
+          if (keys && keys.length > 0) setApiKey(keys[0].key);
+        }
+
         const { data: campaignReferrals } = await supabase.from("referrals").select("id").eq("campaign_id", id);
         const referralIds = campaignReferrals?.map((r) => r.id) || [];
         const { count: clickCount } = referralIds.length > 0
           ? await supabase.from("clicks").select("*", { count: "exact", head: true }).in("referral_id", referralIds)
           : { count: 0 };
-        setStats({ clicks: clickCount || 0, downloads: dl || 0, signups: su || 0, purchases: pu || 0 });
 
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        const { data: events } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo).order("created_at");
-        if (events && events.length > 0) {
-          const byDay: Record<string, DailyData> = {};
-          events.forEach((e) => {
-            const day = new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            if (!byDay[day]) byDay[day] = { date: day, downloads: 0, signups: 0, purchases: 0 };
-            if (e.event_type === "download") byDay[day].downloads++;
-            else if (e.event_type === "signup") byDay[day].signups++;
-            else if (e.event_type === "purchase") byDay[day].purchases++;
-          });
-          setDailyData(Object.values(byDay));
+        if (isEngagement) {
+          const [{ data: cc }, { data: qs }, { data: interactions }] = await Promise.all([
+            supabase.from("creative_campaigns" as any).select("*").eq("campaign_id", id).maybeSingle(),
+            supabase.from("campaign_questions").select("*").eq("campaign_id", id).order("created_at"),
+            supabase.from("offerwall_interactions").select("is_correct, points_earned").eq("campaign_id", id),
+          ]);
+          setCreative(cc);
+          setQuestions(qs || []);
+          const correct = (interactions || []).filter((i: any) => i.is_correct).length;
+          const points = (interactions || []).reduce((s: number, i: any) => s + Number(i.points_earned || 0), 0);
+          setEngagementStats({ interactions: interactions?.length || 0, correct, points });
+          setStats({ clicks: clickCount || 0, downloads: 0, signups: 0, purchases: 0 });
+        } else {
+          const { count: dl } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "download");
+          const { count: su } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "signup");
+          const { count: pu } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "purchase");
+          setStats({ clicks: clickCount || 0, downloads: dl || 0, signups: su || 0, purchases: pu || 0 });
+
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          const { data: events } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo).order("created_at");
+          if (events && events.length > 0) {
+            const byDay: Record<string, DailyData> = {};
+            events.forEach((e) => {
+              const day = new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              if (!byDay[day]) byDay[day] = { date: day, downloads: 0, signups: 0, purchases: 0 };
+              if (e.event_type === "download") byDay[day].downloads++;
+              else if (e.event_type === "signup") byDay[day].signups++;
+              else if (e.event_type === "purchase") byDay[day].purchases++;
+            });
+            setDailyData(Object.values(byDay));
+          }
         }
 
-        await fetchTrackerInfo(id);
+        if (!isEngagement && !isManualMode) {
+          await fetchTrackerInfo(id);
+        }
       } catch (err) {
         console.error("Error loading campaign:", err);
       } finally {
@@ -152,6 +177,8 @@ export default function CampaignDetail() {
   if (!campaign) return <DashboardLayout><p className="text-muted-foreground">Campaign not found.</p></DashboardLayout>;
 
   const isManual = (campaign as any).campaign_mode === "manual";
+  const isEngagement = (campaign as any).ad_type === "engagement";
+  const showApiAndTracker = !isManual && !isEngagement;
   const totalMetrics = stats.downloads + stats.signups + stats.purchases;
 
   const statusColor = campaign.status === "active" ? "text-primary border-primary/20 bg-primary/5" :
@@ -166,20 +193,24 @@ export default function CampaignDetail() {
             <div>
               <h1 className="text-xl font-semibold text-foreground">{campaign.name}</h1>
               <p className="text-xs text-muted-foreground mt-0.5">ID: {campaign.id.slice(0, 8)}…</p>
-              {(campaign as any).selected_milestones?.length > 0 && (
-                <div className="flex gap-1 mt-2">
-                  {(campaign as any).selected_milestones.map((m: string) => (
-                    <Badge key={m} variant="outline" className="text-[10px] capitalize">{m}</Badge>
-                  ))}
-                </div>
-              )}
+              <div className="flex flex-wrap gap-1 mt-2">
+                {isEngagement && (
+                  <Badge variant="outline" className="text-[10px] capitalize border-primary/30 text-primary">
+                    {creative?.media_type === "music" ? <Music className="h-3 w-3 mr-1" /> : <MonitorPlay className="h-3 w-3 mr-1" />}
+                    Engagement · {creative?.media_type || "media"}
+                  </Badge>
+                )}
+                {!isEngagement && (campaign as any).selected_milestones?.map((m: string) => (
+                  <Badge key={m} variant="outline" className="text-[10px] capitalize">{m}</Badge>
+                ))}
+              </div>
             </div>
             <Badge variant="outline" className={statusColor}>{campaign.status}</Badge>
           </div>
         </MotionWrapper>
 
-        {/* API Key - only for non-manual campaigns */}
-        {!isManual && (
+        {/* API Key - only for non-manual, non-engagement campaigns */}
+        {showApiAndTracker && (
         <MotionWrapper delay={0.05}>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center justify-between mb-2">
@@ -204,8 +235,8 @@ export default function CampaignDetail() {
         </MotionWrapper>
         )}
 
-        {/* Tracker Script Lifecycle - only for non-manual campaigns */}
-        {!isManual && (
+        {/* Tracker Script Lifecycle - only for non-manual, non-engagement */}
+        {showApiAndTracker && (
         <MotionWrapper delay={0.08}>
           <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -238,74 +269,154 @@ export default function CampaignDetail() {
         </MotionWrapper>
         )}
 
-        {/* Stats */}
-        <MotionStagger className="grid gap-3 grid-cols-2 md:grid-cols-5">
-          {[
-            { icon: MousePointerClick, label: "Clicks", value: stats.clicks, metric: false },
-            { icon: Download, label: "Downloads", value: stats.downloads, metric: true },
-            { icon: UserPlus, label: "Signups", value: stats.signups, metric: true },
-            { icon: ShoppingCart, label: "Purchases", value: stats.purchases, metric: true },
-            { icon: Wallet, label: "Budget Left", value: `$${Number(campaign.budget_remaining).toFixed(2)}`, metric: false },
-            { icon: Users, label: "Target", value: (campaign as any).target_users || "N/A", metric: false },
-          ].map((s) => (
-            <MotionItem key={s.label}>
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <s.icon className="h-4 w-4 text-muted-foreground/60" />
-                  <span className="text-xs text-muted-foreground">{s.label}</span>
+        {/* Engagement-specific: Media + Stats */}
+        {isEngagement ? (
+          <>
+            {creative && (
+              <MotionWrapper delay={0.05}>
+                <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                  <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                    {creative.media_type === "music" ? <Music className="h-4 w-4 text-primary" /> : <MonitorPlay className="h-4 w-4 text-primary" />}
+                    {creative.media_type === "music" ? "Song" : "Video"} Link
+                  </h3>
+                  <a href={creative.media_link} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline break-all">
+                    {creative.media_link}
+                  </a>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <p className="text-xs text-muted-foreground">Rate per {creative.media_type === "music" ? "listener" : "viewer"}</p>
+                      <p className="text-lg font-semibold text-foreground">${Number(creative.rate_per_interaction).toFixed(2)}</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <p className="text-xs text-muted-foreground">Target</p>
+                      <p className="text-lg font-semibold text-foreground">{((campaign as any).target_users || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <p className="text-xs text-muted-foreground">Placement Fee</p>
+                      <p className="text-lg font-semibold text-foreground">${Number(creative.placement_fee).toFixed(2)}</p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-lg font-semibold text-foreground">
-                  {s.metric && totalMetrics < 10 && totalMetrics >= 0
-                    ? <span className="text-sm text-muted-foreground italic">Calculating...</span>
-                    : s.value}
-                </p>
-              </div>
-            </MotionItem>
-          ))}
-        </MotionStagger>
+              </MotionWrapper>
+            )}
 
-        {/* Chart */}
-        {dailyData.length > 0 && (
-          <MotionWrapper delay={0.1}>
-            <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="text-sm font-medium text-foreground mb-4">Performance (Last 30 Days)</h3>
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={dailyData}>
-                  <defs>
-                    <linearGradient id="cDl" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0} /></linearGradient>
-                    <linearGradient id="cSu" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} /></linearGradient>
-                    <linearGradient id="cPu" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} /></linearGradient>
-                  </defs>
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: 12, color: "hsl(var(--foreground))" }} />
-                  <Area type="monotone" dataKey="downloads" stroke="hsl(217, 91%, 60%)" strokeWidth={1.5} fillOpacity={1} fill="url(#cDl)" />
-                  <Area type="monotone" dataKey="signups" stroke="hsl(var(--primary))" strokeWidth={1.5} fillOpacity={1} fill="url(#cSu)" />
-                  <Area type="monotone" dataKey="purchases" stroke="hsl(38, 92%, 50%)" strokeWidth={1.5} fillOpacity={1} fill="url(#cPu)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </MotionWrapper>
-        )}
-
-        {/* Pricing */}
-        <MotionWrapper delay={0.15}>
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="text-sm font-medium text-foreground mb-3">Pricing</h3>
-            <div className="grid gap-3 md:grid-cols-3">
+            <MotionStagger className="grid gap-3 grid-cols-2 md:grid-cols-4">
               {[
-                { label: "Download", value: campaign.price_download },
-                { label: "Signup", value: campaign.price_signup },
-                { label: "Purchase", value: campaign.price_purchase },
-              ].map((p) => (
-                <div key={p.label} className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground">{p.label}</p>
-                  <p className="text-lg font-semibold text-foreground">${Number(p.value).toFixed(2)}</p>
-                </div>
+                { icon: Users, label: creative?.media_type === "music" ? "Listeners" : "Viewers", value: engagementStats.interactions },
+                { icon: CheckCircle2, label: "Correct Answers", value: engagementStats.correct },
+                { icon: HelpCircle, label: "Questions", value: questions.length },
+                { icon: Wallet, label: "Budget Left", value: `$${Number(campaign.budget_remaining).toFixed(2)}` },
+              ].map((s) => (
+                <MotionItem key={s.label}>
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <s.icon className="h-4 w-4 text-muted-foreground/60" />
+                      <span className="text-xs text-muted-foreground">{s.label}</span>
+                    </div>
+                    <p className="text-lg font-semibold text-foreground">{s.value}</p>
+                  </div>
+                </MotionItem>
               ))}
-            </div>
-          </div>
-        </MotionWrapper>
+            </MotionStagger>
+
+            <MotionWrapper delay={0.1}>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4 text-primary" /> Quiz Questions
+                  </h3>
+                  <Badge variant="outline" className="text-[10px]">{questions.length} generated</Badge>
+                </div>
+                {questions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {campaign.status === "pending"
+                      ? "Questions will be auto-generated from your transcription once an admin approves this campaign."
+                      : "No questions yet. Contact support if your campaign is active without questions."}
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {questions.map((q, i) => (
+                      <div key={q.id} className="flex items-start gap-2 rounded-lg bg-muted/40 p-3">
+                        <span className="text-xs text-muted-foreground shrink-0">{i + 1}.</span>
+                        <p className="text-sm text-foreground flex-1">{q.question}</p>
+                        <Badge variant="outline" className="text-[10px] shrink-0">{q.correct_answer ? "True" : "False"}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </MotionWrapper>
+          </>
+        ) : (
+          <>
+            {/* Performance/Commerce Stats */}
+            <MotionStagger className="grid gap-3 grid-cols-2 md:grid-cols-5">
+              {[
+                { icon: MousePointerClick, label: "Clicks", value: stats.clicks, metric: false, show: true },
+                { icon: Download, label: "Downloads", value: stats.downloads, metric: true, show: (campaign as any).platform_type === "mobile_app" || (campaign as any).selected_milestones?.includes("download") },
+                { icon: UserPlus, label: "Signups", value: stats.signups, metric: true, show: (campaign as any).selected_milestones?.includes("signup") ?? true },
+                { icon: ShoppingCart, label: "Purchases", value: stats.purchases, metric: true, show: (campaign as any).selected_milestones?.includes("purchase") ?? true },
+                { icon: Wallet, label: "Budget Left", value: `$${Number(campaign.budget_remaining).toFixed(2)}`, metric: false, show: true },
+                { icon: Users, label: "Target", value: (campaign as any).target_users || "N/A", metric: false, show: true },
+              ].filter((s) => s.show).map((s) => (
+                <MotionItem key={s.label}>
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <s.icon className="h-4 w-4 text-muted-foreground/60" />
+                      <span className="text-xs text-muted-foreground">{s.label}</span>
+                    </div>
+                    <p className="text-lg font-semibold text-foreground">
+                      {s.metric && totalMetrics < 10 && totalMetrics >= 0
+                        ? <span className="text-sm text-muted-foreground italic">Calculating...</span>
+                        : s.value}
+                    </p>
+                  </div>
+                </MotionItem>
+              ))}
+            </MotionStagger>
+
+            {dailyData.length > 0 && (
+              <MotionWrapper delay={0.1}>
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <h3 className="text-sm font-medium text-foreground mb-4">Performance (Last 30 Days)</h3>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={dailyData}>
+                      <defs>
+                        <linearGradient id="cDl" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0} /></linearGradient>
+                        <linearGradient id="cSu" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} /></linearGradient>
+                        <linearGradient id="cPu" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} /></linearGradient>
+                      </defs>
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: 12, color: "hsl(var(--foreground))" }} />
+                      <Area type="monotone" dataKey="downloads" stroke="hsl(217, 91%, 60%)" strokeWidth={1.5} fillOpacity={1} fill="url(#cDl)" />
+                      <Area type="monotone" dataKey="signups" stroke="hsl(var(--primary))" strokeWidth={1.5} fillOpacity={1} fill="url(#cSu)" />
+                      <Area type="monotone" dataKey="purchases" stroke="hsl(38, 92%, 50%)" strokeWidth={1.5} fillOpacity={1} fill="url(#cPu)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </MotionWrapper>
+            )}
+
+            <MotionWrapper delay={0.15}>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <h3 className="text-sm font-medium text-foreground mb-3">Pricing</h3>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {[
+                    { label: "Download", value: campaign.price_download, show: (campaign as any).platform_type === "mobile_app" || (campaign as any).selected_milestones?.includes("download") },
+                    { label: "Signup", value: campaign.price_signup, show: (campaign as any).selected_milestones?.includes("signup") ?? true },
+                    { label: "Purchase", value: campaign.price_purchase, show: (campaign as any).selected_milestones?.includes("purchase") ?? true },
+                  ].filter((p) => p.show).map((p) => (
+                    <div key={p.label} className="rounded-lg bg-muted/50 p-3">
+                      <p className="text-xs text-muted-foreground">{p.label}</p>
+                      <p className="text-lg font-semibold text-foreground">${Number(p.value).toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </MotionWrapper>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );
