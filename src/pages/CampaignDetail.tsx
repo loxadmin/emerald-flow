@@ -29,6 +29,9 @@ export default function CampaignDetail() {
   const [trackerSnippet, setTrackerSnippet] = useState<string>("");
   const [regenerating, setRegenerating] = useState(false);
   const [regeneratingKey, setRegeneratingKey] = useState(false);
+  const [creative, setCreative] = useState<any>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [engagementStats, setEngagementStats] = useState({ interactions: 0, correct: 0, points: 0 });
 
   const getAccessToken = async () => {
     const { data } = await supabase.auth.getSession();
