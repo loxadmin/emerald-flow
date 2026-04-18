@@ -151,6 +151,42 @@ export default function AdminCampaignDetail() {
     }
   };
 
+  const handleDeleteQuestion = async (qid: string) => {
+    if (!confirm("Delete this question?")) return;
+    const { error } = await supabase.from("campaign_questions").delete().eq("id", qid);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Question deleted");
+    fetchData();
+  };
+
+  const handleResolveRequest = async (reqId: string, status: "resolved" | "dismissed", notes?: string) => {
+    const { error } = await supabase.from("quiz_change_requests" as any).update({
+      status, admin_notes: notes || null, updated_at: new Date().toISOString(),
+    }).eq("id", reqId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Request ${status}`);
+    fetchData();
+  };
+
+  const handleRegenerateQuestions = async () => {
+    if (!id) return;
+    if (!confirm("Regenerate all quiz questions? This deletes existing ones.")) return;
+    setGeneratingQuestions(true);
+    try {
+      await supabase.from("campaign_questions").delete().eq("campaign_id", id);
+      const { error } = await supabase.functions.invoke("manage-campaign", {
+        body: { action: "generate_questions", campaign_id: id },
+      });
+      if (error) throw error;
+      toast.success("Questions regenerated");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to regenerate");
+    } finally {
+      setGeneratingQuestions(false);
+    }
+  };
+
   if (loading) return <AdminLayout><div className="flex justify-center py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></AdminLayout>;
   if (!campaign) return <AdminLayout><p className="text-muted-foreground">Campaign not found.</p></AdminLayout>;
 
