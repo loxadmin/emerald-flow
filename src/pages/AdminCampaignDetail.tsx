@@ -35,6 +35,11 @@ export default function AdminCampaignDetail() {
   const [recordingEvent, setRecordingEvent] = useState(false);
   const [manualEvents, setManualEvents] = useState<any[]>([]);
 
+  // Engagement: questions + change requests
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [changeRequests, setChangeRequests] = useState<any[]>([]);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+
   const fetchData = useCallback(async () => {
     if (!id) return;
     const { data: c } = await supabase.from("campaigns").select("*").eq("id", id).single();
