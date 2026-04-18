@@ -21,6 +21,7 @@ import {
   MessageSquare,
   Layout,
   Chrome,
+  Gamepad2,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
