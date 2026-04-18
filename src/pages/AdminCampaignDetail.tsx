@@ -60,6 +60,14 @@ export default function AdminCampaignDetail() {
     const { data: me } = await supabase.from("manual_events" as any).select("*").eq("campaign_id", id).order("created_at", { ascending: false });
     setManualEvents((me as any[]) || []);
 
+    // Engagement: questions + change requests
+    const [{ data: qs }, { data: crs }] = await Promise.all([
+      supabase.from("campaign_questions").select("*").eq("campaign_id", id).order("created_at"),
+      supabase.from("quiz_change_requests" as any).select("*").eq("campaign_id", id).order("created_at", { ascending: false }),
+    ]);
+    setQuestions(qs || []);
+    setChangeRequests((crs as any[]) || []);
+
     // Chart
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: chartEvents } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo);
