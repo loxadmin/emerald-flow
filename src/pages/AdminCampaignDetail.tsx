@@ -349,7 +349,87 @@ export default function AdminCampaignDetail() {
           </MotionWrapper>
         )}
 
-        {/* Analytics chart */}
+        {/* Engagement: Quiz Questions + Change Requests */}
+        {isEngagement && (
+          <>
+            <MotionWrapper delay={0.17}>
+              <GlassCard variant="strong">
+                <GlassCardHeader className="flex flex-row items-center justify-between">
+                  <GlassCardTitle className="flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4" /> Quiz Questions ({questions.length})
+                  </GlassCardTitle>
+                  <GlassButton size="sm" variant="outline" onClick={handleRegenerateQuestions} disabled={generatingQuestions}>
+                    {generatingQuestions ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
+                    Regenerate All
+                  </GlassButton>
+                </GlassCardHeader>
+                <GlassCardContent>
+                  {questions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No questions yet. Approve the campaign or click Regenerate to auto-generate from the transcription.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                      {questions.map((q, i) => (
+                        <div key={q.id} className="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/30 p-3">
+                          <span className="text-xs text-muted-foreground shrink-0 mt-0.5">{i + 1}.</span>
+                          <p className="text-sm text-foreground flex-1">{q.question}</p>
+                          <Badge variant="outline" className="text-[10px] shrink-0">{q.correct_answer ? "True" : "False"}</Badge>
+                          <button onClick={() => handleDeleteQuestion(q.id)} className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </GlassCardContent>
+              </GlassCard>
+            </MotionWrapper>
+
+            {changeRequests.length > 0 && (
+              <MotionWrapper delay={0.18}>
+                <GlassCard variant="glow">
+                  <GlassCardHeader>
+                    <GlassCardTitle className="flex items-center gap-2">
+                      <MessageSquareWarning className="h-4 w-4" /> Advertiser Change Requests ({pendingRequests.length} pending)
+                    </GlassCardTitle>
+                  </GlassCardHeader>
+                  <GlassCardContent>
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {changeRequests.map((r) => {
+                        const q = questions.find((qq) => qq.id === r.question_id);
+                        return (
+                          <div key={r.id} className="rounded-lg border border-border/50 p-3 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-muted-foreground">Question:</p>
+                                <p className="text-sm text-foreground">{q?.question || "(question deleted)"}</p>
+                              </div>
+                              <Badge variant="outline" className="text-[10px] capitalize shrink-0">{r.status}</Badge>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Advertiser reason:</p>
+                              <p className="text-sm text-foreground/80">{r.reason}</p>
+                            </div>
+                            {r.status === "pending" && (
+                              <div className="flex gap-2 pt-1">
+                                <GlassButton size="sm" variant="outline" onClick={() => handleResolveRequest(r.id, "resolved")}>
+                                  <CheckCircle className="h-3.5 w-3.5 mr-1" /> Mark Resolved
+                                </GlassButton>
+                                <GlassButton size="sm" variant="ghost" onClick={() => handleResolveRequest(r.id, "dismissed")}>
+                                  <XCircle className="h-3.5 w-3.5 mr-1" /> Dismiss
+                                </GlassButton>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </GlassCardContent>
+                </GlassCard>
+              </MotionWrapper>
+            )}
+          </>
+        )}
+
         {dailyData.length > 0 && (
           <MotionWrapper delay={0.18}>
             <GlassCard variant="strong">
