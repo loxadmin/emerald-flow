@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Copy, Link as LinkIcon, Plus, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Copy, Link as LinkIcon, Plus, Loader2, HelpCircle, Trash2, Sparkles, MessageSquareWarning } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -34,6 +35,11 @@ export default function AdminCampaignDetail() {
   const [recordingEvent, setRecordingEvent] = useState(false);
   const [manualEvents, setManualEvents] = useState<any[]>([]);
 
+  // Engagement: questions + change requests
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [changeRequests, setChangeRequests] = useState<any[]>([]);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+
   const fetchData = useCallback(async () => {
     if (!id) return;
     const { data: c } = await supabase.from("campaigns").select("*").eq("id", id).single();
@@ -53,6 +59,14 @@ export default function AdminCampaignDetail() {
     // Manual events
     const { data: me } = await supabase.from("manual_events" as any).select("*").eq("campaign_id", id).order("created_at", { ascending: false });
     setManualEvents((me as any[]) || []);
+
+    // Engagement: questions + change requests
+    const [{ data: qs }, { data: crs }] = await Promise.all([
+      supabase.from("campaign_questions").select("*").eq("campaign_id", id).order("created_at"),
+      supabase.from("quiz_change_requests" as any).select("*").eq("campaign_id", id).order("created_at", { ascending: false }),
+    ]);
+    setQuestions(qs || []);
+    setChangeRequests((crs as any[]) || []);
 
     // Chart
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -137,10 +151,48 @@ export default function AdminCampaignDetail() {
     }
   };
 
+  const handleDeleteQuestion = async (qid: string) => {
+    if (!confirm("Delete this question?")) return;
+    const { error } = await supabase.from("campaign_questions").delete().eq("id", qid);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Question deleted");
+    fetchData();
+  };
+
+  const handleResolveRequest = async (reqId: string, status: "resolved" | "dismissed", notes?: string) => {
+    const { error } = await supabase.from("quiz_change_requests" as any).update({
+      status, admin_notes: notes || null, updated_at: new Date().toISOString(),
+    }).eq("id", reqId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Request ${status}`);
+    fetchData();
+  };
+
+  const handleRegenerateQuestions = async () => {
+    if (!id) return;
+    if (!confirm("Regenerate all quiz questions? This deletes existing ones.")) return;
+    setGeneratingQuestions(true);
+    try {
+      await supabase.from("campaign_questions").delete().eq("campaign_id", id);
+      const { error } = await supabase.functions.invoke("manage-campaign", {
+        body: { action: "generate_questions", campaign_id: id },
+      });
+      if (error) throw error;
+      toast.success("Questions regenerated");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to regenerate");
+    } finally {
+      setGeneratingQuestions(false);
+    }
+  };
+
   if (loading) return <AdminLayout><div className="flex justify-center py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div></AdminLayout>;
   if (!campaign) return <AdminLayout><p className="text-muted-foreground">Campaign not found.</p></AdminLayout>;
 
   const isManual = (campaign as any).campaign_mode === "manual";
+  const isEngagement = (campaign as any).ad_type === "engagement";
+  const pendingRequests = changeRequests.filter((r) => r.status === "pending");
   const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", color: "hsl(var(--foreground))" };
 
   return (
@@ -297,7 +349,87 @@ export default function AdminCampaignDetail() {
           </MotionWrapper>
         )}
 
-        {/* Analytics chart */}
+        {/* Engagement: Quiz Questions + Change Requests */}
+        {isEngagement && (
+          <>
+            <MotionWrapper delay={0.17}>
+              <GlassCard variant="strong">
+                <GlassCardHeader className="flex flex-row items-center justify-between">
+                  <GlassCardTitle className="flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4" /> Quiz Questions ({questions.length})
+                  </GlassCardTitle>
+                  <GlassButton size="sm" variant="outline" onClick={handleRegenerateQuestions} disabled={generatingQuestions}>
+                    {generatingQuestions ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
+                    Regenerate All
+                  </GlassButton>
+                </GlassCardHeader>
+                <GlassCardContent>
+                  {questions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No questions yet. Approve the campaign or click Regenerate to auto-generate from the transcription.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                      {questions.map((q, i) => (
+                        <div key={q.id} className="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/30 p-3">
+                          <span className="text-xs text-muted-foreground shrink-0 mt-0.5">{i + 1}.</span>
+                          <p className="text-sm text-foreground flex-1">{q.question}</p>
+                          <Badge variant="outline" className="text-[10px] shrink-0">{q.correct_answer ? "True" : "False"}</Badge>
+                          <button onClick={() => handleDeleteQuestion(q.id)} className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </GlassCardContent>
+              </GlassCard>
+            </MotionWrapper>
+
+            {changeRequests.length > 0 && (
+              <MotionWrapper delay={0.18}>
+                <GlassCard variant="glow">
+                  <GlassCardHeader>
+                    <GlassCardTitle className="flex items-center gap-2">
+                      <MessageSquareWarning className="h-4 w-4" /> Advertiser Change Requests ({pendingRequests.length} pending)
+                    </GlassCardTitle>
+                  </GlassCardHeader>
+                  <GlassCardContent>
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {changeRequests.map((r) => {
+                        const q = questions.find((qq) => qq.id === r.question_id);
+                        return (
+                          <div key={r.id} className="rounded-lg border border-border/50 p-3 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-muted-foreground">Question:</p>
+                                <p className="text-sm text-foreground">{q?.question || "(question deleted)"}</p>
+                              </div>
+                              <Badge variant="outline" className="text-[10px] capitalize shrink-0">{r.status}</Badge>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Advertiser reason:</p>
+                              <p className="text-sm text-foreground/80">{r.reason}</p>
+                            </div>
+                            {r.status === "pending" && (
+                              <div className="flex gap-2 pt-1">
+                                <GlassButton size="sm" variant="outline" onClick={() => handleResolveRequest(r.id, "resolved")}>
+                                  <CheckCircle className="h-3.5 w-3.5 mr-1" /> Mark Resolved
+                                </GlassButton>
+                                <GlassButton size="sm" variant="ghost" onClick={() => handleResolveRequest(r.id, "dismissed")}>
+                                  <XCircle className="h-3.5 w-3.5 mr-1" /> Dismiss
+                                </GlassButton>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </GlassCardContent>
+                </GlassCard>
+              </MotionWrapper>
+            )}
+          </>
+        )}
+
         {dailyData.length > 0 && (
           <MotionWrapper delay={0.18}>
             <GlassCard variant="strong">

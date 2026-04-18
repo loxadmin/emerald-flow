@@ -1013,6 +1013,42 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_change_requests: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          campaign_id: string
+          created_at: string
+          id: string
+          question_id: string
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          campaign_id: string
+          created_at?: string
+          id?: string
+          question_id: string
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           campaign_id: string
