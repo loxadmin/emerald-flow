@@ -133,33 +133,42 @@ export default function AdminCampaignDetail() {
     if (error) toast.error("Failed to create referral"); else { toast.success("Referral link created!"); fetchData(); }
   };
 
-  const handleRecordManualEvent = async () => {
+  const handleRecordManualEvents = async () => {
     if (!id) return;
-    const count = Number(manualCount);
-    if (count < 1) { toast.error("Count must be at least 1"); return; }
-    if (manualEventType === "purchase" && (!manualPurchaseAmount || Number(manualPurchaseAmount) <= 0)) {
-      toast.error("Enter a purchase amount"); return;
+    const entries = Object.entries(manualCounts)
+      .map(([type, raw]) => ({ type, count: Number(raw) }))
+      .filter((e) => e.count > 0);
+    if (entries.length === 0) { toast.error("Enter a count for at least one event type"); return; }
+    const purchaseEntry = entries.find((e) => e.type === "purchase");
+    if (purchaseEntry && (!manualPurchaseAmount || Number(manualPurchaseAmount) <= 0)) {
+      toast.error("Enter the purchase amount for purchase events"); return;
     }
 
     setRecordingEvent(true);
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const { data, error } = await supabase.functions.invoke("manage-manual-events", {
-        body: {
-          action: "record_events",
-          campaign_id: id,
-          event_type: manualEventType,
-          count,
-          purchase_amount: manualEventType === "purchase" ? Number(manualPurchaseAmount) : null,
-          notes: manualNotes || null,
-        },
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (error) throw error;
-      const result = typeof data === "string" ? JSON.parse(data) : data;
-      if (result.error) throw new Error(result.error);
-      toast.success(`Recorded ${count} ${manualEventType}(s). Deducted $${result.deducted?.toFixed(2)} from escrow.`);
-      setManualCount("1");
+      let totalDeducted = 0;
+      let totalEvents = 0;
+      for (const entry of entries) {
+        const { data, error } = await supabase.functions.invoke("manage-manual-events", {
+          body: {
+            action: "record_events",
+            campaign_id: id,
+            event_type: entry.type,
+            count: entry.count,
+            purchase_amount: entry.type === "purchase" ? Number(manualPurchaseAmount) : null,
+            notes: manualNotes || null,
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (error) throw error;
+        const result = typeof data === "string" ? JSON.parse(data) : data;
+        if (result.error) throw new Error(result.error);
+        totalDeducted += Number(result.deducted || 0);
+        totalEvents += Number(result.events_recorded || 0);
+      }
+      toast.success(`Recorded ${totalEvents} event(s). Deducted $${totalDeducted.toFixed(2)} from escrow.`);
+      setManualCounts({});
       setManualPurchaseAmount("");
       setManualNotes("");
       fetchData();
