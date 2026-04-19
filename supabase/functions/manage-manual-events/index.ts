@@ -66,12 +66,11 @@ Deno.serve(async (req) => {
         .single();
 
       if (!campaign) return json({ error: "Campaign not found" }, 404);
-      if (campaign.campaign_mode !== "manual") {
-        return json({ error: "Campaign is not in manual mode" }, 400);
-      }
       if (campaign.status !== "active") {
         return json({ error: "Campaign must be active" }, 400);
       }
+      // Admin may record events for any campaign mode (manual or api).
+      // For api campaigns this serves as a manual reconciliation/override.
 
       // Calculate deduction
       let unitCost = 0;
