@@ -27,16 +27,15 @@ export default function AdminCampaignDetail() {
   const [clickCount, setClickCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Manual event form
-  const [manualEventType, setManualEventType] = useState("signup");
-  const [manualCount, setManualCount] = useState("1");
+  // Manual event form: per-milestone counts
+  const [manualCounts, setManualCounts] = useState<Record<string, string>>({});
   const [manualPurchaseAmount, setManualPurchaseAmount] = useState("");
   const [manualNotes, setManualNotes] = useState("");
   const [recordingEvent, setRecordingEvent] = useState(false);
   const [manualEvents, setManualEvents] = useState<any[]>([]);
-  const [uploadingMetrics, setUploadingMetrics] = useState(false);
-  const [metricsUploadNotes, setMetricsUploadNotes] = useState("");
-  const [metricsFileName, setMetricsFileName] = useState("");
+
+  // Engagement metrics
+  const [offerwallStats, setOfferwallStats] = useState({ total: 0, correct: 0, incorrect: 0, points: 0, charged: 0 });
 
   // Engagement: questions + change requests
   const [questions, setQuestions] = useState<any[]>([]);
@@ -62,6 +61,23 @@ export default function AdminCampaignDetail() {
     // Manual events
     const { data: me } = await supabase.from("manual_events" as any).select("*").eq("campaign_id", id).order("created_at", { ascending: false });
     setManualEvents((me as any[]) || []);
+
+    // Engagement: offerwall interaction stats
+    const { data: oi } = await supabase
+      .from("offerwall_interactions" as any)
+      .select("is_correct, points_earned, charge_amount")
+      .eq("campaign_id", id);
+    if (oi) {
+      const rows = oi as any[];
+      const correct = rows.filter((r) => r.is_correct).length;
+      setOfferwallStats({
+        total: rows.length,
+        correct,
+        incorrect: rows.length - correct,
+        points: rows.reduce((s, r) => s + Number(r.points_earned || 0), 0),
+        charged: rows.reduce((s, r) => s + Number(r.charge_amount || 0), 0),
+      });
+    }
 
     // Engagement: questions + change requests
     const [{ data: qs }, { data: crs }] = await Promise.all([
