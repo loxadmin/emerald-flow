@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, type ChangeEvent } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
@@ -7,7 +7,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { CheckCircle, XCircle, Copy, Link as LinkIcon, Plus, Loader2, HelpCircle, Trash2, Sparkles, MessageSquareWarning } from "lucide-react";
@@ -27,16 +27,15 @@ export default function AdminCampaignDetail() {
   const [clickCount, setClickCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Manual event form
-  const [manualEventType, setManualEventType] = useState("signup");
-  const [manualCount, setManualCount] = useState("1");
+  // Manual event form: per-milestone counts
+  const [manualCounts, setManualCounts] = useState<Record<string, string>>({});
   const [manualPurchaseAmount, setManualPurchaseAmount] = useState("");
   const [manualNotes, setManualNotes] = useState("");
   const [recordingEvent, setRecordingEvent] = useState(false);
   const [manualEvents, setManualEvents] = useState<any[]>([]);
-  const [uploadingMetrics, setUploadingMetrics] = useState(false);
-  const [metricsUploadNotes, setMetricsUploadNotes] = useState("");
-  const [metricsFileName, setMetricsFileName] = useState("");
+
+  // Engagement metrics
+  const [offerwallStats, setOfferwallStats] = useState({ total: 0, correct: 0, incorrect: 0, points: 0, charged: 0 });
 
   // Engagement: questions + change requests
   const [questions, setQuestions] = useState<any[]>([]);
@@ -62,6 +61,23 @@ export default function AdminCampaignDetail() {
     // Manual events
     const { data: me } = await supabase.from("manual_events" as any).select("*").eq("campaign_id", id).order("created_at", { ascending: false });
     setManualEvents((me as any[]) || []);
+
+    // Engagement: offerwall interaction stats
+    const { data: oi } = await supabase
+      .from("offerwall_interactions" as any)
+      .select("is_correct, points_earned, charge_amount")
+      .eq("campaign_id", id);
+    if (oi) {
+      const rows = oi as any[];
+      const correct = rows.filter((r) => r.is_correct).length;
+      setOfferwallStats({
+        total: rows.length,
+        correct,
+        incorrect: rows.length - correct,
+        points: rows.reduce((s, r) => s + Number(r.points_earned || 0), 0),
+        charged: rows.reduce((s, r) => s + Number(r.charge_amount || 0), 0),
+      });
+    }
 
     // Engagement: questions + change requests
     const [{ data: qs }, { data: crs }] = await Promise.all([
@@ -117,33 +133,42 @@ export default function AdminCampaignDetail() {
     if (error) toast.error("Failed to create referral"); else { toast.success("Referral link created!"); fetchData(); }
   };
 
-  const handleRecordManualEvent = async () => {
+  const handleRecordManualEvents = async () => {
     if (!id) return;
-    const count = Number(manualCount);
-    if (count < 1) { toast.error("Count must be at least 1"); return; }
-    if (manualEventType === "purchase" && (!manualPurchaseAmount || Number(manualPurchaseAmount) <= 0)) {
-      toast.error("Enter a purchase amount"); return;
+    const entries = Object.entries(manualCounts)
+      .map(([type, raw]) => ({ type, count: Number(raw) }))
+      .filter((e) => e.count > 0);
+    if (entries.length === 0) { toast.error("Enter a count for at least one event type"); return; }
+    const purchaseEntry = entries.find((e) => e.type === "purchase");
+    if (purchaseEntry && (!manualPurchaseAmount || Number(manualPurchaseAmount) <= 0)) {
+      toast.error("Enter the purchase amount for purchase events"); return;
     }
 
     setRecordingEvent(true);
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const { data, error } = await supabase.functions.invoke("manage-manual-events", {
-        body: {
-          action: "record_events",
-          campaign_id: id,
-          event_type: manualEventType,
-          count,
-          purchase_amount: manualEventType === "purchase" ? Number(manualPurchaseAmount) : null,
-          notes: manualNotes || null,
-        },
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (error) throw error;
-      const result = typeof data === "string" ? JSON.parse(data) : data;
-      if (result.error) throw new Error(result.error);
-      toast.success(`Recorded ${count} ${manualEventType}(s). Deducted $${result.deducted?.toFixed(2)} from escrow.`);
-      setManualCount("1");
+      let totalDeducted = 0;
+      let totalEvents = 0;
+      for (const entry of entries) {
+        const { data, error } = await supabase.functions.invoke("manage-manual-events", {
+          body: {
+            action: "record_events",
+            campaign_id: id,
+            event_type: entry.type,
+            count: entry.count,
+            purchase_amount: entry.type === "purchase" ? Number(manualPurchaseAmount) : null,
+            notes: manualNotes || null,
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (error) throw error;
+        const result = typeof data === "string" ? JSON.parse(data) : data;
+        if (result.error) throw new Error(result.error);
+        totalDeducted += Number(result.deducted || 0);
+        totalEvents += Number(result.events_recorded || 0);
+      }
+      toast.success(`Recorded ${totalEvents} event(s). Deducted $${totalDeducted.toFixed(2)} from escrow.`);
+      setManualCounts({});
       setManualPurchaseAmount("");
       setManualNotes("");
       fetchData();
@@ -187,105 +212,6 @@ export default function AdminCampaignDetail() {
       toast.error(err.message || "Failed to regenerate");
     } finally {
       setGeneratingQuestions(false);
-    }
-  };
-
-  const parseMetricsCsv = (csvContent: string) => {
-    const rows = csvContent
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (rows.length < 2) {
-      throw new Error("CSV file must include a header and at least one row");
-    }
-
-    const header = rows[0].split(",").map((col) => col.trim().toLowerCase());
-    const requiredColumns = ["event_type", "count"];
-    const missingColumns = requiredColumns.filter((column) => !header.includes(column));
-
-    if (missingColumns.length > 0) {
-      throw new Error(`Missing required CSV columns: ${missingColumns.join(", ")}`);
-    }
-
-    const eventTypeIndex = header.indexOf("event_type");
-    const countIndex = header.indexOf("count");
-    const purchaseAmountIndex = header.indexOf("purchase_amount");
-    const notesIndex = header.indexOf("notes");
-
-    const parsedRows = rows.slice(1).map((line, rowIndex) => {
-      const values = line.split(",").map((value) => value.trim());
-      const eventType = values[eventTypeIndex]?.toLowerCase();
-      const count = Number(values[countIndex] || 0);
-      const purchaseAmountRaw = purchaseAmountIndex >= 0 ? values[purchaseAmountIndex] : "";
-      const purchaseAmount = purchaseAmountRaw ? Number(purchaseAmountRaw) : undefined;
-      const notes = notesIndex >= 0 ? values[notesIndex] : undefined;
-
-      if (!eventType || !["download", "signup", "purchase"].includes(eventType)) {
-        throw new Error(`Row ${rowIndex + 2}: event_type must be download, signup, or purchase`);
-      }
-      if (!Number.isFinite(count) || count < 1) {
-        throw new Error(`Row ${rowIndex + 2}: count must be at least 1`);
-      }
-      if (eventType === "purchase" && (!Number.isFinite(purchaseAmount) || purchaseAmount! <= 0)) {
-        throw new Error(`Row ${rowIndex + 2}: purchase rows must include purchase_amount > 0`);
-      }
-
-      return {
-        event_type: eventType,
-        count,
-        purchase_amount: eventType === "purchase" ? purchaseAmount : null,
-        notes: notes || null,
-      };
-    });
-
-    return parsedRows;
-  };
-
-  const handleMetricsFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    if (!id) return;
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setMetricsFileName(file.name);
-    setUploadingMetrics(true);
-
-    try {
-      const parsed = parseMetricsCsv(await file.text());
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-
-      const uploadResults = await Promise.all(parsed.map(async (entry) => {
-        const { data, error } = await supabase.functions.invoke("manage-manual-events", {
-          body: {
-            action: "record_events",
-            campaign_id: id,
-            event_type: entry.event_type,
-            count: entry.count,
-            purchase_amount: entry.purchase_amount,
-            notes: [metricsUploadNotes.trim(), entry.notes].filter(Boolean).join(" | ") || null,
-          },
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (error) throw error;
-        const parsedData = typeof data === "string" ? JSON.parse(data) : data;
-        if (parsedData.error) {
-          throw new Error(parsedData.error);
-        }
-        return parsedData;
-      }));
-
-      const totalDeduction = uploadResults.reduce((sum, result) => sum + Number(result.deducted || 0), 0);
-      const totalEvents = uploadResults.reduce((sum, result) => sum + Number(result.events_recorded || 0), 0);
-
-      toast.success(`Uploaded metrics from ${file.name}: ${totalEvents} events recorded, $${totalDeduction.toFixed(2)} deducted.`);
-      setMetricsUploadNotes("");
-      event.target.value = "";
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to upload event metrics");
-    } finally {
-      setUploadingMetrics(false);
     }
   };
 
@@ -375,9 +301,9 @@ export default function AdminCampaignDetail() {
           </MotionWrapper>
         </div>
 
-        {/* Manual Event Recording — admin can record events for any active campaign.
+        {/* Manual Event Recording — admin can record performance/commerce events for any active non-engagement campaign.
             For API-mode campaigns this acts as a reconciliation/override that still debits escrow. */}
-        {campaign.status === "active" && (
+        {campaign.status === "active" && !isEngagement && (
           <MotionWrapper delay={0.17}>
             <GlassCard variant="glow">
               <GlassCardHeader>
@@ -391,86 +317,73 @@ export default function AdminCampaignDetail() {
                 )}
               </GlassCardHeader>
               <GlassCardContent className="space-y-4">
-                <div className="grid gap-3 md:grid-cols-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Event Type</Label>
-                    <Select value={manualEventType} onValueChange={setManualEventType}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(((campaign as any).selected_milestones || []).length > 0
-                          ? (campaign as any).selected_milestones
-                          : ["download", "signup", "purchase"]
-                        ).map((m: string) => (
-                          <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Count</Label>
-                    <Input type="number" min="1" value={manualCount} onChange={(e) => setManualCount(e.target.value)} />
-                  </div>
-                  {manualEventType === "purchase" && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Purchase Amount ($)</Label>
-                      <Input type="number" min="0" step="0.01" value={manualPurchaseAmount} onChange={(e) => setManualPurchaseAmount(e.target.value)} placeholder="0.00" />
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
-                    <Input value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Batch note..." />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    Estimated deduction: <span className="text-foreground font-medium">
-                      ${(() => {
-                        const count = Number(manualCount) || 0;
-                        if (manualEventType === "download") return (Number(campaign.price_download) * count).toFixed(2);
-                        if (manualEventType === "signup") return (Number(campaign.price_signup) * count).toFixed(2);
-                        if (manualEventType === "purchase") return ((1 + Number(manualPurchaseAmount || 0) * 0.10) * count).toFixed(2);
-                        return "0.00";
-                      })()}
-                    </span>
-                  </p>
-                  <GlassButton size="sm" variant="glow" onClick={handleRecordManualEvent} disabled={recordingEvent}>
-                    {recordingEvent ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-                    Record Events
-                  </GlassButton>
-                </div>
+                {(() => {
+                  const milestones: string[] =
+                    ((campaign as any).selected_milestones || []).length > 0
+                      ? (campaign as any).selected_milestones
+                      : ["download", "signup", "purchase"];
+                  const hasPurchase = milestones.includes("purchase");
+                  const purchaseCount = Number(manualCounts["purchase"] || 0);
+                  const estimatedDeduction = milestones.reduce((sum, m) => {
+                    const c = Number(manualCounts[m] || 0);
+                    if (c <= 0) return sum;
+                    if (m === "download") return sum + Number(campaign.price_download) * c;
+                    if (m === "signup") return sum + Number(campaign.price_signup) * c;
+                    if (m === "purchase") return sum + (1 + Number(manualPurchaseAmount || 0) * 0.10) * c;
+                    return sum;
+                  }, 0);
 
-                <div className="border-t border-border pt-3 space-y-3">
-                  <p className="text-xs font-medium text-foreground">Upload Metrics CSV</p>
-                  <p className="text-xs text-muted-foreground">
-                    CSV format: <span className="font-mono">event_type,count,purchase_amount,notes</span>. Required columns are{" "}
-                    <span className="font-mono">event_type</span> and <span className="font-mono">count</span>.
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Batch Note (optional)</Label>
-                      <Input
-                        value={metricsUploadNotes}
-                        onChange={(e) => setMetricsUploadNotes(e.target.value)}
-                        placeholder="Imported from partner report..."
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Choose CSV</Label>
-                      <Input
-                        type="file"
-                        accept=".csv,text/csv"
-                        disabled={uploadingMetrics}
-                        onChange={handleMetricsFileUpload}
-                      />
-                    </div>
-                  </div>
-                  {uploadingMetrics && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Uploading metrics{metricsFileName ? ` from ${metricsFileName}` : ""}...
-                    </div>
-                  )}
-                </div>
+                  return (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {milestones.map((m) => (
+                          <div key={m} className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground capitalize">{m}s</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={manualCounts[m] || ""}
+                              onChange={(e) =>
+                                setManualCounts((prev) => ({ ...prev, [m]: e.target.value }))
+                              }
+                            />
+                            <p className="text-[10px] text-muted-foreground/70">
+                              {m === "purchase"
+                                ? "Charged $1 + 10% of purchase amount per event"
+                                : `$${Number(m === "download" ? campaign.price_download : campaign.price_signup).toFixed(2)} per ${m}`}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {hasPurchase && purchaseCount > 0 && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Purchase Amount per event ($)</Label>
+                            <Input type="number" min="0" step="0.01" value={manualPurchaseAmount} onChange={(e) => setManualPurchaseAmount(e.target.value)} placeholder="0.00" />
+                          </div>
+                        )}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
+                          <Input value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Batch note..." />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border pt-3">
+                        <p className="text-xs text-muted-foreground">
+                          Estimated deduction:{" "}
+                          <span className="text-foreground font-medium">${estimatedDeduction.toFixed(2)}</span>
+                          <span className="ml-2 text-muted-foreground/70">
+                            (Escrow available: ${Number(campaign.budget_remaining).toFixed(2)})
+                          </span>
+                        </p>
+                        <GlassButton size="sm" variant="glow" onClick={handleRecordManualEvents} disabled={recordingEvent}>
+                          {recordingEvent ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                          Record Events
+                        </GlassButton>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 {/* Manual events history */}
                 {manualEvents.length > 0 && (
