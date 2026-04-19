@@ -375,14 +375,20 @@ export default function AdminCampaignDetail() {
           </MotionWrapper>
         </div>
 
-        {/* Manual Event Recording (admin only, manual campaigns only) */}
-        {isManual && campaign.status === "active" && (
+        {/* Manual Event Recording — admin can record events for any active campaign.
+            For API-mode campaigns this acts as a reconciliation/override that still debits escrow. */}
+        {campaign.status === "active" && (
           <MotionWrapper delay={0.17}>
             <GlassCard variant="glow">
               <GlassCardHeader>
                 <GlassCardTitle className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" /> Record Manual Events
+                  <Plus className="h-4 w-4" /> {isManual ? "Record Manual Events" : "Admin Event Override"}
                 </GlassCardTitle>
+                {!isManual && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Campaign is in API mode. Events recorded here still debit the advertiser's escrow.
+                  </p>
+                )}
               </GlassCardHeader>
               <GlassCardContent className="space-y-4">
                 <div className="grid gap-3 md:grid-cols-4">
