@@ -397,7 +397,10 @@ export default function AdminCampaignDetail() {
                     <Select value={manualEventType} onValueChange={setManualEventType}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {((campaign as any).selected_milestones || []).map((m: string) => (
+                        {(((campaign as any).selected_milestones || []).length > 0
+                          ? (campaign as any).selected_milestones
+                          : ["download", "signup", "purchase"]
+                        ).map((m: string) => (
                           <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
                         ))}
                       </SelectContent>
