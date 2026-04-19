@@ -87,10 +87,16 @@ export default function CategorySelection() {
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null);
   const [changeReason, setChangeReason] = useState("");
 
+  // Subtype chosen at signup ("musician" | "youtuber" | "app" | "startup" | "business")
+  const signupSubtype = (user?.user_metadata as any)?.advertiser_subtype as string | undefined;
+  const isCreator = signupSubtype === "musician" || signupSubtype === "youtuber";
+  const isBusinessSignup = signupSubtype === "app" || signupSubtype === "startup" || signupSubtype === "business";
+
   useEffect(() => {
     const fetchCategories = async () => {
       const { data } = await supabase.from("categories").select("*").order("name");
-      setCategories((data as Category[]) || []);
+      const cats = (data as Category[]) || [];
+      setCategories(cats);
 
       if (user && hasCategory) {
         const { data: existing } = await supabase
@@ -103,11 +109,32 @@ export default function CategorySelection() {
           setIsChangeMode(true);
         }
       }
+
+      // Auto-route creators straight to engagement; pre-expand for business signups
+      if (!isChangeMode) {
+        if (isCreator) {
+          setExpandedType("engagement");
+          setSelectedType("engagement");
+          setSelectedSubtype(signupSubtype as Subtype);
+          const topCat = cats.find((c) => c.name === "Engagement Ads");
+          if (topCat) setSelectedCategoryId(topCat.id);
+        } else if (isBusinessSignup) {
+          setExpandedType("performance");
+        }
+      }
+
       setLoading(false);
     };
     fetchCategories();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, hasCategory]);
+
+  // Hide Engagement card for business signups; hide Performance/Commerce for creators
+  const visibleAdTypes = AD_TYPES.filter((t) => {
+    if (isCreator) return t.id === "engagement";
+    if (isBusinessSignup) return t.id !== "engagement";
+    return true;
+  });
 
   const performanceSubcategories = categories.filter(
     (c) => !["Engagement Ads", "Performance Ads", "Commerce Ads"].includes(c.name)
@@ -227,7 +254,7 @@ export default function CategorySelection() {
               </div>
             ) : (
               <div className="space-y-3">
-                {AD_TYPES.map((type) => (
+                {visibleAdTypes.map((type) => (
                   <Collapsible
                     key={type.id}
                     open={expandedType === type.id}
