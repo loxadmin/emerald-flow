@@ -254,7 +254,7 @@ export default function CategorySelection() {
               </div>
             ) : (
               <div className="space-y-3">
-                {AD_TYPES.map((type) => (
+                {visibleAdTypes.map((type) => (
                   <Collapsible
                     key={type.id}
                     open={expandedType === type.id}
