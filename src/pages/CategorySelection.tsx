@@ -87,10 +87,21 @@ export default function CategorySelection() {
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null);
   const [changeReason, setChangeReason] = useState("");
 
-  // Subtype chosen at signup ("musician" | "youtuber" | "app" | "startup" | "business")
-  const signupSubtype = (user?.user_metadata as any)?.advertiser_subtype as string | undefined;
+  // Subtype chosen at signup (supports legacy "startup"/"business" values)
+  const rawSignupSubtype = (user?.user_metadata as any)?.advertiser_subtype as string | undefined;
+  const signupSubtype =
+    rawSignupSubtype === "startup"
+      ? "website"
+      : rawSignupSubtype === "business"
+        ? "service"
+        : rawSignupSubtype;
   const isCreator = signupSubtype === "musician" || signupSubtype === "youtuber";
-  const isBusinessSignup = signupSubtype === "app" || signupSubtype === "startup" || signupSubtype === "business";
+  const isBusinessSignup =
+    signupSubtype === "app" ||
+    signupSubtype === "website" ||
+    signupSubtype === "ecommerce" ||
+    signupSubtype === "service" ||
+    signupSubtype === "real_estate";
 
   useEffect(() => {
     const fetchCategories = async () => {

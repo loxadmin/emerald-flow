@@ -48,14 +48,16 @@ const DISPOSABLE_DOMAINS = [
 
 const FORBIDDEN_DOMAINS = [...PUBLIC_EMAIL_DOMAINS, ...DISPOSABLE_DOMAINS];
 
-type Subtype = "musician" | "youtuber" | "app" | "startup" | "business";
+type Subtype = "musician" | "youtuber" | "app" | "website" | "ecommerce" | "service" | "real_estate";
 
 const SUBTYPE_OPTIONS: { id: Subtype; label: string; group: "engagement" | "business" }[] = [
   { id: "musician", label: "Musician / Music Artist", group: "engagement" },
   { id: "youtuber", label: "YouTuber / Video Creator", group: "engagement" },
   { id: "app", label: "App Owner", group: "business" },
-  { id: "startup", label: "Startup Founder", group: "business" },
-  { id: "business", label: "Business Owner", group: "business" },
+  { id: "website", label: "Website Owner", group: "business" },
+  { id: "ecommerce", label: "E-commerce Vendor", group: "business" },
+  { id: "service", label: "Service Provider", group: "business" },
+  { id: "real_estate", label: "Real Estate", group: "business" },
 ];
 
 const isCreator = (s: Subtype | "") => s === "musician" || s === "youtuber";
