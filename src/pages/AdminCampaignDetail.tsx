@@ -301,9 +301,9 @@ export default function AdminCampaignDetail() {
           </MotionWrapper>
         </div>
 
-        {/* Manual Event Recording — admin can record events for any active campaign.
+        {/* Manual Event Recording — admin can record performance/commerce events for any active non-engagement campaign.
             For API-mode campaigns this acts as a reconciliation/override that still debits escrow. */}
-        {campaign.status === "active" && (
+        {campaign.status === "active" && !isEngagement && (
           <MotionWrapper delay={0.17}>
             <GlassCard variant="glow">
               <GlassCardHeader>
@@ -317,86 +317,73 @@ export default function AdminCampaignDetail() {
                 )}
               </GlassCardHeader>
               <GlassCardContent className="space-y-4">
-                <div className="grid gap-3 md:grid-cols-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Event Type</Label>
-                    <Select value={manualEventType} onValueChange={setManualEventType}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(((campaign as any).selected_milestones || []).length > 0
-                          ? (campaign as any).selected_milestones
-                          : ["download", "signup", "purchase"]
-                        ).map((m: string) => (
-                          <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Count</Label>
-                    <Input type="number" min="1" value={manualCount} onChange={(e) => setManualCount(e.target.value)} />
-                  </div>
-                  {manualEventType === "purchase" && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Purchase Amount ($)</Label>
-                      <Input type="number" min="0" step="0.01" value={manualPurchaseAmount} onChange={(e) => setManualPurchaseAmount(e.target.value)} placeholder="0.00" />
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
-                    <Input value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Batch note..." />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    Estimated deduction: <span className="text-foreground font-medium">
-                      ${(() => {
-                        const count = Number(manualCount) || 0;
-                        if (manualEventType === "download") return (Number(campaign.price_download) * count).toFixed(2);
-                        if (manualEventType === "signup") return (Number(campaign.price_signup) * count).toFixed(2);
-                        if (manualEventType === "purchase") return ((1 + Number(manualPurchaseAmount || 0) * 0.10) * count).toFixed(2);
-                        return "0.00";
-                      })()}
-                    </span>
-                  </p>
-                  <GlassButton size="sm" variant="glow" onClick={handleRecordManualEvent} disabled={recordingEvent}>
-                    {recordingEvent ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-                    Record Events
-                  </GlassButton>
-                </div>
+                {(() => {
+                  const milestones: string[] =
+                    ((campaign as any).selected_milestones || []).length > 0
+                      ? (campaign as any).selected_milestones
+                      : ["download", "signup", "purchase"];
+                  const hasPurchase = milestones.includes("purchase");
+                  const purchaseCount = Number(manualCounts["purchase"] || 0);
+                  const estimatedDeduction = milestones.reduce((sum, m) => {
+                    const c = Number(manualCounts[m] || 0);
+                    if (c <= 0) return sum;
+                    if (m === "download") return sum + Number(campaign.price_download) * c;
+                    if (m === "signup") return sum + Number(campaign.price_signup) * c;
+                    if (m === "purchase") return sum + (1 + Number(manualPurchaseAmount || 0) * 0.10) * c;
+                    return sum;
+                  }, 0);
 
-                <div className="border-t border-border pt-3 space-y-3">
-                  <p className="text-xs font-medium text-foreground">Upload Metrics CSV</p>
-                  <p className="text-xs text-muted-foreground">
-                    CSV format: <span className="font-mono">event_type,count,purchase_amount,notes</span>. Required columns are{" "}
-                    <span className="font-mono">event_type</span> and <span className="font-mono">count</span>.
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Batch Note (optional)</Label>
-                      <Input
-                        value={metricsUploadNotes}
-                        onChange={(e) => setMetricsUploadNotes(e.target.value)}
-                        placeholder="Imported from partner report..."
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Choose CSV</Label>
-                      <Input
-                        type="file"
-                        accept=".csv,text/csv"
-                        disabled={uploadingMetrics}
-                        onChange={handleMetricsFileUpload}
-                      />
-                    </div>
-                  </div>
-                  {uploadingMetrics && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Uploading metrics{metricsFileName ? ` from ${metricsFileName}` : ""}...
-                    </div>
-                  )}
-                </div>
+                  return (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {milestones.map((m) => (
+                          <div key={m} className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground capitalize">{m}s</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={manualCounts[m] || ""}
+                              onChange={(e) =>
+                                setManualCounts((prev) => ({ ...prev, [m]: e.target.value }))
+                              }
+                            />
+                            <p className="text-[10px] text-muted-foreground/70">
+                              {m === "purchase"
+                                ? "Charged $1 + 10% of purchase amount per event"
+                                : `$${Number(m === "download" ? campaign.price_download : campaign.price_signup).toFixed(2)} per ${m}`}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {hasPurchase && purchaseCount > 0 && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Purchase Amount per event ($)</Label>
+                            <Input type="number" min="0" step="0.01" value={manualPurchaseAmount} onChange={(e) => setManualPurchaseAmount(e.target.value)} placeholder="0.00" />
+                          </div>
+                        )}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
+                          <Input value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Batch note..." />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border pt-3">
+                        <p className="text-xs text-muted-foreground">
+                          Estimated deduction:{" "}
+                          <span className="text-foreground font-medium">${estimatedDeduction.toFixed(2)}</span>
+                          <span className="ml-2 text-muted-foreground/70">
+                            (Escrow available: ${Number(campaign.budget_remaining).toFixed(2)})
+                          </span>
+                        </p>
+                        <GlassButton size="sm" variant="glow" onClick={handleRecordManualEvents} disabled={recordingEvent}>
+                          {recordingEvent ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                          Record Events
+                        </GlassButton>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 {/* Manual events history */}
                 {manualEvents.length > 0 && (
