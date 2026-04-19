@@ -5,6 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import AuthSplitShell from "@/components/auth/AuthSplitShell";
 
 const PUBLIC_EMAIL_DOMAINS = [
@@ -41,6 +48,18 @@ const DISPOSABLE_DOMAINS = [
 
 const FORBIDDEN_DOMAINS = [...PUBLIC_EMAIL_DOMAINS, ...DISPOSABLE_DOMAINS];
 
+type Subtype = "musician" | "youtuber" | "app" | "startup" | "business";
+
+const SUBTYPE_OPTIONS: { id: Subtype; label: string; group: "engagement" | "business" }[] = [
+  { id: "musician", label: "Musician / Music Artist", group: "engagement" },
+  { id: "youtuber", label: "YouTuber / Video Creator", group: "engagement" },
+  { id: "app", label: "App Owner", group: "business" },
+  { id: "startup", label: "Startup Founder", group: "business" },
+  { id: "business", label: "Business Owner", group: "business" },
+];
+
+const isCreator = (s: Subtype | "") => s === "musician" || s === "youtuber";
+
 function extractDomain(url: string): string {
   try {
     let cleaned = url.trim().toLowerCase();
@@ -53,6 +72,7 @@ function extractDomain(url: string): string {
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [subtype, setSubtype] = useState<Subtype | "">("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -60,9 +80,17 @@ export default function Signup() {
   const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const creator = isCreator(subtype);
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim() || !fullName.trim() || !website.trim()) {
+
+    if (!subtype) {
+      toast.error("Please select what best describes you");
+      return;
+    }
+
+    if (!email.trim() || !password.trim() || !fullName.trim()) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -72,21 +100,45 @@ export default function Signup() {
       return;
     }
 
-    const websiteDomain = extractDomain(website);
-    if (!websiteDomain) {
-      toast.error("Please enter a valid website URL");
-      return;
-    }
-
-    if (FORBIDDEN_DOMAINS.includes(websiteDomain)) {
-      toast.error("Please provide a professional business website, not a public email provider.");
-      return;
-    }
-
     const emailDomain = email.trim().toLowerCase().split("@")[1];
-    if (emailDomain !== websiteDomain) {
-      toast.error(`Your email must use your website domain (@${websiteDomain})`);
+    if (!emailDomain) {
+      toast.error("Please enter a valid email");
       return;
+    }
+
+    if (DISPOSABLE_DOMAINS.includes(emailDomain)) {
+      toast.error("Disposable email addresses are not allowed");
+      return;
+    }
+
+    let websiteValue = "";
+
+    if (creator) {
+      // Creators: must use a popular email provider, no website needed
+      if (!PUBLIC_EMAIL_DOMAINS.includes(emailDomain)) {
+        toast.error("Please use a popular email provider (Gmail, Yahoo, Outlook, etc.)");
+        return;
+      }
+    } else {
+      // Business advertisers: must have business website matching email domain
+      if (!website.trim()) {
+        toast.error("Please enter your business website");
+        return;
+      }
+      const websiteDomain = extractDomain(website);
+      if (!websiteDomain) {
+        toast.error("Please enter a valid website URL");
+        return;
+      }
+      if (FORBIDDEN_DOMAINS.includes(websiteDomain)) {
+        toast.error("Please provide a professional business website, not a public email provider.");
+        return;
+      }
+      if (emailDomain !== websiteDomain) {
+        toast.error(`Your email must use your website domain (@${websiteDomain})`);
+        return;
+      }
+      websiteValue = website.trim();
     }
 
     setLoading(true);
@@ -98,7 +150,8 @@ export default function Signup() {
           data: {
             full_name: fullName.trim(),
             company_name: companyName.trim(),
-            website: website.trim(),
+            website: websiteValue,
+            advertiser_subtype: subtype,
           },
           emailRedirectTo: window.location.origin,
         },
@@ -107,14 +160,13 @@ export default function Signup() {
       if (error) {
         toast.error(error.message);
       } else {
-        // Fire signup tracking event
         try {
           const w = window as any;
           if (w.Karbali && w.Karbali.trackSignup) {
             w.Karbali.trackSignup({ user_id: email.trim() });
           }
         } catch (_e) { /* tracking is best-effort */ }
-        
+
         toast.success("Account created! Check your email to confirm.");
         navigate("/login");
       }
@@ -126,13 +178,15 @@ export default function Signup() {
   };
 
   const websiteDomain = extractDomain(website);
-  const isForbiddenDomain = websiteDomain && FORBIDDEN_DOMAINS.includes(websiteDomain);
+  const isForbiddenDomain = !creator && websiteDomain && FORBIDDEN_DOMAINS.includes(websiteDomain);
 
   return (
     <AuthSplitShell
       eyebrow="Create account"
       title="Create your account"
-      description="Register with your business email to start tracking."
+      description={creator
+        ? "Register as a creator to start running engagement ads."
+        : "Register with your business email to start tracking."}
       footer={
         <>
           Already have an account?{" "}
@@ -143,6 +197,27 @@ export default function Signup() {
       }
     >
       <form onSubmit={handleSignup} className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="subtype" className="text-sm text-foreground">I am a *</Label>
+          <Select value={subtype} onValueChange={(v) => setSubtype(v as Subtype)}>
+            <SelectTrigger id="subtype" className="h-11 rounded-lg border-border bg-background px-4">
+              <SelectValue placeholder="Select what best describes you" />
+            </SelectTrigger>
+            <SelectContent>
+              {SUBTYPE_OPTIONS.map((o) => (
+                <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {subtype && (
+            <p className="text-[10px] leading-none text-muted-foreground">
+              {creator
+                ? "You'll run Engagement Ads. No business website required."
+                : "You'll run Performance & Commerce Ads. Business website required."}
+            </p>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="full-name" className="text-sm text-foreground">Full Name *</Label>
@@ -150,24 +225,51 @@ export default function Signup() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="company-name" className="text-sm text-foreground">Company</Label>
+            <Label htmlFor="company-name" className="text-sm text-foreground">
+              {creator ? "Stage / Channel Name" : "Company"}
+            </Label>
             <Input id="company-name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={100} autoComplete="organization" className="h-11 rounded-lg border-border bg-background px-4" />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="website" className="text-sm text-foreground">Website *</Label>
-          <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} placeholder="yourbusiness.com" autoComplete="url" required className="h-11 rounded-lg border-border bg-background px-4" />
-          {isForbiddenDomain ? (
-            <p className="text-[10px] leading-none text-destructive">Email provider domains are not accepted.</p>
-          ) : websiteDomain ? (
-            <p className="text-[10px] leading-none text-muted-foreground">Your email must end with @{websiteDomain}</p>
-          ) : null}
-        </div>
+        {!creator && (
+          <div className="space-y-1.5">
+            <Label htmlFor="website" className="text-sm text-foreground">Website *</Label>
+            <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} placeholder="yourbusiness.com" autoComplete="url" required={!creator} className="h-11 rounded-lg border-border bg-background px-4" />
+            {isForbiddenDomain ? (
+              <p className="text-[10px] leading-none text-destructive">Email provider domains are not accepted.</p>
+            ) : websiteDomain ? (
+              <p className="text-[10px] leading-none text-muted-foreground">Your email must end with @{websiteDomain}</p>
+            ) : null}
+          </div>
+        )}
 
         <div className="space-y-1.5">
-          <Label htmlFor="email" className="text-sm text-foreground">Business Email *</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required autoComplete="email" placeholder={websiteDomain && !isForbiddenDomain ? `you@${websiteDomain}` : "you@yourbusiness.com"} className="h-11 rounded-lg border-border bg-background px-4" />
+          <Label htmlFor="email" className="text-sm text-foreground">
+            {creator ? "Email *" : "Business Email *"}
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            maxLength={255}
+            required
+            autoComplete="email"
+            placeholder={
+              creator
+                ? "you@gmail.com"
+                : websiteDomain && !isForbiddenDomain
+                  ? `you@${websiteDomain}`
+                  : "you@yourbusiness.com"
+            }
+            className="h-11 rounded-lg border-border bg-background px-4"
+          />
+          {creator && (
+            <p className="text-[10px] leading-none text-muted-foreground">
+              Use Gmail, Yahoo, Outlook or another popular provider.
+            </p>
+          )}
         </div>
 
         <div className="space-y-1.5">
