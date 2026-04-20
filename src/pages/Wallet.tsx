@@ -90,6 +90,7 @@ export default function WalletPage() {
 
   const handleActivate = async () => {
     const amount = Number(activationAmount);
+    if (activationFee === null) { toast.error("Loading settings, please wait..."); return; }
     if (!amount || amount < activationFee) { toast.error(`Minimum activation amount is $${activationFee}`); return; }
     setActivating(true);
     try {
