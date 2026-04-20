@@ -32,9 +32,9 @@ export default function WalletPage() {
   const [activating, setActivating] = useState(false);
   const [fundAmount, setFundAmount] = useState("");
   const [funding, setFunding] = useState(false);
-  const [activationFee, setActivationFee] = useState(10);
+  const [activationFee, setActivationFee] = useState<number | null>(null);
   const [exchangeRate, setExchangeRate] = useState(1500);
-  const [activationAmount, setActivationAmount] = useState("10");
+  const [activationAmount, setActivationAmount] = useState("");
 
   const fetchData = async () => {
     if (!user) return;
