@@ -1,7 +1,41 @@
 import { useTheme } from "next-themes";
-import { Toaster as Sonner, toast } from "sonner";
+import { Toaster as Sonner, toast as sonnerToast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
+
+// Global admin flag — set by AuthProvider. Defaults to false (safer).
+declare global {
+  interface Window {
+    __KARBALI_IS_ADMIN__?: boolean;
+  }
+}
+
+const GENERIC_ERROR = "Oops! Something went wrong";
+
+type ToastFn = typeof sonnerToast;
+
+// Wrap toast.error so non-admins see a generic message; the real error is logged.
+const wrappedError: ToastFn["error"] = ((message: unknown, data?: unknown) => {
+  const isAdmin = typeof window !== "undefined" && window.__KARBALI_IS_ADMIN__ === true;
+  if (isAdmin) {
+    return (sonnerToast.error as (m: unknown, d?: unknown) => string | number)(message, data);
+  }
+  // Log the real error for debugging but hide it from the user
+  // eslint-disable-next-line no-console
+  console.warn("[suppressed error]", message, data);
+  return (sonnerToast.error as (m: unknown, d?: unknown) => string | number)(GENERIC_ERROR);
+}) as ToastFn["error"];
+
+// Re-export a proxied toast that overrides only `.error`
+const toastProxy = new Proxy(sonnerToast, {
+  get(target, prop, receiver) {
+    if (prop === "error") return wrappedError;
+    return Reflect.get(target, prop, receiver);
+  },
+  apply(target, thisArg, args: unknown[]) {
+    return (target as unknown as (...a: unknown[]) => unknown).apply(thisArg, args);
+  },
+}) as ToastFn;
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
@@ -36,4 +70,4 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
-export { Toaster, toast };
+export { Toaster, toastProxy as toast };
