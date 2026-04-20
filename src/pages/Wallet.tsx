@@ -32,9 +32,9 @@ export default function WalletPage() {
   const [activating, setActivating] = useState(false);
   const [fundAmount, setFundAmount] = useState("");
   const [funding, setFunding] = useState(false);
-  const [activationFee, setActivationFee] = useState(10);
+  const [activationFee, setActivationFee] = useState<number | null>(null);
   const [exchangeRate, setExchangeRate] = useState(1500);
-  const [activationAmount, setActivationAmount] = useState("10");
+  const [activationAmount, setActivationAmount] = useState("");
 
   const fetchData = async () => {
     if (!user) return;
@@ -90,6 +90,7 @@ export default function WalletPage() {
 
   const handleActivate = async () => {
     const amount = Number(activationAmount);
+    if (activationFee === null) { toast.error("Loading settings, please wait..."); return; }
     if (!amount || amount < activationFee) { toast.error(`Minimum activation amount is $${activationFee}`); return; }
     setActivating(true);
     try {
@@ -149,7 +150,7 @@ export default function WalletPage() {
             </MotionWrapper>
 
             {/* Activation */}
-            {!wallet?.is_activated && (
+            {!wallet?.is_activated && activationFee !== null && (
               <MotionWrapper delay={0.1}>
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-6">
                   <div className="flex items-start gap-3 mb-4">
@@ -164,8 +165,8 @@ export default function WalletPage() {
                   <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
                     <div className="flex-1 space-y-1.5 w-full">
                       <Label className="text-xs text-muted-foreground">Amount (USD) — min ${activationFee}</Label>
-                      <Input type="number" min={activationFee} step="1" value={activationAmount} onChange={(e) => setActivationAmount(e.target.value)} />
-                      {Number(activationAmount) > 0 && <p className="text-[10px] text-muted-foreground">= NGN {(Number(activationAmount) * exchangeRate).toLocaleString()}</p>}
+                      <Input type="number" min={activationFee} step="1" value={activationAmount || String(activationFee)} onChange={(e) => setActivationAmount(e.target.value)} />
+                      {Number(activationAmount || activationFee) > 0 && <p className="text-[10px] text-muted-foreground">= NGN {(Number(activationAmount || activationFee) * exchangeRate).toLocaleString()}</p>}
                     </div>
                     <Button onClick={handleActivate} disabled={activating} className="w-full sm:w-auto">
                       {activating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</> : <><CreditCard className="mr-2 h-4 w-4" /> Pay to Activate</>}
