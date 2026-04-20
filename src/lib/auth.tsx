@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetAccessState = useCallback(() => {
     setIsAdmin(false);
+    if (typeof window !== "undefined") window.__KARBALI_IS_ADMIN__ = false;
     setHasCategory(null);
     setCategoryStatus(null);
     setWalletActivated(null);
@@ -87,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const admin = (rolesData || []).some((role) => role.role === "admin");
       setIsAdmin(admin);
+      if (typeof window !== "undefined") window.__KARBALI_IS_ADMIN__ = admin;
 
       if (admin) {
         setHasCategory(true);
