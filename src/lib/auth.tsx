@@ -160,26 +160,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let initialSessionHandled = false;
+    let lastUserId: string | null = null;
 
-    const syncSessionState = (nextSession: Session | null) => {
+    // Only run access-state load when the actual user identity changes.
+    // TOKEN_REFRESHED, USER_UPDATED, and tab-focus events keep the same user.id
+    // and must NOT trigger a loading spinner — that unmounts forms and looks
+    // like a "reload".
+    const syncSessionState = (nextSession: Session | null, forceReload = false) => {
+      const nextUserId = nextSession?.user?.id ?? null;
       setSession(nextSession);
-      setIsLoading(true);
-      void loadAccessState(nextSession?.user ?? null);
+
+      const userChanged = nextUserId !== lastUserId;
+      lastUserId = nextUserId;
+
+      if (forceReload || userChanged) {
+        setIsLoading(true);
+        void loadAccessState(nextSession?.user ?? null);
+      }
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, nextSession) => {
         if (event === "INITIAL_SESSION") {
           initialSessionHandled = true;
+          syncSessionState(nextSession, true);
+          return;
         }
-        syncSessionState(nextSession);
+        if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+          syncSessionState(nextSession, true);
+          return;
+        }
+        // TOKEN_REFRESHED / USER_UPDATED / PASSWORD_RECOVERY:
+        // keep session updated silently, do not flip isLoading.
+        syncSessionState(nextSession, false);
       }
     );
 
     // Only call getSession if onAuthStateChange didn't fire INITIAL_SESSION yet
     supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
       if (!initialSessionHandled) {
-        syncSessionState(nextSession);
+        syncSessionState(nextSession, true);
       }
     }).catch(() => {
       if (!initialSessionHandled) {
@@ -244,12 +264,22 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 export function RequireAdmin({ children }: { children: ReactNode }) {
   const { session, isAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isLoading && session && !isAdmin) {
       navigate("/dashboard", { replace: true });
+      return;
     }
-  }, [session, isAdmin, isLoading, navigate]);
+    // Email OTP 2FA gate for admins, per-tab via sessionStorage
+    if (
+      !isLoading && session && isAdmin &&
+      location.pathname !== "/admin/2fa" &&
+      sessionStorage.getItem("karbali-admin-2fa-verified") !== "1"
+    ) {
+      navigate("/admin/2fa", { replace: true });
+    }
+  }, [session, isAdmin, isLoading, navigate, location.pathname]);
 
   if (isLoading) {
     return (
@@ -259,5 +289,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
     );
   }
 
-  return isAdmin ? <>{children}</> : null;
+  if (!isAdmin) return null;
+  if (sessionStorage.getItem("karbali-admin-2fa-verified") !== "1") return null;
+  return <>{children}</>;
 }

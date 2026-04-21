@@ -60,7 +60,8 @@ export default function WalletPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchData(); }, [user?.id]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

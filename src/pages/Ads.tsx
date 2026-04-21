@@ -32,7 +32,8 @@ export default function AdsPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchCampaigns(); }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchCampaigns(); }, [user?.id]);
 
   const deleteCampaign = async (e: React.MouseEvent, campaign: Campaign) => {
     e.preventDefault();

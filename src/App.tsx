@@ -34,6 +34,7 @@ import AdminPartnerships from "./pages/AdminPartnerships";
 import AdminMessages from "./pages/AdminMessages";
 import AdminExtension from "./pages/AdminExtension";
 import AdminOfferwall from "./pages/AdminOfferwall";
+import Admin2FA from "./pages/Admin2FA";
 import About from "./pages/About";
 import Docs from "./pages/Docs";
 import BlogList from "./pages/BlogList";
@@ -89,6 +90,7 @@ const App = () => (
               <Route path="/customer-acquisition-for-startups" element={<ProblemSolution />} />
 
               {/* Admin routes (separate panel) */}
+              <Route path="/admin/2fa" element={<RequireAuth><Admin2FA /></RequireAuth>} />
               <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/campaigns/:id" element={<RequireAuth><RequireAdmin><AdminCampaignDetail /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/analytics" element={<RequireAuth><RequireAdmin><AdminAnalytics /></RequireAdmin></RequireAuth>} />
