@@ -264,12 +264,22 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 export function RequireAdmin({ children }: { children: ReactNode }) {
   const { session, isAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isLoading && session && !isAdmin) {
       navigate("/dashboard", { replace: true });
+      return;
     }
-  }, [session, isAdmin, isLoading, navigate]);
+    // Email OTP 2FA gate for admins, per-tab via sessionStorage
+    if (
+      !isLoading && session && isAdmin &&
+      location.pathname !== "/admin/2fa" &&
+      sessionStorage.getItem("karbali-admin-2fa-verified") !== "1"
+    ) {
+      navigate("/admin/2fa", { replace: true });
+    }
+  }, [session, isAdmin, isLoading, navigate, location.pathname]);
 
   if (isLoading) {
     return (
@@ -279,5 +289,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
     );
   }
 
-  return isAdmin ? <>{children}</> : null;
+  if (!isAdmin) return null;
+  if (sessionStorage.getItem("karbali-admin-2fa-verified") !== "1") return null;
+  return <>{children}</>;
 }
