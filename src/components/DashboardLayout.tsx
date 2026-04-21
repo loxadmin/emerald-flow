@@ -1,27 +1,46 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import FluidCanvas from "@/components/FluidCanvas";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
   Menu, X, Lock, AlertCircle, Megaphone, Globe,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
-const advertiserLinks = [
+const baseAdvertiserLinks = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { to: "/ads", label: "Ads", icon: Megaphone },
   { to: "/campaigns/create", label: "New Campaign", icon: Plus },
-  { to: "/websites", label: "Websites", icon: Globe },
+  { to: "/websites", label: "Websites", icon: Globe, hideForEngagement: true },
   { to: "/wallet", label: "Wallet", icon: Wallet },
-  { to: "/docs", label: "API Docs", icon: FileText },
+  { to: "/docs", label: "API Docs", icon: FileText, hideForEngagement: true },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, signOut, walletActivated, categoryStatus, maintenanceMode } = useAuth();
+  const [advertiserType, setAdvertiserType] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) { setAdvertiserType(null); return; }
+    supabase
+      .from("advertiser_categories")
+      .select("advertiser_type")
+      .eq("advertiser_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setAdvertiserType((data as any)?.advertiser_type ?? null);
+      });
+  }, [user?.id]);
+
+  const isEngagement = advertiserType === "engagement";
+  const advertiserLinks = baseAdvertiserLinks.filter(
+    (link) => !(isEngagement && link.hideForEngagement)
+  );
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

@@ -160,26 +160,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let initialSessionHandled = false;
+    let lastUserId: string | null = null;
 
-    const syncSessionState = (nextSession: Session | null) => {
+    // Only run access-state load when the actual user identity changes.
+    // TOKEN_REFRESHED, USER_UPDATED, and tab-focus events keep the same user.id
+    // and must NOT trigger a loading spinner — that unmounts forms and looks
+    // like a "reload".
+    const syncSessionState = (nextSession: Session | null, forceReload = false) => {
+      const nextUserId = nextSession?.user?.id ?? null;
       setSession(nextSession);
-      setIsLoading(true);
-      void loadAccessState(nextSession?.user ?? null);
+
+      const userChanged = nextUserId !== lastUserId;
+      lastUserId = nextUserId;
+
+      if (forceReload || userChanged) {
+        setIsLoading(true);
+        void loadAccessState(nextSession?.user ?? null);
+      }
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, nextSession) => {
         if (event === "INITIAL_SESSION") {
           initialSessionHandled = true;
+          syncSessionState(nextSession, true);
+          return;
         }
-        syncSessionState(nextSession);
+        if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+          syncSessionState(nextSession, true);
+          return;
+        }
+        // TOKEN_REFRESHED / USER_UPDATED / PASSWORD_RECOVERY:
+        // keep session updated silently, do not flip isLoading.
+        syncSessionState(nextSession, false);
       }
     );
 
     // Only call getSession if onAuthStateChange didn't fire INITIAL_SESSION yet
     supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
       if (!initialSessionHandled) {
-        syncSessionState(nextSession);
+        syncSessionState(nextSession, true);
       }
     }).catch(() => {
       if (!initialSessionHandled) {
