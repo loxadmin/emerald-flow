@@ -229,8 +229,8 @@ export default function CreateManualCampaign() {
       target_users: users,
       selected_milestones: milestones,
       total_cost: totalCost,
-      price_download: milestones.includes("download") ? prices.price_per_download : 0,
-      price_signup: milestones.includes("signup") ? prices.price_per_signup : 0,
+      price_download: milestones.includes("download") ? eventPrice("download") : 0,
+      price_signup: milestones.includes("signup") ? eventPrice("signup") : 0,
       price_purchase: milestones.includes("purchase") ? SALE_FLAT_FEE : 0,
     } as any).select().single();
 
@@ -249,6 +249,7 @@ export default function CreateManualCampaign() {
       return;
     }
 
+    clearDraft(dKey);
     setLoading(false);
     toast.success("Campaign submitted for approval!");
     navigate(`/campaigns/${campaign.id}`);
