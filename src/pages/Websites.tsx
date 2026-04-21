@@ -31,7 +31,8 @@ export default function WebsitesPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchWebsites(); }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchWebsites(); }, [user?.id]);
 
   const addWebsite = async () => {
     if (!user) return;
