@@ -384,29 +384,60 @@ export default function CreateManualCampaign() {
 
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Campaign Goals *</Label>
-              {milestoneOptions.map((m) => (
-                <label
-                  key={m.id}
-                  className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors ${
-                    milestones.includes(m.id) ? "border-primary bg-primary/5" : "border-border hover:border-border/80"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={milestones.includes(m.id)}
-                      onCheckedChange={(checked) =>
-                        setMilestones(checked ? [...milestones, m.id] : milestones.filter((x) => x !== m.id))
-                      }
-                    />
-                    <m.icon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">{m.label}</span>
+              {milestoneOptions.map((m) => {
+                const checked = milestones.includes(m.id);
+                const isDownload = m.id === "download";
+                const isLockedDownload = isDownload && isAppOwner && platformType === "mobile_app";
+                const evt = m.id as "download" | "signup" | "purchase";
+                const floor =
+                  evt === "purchase" ? SALE_FLAT_FEE : Number(prices[`min_price_per_${evt}` as const]);
+                const showPriceInput = checked && evt !== "purchase";
+                return (
+                  <div
+                    key={m.id}
+                    className={`rounded-lg border p-3 transition-colors ${
+                      checked ? "border-primary bg-primary/5" : "border-border hover:border-border/80"
+                    }`}
+                  >
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={checked}
+                          disabled={isLockedDownload}
+                          onCheckedChange={(c) => {
+                            if (isLockedDownload) return;
+                            setMilestones(c ? [...milestones, m.id] : milestones.filter((x) => x !== m.id));
+                          }}
+                        />
+                        <m.icon className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">{m.label}</span>
+                        {isLockedDownload && <Lock className="h-3 w-3 text-muted-foreground" />}
+                      </div>
+                      <Badge variant="outline" className="text-xs">{m.priceLabel}</Badge>
+                    </label>
+                    {showPriceInput && (
+                      <div className="mt-2 ml-6 flex items-center gap-2">
+                        <Label className="text-[11px] text-muted-foreground">Your price ($):</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min={floor}
+                          value={customPrices[evt] ?? eventPrice(evt)}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setCustomPrices({ ...customPrices, [evt]: isNaN(val) ? undefined : val });
+                          }}
+                          className="h-8 w-28 text-xs"
+                        />
+                        <span className="text-[10px] text-muted-foreground">min ${floor.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
-                  <Badge variant="outline" className="text-xs">{m.priceLabel}</Badge>
-                </label>
-              ))}
-              {platformType === "mobile_app" && milestones.includes("signup") && (
+                );
+              })}
+              {platformType === "mobile_app" && isAppOwner && (
                 <p className="text-xs text-muted-foreground">
-                  Download milestone auto-selected since your app requires installation before signup
+                  App downloads are mandatory for mobile-app advertisers and cannot be deselected.
                 </p>
               )}
             </div>
