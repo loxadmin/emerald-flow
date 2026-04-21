@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_2fa_codes: {
+        Row: {
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_settings: {
         Row: {
           description: string | null
@@ -990,6 +1017,7 @@ export type Database = {
         Row: {
           company_name: string | null
           created_at: string
+          created_by_admin: boolean
           email: string
           full_name: string | null
           id: string
@@ -998,6 +1026,7 @@ export type Database = {
         Insert: {
           company_name?: string | null
           created_at?: string
+          created_by_admin?: boolean
           email: string
           full_name?: string | null
           id: string
@@ -1006,6 +1035,7 @@ export type Database = {
         Update: {
           company_name?: string | null
           created_at?: string
+          created_by_admin?: boolean
           email?: string
           full_name?: string | null
           id?: string
