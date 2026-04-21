@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -10,14 +10,29 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
+import { draftKey, loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage";
 import {
-  Globe, Smartphone, CheckCircle, Send, Loader2, Settings, Download, UserPlus, ShoppingCart, AlertCircle,
+  Globe, Smartphone, CheckCircle, Send, Loader2, Settings, Download, UserPlus, ShoppingCart, AlertCircle, Lock,
 } from "lucide-react";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
-interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
+interface AdminPrices {
+  price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number;
+  min_price_per_download: number; min_price_per_signup: number; min_price_per_purchase: number;
+}
 
 const SALE_FLAT_FEE = 1;
+
+interface ManualDraft {
+  step: number;
+  platformType: "website" | "mobile_app" | null;
+  campaignName: string;
+  targetUsers: string;
+  milestones: string[];
+  appLink: string;
+  selectedWebsiteId: string | null;
+  customPrices: { download?: number; signup?: number; purchase?: number };
+}
 
 export default function CreateManualCampaign() {
   const navigate = useNavigate();
@@ -25,8 +40,9 @@ export default function CreateManualCampaign() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Platform
+  // Platform & subtype
   const [platformType, setPlatformType] = useState<"website" | "mobile_app" | null>(null);
+  const [advertiserSubtype, setAdvertiserSubtype] = useState<string | null>(null);
 
   // Website
   const [websites, setWebsites] = useState<Website[]>([]);
@@ -41,11 +57,52 @@ export default function CreateManualCampaign() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [prices, setPrices] = useState<AdminPrices>({
     price_per_download: 1, price_per_signup: 2, price_per_purchase: 5, ad_placement_fee: 2,
+    min_price_per_download: 0.5, min_price_per_signup: 0.5, min_price_per_purchase: 1,
   });
+  // Per-event prices the advertiser may raise above the admin floor
+  const [customPrices, setCustomPrices] = useState<{ download?: number; signup?: number; purchase?: number }>({});
+  const restored = useRef(false);
+
+  const dKey = draftKey(user?.id, "manual", null);
+
+  // Restore from localStorage on mount
+  useEffect(() => {
+    if (restored.current || !user?.id) return;
+    const saved = loadDraft<ManualDraft>(dKey);
+    if (saved) {
+      setStep(saved.step ?? 0);
+      setPlatformType(saved.platformType ?? null);
+      setCampaignName(saved.campaignName ?? "");
+      setTargetUsers(saved.targetUsers ?? "100");
+      setMilestones(saved.milestones ?? []);
+      setAppLink(saved.appLink ?? "");
+      setSelectedWebsiteId(saved.selectedWebsiteId ?? null);
+      setCustomPrices(saved.customPrices ?? {});
+    }
+    restored.current = true;
+  }, [user?.id, dKey]);
+
+  // Persist on changes (after restore so we don't overwrite with empty initial state)
+  useEffect(() => {
+    if (!restored.current || !user?.id) return;
+    const snapshot: ManualDraft = {
+      step, platformType, campaignName, targetUsers, milestones, appLink,
+      selectedWebsiteId, customPrices,
+    };
+    saveDraft(dKey, snapshot);
+  }, [step, platformType, campaignName, targetUsers, milestones, appLink, selectedWebsiteId, customPrices, user?.id, dKey]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     const fetchData = async () => {
+      // Detect advertiser subtype — only "app" owners see the download event
+      const { data: cat } = await supabase
+        .from("advertiser_categories")
+        .select("advertiser_subtype")
+        .eq("advertiser_id", user.id)
+        .maybeSingle();
+      setAdvertiserSubtype((cat as any)?.advertiser_subtype ?? null);
+
       const { data: ws } = await supabase
         .from("advertiser_websites" as any)
         .select("id, domain, is_verified")
@@ -53,7 +110,7 @@ export default function CreateManualCampaign() {
         .eq("is_verified", true);
       const websites = (ws as any as Website[]) || [];
       setWebsites(websites);
-      if (websites.length === 1) {
+      if (websites.length === 1 && !selectedWebsiteId) {
         setSelectedWebsiteId(websites[0].id);
         setSelectedDomain(websites[0].domain);
       }
@@ -61,7 +118,10 @@ export default function CreateManualCampaign() {
       const { data } = await supabase
         .from("admin_settings")
         .select("key, value")
-        .in("key", ["price_per_download", "price_per_signup", "price_per_purchase", "ad_placement_fee"]);
+        .in("key", [
+          "price_per_download", "price_per_signup", "price_per_purchase", "ad_placement_fee",
+          "min_price_per_download", "min_price_per_signup", "min_price_per_purchase",
+        ]);
       if (data) {
         const p = { ...prices };
         data.forEach((s: { key: string; value: string }) => {
@@ -77,28 +137,49 @@ export default function CreateManualCampaign() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // Auto-select download for mobile apps with signup
+  // Re-sync selected domain when website list arrives
   useEffect(() => {
-    if (platformType === "mobile_app" && milestones.includes("signup") && !milestones.includes("download")) {
+    if (!selectedWebsiteId) return;
+    const w = websites.find((w) => w.id === selectedWebsiteId);
+    if (w) setSelectedDomain(w.domain);
+  }, [selectedWebsiteId, websites]);
+
+  const isAppOwner = advertiserSubtype === "app";
+
+  // Auto-select + lock download for mobile-app owners with an app campaign
+  useEffect(() => {
+    if (platformType === "mobile_app" && isAppOwner && !milestones.includes("download")) {
       setMilestones((prev) => [...prev, "download"]);
     }
-  }, [milestones, platformType]);
+  }, [platformType, isAppOwner, milestones]);
+
+  // Effective per-event price (custom override clamped to admin floor & default)
+  const eventPrice = (event: "download" | "signup" | "purchase") => {
+    const minKey = `min_price_per_${event}` as const;
+    const baseKey = `price_per_${event}` as const;
+    const floor = Number(prices[minKey]) || 0;
+    const def = Number(prices[baseKey]) || floor;
+    if (event === "purchase") return SALE_FLAT_FEE; // commerce-style flat fee
+    const requested = customPrices[event];
+    return Math.max(floor, requested == null ? def : Number(requested));
+  };
 
   const totalCost = (() => {
     const users = Math.max(100, Number(targetUsers) || 100);
     let milestoneTotal = 0;
-    if (milestones.includes("download")) milestoneTotal += prices.price_per_download;
-    if (milestones.includes("signup")) milestoneTotal += prices.price_per_signup;
-    if (milestones.includes("purchase")) milestoneTotal += SALE_FLAT_FEE;
+    if (milestones.includes("download")) milestoneTotal += eventPrice("download");
+    if (milestones.includes("signup")) milestoneTotal += eventPrice("signup");
+    if (milestones.includes("purchase")) milestoneTotal += eventPrice("purchase");
     return milestoneTotal * users + prices.ad_placement_fee;
   })();
 
   const milestoneOptions = [
-    ...(platformType === "mobile_app"
-      ? [{ id: "download", label: "App Downloads", priceLabel: `$${prices.price_per_download.toFixed(2)} / user`, icon: Download }]
+    // Only mobile-app owners ever see the download event
+    ...(platformType === "mobile_app" && isAppOwner
+      ? [{ id: "download", label: "App Downloads", priceLabel: `$${eventPrice("download").toFixed(2)} / user`, icon: Download, locked: true }]
       : []),
-    { id: "signup", label: "Sign Ups", priceLabel: `$${prices.price_per_signup.toFixed(2)} / user`, icon: UserPlus },
-    { id: "purchase", label: "Purchases", priceLabel: "$1.00 + 10% / sale", icon: ShoppingCart },
+    { id: "signup", label: "Sign Ups", priceLabel: `$${eventPrice("signup").toFixed(2)} / user`, icon: UserPlus, locked: false },
+    { id: "purchase", label: "Purchases", priceLabel: "$1.00 + 10% / sale", icon: ShoppingCart, locked: false },
   ];
 
   const isValidAppLink = (link: string) => {
