@@ -56,6 +56,7 @@ export default function Admin2FA() {
       eyebrow="Admin verification"
       title="Two-factor required"
       description="A 6-digit code was sent to your admin email. Enter it to continue."
+      footer={<span>Lost access? Contact another admin.</span>}
     >
       <form onSubmit={verify} className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
