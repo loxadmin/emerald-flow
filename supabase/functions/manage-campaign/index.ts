@@ -172,6 +172,37 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Campaign has no cost configured" }, 400);
       }
 
+      // Server-side: enforce admin-set minimum price floors (skip for engagement/external referral)
+      const adType = String(campaign.ad_type || "performance").toLowerCase();
+      const integration = String(campaign.integration_type || "").toLowerCase();
+      if (adType !== "engagement" && integration !== "external_referral") {
+        const { data: floorSettings } = await supabase
+          .from("admin_settings")
+          .select("key, value")
+          .in("key", ["min_price_per_download", "min_price_per_signup", "min_price_per_purchase"]);
+        const floors: Record<string, number> = {};
+        (floorSettings || []).forEach((s: { key: string; value: string }) => {
+          floors[s.key] = Number(s.value) || 0;
+        });
+        const milestones = Array.isArray(campaign.selected_milestones) ? campaign.selected_milestones : [];
+        const checkFloor = (event: string, priceField: string, floorKey: string, label: string) => {
+          if (!milestones.includes(event)) return null;
+          const price = Number((campaign as Record<string, unknown>)[priceField]) || 0;
+          const floor = floors[floorKey] || 0;
+          if (floor > 0 && price < floor) {
+            return `${label} price ($${price.toFixed(2)}) is below the platform minimum of $${floor.toFixed(2)}`;
+          }
+          return null;
+        };
+        const floorErr =
+          checkFloor("download", "price_download", "min_price_per_download", "Download") ||
+          checkFloor("signup", "price_signup", "min_price_per_signup", "Signup") ||
+          checkFloor("purchase", "price_purchase", "min_price_per_purchase", "Purchase");
+        if (floorErr) {
+          return jsonResponse({ error: floorErr }, 400);
+        }
+      }
+
       // Get wallet
       const { data: wallet } = await supabase
         .from("wallets")
