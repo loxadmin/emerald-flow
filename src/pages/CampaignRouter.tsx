@@ -17,6 +17,20 @@ export default function CampaignRouter() {
       const draftId = searchParams.get("draft");
       let adType: string | null = null;
 
+      // WhatsApp verification gate (skip when resuming an existing draft)
+      if (!draftId) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("whatsapp_verified")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (!(profile as any)?.whatsapp_verified) {
+          navigate("/whatsapp-verify", { replace: true });
+          setLoading(false);
+          return;
+        }
+      }
+
       // Check if manual mode is enabled
       const { data: manualSetting } = await supabase
         .from("admin_settings")

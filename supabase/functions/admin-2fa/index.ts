@@ -28,8 +28,9 @@ async function sendEmailViaResend(to: string, code: string) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
     console.warn("[admin-2fa] RESEND_API_KEY not set — skipping email send. Code:", code);
-    return { sent: false };
+    return { sent: false, error: "RESEND_API_KEY not configured" };
   }
+  const from = Deno.env.get("RESEND_FROM") || "Karbali Ads <onboarding@resend.dev>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -37,7 +38,7 @@ async function sendEmailViaResend(to: string, code: string) {
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      from: "Karbali Ads <noreply@karbali.com>",
+      from,
       to: [to],
       subject: `Your Karbali Ads admin code: ${code}`,
       html: `<div style="font-family:system-ui,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#ffffff;color:#0f172a">
@@ -51,7 +52,7 @@ async function sendEmailViaResend(to: string, code: string) {
   if (!res.ok) {
     const t = await res.text();
     console.error("[admin-2fa] resend send failed:", res.status, t);
-    return { sent: false };
+    return { sent: false, error: `Resend ${res.status}: ${t}` };
   }
   return { sent: true };
 }
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
       if (insErr) return json({ error: insErr.message }, 500);
 
       const result = await sendEmailViaResend(user.email!, code);
-      return json({ success: true, email_sent: result.sent });
+      return json({ success: true, email_sent: result.sent, email_error: result.sent ? undefined : result.error });
     }
 
     if (action === "verify") {
