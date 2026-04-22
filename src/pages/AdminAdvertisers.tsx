@@ -72,7 +72,7 @@ export default function AdminAdvertisers() {
         email: email.trim().toLowerCase(),
         full_name: fullName.trim() || null,
         company_name: companyName.trim() || null,
-        website: website.trim() || null,
+        websites: website.trim() ? [{ domain: website.trim() }] : [],
         category_id: categoryId,
         advertiser_type: advType,
         advertiser_subtype: advSubtype,
