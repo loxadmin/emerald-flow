@@ -1022,6 +1022,10 @@ export type Database = {
           full_name: string | null
           id: string
           website: string | null
+          whatsapp_otp_code: string | null
+          whatsapp_otp_expires_at: string | null
+          whatsapp_phone: string | null
+          whatsapp_verified: boolean
         }
         Insert: {
           company_name?: string | null
@@ -1031,6 +1035,10 @@ export type Database = {
           full_name?: string | null
           id: string
           website?: string | null
+          whatsapp_otp_code?: string | null
+          whatsapp_otp_expires_at?: string | null
+          whatsapp_phone?: string | null
+          whatsapp_verified?: boolean
         }
         Update: {
           company_name?: string | null
@@ -1040,6 +1048,10 @@ export type Database = {
           full_name?: string | null
           id?: string
           website?: string | null
+          whatsapp_otp_code?: string | null
+          whatsapp_otp_expires_at?: string | null
+          whatsapp_phone?: string | null
+          whatsapp_verified?: boolean
         }
         Relationships: []
       }
