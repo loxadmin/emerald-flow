@@ -34,7 +34,11 @@ export default function Admin2FA() {
     setSending(false);
     if (error || data?.error) { toast.error(data?.error || error?.message || "Failed to send code"); return; }
     setSentOnce(true);
-    toast.success(data?.email_sent ? "Code sent to your email" : "Code generated (email not configured)");
+    if (data?.email_sent) {
+      toast.success("Code sent to your email");
+    } else {
+      toast.error(data?.email_error ? `Email send failed: ${data.email_error}` : "Email not configured — contact support");
+    }
   };
 
   useEffect(() => { if (isAdmin && !sentOnce) sendCode(); /* eslint-disable-next-line */ }, [isAdmin]);
