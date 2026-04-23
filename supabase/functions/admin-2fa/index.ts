@@ -30,7 +30,7 @@ async function sendEmailViaResend(to: string, code: string) {
     console.warn("[admin-2fa] RESEND_API_KEY not set — skipping email send. Code:", code);
     return { sent: false, error: "RESEND_API_KEY not configured" };
   }
-  const from = Deno.env.get("RESEND_FROM") || "Karbali Ads <onboarding@resend.dev>";
+  const from = Deno.env.get("RESEND_FROM") || "Karbali Ads <noreply@advertiser.karbali.com>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
