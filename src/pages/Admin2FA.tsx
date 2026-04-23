@@ -18,6 +18,7 @@ export default function Admin2FA() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [sentOnce, setSentOnce] = useState(false);
+  const autoSentRef = useRef(false);
 
   useEffect(() => {
     if (isLoading) return;
