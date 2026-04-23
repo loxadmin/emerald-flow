@@ -331,9 +331,13 @@ export default function AdminDashboard() {
                         <p className="text-sm font-medium text-foreground">{c.name}</p>
                         <p className="text-xs text-muted-foreground">{c.profiles?.email || "Unknown"} • Target: {c.target_users} users • ${Number(c.total_cost).toFixed(2)}</p>
                         <div className="flex gap-1 mt-1">
-                          {(c.selected_milestones || []).map((m: string) => (
-                            <Badge key={m} variant="outline" className="text-[10px] capitalize border-primary/20 text-primary/80">{m}</Badge>
-                          ))}
+                          {c.ad_type === "engagement" ? (
+                            <Badge variant="outline" className="text-[10px] border-primary/20 text-primary/80">quiz interactions</Badge>
+                          ) : (
+                            (c.selected_milestones || []).map((m: string) => (
+                              <Badge key={m} variant="outline" className="text-[10px] capitalize border-primary/20 text-primary/80">{m}</Badge>
+                            ))
+                          )}
                           {c.integration_verified && <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">✓ Verified</Badge>}
                         </div>
                       </div>

@@ -67,8 +67,8 @@ export default function CampaignRouter() {
         return;
       }
 
-      // If manual mode is enabled and not engagement, go to manual flow
-      if (manualModeEnabled) {
+      // If manual mode is enabled, only performance advertisers use the manual flow.
+      if (manualModeEnabled && adType === "performance") {
         navigate(`/campaigns/create/manual`, { replace: true });
         setLoading(false);
         return;

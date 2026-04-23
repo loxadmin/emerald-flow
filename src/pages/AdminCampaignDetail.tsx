@@ -312,11 +312,11 @@ export default function AdminCampaignDetail() {
                 <GlassCardTitle className="flex items-center gap-2">
                   <Plus className="h-4 w-4" /> {isManual ? "Record Manual Events" : "Admin Event Override"}
                 </GlassCardTitle>
-                {!isManual && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Campaign is in API mode. Events recorded here still debit the advertiser's escrow.
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isManual
+                    ? "Use this only for performance campaigns that charge by tracked conversions."
+                    : "API-mode conversion campaigns can be reconciled here and will still debit advertiser escrow."}
+                </p>
               </GlassCardHeader>
               <GlassCardContent className="space-y-4">
                 {(() => {
