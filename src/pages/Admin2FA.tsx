@@ -43,7 +43,14 @@ export default function Admin2FA() {
     }
   };
 
-  useEffect(() => { if (isAdmin && !sentOnce) sendCode(); /* eslint-disable-next-line */ }, [isAdmin]);
+  useEffect(() => {
+    if (!isAdmin || !user?.id) return;
+    if (autoSentRef.current) return;
+    if (sessionStorage.getItem(ADMIN_2FA_FLAG) === "1") return;
+    autoSentRef.current = true;
+    sendCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, user?.id]);
 
   const verify = async (e: React.FormEvent) => {
     e.preventDefault();
