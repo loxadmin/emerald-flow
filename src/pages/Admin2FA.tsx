@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ export default function Admin2FA() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [sentOnce, setSentOnce] = useState(false);
+  const autoSentRef = useRef(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -26,7 +27,8 @@ export default function Admin2FA() {
     if (sessionStorage.getItem(ADMIN_2FA_FLAG) === "1") {
       navigate("/admin", { replace: true });
     }
-  }, [user, isAdmin, isLoading, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isAdmin, isLoading]);
 
   const sendCode = async () => {
     setSending(true);
@@ -41,7 +43,14 @@ export default function Admin2FA() {
     }
   };
 
-  useEffect(() => { if (isAdmin && !sentOnce) sendCode(); /* eslint-disable-next-line */ }, [isAdmin]);
+  useEffect(() => {
+    if (!isAdmin || !user?.id) return;
+    if (autoSentRef.current) return;
+    if (sessionStorage.getItem(ADMIN_2FA_FLAG) === "1") return;
+    autoSentRef.current = true;
+    sendCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, user?.id]);
 
   const verify = async (e: React.FormEvent) => {
     e.preventDefault();
