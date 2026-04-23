@@ -87,7 +87,8 @@ export default function WalletPage() {
       void verifyAndRefresh();
       window.history.replaceState({}, "", "/wallet");
     }
-  }, [refreshAccessState, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleActivate = async () => {
     const amount = Number(activationAmount);
