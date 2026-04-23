@@ -301,9 +301,9 @@ export default function AdminCampaignDetail() {
           </MotionWrapper>
         </div>
 
-        {/* Manual Event Recording — admin can record performance/commerce events for any active non-engagement campaign.
+        {/* Manual Event Recording — admin can record events for any active campaign.
             For API-mode campaigns this acts as a reconciliation/override that still debits escrow. */}
-        {campaign.status === "active" && !isEngagement && (
+        {campaign.status === "active" && (
           <MotionWrapper delay={0.17}>
             <GlassCard variant="glow">
               <GlassCardHeader>
