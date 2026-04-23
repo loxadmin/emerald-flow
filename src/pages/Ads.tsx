@@ -168,11 +168,13 @@ export default function AdsPage() {
                               </span>
                               {c.target_users > 0 && <span className="text-xs text-muted-foreground">{c.target_users} users</span>}
                               {c.total_cost > 0 && <span className="text-xs text-muted-foreground">${Number(c.total_cost).toFixed(2)}</span>}
-                              {c.selected_milestones?.length > 0 && (
+                              {c.integration_type === "engagement" ? (
+                                <span className="text-xs text-muted-foreground capitalize">quiz interactions</span>
+                              ) : c.selected_milestones?.length > 0 ? (
                                 <span className="text-xs text-muted-foreground capitalize">
                                   {c.selected_milestones.join(", ")}
                                 </span>
-                              )}
+                              ) : null}
                             </div>
                           </div>
                         </div>
