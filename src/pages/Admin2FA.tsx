@@ -26,7 +26,8 @@ export default function Admin2FA() {
     if (sessionStorage.getItem(ADMIN_2FA_FLAG) === "1") {
       navigate("/admin", { replace: true });
     }
-  }, [user, isAdmin, isLoading, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isAdmin, isLoading]);
 
   const sendCode = async () => {
     setSending(true);
