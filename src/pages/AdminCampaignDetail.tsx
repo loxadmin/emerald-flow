@@ -232,7 +232,7 @@ export default function AdminCampaignDetail() {
               <h1 className="text-2xl font-bold text-foreground">{campaign.name}</h1>
               <p className="text-sm text-muted-foreground">ID: {campaign.id}</p>
               <div className="flex gap-1 mt-1 flex-wrap">
-                {((campaign as any).selected_milestones || []).map((m: string) => (
+                {!isEngagement && ((campaign as any).selected_milestones || []).map((m: string) => (
                   <Badge key={m} variant="outline" className="text-xs capitalize border-primary/20 text-primary/80">{m}</Badge>
                 ))}
                 {(campaign as any).integration_verified && <Badge variant="outline" className="text-xs border-primary/20 text-primary">Verified</Badge>}
@@ -268,10 +268,12 @@ export default function AdminCampaignDetail() {
                   { l: "Budget Remaining", v: `$${Number(campaign.budget_remaining).toFixed(2)}` },
                   { l: "Total Cost", v: `$${Number((campaign as any).total_cost || 0).toFixed(2)}` },
                   { l: "Target Users", v: String((campaign as any).target_users || "N/A") },
-                  { l: "Clicks", v: String(clickCount) },
-                  { l: "Download Price", v: `$${Number(campaign.price_download).toFixed(2)}` },
-                  { l: "Signup Price", v: `$${Number(campaign.price_signup).toFixed(2)}` },
-                  { l: "Purchase Price", v: `$${Number(campaign.price_purchase).toFixed(2)}` },
+                  { l: isEngagement ? "Offerwall Opens" : "Clicks", v: String(isEngagement ? offerwallStats.total : clickCount) },
+                  ...(!isEngagement ? [
+                    { l: "Download Price", v: `$${Number(campaign.price_download).toFixed(2)}` },
+                    { l: "Signup Price", v: `$${Number(campaign.price_signup).toFixed(2)}` },
+                    { l: "Purchase Price", v: `$${Number(campaign.price_purchase).toFixed(2)}` },
+                  ] : []),
                 ].map((r) => (
                   <div key={r.l} className="flex justify-between items-center">
                     <span className="text-muted-foreground">{r.l}</span>
@@ -301,9 +303,9 @@ export default function AdminCampaignDetail() {
           </MotionWrapper>
         </div>
 
-        {/* Manual Event Recording — admin can record events for any active campaign.
-            For API-mode campaigns this acts as a reconciliation/override that still debits escrow. */}
-        {campaign.status === "active" && (
+        {/* Manual Event Recording — only for conversion campaigns using tracked milestone events.
+            API-mode campaigns may still be reconciled manually by admins. */}
+        {campaign.status === "active" && !isEngagement && (
           <MotionWrapper delay={0.17}>
             <GlassCard variant="glow">
               <GlassCardHeader>

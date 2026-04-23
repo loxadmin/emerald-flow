@@ -78,9 +78,11 @@ export default function CreateEngagementCampaign() {
       integration_type: "engagement",
       ad_type: "engagement",
       target_users: interactions,
-      selected_milestones: [mediaType === "music" ? "download" : "download"],
+      selected_milestones: [],
       total_cost: totalCost,
-      price_download: rate,
+      price_download: 0,
+      price_signup: 0,
+      price_purchase: 0,
       is_draft: false,
     } as any).select().single();
 
