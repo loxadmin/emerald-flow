@@ -16,6 +16,12 @@ import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface DailyData { date: string; downloads: number; signups: number; purchases: number; }
+interface CreativeCampaignRow {
+  rate_per_interaction?: number | null;
+  placement_fee?: number | null;
+  min_interactions?: number | null;
+  media_type?: string | null;
+}
 
 export default function AdminCampaignDetail() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +42,9 @@ export default function AdminCampaignDetail() {
 
   // Engagement metrics
   const [offerwallStats, setOfferwallStats] = useState({ total: 0, correct: 0, incorrect: 0, points: 0, charged: 0 });
+  const [creative, setCreative] = useState<CreativeCampaignRow | null>(null);
+  const [manualInteractionCount, setManualInteractionCount] = useState("");
+  const [recordingInteraction, setRecordingInteraction] = useState(false);
 
   // Engagement: questions + change requests
   const [questions, setQuestions] = useState<any[]>([]);
@@ -63,10 +72,20 @@ export default function AdminCampaignDetail() {
     setManualEvents((me as any[]) || []);
 
     // Engagement: offerwall interaction stats
-    const { data: oi } = await supabase
-      .from("offerwall_interactions" as any)
-      .select("is_correct, points_earned, charge_amount")
-      .eq("campaign_id", id);
+    const [{ data: oi }, { data: creativeRow }, { data: qs }, { data: crs }] = await Promise.all([
+      supabase
+        .from("offerwall_interactions" as any)
+        .select("is_correct, points_earned, charge_amount")
+        .eq("campaign_id", id),
+      supabase
+        .from("creative_campaigns" as any)
+        .select("rate_per_interaction, placement_fee, min_interactions, media_type")
+        .eq("campaign_id", id)
+        .maybeSingle(),
+      supabase.from("campaign_questions").select("*").eq("campaign_id", id).order("created_at"),
+      supabase.from("quiz_change_requests" as any).select("*").eq("campaign_id", id).order("created_at", { ascending: false }),
+    ]);
+    setCreative((creativeRow as CreativeCampaignRow | null) || null);
     if (oi) {
       const rows = oi as any[];
       const correct = rows.filter((r) => r.is_correct).length;
@@ -80,10 +99,6 @@ export default function AdminCampaignDetail() {
     }
 
     // Engagement: questions + change requests
-    const [{ data: qs }, { data: crs }] = await Promise.all([
-      supabase.from("campaign_questions").select("*").eq("campaign_id", id).order("created_at"),
-      supabase.from("quiz_change_requests" as any).select("*").eq("campaign_id", id).order("created_at", { ascending: false }),
-    ]);
     setQuestions(qs || []);
     setChangeRequests((crs as any[]) || []);
 

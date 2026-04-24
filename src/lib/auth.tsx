@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     resetAccessState();
     setIsLoading(false);
+    sessionStorage.removeItem("karbali-admin-2fa-verified");
     localStorage.removeItem("karbali-ads-last-activity");
   }, [resetAccessState]);
 
@@ -186,7 +187,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           syncSessionState(nextSession, true);
           return;
         }
-        if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        if (event === "SIGNED_IN") {
+          sessionStorage.removeItem("karbali-admin-2fa-verified");
+          syncSessionState(nextSession, true);
+          return;
+        }
+        if (event === "SIGNED_OUT") {
+          sessionStorage.removeItem("karbali-admin-2fa-verified");
           syncSessionState(nextSession, true);
           return;
         }
