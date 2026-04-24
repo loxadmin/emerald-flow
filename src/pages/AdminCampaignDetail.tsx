@@ -203,6 +203,42 @@ export default function AdminCampaignDetail() {
     fetchData();
   };
 
+  const handleRecordEngagementInteractions = async () => {
+    if (!id) return;
+    const count = Number(manualInteractionCount || 0);
+    const correctCount = Number(manualCorrectCount || 0);
+    if (count < 1) { toast.error("Enter at least one interaction"); return; }
+    if (correctCount < 0 || correctCount > count) { toast.error("Correct answers must be between 0 and total interactions"); return; }
+    if (questions.length === 0) { toast.error("Generate quiz questions before recording interactions"); return; }
+
+    setRecordingInteraction(true);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const { data, error } = await supabase.functions.invoke("manage-manual-events", {
+        body: {
+          action: "record_engagement_interactions",
+          campaign_id: id,
+          count,
+          correct_count: correctCount,
+          notes: manualNotes || null,
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (result.error) throw new Error(result.error);
+      toast.success(`Recorded ${count} engagement interaction(s) and deducted $${Number(result.deducted || 0).toFixed(2)}.`);
+      setManualInteractionCount("");
+      setManualCorrectCount("");
+      setManualNotes("");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to record engagement interactions");
+    } finally {
+      setRecordingInteraction(false);
+    }
+  };
+
   const handleResolveRequest = async (reqId: string, status: "resolved" | "dismissed", notes?: string) => {
     const { error } = await supabase.from("quiz_change_requests" as any).update({
       status, admin_notes: notes || null, updated_at: new Date().toISOString(),
@@ -411,6 +447,75 @@ export default function AdminCampaignDetail() {
                       <div key={me.id} className="flex items-center justify-between text-xs rounded-lg border border-border/50 p-2">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-[10px] capitalize">{me.event_type}</Badge>
+                          <span className="text-muted-foreground">x{me.count}</span>
+                          {me.notes && <span className="text-muted-foreground/60 truncate max-w-[150px]">{me.notes}</span>}
+                        </div>
+                        <span className="text-foreground font-medium">-${Number(me.total_deducted).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </GlassCardContent>
+            </GlassCard>
+          </MotionWrapper>
+        )}
+
+        {campaign.status === "active" && isEngagement && (
+          <MotionWrapper delay={0.17}>
+            <GlassCard variant="glow">
+              <GlassCardHeader>
+                <GlassCardTitle className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" /> Record Engagement Interactions
+                </GlassCardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use this for admin-side reconciliation of offerwall opens on engagement campaigns.
+                </p>
+              </GlassCardHeader>
+              <GlassCardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Interactions</Label>
+                    <Input type="number" min="0" placeholder="0" value={manualInteractionCount} onChange={(e) => setManualInteractionCount(e.target.value)} />
+                    <p className="text-[10px] text-muted-foreground/70">${Number(creative?.rate_per_interaction || 0.2).toFixed(2)} charged per interaction</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Correct Answers</Label>
+                    <Input type="number" min="0" placeholder="0" value={manualCorrectCount} onChange={(e) => setManualCorrectCount(e.target.value)} />
+                    <p className="text-[10px] text-muted-foreground/70">Correct answers award 1 point each</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
+                    <Input value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Batch note..." />
+                    <p className="text-[10px] text-muted-foreground/70">Questions required: {questions.length}</p>
+                  </div>
+                </div>
+                <div className="grid gap-3 md:grid-cols-3 text-sm">
+                  <div className="rounded-lg border border-border/50 p-3">
+                    <p className="text-xs text-muted-foreground">Est. Deduction</p>
+                    <p className="mt-1 font-medium text-foreground">${(Number(manualInteractionCount || 0) * Number(creative?.rate_per_interaction || 0.2)).toFixed(2)}</p>
+                  </div>
+                  <div className="rounded-lg border border-border/50 p-3">
+                    <p className="text-xs text-muted-foreground">Escrow Available</p>
+                    <p className="mt-1 font-medium text-foreground">${Number(campaign.budget_remaining).toFixed(2)}</p>
+                  </div>
+                  <div className="rounded-lg border border-border/50 p-3">
+                    <p className="text-xs text-muted-foreground">Recorded Correct</p>
+                    <p className="mt-1 font-medium text-foreground">{Number(manualCorrectCount || 0)}</p>
+                  </div>
+                </div>
+                <div className="flex justify-end border-t border-border pt-3">
+                  <GlassButton size="sm" variant="glow" onClick={handleRecordEngagementInteractions} disabled={recordingInteraction}>
+                    {recordingInteraction ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                    Record Interactions
+                  </GlassButton>
+                </div>
+                {manualEvents.length > 0 && (
+                  <div className="border-t border-border pt-3 space-y-2">
+                    <p className="text-xs font-medium text-foreground">Recent Manual Entries</p>
+                    {manualEvents.slice(0, 10).map((me: any) => (
+                      <div key={me.id} className="flex items-center justify-between text-xs rounded-lg border border-border/50 p-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] capitalize">{String(me.event_type).replace(/_/g, " ")}</Badge>
                           <span className="text-muted-foreground">x{me.count}</span>
                           {me.notes && <span className="text-muted-foreground/60 truncate max-w-[150px]">{me.notes}</span>}
                         </div>
