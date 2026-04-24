@@ -44,6 +44,7 @@ export default function AdminCampaignDetail() {
   const [offerwallStats, setOfferwallStats] = useState({ total: 0, correct: 0, incorrect: 0, points: 0, charged: 0 });
   const [creative, setCreative] = useState<CreativeCampaignRow | null>(null);
   const [manualInteractionCount, setManualInteractionCount] = useState("");
+  const [manualCorrectCount, setManualCorrectCount] = useState("");
   const [recordingInteraction, setRecordingInteraction] = useState(false);
 
   // Engagement: questions + change requests

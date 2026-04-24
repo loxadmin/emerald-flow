@@ -142,6 +142,104 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "record_engagement_interactions") {
+      const { campaign_id, count, correct_count, notes } = body;
+
+      const interactionCount = Number(count || 0);
+      const correctCount = Number(correct_count || 0);
+      if (!campaign_id || interactionCount < 1) {
+        return json({ error: "Missing campaign_id or valid count" }, 400);
+      }
+      if (correctCount < 0 || correctCount > interactionCount) {
+        return json({ error: "correct_count must be between 0 and count" }, 400);
+      }
+
+      const { data: campaign } = await supabase
+        .from("campaigns")
+        .select("id, name, budget_remaining, status, ad_type")
+        .eq("id", campaign_id)
+        .single();
+
+      if (!campaign) return json({ error: "Campaign not found" }, 404);
+      if (campaign.status !== "active") return json({ error: "Campaign must be active" }, 400);
+      if (campaign.ad_type !== "engagement") return json({ error: "Only engagement campaigns support this action" }, 400);
+
+      const [{ data: creative }, { data: questions }] = await Promise.all([
+        supabase
+          .from("creative_campaigns")
+          .select("rate_per_interaction")
+          .eq("campaign_id", campaign_id)
+          .maybeSingle(),
+        supabase
+          .from("campaign_questions")
+          .select("id")
+          .eq("campaign_id", campaign_id)
+          .order("created_at", { ascending: true }),
+      ]);
+
+      if (!questions || questions.length === 0) {
+        return json({ error: "Generate quiz questions before recording engagement interactions" }, 400);
+      }
+
+      const unitCost = Number(creative?.rate_per_interaction || 0.20);
+      const totalDeduction = unitCost * interactionCount;
+      const remaining = Number(campaign.budget_remaining);
+      if (totalDeduction > remaining) {
+        return json({
+          error: `Insufficient escrow. Need $${totalDeduction.toFixed(2)}, have $${remaining.toFixed(2)}.`,
+        }, 402);
+      }
+
+      const newRemaining = remaining - totalDeduction;
+      const updateData: Record<string, unknown> = { budget_remaining: newRemaining };
+      if (newRemaining <= 0) updateData.status = "rejected";
+      const { error: updateErr } = await supabase
+        .from("campaigns")
+        .update(updateData)
+        .eq("id", campaign_id);
+      if (updateErr) throw updateErr;
+
+      const { error: manualErr } = await supabase
+        .from("manual_events")
+        .insert({
+          campaign_id,
+          event_type: "engagement_interaction",
+          count: interactionCount,
+          purchase_amount: null,
+          total_deducted: totalDeduction,
+          recorded_by: user.id,
+          notes: notes || null,
+        });
+      if (manualErr) throw manualErr;
+
+      const interactionRows = Array.from({ length: interactionCount }, (_, index) => ({
+        campaign_id,
+        question_id: questions[index % questions.length].id,
+        external_user_id: `manual_eng_${crypto.randomUUID().slice(0, 8)}`,
+        is_correct: index < correctCount,
+        attempt_number: 1,
+        points_earned: index < correctCount ? 1 : 0,
+        charge_amount: unitCost,
+      }));
+      const { error: insertInteractionErr } = await supabase.from("offerwall_interactions").insert(interactionRows);
+      if (insertInteractionErr) throw insertInteractionErr;
+
+      const { error: txErr } = await supabase.from("transactions").insert({
+        campaign_id,
+        amount: totalDeduction,
+        description: `Manual engagement interactions: ${interactionCount} × $${unitCost.toFixed(2)}`,
+      });
+      if (txErr) throw txErr;
+
+      return json({
+        success: true,
+        deducted: totalDeduction,
+        budget_remaining: newRemaining,
+        events_recorded: interactionCount,
+        correct_recorded: correctCount,
+      });
+    }
+
     // Get manual events summary for a campaign
     if (action === "get_summary") {
       const { campaign_id } = body;
