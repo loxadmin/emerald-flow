@@ -112,20 +112,60 @@ export default function AdminCampaignDetail() {
     setQuestions(qs || []);
     setChangeRequests((crs as any[]) || []);
 
-    // Chart
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: chartEvents } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo);
-    if (chartEvents && chartEvents.length > 0) {
-      const byDay: Record<string, DailyData> = {};
-      chartEvents.forEach(ev => {
-        const day = new Date(ev.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-        if (!byDay[day]) byDay[day] = { date: day, downloads: 0, signups: 0, purchases: 0 };
-        if (ev.event_type === "download") byDay[day].downloads++;
-        else if (ev.event_type === "signup") byDay[day].signups++;
-        else if (ev.event_type === "purchase") byDay[day].purchases++;
-      });
-      setDailyData(Object.values(byDay));
-    }
+    // Chart — combine real events + manual recordings + offerwall interactions over the last 30 days
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const sinceISO = since.toISOString();
+    const [{ data: chartEvents }, { data: chartManual }, { data: chartInteractions }] = await Promise.all([
+      supabase.from("events").select("event_type, amount, created_at").eq("campaign_id", id).gte("created_at", sinceISO),
+      supabase.from("manual_events" as any).select("event_type, count, purchase_amount, created_at").eq("campaign_id", id).gte("created_at", sinceISO),
+      supabase.from("offerwall_interactions" as any).select("is_correct, points_earned, created_at").eq("campaign_id", id).gte("created_at", sinceISO),
+    ]);
+
+    const byDay: Record<string, DailyData> = {};
+    const ensure = (created: string): DailyData => {
+      const d = new Date(created);
+      const key = d.toISOString().slice(0, 10);
+      if (!byDay[key]) {
+        byDay[key] = {
+          date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+          ts: new Date(key).getTime(),
+          downloads: 0, signups: 0, purchases: 0,
+          interactions: 0, correct: 0, revenue: 0,
+        };
+      }
+      return byDay[key];
+    };
+
+    (chartEvents || []).forEach((ev: any) => {
+      const row = ensure(ev.created_at);
+      if (ev.event_type === "download") row.downloads += 1;
+      else if (ev.event_type === "signup") row.signups += 1;
+      else if (ev.event_type === "purchase") {
+        row.purchases += 1;
+        row.revenue += Number(ev.amount || 0);
+      }
+    });
+
+    (chartManual || []).forEach((m: any) => {
+      const row = ensure(m.created_at);
+      const n = Number(m.count || 0);
+      if (m.event_type === "download") row.downloads += n;
+      else if (m.event_type === "signup") row.signups += n;
+      else if (m.event_type === "purchase") {
+        row.purchases += n;
+        row.revenue += Number(m.purchase_amount || 0);
+      } else if (m.event_type === "interaction" || m.event_type === "engagement_interaction") {
+        row.interactions += n;
+      }
+    });
+
+    (chartInteractions || []).forEach((oi: any) => {
+      const row = ensure(oi.created_at);
+      row.interactions += 1;
+      if (oi.is_correct) row.correct += 1;
+    });
+
+    setDailyData(Object.values(byDay).sort((a, b) => a.ts - b.ts));
     setLoading(false);
   }, [id]);
 
