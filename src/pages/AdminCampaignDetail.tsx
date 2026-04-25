@@ -15,7 +15,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-interface DailyData { date: string; downloads: number; signups: number; purchases: number; }
+interface DailyData {
+  date: string;
+  ts: number;
+  downloads: number;
+  signups: number;
+  purchases: number;
+  interactions: number;
+  correct: number;
+  revenue: number;
+}
 interface CreativeCampaignRow {
   rate_per_interaction?: number | null;
   placement_fee?: number | null;
