@@ -662,7 +662,11 @@ export default function AdminCampaignDetail() {
         {dailyData.length > 0 && (
           <MotionWrapper delay={0.18}>
             <GlassCard variant="strong">
-              <GlassCardHeader><GlassCardTitle>Campaign Analytics (Last 30 Days)</GlassCardTitle></GlassCardHeader>
+              <GlassCardHeader>
+                <GlassCardTitle>
+                  Campaign Analytics — Last 30 Days{(campaign as any).campaign_mode === "manual" ? " (includes manual entries)" : ""}
+                </GlassCardTitle>
+              </GlassCardHeader>
               <GlassCardContent>
                 <ResponsiveContainer width="100%" height={280}>
                   <AreaChart data={dailyData}>
@@ -670,14 +674,31 @@ export default function AdminCampaignDetail() {
                       <linearGradient id="aDl" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0} /></linearGradient>
                       <linearGradient id="aSu" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} /></linearGradient>
                       <linearGradient id="aPu" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="aIn" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(280, 80%, 60%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(280, 80%, 60%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="aCo" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="aRv" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} /></linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
                     <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Area type="monotone" dataKey="downloads" stroke="hsl(217, 91%, 60%)" fillOpacity={1} fill="url(#aDl)" />
-                    <Area type="monotone" dataKey="signups" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#aSu)" />
-                    <Area type="monotone" dataKey="purchases" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#aPu)" />
+                    {isEngagement ? (
+                      <>
+                        <Area type="monotone" dataKey="interactions" name="Interactions" stroke="hsl(280, 80%, 60%)" fillOpacity={1} fill="url(#aIn)" />
+                        <Area type="monotone" dataKey="correct" name="Correct" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#aCo)" />
+                      </>
+                    ) : (campaign as any).ad_type === "commerce" ? (
+                      <>
+                        <Area type="monotone" dataKey="purchases" name="Purchases" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#aPu)" />
+                        <Area type="monotone" dataKey="revenue" name="Revenue ($)" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#aRv)" />
+                      </>
+                    ) : (
+                      <>
+                        <Area type="monotone" dataKey="downloads" name="Downloads" stroke="hsl(217, 91%, 60%)" fillOpacity={1} fill="url(#aDl)" />
+                        <Area type="monotone" dataKey="signups" name="Signups" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#aSu)" />
+                        <Area type="monotone" dataKey="purchases" name="Purchases" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#aPu)" />
+                      </>
+                    )}
                   </AreaChart>
                 </ResponsiveContainer>
               </GlassCardContent>
