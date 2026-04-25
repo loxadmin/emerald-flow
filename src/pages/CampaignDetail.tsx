@@ -260,8 +260,6 @@ export default function CampaignDetail() {
   const isManual = (campaign as any).campaign_mode === "manual";
   const isEngagement = (campaign as any).ad_type === "engagement";
   const showApiAndTracker = !isManual && !isEngagement;
-  const totalMetrics = stats.downloads + stats.signups + stats.purchases;
-
   const statusColor = campaign.status === "active" ? "text-primary border-primary/20 bg-primary/5" :
     campaign.status === "pending" ? "text-amber-600 border-amber-500/20 bg-amber-500/5" :
     "text-destructive border-destructive/20 bg-destructive/5";
@@ -400,6 +398,29 @@ export default function CampaignDetail() {
               ))}
             </MotionStagger>
 
+            {dailyData.length > 0 && (
+              <MotionWrapper delay={0.08}>
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <h3 className="text-sm font-medium text-foreground mb-4">
+                    Engagement Analytics (Last 30 Days){isManual ? " (includes manual entries)" : ""}
+                  </h3>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={dailyData}>
+                      <defs>
+                        <linearGradient id="cIn" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(280, 80%, 60%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(280, 80%, 60%)" stopOpacity={0} /></linearGradient>
+                        <linearGradient id="cCo" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} /></linearGradient>
+                      </defs>
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: 12, color: "hsl(var(--foreground))" }} />
+                      <Area type="monotone" dataKey="interactions" name="Interactions" stroke="hsl(280, 80%, 60%)" strokeWidth={1.5} fillOpacity={1} fill="url(#cIn)" />
+                      <Area type="monotone" dataKey="correct" name="Correct" stroke="hsl(var(--primary))" strokeWidth={1.5} fillOpacity={1} fill="url(#cCo)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </MotionWrapper>
+            )}
+
             <MotionWrapper delay={0.1}>
               <div className="rounded-xl border border-border bg-card p-5">
                 <div className="flex items-center justify-between mb-3">
@@ -501,11 +522,7 @@ export default function CampaignDetail() {
                       <s.icon className="h-4 w-4 text-muted-foreground/60" />
                       <span className="text-xs text-muted-foreground">{s.label}</span>
                     </div>
-                    <p className="text-lg font-semibold text-foreground">
-                      {s.metric && totalMetrics < 10 && totalMetrics >= 0
-                        ? <span className="text-sm text-muted-foreground italic">Calculating...</span>
-                        : s.value}
-                    </p>
+                    <p className="text-lg font-semibold text-foreground">{s.value}</p>
                   </div>
                 </MotionItem>
               ))}
@@ -514,7 +531,7 @@ export default function CampaignDetail() {
             {dailyData.length > 0 && (
               <MotionWrapper delay={0.1}>
                 <div className="rounded-xl border border-border bg-card p-5">
-                  <h3 className="text-sm font-medium text-foreground mb-4">Performance (Last 30 Days)</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-4">Performance (Last 30 Days){isManual ? " (includes manual entries)" : ""}</h3>
                   <ResponsiveContainer width="100%" height={260}>
                     <AreaChart data={dailyData}>
                       <defs>
