@@ -13,7 +13,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth";
 
-interface DailyData { date: string; downloads: number; signups: number; purchases: number; }
+interface DailyData {
+  date: string;
+  ts: number;
+  downloads: number;
+  signups: number;
+  purchases: number;
+  interactions: number;
+  correct: number;
+  revenue: number;
+}
 
 const SUPABASE_URL = "https://dvkoafztquswcqniwcyf.supabase.co";
 
@@ -88,6 +97,63 @@ export default function CampaignDetail() {
           ? await supabase.from("clicks").select("*", { count: "exact", head: true }).in("referral_id", referralIds)
           : { count: 0 };
 
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const [{ data: chartEvents }, { data: chartManual }, { data: chartInteractions }] = await Promise.all([
+          supabase.from("events").select("event_type, amount, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo),
+          supabase.from("manual_events" as any).select("event_type, count, purchase_amount, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo),
+          supabase.from("offerwall_interactions" as any).select("is_correct, points_earned, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo),
+        ]);
+
+        const byDay: Record<string, DailyData> = {};
+        const ensureDay = (createdAt: string) => {
+          const d = new Date(createdAt);
+          const key = d.toISOString().slice(0, 10);
+          if (!byDay[key]) {
+            byDay[key] = {
+              date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+              ts: new Date(key).getTime(),
+              downloads: 0,
+              signups: 0,
+              purchases: 0,
+              interactions: 0,
+              correct: 0,
+              revenue: 0,
+            };
+          }
+          return byDay[key];
+        };
+
+        (chartEvents || []).forEach((event: any) => {
+          const row = ensureDay(event.created_at);
+          if (event.event_type === "download") row.downloads += 1;
+          else if (event.event_type === "signup") row.signups += 1;
+          else if (event.event_type === "purchase") {
+            row.purchases += 1;
+            row.revenue += Number(event.amount || 0);
+          }
+        });
+
+        (chartManual || []).forEach((manual: any) => {
+          const row = ensureDay(manual.created_at);
+          const count = Number(manual.count || 0);
+          if (manual.event_type === "download") row.downloads += count;
+          else if (manual.event_type === "signup") row.signups += count;
+          else if (manual.event_type === "purchase") {
+            row.purchases += count;
+            row.revenue += Number(manual.purchase_amount || 0);
+          } else if (manual.event_type === "interaction" || manual.event_type === "engagement_interaction") {
+            row.interactions += count;
+          }
+        });
+
+        (chartInteractions || []).forEach((interaction: any) => {
+          const row = ensureDay(interaction.created_at);
+          row.interactions += 1;
+          if (interaction.is_correct) row.correct += 1;
+        });
+
+        setDailyData(Object.values(byDay).sort((a, b) => a.ts - b.ts));
+
         if (isEngagement) {
           const [{ data: cc }, { data: qs }, { data: interactions }] = await Promise.all([
             supabase.from("creative_campaigns" as any).select("*").eq("campaign_id", id).maybeSingle(),
@@ -96,29 +162,37 @@ export default function CampaignDetail() {
           ]);
           setCreative(cc);
           setQuestions(qs || []);
-          const correct = (interactions || []).filter((i: any) => i.is_correct).length;
-          const points = (interactions || []).reduce((s: number, i: any) => s + Number(i.points_earned || 0), 0);
-          setEngagementStats({ interactions: interactions?.length || 0, correct, points });
+          const interactionRows = interactions || [];
+          const manualInteractionTotal = (chartManual || []).reduce((sum: number, manual: any) => {
+            if (manual.event_type === "interaction" || manual.event_type === "engagement_interaction") {
+              return sum + Number(manual.count || 0);
+            }
+            return sum;
+          }, 0);
+          const correct = interactionRows.filter((i: any) => i.is_correct).length;
+          const points = interactionRows.reduce((s: number, i: any) => s + Number(i.points_earned || 0), 0);
+          setEngagementStats({ interactions: interactionRows.length + manualInteractionTotal, correct, points });
           setStats({ clicks: clickCount || 0, downloads: 0, signups: 0, purchases: 0 });
         } else {
-          const { count: dl } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "download");
-          const { count: su } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "signup");
-          const { count: pu } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("campaign_id", id).eq("event_type", "purchase");
-          setStats({ clicks: clickCount || 0, downloads: dl || 0, signups: su || 0, purchases: pu || 0 });
-
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-          const { data: events } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo).order("created_at");
-          if (events && events.length > 0) {
-            const byDay: Record<string, DailyData> = {};
-            events.forEach((e) => {
-              const day = new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-              if (!byDay[day]) byDay[day] = { date: day, downloads: 0, signups: 0, purchases: 0 };
-              if (e.event_type === "download") byDay[day].downloads++;
-              else if (e.event_type === "signup") byDay[day].signups++;
-              else if (e.event_type === "purchase") byDay[day].purchases++;
-            });
-            setDailyData(Object.values(byDay));
-          }
+          const eventTotals = (chartEvents || []).reduce((acc, event: any) => {
+            if (event.event_type === "download") acc.downloads += 1;
+            else if (event.event_type === "signup") acc.signups += 1;
+            else if (event.event_type === "purchase") acc.purchases += 1;
+            return acc;
+          }, { downloads: 0, signups: 0, purchases: 0 });
+          const manualTotals = (chartManual || []).reduce((acc, manual: any) => {
+            const count = Number(manual.count || 0);
+            if (manual.event_type === "download") acc.downloads += count;
+            else if (manual.event_type === "signup") acc.signups += count;
+            else if (manual.event_type === "purchase") acc.purchases += count;
+            return acc;
+          }, { downloads: 0, signups: 0, purchases: 0 });
+          setStats({
+            clicks: clickCount || 0,
+            downloads: eventTotals.downloads + manualTotals.downloads,
+            signups: eventTotals.signups + manualTotals.signups,
+            purchases: eventTotals.purchases + manualTotals.purchases,
+          });
         }
 
         if (!isEngagement && !isManualMode) {
@@ -186,8 +260,6 @@ export default function CampaignDetail() {
   const isManual = (campaign as any).campaign_mode === "manual";
   const isEngagement = (campaign as any).ad_type === "engagement";
   const showApiAndTracker = !isManual && !isEngagement;
-  const totalMetrics = stats.downloads + stats.signups + stats.purchases;
-
   const statusColor = campaign.status === "active" ? "text-primary border-primary/20 bg-primary/5" :
     campaign.status === "pending" ? "text-amber-600 border-amber-500/20 bg-amber-500/5" :
     "text-destructive border-destructive/20 bg-destructive/5";
@@ -326,6 +398,29 @@ export default function CampaignDetail() {
               ))}
             </MotionStagger>
 
+            {dailyData.length > 0 && (
+              <MotionWrapper delay={0.08}>
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <h3 className="text-sm font-medium text-foreground mb-4">
+                    Engagement Analytics (Last 30 Days){isManual ? " (includes manual entries)" : ""}
+                  </h3>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={dailyData}>
+                      <defs>
+                        <linearGradient id="cIn" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(280, 80%, 60%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(280, 80%, 60%)" stopOpacity={0} /></linearGradient>
+                        <linearGradient id="cCo" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} /></linearGradient>
+                      </defs>
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: 12, color: "hsl(var(--foreground))" }} />
+                      <Area type="monotone" dataKey="interactions" name="Interactions" stroke="hsl(280, 80%, 60%)" strokeWidth={1.5} fillOpacity={1} fill="url(#cIn)" />
+                      <Area type="monotone" dataKey="correct" name="Correct" stroke="hsl(var(--primary))" strokeWidth={1.5} fillOpacity={1} fill="url(#cCo)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </MotionWrapper>
+            )}
+
             <MotionWrapper delay={0.1}>
               <div className="rounded-xl border border-border bg-card p-5">
                 <div className="flex items-center justify-between mb-3">
@@ -427,11 +522,7 @@ export default function CampaignDetail() {
                       <s.icon className="h-4 w-4 text-muted-foreground/60" />
                       <span className="text-xs text-muted-foreground">{s.label}</span>
                     </div>
-                    <p className="text-lg font-semibold text-foreground">
-                      {s.metric && totalMetrics < 10 && totalMetrics >= 0
-                        ? <span className="text-sm text-muted-foreground italic">Calculating...</span>
-                        : s.value}
-                    </p>
+                    <p className="text-lg font-semibold text-foreground">{s.value}</p>
                   </div>
                 </MotionItem>
               ))}
@@ -440,7 +531,7 @@ export default function CampaignDetail() {
             {dailyData.length > 0 && (
               <MotionWrapper delay={0.1}>
                 <div className="rounded-xl border border-border bg-card p-5">
-                  <h3 className="text-sm font-medium text-foreground mb-4">Performance (Last 30 Days)</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-4">Performance (Last 30 Days){isManual ? " (includes manual entries)" : ""}</h3>
                   <ResponsiveContainer width="100%" height={260}>
                     <AreaChart data={dailyData}>
                       <defs>

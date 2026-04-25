@@ -1,4 +1,6 @@
 export const initSecurity = () => {
+  if (import.meta.env.DEV) return;
+
   // 1. Disabling Right-Click
   document.addEventListener('contextmenu', (e) => {
     e.preventDefault();
