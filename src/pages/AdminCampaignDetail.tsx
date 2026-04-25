@@ -15,7 +15,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-interface DailyData { date: string; downloads: number; signups: number; purchases: number; }
+interface DailyData {
+  date: string;
+  ts: number;
+  downloads: number;
+  signups: number;
+  purchases: number;
+  interactions: number;
+  correct: number;
+  revenue: number;
+}
 interface CreativeCampaignRow {
   rate_per_interaction?: number | null;
   placement_fee?: number | null;
@@ -103,20 +112,60 @@ export default function AdminCampaignDetail() {
     setQuestions(qs || []);
     setChangeRequests((crs as any[]) || []);
 
-    // Chart
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: chartEvents } = await supabase.from("events").select("event_type, created_at").eq("campaign_id", id).gte("created_at", thirtyDaysAgo);
-    if (chartEvents && chartEvents.length > 0) {
-      const byDay: Record<string, DailyData> = {};
-      chartEvents.forEach(ev => {
-        const day = new Date(ev.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-        if (!byDay[day]) byDay[day] = { date: day, downloads: 0, signups: 0, purchases: 0 };
-        if (ev.event_type === "download") byDay[day].downloads++;
-        else if (ev.event_type === "signup") byDay[day].signups++;
-        else if (ev.event_type === "purchase") byDay[day].purchases++;
-      });
-      setDailyData(Object.values(byDay));
-    }
+    // Chart — combine real events + manual recordings + offerwall interactions over the last 30 days
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const sinceISO = since.toISOString();
+    const [{ data: chartEvents }, { data: chartManual }, { data: chartInteractions }] = await Promise.all([
+      supabase.from("events").select("event_type, amount, created_at").eq("campaign_id", id).gte("created_at", sinceISO),
+      supabase.from("manual_events" as any).select("event_type, count, purchase_amount, created_at").eq("campaign_id", id).gte("created_at", sinceISO),
+      supabase.from("offerwall_interactions" as any).select("is_correct, points_earned, created_at").eq("campaign_id", id).gte("created_at", sinceISO),
+    ]);
+
+    const byDay: Record<string, DailyData> = {};
+    const ensure = (created: string): DailyData => {
+      const d = new Date(created);
+      const key = d.toISOString().slice(0, 10);
+      if (!byDay[key]) {
+        byDay[key] = {
+          date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+          ts: new Date(key).getTime(),
+          downloads: 0, signups: 0, purchases: 0,
+          interactions: 0, correct: 0, revenue: 0,
+        };
+      }
+      return byDay[key];
+    };
+
+    (chartEvents || []).forEach((ev: any) => {
+      const row = ensure(ev.created_at);
+      if (ev.event_type === "download") row.downloads += 1;
+      else if (ev.event_type === "signup") row.signups += 1;
+      else if (ev.event_type === "purchase") {
+        row.purchases += 1;
+        row.revenue += Number(ev.amount || 0);
+      }
+    });
+
+    (chartManual || []).forEach((m: any) => {
+      const row = ensure(m.created_at);
+      const n = Number(m.count || 0);
+      if (m.event_type === "download") row.downloads += n;
+      else if (m.event_type === "signup") row.signups += n;
+      else if (m.event_type === "purchase") {
+        row.purchases += n;
+        row.revenue += Number(m.purchase_amount || 0);
+      } else if (m.event_type === "interaction" || m.event_type === "engagement_interaction") {
+        row.interactions += n;
+      }
+    });
+
+    (chartInteractions || []).forEach((oi: any) => {
+      const row = ensure(oi.created_at);
+      row.interactions += 1;
+      if (oi.is_correct) row.correct += 1;
+    });
+
+    setDailyData(Object.values(byDay).sort((a, b) => a.ts - b.ts));
     setLoading(false);
   }, [id]);
 
@@ -613,7 +662,11 @@ export default function AdminCampaignDetail() {
         {dailyData.length > 0 && (
           <MotionWrapper delay={0.18}>
             <GlassCard variant="strong">
-              <GlassCardHeader><GlassCardTitle>Campaign Analytics (Last 30 Days)</GlassCardTitle></GlassCardHeader>
+              <GlassCardHeader>
+                <GlassCardTitle>
+                  Campaign Analytics — Last 30 Days{(campaign as any).campaign_mode === "manual" ? " (includes manual entries)" : ""}
+                </GlassCardTitle>
+              </GlassCardHeader>
               <GlassCardContent>
                 <ResponsiveContainer width="100%" height={280}>
                   <AreaChart data={dailyData}>
@@ -621,14 +674,31 @@ export default function AdminCampaignDetail() {
                       <linearGradient id="aDl" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0} /></linearGradient>
                       <linearGradient id="aSu" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} /></linearGradient>
                       <linearGradient id="aPu" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="aIn" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(280, 80%, 60%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(280, 80%, 60%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="aCo" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="aRv" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0} /></linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
                     <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Area type="monotone" dataKey="downloads" stroke="hsl(217, 91%, 60%)" fillOpacity={1} fill="url(#aDl)" />
-                    <Area type="monotone" dataKey="signups" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#aSu)" />
-                    <Area type="monotone" dataKey="purchases" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#aPu)" />
+                    {isEngagement ? (
+                      <>
+                        <Area type="monotone" dataKey="interactions" name="Interactions" stroke="hsl(280, 80%, 60%)" fillOpacity={1} fill="url(#aIn)" />
+                        <Area type="monotone" dataKey="correct" name="Correct" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#aCo)" />
+                      </>
+                    ) : (campaign as any).ad_type === "commerce" ? (
+                      <>
+                        <Area type="monotone" dataKey="purchases" name="Purchases" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#aPu)" />
+                        <Area type="monotone" dataKey="revenue" name="Revenue ($)" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#aRv)" />
+                      </>
+                    ) : (
+                      <>
+                        <Area type="monotone" dataKey="downloads" name="Downloads" stroke="hsl(217, 91%, 60%)" fillOpacity={1} fill="url(#aDl)" />
+                        <Area type="monotone" dataKey="signups" name="Signups" stroke="hsl(160, 84%, 39%)" fillOpacity={1} fill="url(#aSu)" />
+                        <Area type="monotone" dataKey="purchases" name="Purchases" stroke="hsl(38, 92%, 50%)" fillOpacity={1} fill="url(#aPu)" />
+                      </>
+                    )}
                   </AreaChart>
                 </ResponsiveContainer>
               </GlassCardContent>
