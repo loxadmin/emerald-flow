@@ -187,16 +187,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           syncSessionState(nextSession, true);
           return;
         }
-        if (event === "SIGNED_IN") {
-          sessionStorage.removeItem("karbali-admin-2fa-verified");
-          syncSessionState(nextSession, true);
-          return;
-        }
+
         if (event === "SIGNED_OUT") {
           sessionStorage.removeItem("karbali-admin-2fa-verified");
           syncSessionState(nextSession, true);
           return;
         }
+
+        if (event === "SIGNED_IN") {
+          const nextUserId = nextSession?.user?.id ?? null;
+          const isSameUserSession = nextUserId !== null && nextUserId === lastUserId;
+
+          // Supabase may emit SIGNED_IN again while restoring an existing session.
+          // Treat same-user re-emissions like silent refreshes so protected routes
+          // do not keep re-entering the loading state or clearing admin 2FA.
+          if (!isSameUserSession) {
+            sessionStorage.removeItem("karbali-admin-2fa-verified");
+          }
+
+          syncSessionState(nextSession, !isSameUserSession);
+          return;
+        }
+
         // TOKEN_REFRESHED / USER_UPDATED / PASSWORD_RECOVERY:
         // keep session updated silently, do not flip isLoading.
         syncSessionState(nextSession, false);
