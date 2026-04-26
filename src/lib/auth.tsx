@@ -160,74 +160,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, signOut]);
 
   useEffect(() => {
-    let initialSessionHandled = false;
+    let active = true;
     let lastUserId: string | null = null;
 
-    // Only run access-state load when the actual user identity changes.
-    // TOKEN_REFRESHED, USER_UPDATED, and tab-focus events keep the same user.id
-    // and must NOT trigger a loading spinner — that unmounts forms and looks
-    // like a "reload".
-    const syncSessionState = (nextSession: Session | null, forceReload = false) => {
-      const nextUserId = nextSession?.user?.id ?? null;
-      setSession(nextSession);
+    const syncSessionState = (
+      nextSession: Session | null,
+      options: { forceReload?: boolean; clearAdmin2FA?: boolean } = {},
+    ) => {
+      if (!active) return;
 
+      const nextUserId = nextSession?.user?.id ?? null;
       const userChanged = nextUserId !== lastUserId;
+
+      if (options.clearAdmin2FA) {
+        sessionStorage.removeItem("karbali-admin-2fa-verified");
+      }
+
+      setSession(nextSession);
       lastUserId = nextUserId;
 
-      if (forceReload || userChanged) {
+      if (options.forceReload || userChanged) {
         setIsLoading(true);
         void loadAccessState(nextSession?.user ?? null);
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, nextSession) => {
-        if (event === "INITIAL_SESSION") {
-          initialSessionHandled = true;
-          syncSessionState(nextSession, true);
-          return;
-        }
+    const bootstrapAuth = async () => {
+      try {
+        const { data: { session: restoredSession } } = await supabase.auth.getSession();
+        if (!active) return;
 
-        if (event === "SIGNED_OUT") {
-          sessionStorage.removeItem("karbali-admin-2fa-verified");
-          syncSessionState(nextSession, true);
-          return;
-        }
-
-        if (event === "SIGNED_IN") {
-          const nextUserId = nextSession?.user?.id ?? null;
-          const isSameUserSession = nextUserId !== null && nextUserId === lastUserId;
-
-          // Supabase may emit SIGNED_IN again while restoring an existing session.
-          // Treat same-user re-emissions like silent refreshes so protected routes
-          // do not keep re-entering the loading state or clearing admin 2FA.
-          if (!isSameUserSession) {
-            sessionStorage.removeItem("karbali-admin-2fa-verified");
-          }
-
-          syncSessionState(nextSession, !isSameUserSession);
-          return;
-        }
-
-        // TOKEN_REFRESHED / USER_UPDATED / PASSWORD_RECOVERY:
-        // keep session updated silently, do not flip isLoading.
-        syncSessionState(nextSession, false);
-      }
-    );
-
-    // Only call getSession if onAuthStateChange didn't fire INITIAL_SESSION yet
-    supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
-      if (!initialSessionHandled) {
-        syncSessionState(nextSession, true);
-      }
-    }).catch(() => {
-      if (!initialSessionHandled) {
+        syncSessionState(restoredSession, { forceReload: true });
+      } catch {
+        if (!active) return;
         resetAccessState();
         setIsLoading(false);
       }
+    };
+
+    void bootstrapAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "SIGNED_OUT") {
+        syncSessionState(nextSession, { forceReload: true, clearAdmin2FA: true });
+        return;
+      }
+
+      if (event === "SIGNED_IN") {
+        const nextUserId = nextSession?.user?.id ?? null;
+        const isNewUser = nextUserId !== null && nextUserId !== lastUserId;
+
+        syncSessionState(nextSession, {
+          forceReload: isNewUser,
+          clearAdmin2FA: isNewUser,
+        });
+        return;
+      }
+
+      // INITIAL_SESSION / TOKEN_REFRESHED / USER_UPDATED / PASSWORD_RECOVERY
+      // should update session state silently unless the user identity changed.
+      syncSessionState(nextSession);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, [loadAccessState, resetAccessState]);
 
   return (
