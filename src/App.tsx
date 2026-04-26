@@ -17,7 +17,7 @@ import CreateCommerceCampaign from "./pages/CreateCommerceCampaign";
 import CreateManualCampaign from "./pages/CreateManualCampaign";
 import CampaignDetail from "./pages/CampaignDetail";
 import CategorySelection from "./pages/CategorySelection";
-import WhatsAppVerify from "./pages/WhatsAppVerify";
+
 import Ads from "./pages/Ads";
 import Websites from "./pages/Websites";
 import Wallet from "./pages/Wallet";
@@ -69,7 +69,7 @@ const App = () => (
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/ads" element={<RequireAuth><Ads /></RequireAuth>} />
               <Route path="/websites" element={<RequireAuth><Websites /></RequireAuth>} />
-              <Route path="/whatsapp-verify" element={<RequireAuth><WhatsAppVerify /></RequireAuth>} />
+              
               <Route path="/campaigns/create" element={<RequireAuth><CampaignRouter /></RequireAuth>} />
               <Route path="/campaigns/create/performance" element={<RequireAuth><CreateCampaign /></RequireAuth>} />
               <Route path="/campaigns/create/engagement" element={<RequireAuth><CreateEngagementCampaign /></RequireAuth>} />
