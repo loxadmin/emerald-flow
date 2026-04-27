@@ -445,14 +445,18 @@ export type Database = {
           ad_type: Database["public"]["Enums"]["advertiser_type"] | null
           advertiser_id: string
           app_link: string | null
+          approval_notified_at: string | null
           budget_remaining: number
           campaign_mode: string
+          completed_at: string | null
           created_at: string
+          email_notifications_enabled: boolean
           id: string
           integration_type: string
           integration_verified: boolean
           is_draft: boolean
           name: string
+          notified_event_count: number
           platform_type: string
           price_download: number
           price_purchase: number
@@ -467,14 +471,18 @@ export type Database = {
           ad_type?: Database["public"]["Enums"]["advertiser_type"] | null
           advertiser_id: string
           app_link?: string | null
+          approval_notified_at?: string | null
           budget_remaining?: number
           campaign_mode?: string
+          completed_at?: string | null
           created_at?: string
+          email_notifications_enabled?: boolean
           id?: string
           integration_type?: string
           integration_verified?: boolean
           is_draft?: boolean
           name: string
+          notified_event_count?: number
           platform_type?: string
           price_download?: number
           price_purchase?: number
@@ -489,14 +497,18 @@ export type Database = {
           ad_type?: Database["public"]["Enums"]["advertiser_type"] | null
           advertiser_id?: string
           app_link?: string | null
+          approval_notified_at?: string | null
           budget_remaining?: number
           campaign_mode?: string
+          completed_at?: string | null
           created_at?: string
+          email_notifications_enabled?: boolean
           id?: string
           integration_type?: string
           integration_verified?: boolean
           is_draft?: boolean
           name?: string
+          notified_event_count?: number
           platform_type?: string
           price_download?: number
           price_purchase?: number
@@ -1465,7 +1477,7 @@ export type Database = {
         | "real_estate"
       advertiser_type: "engagement" | "performance" | "commerce"
       app_role: "admin" | "user"
-      campaign_status: "pending" | "active" | "rejected"
+      campaign_status: "pending" | "active" | "rejected" | "completed"
       event_type: "download" | "signup" | "purchase"
       source_type: "web" | "android" | "ios"
     }
@@ -1606,7 +1618,7 @@ export const Constants = {
       ],
       advertiser_type: ["engagement", "performance", "commerce"],
       app_role: ["admin", "user"],
-      campaign_status: ["pending", "active", "rejected"],
+      campaign_status: ["pending", "active", "rejected", "completed"],
       event_type: ["download", "signup", "purchase"],
       source_type: ["web", "android", "ios"],
     },
