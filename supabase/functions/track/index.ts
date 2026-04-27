@@ -349,6 +349,62 @@ Deno.serve(async (req) => {
       await supabase.from("campaigns").update(updateData).eq("id", campaignId);
     }
 
+    // Auto-close campaign if target reached
+    try {
+      const { count: totalEvents } = await supabase
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaignId);
+      const target = Number((campaign as any).target_users || 0);
+      if (target > 0 && (totalEvents || 0) >= target) {
+        const { data: refreshed } = await supabase
+          .from("campaigns")
+          .select("status")
+          .eq("id", campaignId)
+          .maybeSingle();
+        if (refreshed?.status === "active") {
+          await supabase
+            .from("campaigns")
+            .update({ status: "completed", completed_at: new Date().toISOString() })
+            .eq("id", campaignId);
+          // Refund any leftover escrow via direct wallet credit
+          const remaining = Number(campaign.budget_remaining) - chargeAmount;
+          if (remaining > 0) {
+            const { data: wallet } = await supabase
+              .from("wallets")
+              .select("id, balance")
+              .eq("advertiser_id", campaign.advertiser_id)
+              .maybeSingle();
+            if (wallet) {
+              await supabase
+                .from("wallets")
+                .update({ balance: Number(wallet.balance) + remaining, updated_at: new Date().toISOString() })
+                .eq("id", wallet.id);
+              await supabase.from("wallet_transactions").insert({
+                wallet_id: wallet.id,
+                amount: remaining,
+                type: "refund",
+                status: "completed",
+                description: "Refund from completed campaign",
+              });
+              await supabase.from("campaigns").update({ budget_remaining: 0 }).eq("id", campaignId);
+            }
+          }
+          // Fire fulfillment email (don't await — best effort)
+          fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-campaign-notification`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({ action: "fulfilled", campaign_id: campaignId }),
+          }).catch((e) => console.warn("fulfillment email failed", e));
+        }
+      }
+    } catch (e) {
+      console.warn("auto-close check failed", e);
+    }
+
     return jsonResponse({
       success: true,
       event_id: event.id,
