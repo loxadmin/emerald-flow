@@ -27,3 +27,6 @@ verify_jwt = false
 
 [functions.tracker-health-monitor]
 verify_jwt = false
+
+[functions.send-campaign-notification]
+verify_jwt = false
