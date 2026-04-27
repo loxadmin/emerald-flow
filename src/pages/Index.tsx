@@ -184,6 +184,7 @@ export default function Index() {
               <button onClick={toggleTheme} className={`rounded-lg p-2 transition-colors ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`} aria-label="Toggle theme">
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
+              <Link to="/login" className={`text-sm font-medium transition-colors ${scrolled ? "text-foreground hover:text-primary" : "text-white hover:text-white/80"}`}>Log in</Link>
               <Link to="/signup">
                 <GlassButton variant={scrolled ? "default" : "outline"} size="sm" className={scrolled ? "" : "border-white/20 bg-white/5 text-white backdrop-blur-sm hover:bg-white/10"}>
                   Get Started

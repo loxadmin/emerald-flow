@@ -187,6 +187,9 @@ export default function AdminCampaignDetail() {
         await supabase.functions.invoke("manage-campaign", { body: { action: "generate_questions", campaign_id: id } });
         toast.success("Quiz questions auto-generated!");
       }
+      // Notify advertiser via email
+      supabase.functions.invoke("send-campaign-notification", { body: { action: "approval", campaign_id: id } })
+        .catch((e) => console.warn("approval email failed", e));
     }
     fetchData();
   };
