@@ -142,12 +142,55 @@ export default function Index() {
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
-    "name": "Karbali Customer Acquisition Solution",
-    "description": "Performance-based customer acquisition platform with financial intent mapping and pay-after-sale billing.",
-    "brand": {
-      "@type": "Brand",
-      "name": "Karbali"
+    "name": "Karbali Ads — Customer Acquisition Platform",
+    "description": "Karbali Ads helps businesses find customers and get paying clients with performance-based advertising. Pay only for real signups, downloads, and sales.",
+    "brand": { "@type": "Brand", "name": "Karbali" },
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "USD",
+      "price": "0",
+      "availability": "https://schema.org/InStock",
+      "url": "https://advertiser.karbali.com/signup"
     }
+  };
+
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is Karbali?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Karbali is a performance advertising platform that helps businesses find customers and get paying clients. Advertisers only pay when real users sign up, download, or buy."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I find customers with Karbali Ads?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Create a campaign on Karbali Ads, set a budget, define the action you will pay for (signup, download, or purchase), and Karbali distributes your ads to high-intent users across its network."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How can I get paying clients online?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Use Karbali Ads to run pay-per-result campaigns. You only spend money when a real customer completes the action you want, which makes acquiring paying clients predictable and profitable."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is Karbali different from Google Ads or Facebook Ads?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Unlike traditional ad platforms that charge per click or impression, Karbali Ads charges per verified outcome. You pay for paying clients, not for traffic."
+        }
+      }
+    ]
   };
 
   const features = [
@@ -162,10 +205,21 @@ export default function Index() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
       <Helmet>
-        <title>Karbali Ads | Customer Acquisition & Performance Marketing</title>
-        <meta name="description" content="Get customers, users, and sales for your business. Karbali is the customer acquisition solution that lets you pay only after real results happen." />
+        <title>Karbali Ads — Find Customers & Get Paying Clients Online</title>
+        <meta name="description" content="Karbali Ads helps you find customers and get paying clients. Run performance ads on Karbali and pay only for real signups, downloads, and sales." />
+        <meta name="keywords" content="karbali, karbali ads, ads, find customers, how to get paying clients, customer acquisition, performance ads, get users for app" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        <link rel="canonical" href="https://advertiser.karbali.com/" />
+        <meta property="og:title" content="Karbali Ads — Find Customers & Get Paying Clients" />
+        <meta property="og:description" content="Run performance ads on Karbali. Find customers, get paying clients, pay only for real results." />
+        <meta property="og:url" content="https://advertiser.karbali.com/" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Karbali Ads — Find Customers & Get Paying Clients" />
+        <meta name="twitter:description" content="Run performance ads on Karbali. Find customers, get paying clients, pay only for real results." />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(productJsonLd)}</script>
+        <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
       </Helmet>
       <FluidCanvas />
 
