@@ -30,6 +30,3 @@ verify_jwt = false
 
 [functions.send-campaign-notification]
 verify_jwt = false
-
-[functions.seed-blogs]
-verify_jwt = false
