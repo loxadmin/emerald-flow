@@ -4,13 +4,19 @@
   <url><loc>https://advertiser.karbali.com/about</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://advertiser.karbali.com/what-is-karbali</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://advertiser.karbali.com/use-cases</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://advertiser.karbali.com/blog</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
   <url><loc>https://advertiser.karbali.com/docs</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://advertiser.karbali.com/get-customers-for-my-business</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://advertiser.karbali.com/how-to-get-users-for-my-app</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://advertiser.karbali.com/how-to-increase-sales-online</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://advertiser.karbali.com/how-to-get-first-100-customers</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://advertiser.karbali.com/customer-acquisition-for-startups</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://advertiser.karbali.com/signup</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://advertiser.karbali.com/login</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+
+  <url><loc>https://advertiser.karbali.com/blog/how-to-find-customers-for-a-new-business-in-2026</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog/how-to-get-paying-clients-without-cold-calling</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog/customer-acquisition-for-startups-with-no-budget</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog/how-to-get-first-100-users-for-your-app</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog/pay-per-acquisition-advertising-vs-google-ads-vs-facebook-ads</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog/what-is-karbali-ads-and-how-does-it-work</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog/how-to-increase-online-sales-without-spending-more-on-ads</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog/performance-marketing-explained-for-non-marketers</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog/complete-guide-to-customer-acquisition-cost-cac</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://advertiser.karbali.com/blog/how-to-get-free-traffic-that-converts-to-paying-clients</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
 </urlset>
