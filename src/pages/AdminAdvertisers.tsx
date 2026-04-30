@@ -9,13 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { UserPlus, Loader2 } from "lucide-react";
+import { UserPlus, Loader2, Eye, Pencil, Ban, CheckCircle2, Wallet as WalletIcon } from "lucide-react";
 
 interface Advertiser {
   id: string; email: string; full_name: string | null; company_name: string | null;
-  website: string | null; created_at: string;
+  website: string | null; created_at: string; is_blocked?: boolean;
   category?: { name: string; status: string } | null;
-  wallet?: { balance: number; is_activated: boolean } | null;
+  wallet?: { id: string; balance: number; is_activated: boolean } | null;
 }
 interface Category { id: string; name: string; }
 
@@ -29,7 +29,7 @@ export default function AdminAdvertisers() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form
+  // Invite Form
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -37,6 +37,16 @@ export default function AdminAdvertisers() {
   const [categoryId, setCategoryId] = useState("");
   const [advType, setAdvType] = useState("performance");
   const [advSubtype, setAdvSubtype] = useState("website");
+
+  // Action dialogs
+  const [viewing, setViewing] = useState<Advertiser | null>(null);
+  const [editing, setEditing] = useState<Advertiser | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCompany, setEditCompany] = useState("");
+  const [editWebsite, setEditWebsite] = useState("");
+  const [topupTarget, setTopupTarget] = useState<Advertiser | null>(null);
+  const [topupAmount, setTopupAmount] = useState("");
+  const [topupNote, setTopupNote] = useState("");
 
   const fetchAll = async () => {
     setLoading(true);
@@ -47,13 +57,13 @@ export default function AdminAdvertisers() {
     const ids = profiles.map(p => p.id);
     const [catRes, walletRes] = await Promise.all([
       supabase.from("advertiser_categories").select("advertiser_id, status, categories(name)").in("advertiser_id", ids),
-      supabase.from("wallets").select("advertiser_id, balance, is_activated").in("advertiser_id", ids),
+      supabase.from("wallets").select("id, advertiser_id, balance, is_activated").in("advertiser_id", ids),
     ]);
     const catMap = new Map<string, { name: string; status: string }>();
     (catRes.data || []).forEach((ac: any) => { catMap.set(ac.advertiser_id, { name: ac.categories?.name || "Unknown", status: ac.status }); });
-    const walletMap = new Map<string, { balance: number; is_activated: boolean }>();
-    (walletRes.data || []).forEach((w: any) => { walletMap.set(w.advertiser_id, { balance: w.balance, is_activated: w.is_activated }); });
-    setAdvertisers(profiles.map(p => ({ ...p, category: catMap.get(p.id) || null, wallet: walletMap.get(p.id) || null })));
+    const walletMap = new Map<string, { id: string; balance: number; is_activated: boolean }>();
+    (walletRes.data || []).forEach((w: any) => { walletMap.set(w.advertiser_id, { id: w.id, balance: w.balance, is_activated: w.is_activated }); });
+    setAdvertisers(profiles.map((p: any) => ({ ...p, category: catMap.get(p.id) || null, wallet: walletMap.get(p.id) || null })));
     setLoading(false);
   };
 
@@ -86,6 +96,55 @@ export default function AdminAdvertisers() {
     toast.success("Advertiser invited! Magic link sent.");
     setOpen(false);
     resetForm();
+    fetchAll();
+  };
+
+  const startEdit = (adv: Advertiser) => {
+    setEditing(adv);
+    setEditName(adv.full_name || "");
+    setEditCompany(adv.company_name || "");
+    setEditWebsite(adv.website || "");
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSubmitting(true);
+    const { error } = await supabase.from("profiles").update({
+      full_name: editName.trim() || null,
+      company_name: editCompany.trim() || null,
+      website: editWebsite.trim() || null,
+    }).eq("id", editing.id);
+    setSubmitting(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Profile updated");
+    setEditing(null);
+    fetchAll();
+  };
+
+  const toggleBlock = async (adv: Advertiser) => {
+    const next = !adv.is_blocked;
+    if (next && !confirm(`Block ${adv.email}? They will not be able to access the platform.`)) return;
+    const { error } = await supabase.from("profiles").update({ is_blocked: next }).eq("id", adv.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(next ? "Advertiser blocked" : "Advertiser unblocked");
+    fetchAll();
+  };
+
+  const handleTopup = async () => {
+    if (!topupTarget?.wallet) { toast.error("This advertiser has no wallet yet"); return; }
+    const amt = Number(topupAmount);
+    if (!Number.isFinite(amt) || amt <= 0) { toast.error("Enter a positive amount"); return; }
+    setSubmitting(true);
+    const { data, error } = await supabase.functions.invoke("admin-wallet-topup", {
+      body: { wallet_id: topupTarget.wallet.id, amount: amt, description: topupNote || `Admin top-up of $${amt.toFixed(2)}` },
+    });
+    setSubmitting(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Top-up failed");
+      return;
+    }
+    toast.success(`Added $${amt.toFixed(2)}`);
+    setTopupTarget(null); setTopupAmount(""); setTopupNote("");
     fetchAll();
   };
 
@@ -158,10 +217,13 @@ export default function AdminAdvertisers() {
               <div className="divide-y divide-border">
                 {advertisers.map((adv) => (
                   <div key={adv.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-3.5 gap-2">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{adv.full_name || "No name"}</p>
-                      <p className="text-xs text-muted-foreground">{adv.email}</p>
-                      {adv.company_name && <p className="text-xs text-muted-foreground/60">{adv.company_name}</p>}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                        {adv.full_name || "No name"}
+                        {adv.is_blocked && <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/20">Blocked</Badge>}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{adv.email}</p>
+                      {adv.company_name && <p className="text-xs text-muted-foreground/60 truncate">{adv.company_name}</p>}
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
                       {adv.category ? (
@@ -181,6 +243,20 @@ export default function AdminAdvertisers() {
                       ) : (
                         <Badge variant="outline" className="text-[10px] text-muted-foreground">No wallet</Badge>
                       )}
+                      <div className="flex items-center gap-1 ml-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="View" onClick={() => setViewing(adv)}>
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Edit" onClick={() => startEdit(adv)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Top up wallet" disabled={!adv.wallet} onClick={() => { setTopupTarget(adv); setTopupAmount(""); setTopupNote(""); }}>
+                          <WalletIcon className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className={`h-7 w-7 ${adv.is_blocked ? "text-primary" : "text-destructive"}`} title={adv.is_blocked ? "Unblock" : "Block"} onClick={() => toggleBlock(adv)}>
+                          {adv.is_blocked ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -189,6 +265,66 @@ export default function AdminAdvertisers() {
           </div>
         </div>
       </MotionWrapper>
+
+      {/* View dialog */}
+      <Dialog open={!!viewing} onOpenChange={(o) => { if (!o) setViewing(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Advertiser Profile</DialogTitle></DialogHeader>
+          {viewing && (
+            <div className="space-y-2 text-sm">
+              <div><span className="text-muted-foreground">Name:</span> <span className="text-foreground font-medium">{viewing.full_name || "—"}</span></div>
+              <div><span className="text-muted-foreground">Email:</span> <span className="text-foreground">{viewing.email}</span></div>
+              <div><span className="text-muted-foreground">Company:</span> <span className="text-foreground">{viewing.company_name || "—"}</span></div>
+              <div><span className="text-muted-foreground">Website:</span> <span className="text-foreground">{viewing.website || "—"}</span></div>
+              <div><span className="text-muted-foreground">Category:</span> <span className="text-foreground">{viewing.category?.name || "—"} {viewing.category && `(${viewing.category.status})`}</span></div>
+              <div><span className="text-muted-foreground">Wallet:</span> <span className="text-foreground">{viewing.wallet ? `$${viewing.wallet.balance.toFixed(2)} (${viewing.wallet.is_activated ? "active" : "inactive"})` : "—"}</span></div>
+              <div><span className="text-muted-foreground">Status:</span> <span className="text-foreground">{viewing.is_blocked ? "Blocked" : "Active"}</span></div>
+              <div><span className="text-muted-foreground">Joined:</span> <span className="text-foreground">{new Date(viewing.created_at).toLocaleString()}</span></div>
+            </div>
+          )}
+          <DialogFooter><Button variant="outline" onClick={() => setViewing(null)}>Close</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Edit Advertiser</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div className="space-y-1.5"><Label className="text-xs">Email (read-only)</Label><Input value={editing.email} disabled /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Full Name</Label><Input value={editName} onChange={(e) => setEditName(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Company</Label><Input value={editCompany} onChange={(e) => setEditCompany(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Website</Label><Input value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} /></div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={submitting}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={submitting}>{submitting ? "Saving..." : "Save changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Top-up dialog */}
+      <Dialog open={!!topupTarget} onOpenChange={(o) => { if (!o) { setTopupTarget(null); setTopupAmount(""); setTopupNote(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Top up wallet</DialogTitle></DialogHeader>
+          {topupTarget && (
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                <p><span className="text-foreground font-medium">{topupTarget.full_name || topupTarget.email}</span></p>
+                <p>Current balance: <span className="text-foreground font-medium">${topupTarget.wallet ? topupTarget.wallet.balance.toFixed(2) : "0.00"}</span></p>
+              </div>
+              <div className="space-y-1.5"><Label className="text-xs">Amount (USD)</Label><Input type="number" min="0" step="0.01" value={topupAmount} onChange={(e) => setTopupAmount(e.target.value)} placeholder="100.00" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Note (optional)</Label><Input value={topupNote} onChange={(e) => setTopupNote(e.target.value)} placeholder="Reason for top-up" /></div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTopupTarget(null)} disabled={submitting}>Cancel</Button>
+            <Button onClick={handleTopup} disabled={submitting}>{submitting ? "Processing..." : "Confirm top-up"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
