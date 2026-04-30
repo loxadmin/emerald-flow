@@ -446,6 +446,7 @@ export type Database = {
           advertiser_id: string
           app_link: string | null
           approval_notified_at: string | null
+          auto_activation_at: string
           budget_remaining: number
           campaign_mode: string
           completed_at: string | null
@@ -472,6 +473,7 @@ export type Database = {
           advertiser_id: string
           app_link?: string | null
           approval_notified_at?: string | null
+          auto_activation_at?: string
           budget_remaining?: number
           campaign_mode?: string
           completed_at?: string | null
@@ -498,6 +500,7 @@ export type Database = {
           advertiser_id?: string
           app_link?: string | null
           approval_notified_at?: string | null
+          auto_activation_at?: string
           budget_remaining?: number
           campaign_mode?: string
           completed_at?: string | null
@@ -1454,6 +1457,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_activate_pending_campaigns: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

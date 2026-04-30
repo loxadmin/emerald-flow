@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import MotionWrapper from "@/components/MotionWrapper";
+import AutoActivationEditor from "@/components/AutoActivationEditor";
 import { toast } from "sonner";
 import { CheckCircle, XCircle, Copy, Link as LinkIcon, Plus, Loader2, HelpCircle, Trash2, Sparkles, MessageSquareWarning } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -355,9 +356,18 @@ export default function AdminCampaignDetail() {
                 <p className="text-xs text-muted-foreground mt-1">App: <a href={(campaign as any).app_link} target="_blank" rel="noopener noreferrer" className="text-primary underline">{(campaign as any).app_link}</a></p>
               )}
             </div>
-            <div className="flex gap-2">
-              {campaign.status !== "active" && <GlassButton size="sm" variant="glow" onClick={() => updateStatus("active")}><CheckCircle className="mr-1 h-4 w-4" /> Approve</GlassButton>}
-              {campaign.status !== "rejected" && <GlassButton size="sm" variant="destructive" onClick={() => updateStatus("rejected")}><XCircle className="mr-1 h-4 w-4" /> Reject</GlassButton>}
+            <div className="flex flex-col gap-2 items-end">
+              <div className="flex gap-2">
+                {campaign.status !== "active" && <GlassButton size="sm" variant="glow" onClick={() => updateStatus("active")}><CheckCircle className="mr-1 h-4 w-4" /> Approve</GlassButton>}
+                {campaign.status !== "rejected" && <GlassButton size="sm" variant="destructive" onClick={() => updateStatus("rejected")}><XCircle className="mr-1 h-4 w-4" /> Reject</GlassButton>}
+              </div>
+              {campaign.status === "pending" && (
+                <AutoActivationEditor
+                  campaignId={campaign.id}
+                  value={(campaign as any).auto_activation_at}
+                  onSaved={(v) => setCampaign((c) => (c ? ({ ...c, auto_activation_at: v } as any) : c))}
+                />
+              )}
             </div>
           </div>
         </MotionWrapper>
