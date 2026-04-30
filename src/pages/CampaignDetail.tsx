@@ -288,6 +288,12 @@ export default function CampaignDetail() {
           </div>
         </MotionWrapper>
 
+        {campaign.status === "pending" && (campaign as any).auto_activation_at && (
+          <MotionWrapper delay={0.03}>
+            <PendingCountdown targetDate={(campaign as any).auto_activation_at} />
+          </MotionWrapper>
+        )}
+
         {/* API Key - only for non-manual, non-engagement campaigns */}
         {showApiAndTracker && (
         <MotionWrapper delay={0.05}>
