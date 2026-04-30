@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const [{ data: categoryData }, { data: walletData }, { data: maintenanceData }] = await Promise.all([
+      const [{ data: categoryData }, { data: walletData }, { data: maintenanceData }, { data: profileData }] = await Promise.all([
         supabase
           .from("advertiser_categories")
           .select("status")
@@ -114,9 +114,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select("value")
           .eq("key", "maintenance_mode")
           .maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("is_blocked")
+          .eq("id", activeUser.id)
+          .maybeSingle(),
       ]);
 
       if (requestId !== accessRequestIdRef.current) return;
+
+      if ((profileData as { is_blocked?: boolean } | null)?.is_blocked) {
+        await supabase.auth.signOut();
+        if (typeof window !== "undefined") {
+          alert("Your account has been blocked. Please contact support.");
+        }
+        resetAccessState();
+        return;
+      }
 
       setHasCategory(!!categoryData);
       setCategoryStatus(categoryData?.status || null);

@@ -328,14 +328,9 @@ export default function CategorySelection() {
                               {cat.description && <p className="mt-0.5 text-xs text-muted-foreground">{cat.description}</p>}
                             </div>
                             <div className="ml-2 mt-0.5">
-                              {cat.is_active ? (
-                                <CheckCircle className={`h-4 w-4 ${selectedCategoryId === cat.id ? "text-primary" : "text-muted-foreground/30"}`} />
-                              ) : (
-                                <Lock className="h-4 w-4 text-amber-500" />
-                              )}
+                              <CheckCircle className={`h-4 w-4 ${selectedCategoryId === cat.id ? "text-primary" : "text-muted-foreground/30"}`} />
                             </div>
                           </div>
-                          {!cat.is_active && <p className="mt-1 text-xs text-amber-500">Requires payment activation</p>}
                         </button>
                       ))}
                     </div>
