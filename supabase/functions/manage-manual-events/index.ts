@@ -259,7 +259,7 @@ Deno.serve(async (req) => {
 
       const newRemaining = remaining - totalDeduction;
       const updateData: Record<string, unknown> = { budget_remaining: newRemaining };
-      if (newRemaining <= 0) updateData.status = "rejected";
+      if (newRemaining <= 0) updateData.status = "paused";
       const { error: updateErr } = await supabase
         .from("campaigns")
         .update(updateData)
