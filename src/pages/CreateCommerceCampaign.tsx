@@ -461,7 +461,9 @@ new KarbaliCommerce();`;
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>• $1.00 flat fee per sale</p>
                 <p>• 10% commission on each sale amount</p>
-                <p>• Reserve: ${totalCost.toFixed(2)} (${SALE_FLAT_FEE} × {sales} sales)</p>
+                <p>• Base reserve: ${baseCost.toFixed(2)} (${SALE_FLAT_FEE} × {sales} sales)</p>
+                <p>• Commission buffer: ${COMMISSION_BUFFER.toFixed(2)} (covers unknown 10% per sale)</p>
+                <p className="text-foreground font-medium pt-1">Total escrow: ${totalCost.toFixed(2)}</p>
               </div>
               <div className="border-t border-border pt-1.5 flex justify-between text-xs">
                 <span className="text-muted-foreground">Balance</span>
