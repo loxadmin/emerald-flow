@@ -307,7 +307,10 @@ export default function CampaignDetail() {
   const showApiAndTracker = !isManual && !isEngagement;
   const statusColor = campaign.status === "active" ? "text-primary border-primary/20 bg-primary/5" :
     campaign.status === "pending" ? "text-amber-600 border-amber-500/20 bg-amber-500/5" :
+    campaign.status === "paused" ? "text-orange-600 border-orange-500/20 bg-orange-500/5" :
+    campaign.status === "completed" ? "text-primary border-primary/20 bg-primary/5" :
     "text-destructive border-destructive/20 bg-destructive/5";
+  const canManageLive = ["active", "paused", "pending"].includes(String(campaign.status));
 
   return (
     <DashboardLayout>
