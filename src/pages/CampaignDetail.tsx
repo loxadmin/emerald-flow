@@ -342,6 +342,58 @@ export default function CampaignDetail() {
           </MotionWrapper>
         )}
 
+        {campaign.status === "paused" && (
+          <MotionWrapper delay={0.03}>
+            <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Campaign paused — escrow exhausted</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Top up your campaign escrow from your wallet to resume tracking events.
+                </p>
+              </div>
+              <Button size="sm" onClick={() => setTopupOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Top up
+              </Button>
+            </div>
+          </MotionWrapper>
+        )}
+
+        {canManageLive && (
+          <MotionWrapper delay={0.04}>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setTopupOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Top up escrow
+              </Button>
+              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleEndCampaign} disabled={endLoading}>
+                <StopCircle className="h-3.5 w-3.5 mr-1.5" /> {endLoading ? "Ending…" : "End campaign"}
+              </Button>
+            </div>
+          </MotionWrapper>
+        )}
+
+        <Dialog open={topupOpen} onOpenChange={setTopupOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Top up campaign escrow</DialogTitle>
+              <DialogDescription>
+                Move funds from your wallet (balance: ${walletBalance.toFixed(2)}) into this campaign's escrow.
+                A paused campaign will resume immediately.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">Amount (USD)</label>
+              <Input type="number" min="1" step="0.01" value={topupAmount} onChange={(e) => setTopupAmount(e.target.value)} placeholder="100.00" />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTopupOpen(false)}>Cancel</Button>
+              <Button onClick={handleTopupEscrow} disabled={topupLoading}>
+                {topupLoading ? "Topping up…" : "Top up"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* API Key - only for non-manual, non-engagement campaigns */}
         {showApiAndTracker && (
         <MotionWrapper delay={0.05}>
