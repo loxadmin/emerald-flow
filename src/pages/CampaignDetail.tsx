@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users, Eye, EyeOff, RefreshCw, KeyRound, Music, MonitorPlay, HelpCircle, CheckCircle2, MessageSquareWarning } from "lucide-react";
+import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users, Eye, EyeOff, RefreshCw, KeyRound, Music, MonitorPlay, HelpCircle, CheckCircle2, MessageSquareWarning, Plus, StopCircle, AlertTriangle } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth";
 import PendingCountdown from "@/components/PendingCountdown";
@@ -49,6 +50,49 @@ export default function CampaignDetail() {
   const [creative, setCreative] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [engagementStats, setEngagementStats] = useState({ interactions: 0, correct: 0, points: 0 });
+  const [topupOpen, setTopupOpen] = useState(false);
+  const [topupAmount, setTopupAmount] = useState("");
+  const [topupLoading, setTopupLoading] = useState(false);
+  const [endLoading, setEndLoading] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+
+  const refreshWallet = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
+    if (data) setWalletBalance(Number(data.balance));
+  };
+
+  useEffect(() => { refreshWallet(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user?.id]);
+
+  const handleTopupEscrow = async () => {
+    if (!id) return;
+    const amt = Number(topupAmount);
+    if (!Number.isFinite(amt) || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > walletBalance) { toast.error("Insufficient wallet balance"); return; }
+    setTopupLoading(true);
+    const { data, error } = await supabase.rpc("topup_campaign_escrow" as any, { _campaign_id: id, _amount: amt });
+    setTopupLoading(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Escrow topped up");
+    setTopupOpen(false);
+    setTopupAmount("");
+    const result: any = data;
+    setCampaign((c) => c ? ({ ...c, budget_remaining: result?.new_escrow ?? c.budget_remaining, status: c.status === "paused" ? "active" : c.status } as any) : c);
+    refreshWallet();
+  };
+
+  const handleEndCampaign = async () => {
+    if (!id) return;
+    if (!confirm("End this campaign now? Any unused escrow will be refunded to your wallet.")) return;
+    setEndLoading(true);
+    const { data, error } = await supabase.rpc("end_campaign_early" as any, { _campaign_id: id });
+    setEndLoading(false);
+    if (error) { toast.error(error.message); return; }
+    const result: any = data;
+    toast.success(`Campaign ended. $${Number(result?.refunded || 0).toFixed(2)} refunded to wallet.`);
+    setCampaign((c) => c ? ({ ...c, status: "ended", budget_remaining: 0 } as any) : c);
+    refreshWallet();
+  };
 
   const getAccessToken = async () => {
     const { data } = await supabase.auth.getSession();
@@ -263,7 +307,10 @@ export default function CampaignDetail() {
   const showApiAndTracker = !isManual && !isEngagement;
   const statusColor = campaign.status === "active" ? "text-primary border-primary/20 bg-primary/5" :
     campaign.status === "pending" ? "text-amber-600 border-amber-500/20 bg-amber-500/5" :
+    campaign.status === "paused" ? "text-orange-600 border-orange-500/20 bg-orange-500/5" :
+    campaign.status === "completed" ? "text-primary border-primary/20 bg-primary/5" :
     "text-destructive border-destructive/20 bg-destructive/5";
+  const canManageLive = ["active", "paused", "pending"].includes(String(campaign.status));
 
   return (
     <DashboardLayout>
@@ -294,6 +341,58 @@ export default function CampaignDetail() {
             <PendingCountdown targetDate={(campaign as any).auto_activation_at} />
           </MotionWrapper>
         )}
+
+        {campaign.status === "paused" && (
+          <MotionWrapper delay={0.03}>
+            <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Campaign paused — escrow exhausted</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Top up your campaign escrow from your wallet to resume tracking events.
+                </p>
+              </div>
+              <Button size="sm" onClick={() => setTopupOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Top up
+              </Button>
+            </div>
+          </MotionWrapper>
+        )}
+
+        {canManageLive && (
+          <MotionWrapper delay={0.04}>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setTopupOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Top up escrow
+              </Button>
+              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleEndCampaign} disabled={endLoading}>
+                <StopCircle className="h-3.5 w-3.5 mr-1.5" /> {endLoading ? "Ending…" : "End campaign"}
+              </Button>
+            </div>
+          </MotionWrapper>
+        )}
+
+        <Dialog open={topupOpen} onOpenChange={setTopupOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Top up campaign escrow</DialogTitle>
+              <DialogDescription>
+                Move funds from your wallet (balance: ${walletBalance.toFixed(2)}) into this campaign's escrow.
+                A paused campaign will resume immediately.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">Amount (USD)</label>
+              <Input type="number" min="1" step="0.01" value={topupAmount} onChange={(e) => setTopupAmount(e.target.value)} placeholder="100.00" />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTopupOpen(false)}>Cancel</Button>
+              <Button onClick={handleTopupEscrow} disabled={topupLoading}>
+                {topupLoading ? "Topping up…" : "Top up"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* API Key - only for non-manual, non-engagement campaigns */}
         {showApiAndTracker && (

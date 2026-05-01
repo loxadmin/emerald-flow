@@ -452,6 +452,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           email_notifications_enabled: boolean
+          extra_escrow_buffer: number
           id: string
           integration_type: string
           integration_verified: boolean
@@ -479,6 +480,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           email_notifications_enabled?: boolean
+          extra_escrow_buffer?: number
           id?: string
           integration_type?: string
           integration_verified?: boolean
@@ -506,6 +508,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           email_notifications_enabled?: boolean
+          extra_escrow_buffer?: number
           id?: string
           integration_type?: string
           integration_verified?: boolean
@@ -1461,6 +1464,7 @@ export type Database = {
     }
     Functions: {
       auto_activate_pending_campaigns: { Args: never; Returns: undefined }
+      end_campaign_early: { Args: { _campaign_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1471,6 +1475,10 @@ export type Database = {
       refund_campaign_escrow: {
         Args: { _campaign_id: string }
         Returns: number
+      }
+      topup_campaign_escrow: {
+        Args: { _amount: number; _campaign_id: string }
+        Returns: Json
       }
     }
     Enums: {
@@ -1484,7 +1492,13 @@ export type Database = {
         | "real_estate"
       advertiser_type: "engagement" | "performance" | "commerce"
       app_role: "admin" | "user"
-      campaign_status: "pending" | "active" | "rejected" | "completed"
+      campaign_status:
+        | "pending"
+        | "active"
+        | "rejected"
+        | "completed"
+        | "paused"
+        | "ended"
       event_type: "download" | "signup" | "purchase"
       source_type: "web" | "android" | "ios"
     }
@@ -1625,7 +1639,14 @@ export const Constants = {
       ],
       advertiser_type: ["engagement", "performance", "commerce"],
       app_role: ["admin", "user"],
-      campaign_status: ["pending", "active", "rejected", "completed"],
+      campaign_status: [
+        "pending",
+        "active",
+        "rejected",
+        "completed",
+        "paused",
+        "ended",
+      ],
       event_type: ["download", "signup", "purchase"],
       source_type: ["web", "android", "ios"],
     },

@@ -134,19 +134,30 @@ Deno.serve(async (req) => {
       });
       if (txErr) throw txErr;
 
-      // Auto-close if target reached
+      // Auto-close only when ALL selected milestones have each reached target
       try {
-        const { count: totalEvents } = await supabase
-          .from("events")
-          .select("id", { count: "exact", head: true })
-          .eq("campaign_id", campaign_id);
         const { data: campRow } = await supabase
           .from("campaigns")
-          .select("target_users, status, advertiser_id, budget_remaining")
+          .select("target_users, status, advertiser_id, budget_remaining, selected_milestones")
           .eq("id", campaign_id)
           .maybeSingle();
         const target = Number(campRow?.target_users || 0);
-        if (target > 0 && (totalEvents || 0) >= target && campRow?.status === "active") {
+        const milestones: string[] = Array.isArray(campRow?.selected_milestones) ? campRow!.selected_milestones : [];
+        let allFulfilled = false;
+        if (target > 0 && milestones.length > 0) {
+          const counts = await Promise.all(
+            milestones.map(async (m) => {
+              const { count } = await supabase
+                .from("events")
+                .select("id", { count: "exact", head: true })
+                .eq("campaign_id", campaign_id)
+                .eq("event_type", m);
+              return Number(count || 0);
+            })
+          );
+          allFulfilled = counts.every((c) => c >= target);
+        }
+        if (allFulfilled && (campRow?.status === "active" || campRow?.status === "paused")) {
           await supabase
             .from("campaigns")
             .update({ status: "completed", completed_at: new Date().toISOString() })
@@ -182,6 +193,9 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({ action: "fulfilled", campaign_id }),
           }).catch((e) => console.warn("fulfillment email failed", e));
+        } else if (Number(campRow?.budget_remaining || 0) <= 0 && campRow?.status === "active") {
+          // Out of funds, pause for top-up
+          await supabase.from("campaigns").update({ status: "paused" }).eq("id", campaign_id);
         }
       } catch (e) {
         console.warn("auto-close check failed", e);
@@ -245,7 +259,7 @@ Deno.serve(async (req) => {
 
       const newRemaining = remaining - totalDeduction;
       const updateData: Record<string, unknown> = { budget_remaining: newRemaining };
-      if (newRemaining <= 0) updateData.status = "rejected";
+      if (newRemaining <= 0) updateData.status = "paused";
       const { error: updateErr } = await supabase
         .from("campaigns")
         .update(updateData)
