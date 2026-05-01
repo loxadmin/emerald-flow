@@ -328,8 +328,17 @@ Deno.serve(async (req) => {
     }
 
     if (chargeAmount > 0 && Number(campaign.budget_remaining) < chargeAmount) {
-      await supabase.from("campaigns").update({ status: "rejected" }).eq("id", campaignId);
-      return jsonResponse({ error: "Campaign budget is exhausted" }, 402);
+      // Pause campaign and notify advertiser to top up — do NOT reject
+      await supabase.from("campaigns").update({ status: "paused" }).eq("id", campaignId);
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-campaign-notification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ action: "paused_low_funds", campaign_id: campaignId }),
+      }).catch(() => {});
+      return jsonResponse({ error: "Campaign escrow exhausted — paused pending top-up" }, 402);
     }
 
     if (chargeAmount > 0) {
@@ -343,20 +352,36 @@ Deno.serve(async (req) => {
       const newBudget = Number(campaign.budget_remaining) - chargeAmount;
       const updateData: Record<string, unknown> = { budget_remaining: newBudget };
       if (newBudget <= 0) {
-        updateData.status = "rejected";
+        // Out of funds mid-campaign → pause, advertiser can top up
+        updateData.status = "paused";
       }
 
       await supabase.from("campaigns").update(updateData).eq("id", campaignId);
     }
 
-    // Auto-close campaign if target reached
+    // Auto-close campaign only when ALL selected milestone events have each reached the target
     try {
-      const { count: totalEvents } = await supabase
-        .from("events")
-        .select("id", { count: "exact", head: true })
-        .eq("campaign_id", campaignId);
       const target = Number((campaign as any).target_users || 0);
-      if (target > 0 && (totalEvents || 0) >= target) {
+      const milestones: string[] = Array.isArray((campaign as any).selected_milestones)
+        ? (campaign as any).selected_milestones
+        : [];
+
+      let allFulfilled = false;
+      if (target > 0 && milestones.length > 0) {
+        const counts = await Promise.all(
+          milestones.map(async (m) => {
+            const { count } = await supabase
+              .from("events")
+              .select("id", { count: "exact", head: true })
+              .eq("campaign_id", campaignId)
+              .eq("event_type", m);
+            return Number(count || 0);
+          })
+        );
+        allFulfilled = counts.every((c) => c >= target);
+      }
+
+      if (allFulfilled) {
         const { data: refreshed } = await supabase
           .from("campaigns")
           .select("status")
