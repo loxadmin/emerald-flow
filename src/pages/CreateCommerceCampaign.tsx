@@ -126,7 +126,8 @@ export default function CreateCommerceCampaign() {
   }, [selectedWebsiteId, websites]);
 
   const sales = Math.max(100, Number(targetSales) || 100);
-  const totalCost = SALE_FLAT_FEE * sales;
+  const baseCost = SALE_FLAT_FEE * sales;
+  const totalCost = baseCost + COMMISSION_BUFFER;
 
   const handleGenerateKey = async () => {
     if (!user) return;
