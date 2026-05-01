@@ -17,6 +17,7 @@ interface Website { id: string; domain: string; is_verified: boolean; }
 const SALE_FLAT_FEE = 1;
 const SALE_COMMISSION_RATE = 0.10;
 const MIN_WALLET_BALANCE = 200;
+const COMMISSION_BUFFER = 100; // Extra escrow held to cover unknown 10% commission on purchases
 
 export default function CreateCommerceCampaign() {
   const navigate = useNavigate();
