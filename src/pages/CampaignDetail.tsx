@@ -50,6 +50,49 @@ export default function CampaignDetail() {
   const [creative, setCreative] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [engagementStats, setEngagementStats] = useState({ interactions: 0, correct: 0, points: 0 });
+  const [topupOpen, setTopupOpen] = useState(false);
+  const [topupAmount, setTopupAmount] = useState("");
+  const [topupLoading, setTopupLoading] = useState(false);
+  const [endLoading, setEndLoading] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+
+  const refreshWallet = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
+    if (data) setWalletBalance(Number(data.balance));
+  };
+
+  useEffect(() => { refreshWallet(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user?.id]);
+
+  const handleTopupEscrow = async () => {
+    if (!id) return;
+    const amt = Number(topupAmount);
+    if (!Number.isFinite(amt) || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > walletBalance) { toast.error("Insufficient wallet balance"); return; }
+    setTopupLoading(true);
+    const { data, error } = await supabase.rpc("topup_campaign_escrow" as any, { _campaign_id: id, _amount: amt });
+    setTopupLoading(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Escrow topped up");
+    setTopupOpen(false);
+    setTopupAmount("");
+    const result: any = data;
+    setCampaign((c) => c ? ({ ...c, budget_remaining: result?.new_escrow ?? c.budget_remaining, status: c.status === "paused" ? "active" : c.status } as any) : c);
+    refreshWallet();
+  };
+
+  const handleEndCampaign = async () => {
+    if (!id) return;
+    if (!confirm("End this campaign now? Any unused escrow will be refunded to your wallet.")) return;
+    setEndLoading(true);
+    const { data, error } = await supabase.rpc("end_campaign_early" as any, { _campaign_id: id });
+    setEndLoading(false);
+    if (error) { toast.error(error.message); return; }
+    const result: any = data;
+    toast.success(`Campaign ended. $${Number(result?.refunded || 0).toFixed(2)} refunded to wallet.`);
+    setCampaign((c) => c ? ({ ...c, status: "ended", budget_remaining: 0 } as any) : c);
+    refreshWallet();
+  };
 
   const getAccessToken = async () => {
     const { data } = await supabase.auth.getSession();
