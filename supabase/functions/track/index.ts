@@ -387,7 +387,7 @@ Deno.serve(async (req) => {
           .select("status")
           .eq("id", campaignId)
           .maybeSingle();
-        if (refreshed?.status === "active") {
+        if (refreshed?.status === "active" || refreshed?.status === "paused") {
           await supabase
             .from("campaigns")
             .update({ status: "completed", completed_at: new Date().toISOString() })
