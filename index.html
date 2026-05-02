@@ -55,7 +55,55 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- SEO prerendered content: visible to crawlers and on first paint before React hydrates. Replaced by the React app on mount. -->
+      <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="false">
+        <header>
+          <a href="/" rel="home">Karbali Ads</a>
+          <nav aria-label="Primary">
+            <a href="/">Home</a>
+            <a href="/what-is-karbali">What is Karbali</a>
+            <a href="/ads">Ad Types</a>
+            <a href="/use-cases">Use Cases</a>
+            <a href="/problem-solution">Problem & Solution</a>
+            <a href="/comparison">Comparison</a>
+            <a href="/about">About</a>
+            <a href="/docs">Docs</a>
+            <a href="/blog">Blog</a>
+            <a href="/login">Log in</a>
+            <a href="/signup">Sign up</a>
+          </nav>
+        </header>
+        <main>
+          <h1>Karbali Ads — Find Customers and Get Paying Clients Online</h1>
+          <p>Karbali Ads is a performance advertising platform that helps brands, businesses, apps, and shops find real customers and paying clients. You only pay for measurable results — signups, downloads, conversions, and sales — never for empty impressions or wasted clicks.</p>
+          <h2>Why advertisers choose Karbali Ads</h2>
+          <ul>
+            <li>Pay only for verified results: signups, app installs, leads, and purchases.</li>
+            <li>Built-in conversion tracking, attribution, and fraud protection.</li>
+            <li>Engagement, performance, and commerce ad formats in one platform.</li>
+            <li>Transparent escrow billing — your budget is only deducted on real outcomes.</li>
+            <li>Real-time analytics, campaign control, and instant top-ups from your wallet.</li>
+          </ul>
+          <h2>Ad types built for real growth</h2>
+          <p>Run engagement ads to grow brand awareness with quizzes and rewarded media, performance ads to acquire users and leads at a fixed cost per action, and commerce ads to drive verified online sales with commission-based pricing.</p>
+          <h2>Who Karbali Ads is for</h2>
+          <p>Startups looking for early users, mobile apps that need installs, e-commerce stores that want paying customers, SaaS businesses driving signups, and established brands that want measurable customer acquisition instead of guesswork.</p>
+          <h2>How it works</h2>
+          <ol>
+            <li>Create your advertiser account and verify your business email.</li>
+            <li>Fund your wallet and launch a campaign — engagement, performance, or commerce.</li>
+            <li>Install the Karbali tracker or share your tracking link to start measuring conversions.</li>
+            <li>Pay only when real users complete the goals you defined.</li>
+          </ol>
+          <h2>Get started</h2>
+          <p><a href="/signup">Create a free Karbali Ads account</a> or <a href="/login">log in</a> to launch your first performance campaign today.</p>
+        </main>
+        <footer>
+          <p>&copy; Karbali Ads. Performance advertising for brands, businesses, apps, and shops.</p>
+        </footer>
+      </div>
+    </div>
     <script src="/karbali-tracker.js" data-api-key="kb_e8b88e34344c4ebe896a0003ae2b07ee"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
