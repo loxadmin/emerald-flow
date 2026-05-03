@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_reminder_log: {
+        Row: {
+          advertiser_id: string
+          created_at: string
+          email: string
+          error: string | null
+          id: string
+          sent_on: string
+          status: string
+          subtype: string | null
+        }
+        Insert: {
+          advertiser_id: string
+          created_at?: string
+          email: string
+          error?: string | null
+          id?: string
+          sent_on?: string
+          status?: string
+          subtype?: string | null
+        }
+        Update: {
+          advertiser_id?: string
+          created_at?: string
+          email?: string
+          error?: string | null
+          id?: string
+          sent_on?: string
+          status?: string
+          subtype?: string | null
+        }
+        Relationships: []
+      }
       admin_2fa_codes: {
         Row: {
           code_hash: string
