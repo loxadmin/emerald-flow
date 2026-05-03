@@ -30,3 +30,6 @@ verify_jwt = false
 
 [functions.send-campaign-notification]
 verify_jwt = false
+
+[functions.send-activation-reminders]
+verify_jwt = false
