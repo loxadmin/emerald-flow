@@ -3,22 +3,21 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
-import FluidCanvas from "@/components/FluidCanvas";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
-  Menu, X, Lock, AlertCircle, Megaphone, Globe,
+  Menu, X, Lock, AlertCircle, Megaphone, Globe, ChevronRight,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
 const baseAdvertiserLinks = [
-  { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { to: "/ads", label: "Ads", icon: Megaphone },
-  { to: "/campaigns/create", label: "New Campaign", icon: Plus },
-  { to: "/websites", label: "Websites", icon: Globe, hideForEngagement: true },
-  { to: "/wallet", label: "Wallet", icon: Wallet },
-  { to: "/docs", label: "API Docs", icon: FileText, hideForEngagement: true },
+  { to: "/dashboard", label: "Overview", icon: LayoutDashboard, group: "Main" },
+  { to: "/ads", label: "Ads", icon: Megaphone, group: "Main" },
+  { to: "/campaigns/create", label: "New Campaign", icon: Plus, group: "Main" },
+  { to: "/websites", label: "Websites", icon: Globe, hideForEngagement: true, group: "Setup" },
+  { to: "/wallet", label: "Wallet", icon: Wallet, group: "Setup" },
+  { to: "/docs", label: "API Docs", icon: FileText, hideForEngagement: true, group: "Setup" },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -62,59 +61,76 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return "";
   };
 
+  const groups = ["Main", "Setup"];
+  const currentLink = advertiserLinks.find(l => l.to === location.pathname);
+
   const sidebar = (
     <>
       <div className="flex h-14 items-center justify-between border-b border-border px-5">
-        <Link to="/dashboard" className="flex items-center gap-2 text-base font-semibold">
+        <Link to="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <Logo size={20} />
-          <span className="text-gradient text-xs">Karbali Ads</span>
+          <span>Karbali</span>
         </Link>
         <button className="lg:hidden rounded-md p-1 text-muted-foreground hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4" />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
-        <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Menu</p>
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
         {categoryStatus && (
-          <div className="mb-2 px-3">
-            <Badge variant="outline" className={`text-[10px] font-normal ${isCategoryActive ? "text-primary border-primary/20" : "text-amber-600 border-amber-500/20"}`}>
-              {isCategoryActive ? "Category: Active" : "Category: Pending"}
-            </Badge>
+          <div className="px-2">
+            <div className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px] ${
+              isCategoryActive ? "border-primary/30 text-primary bg-primary/5" : "border-amber-500/30 text-amber-600 bg-amber-500/5"
+            }`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${isCategoryActive ? "bg-primary" : "bg-amber-500"}`} />
+              {isCategoryActive ? "Category active" : "Category pending"}
+            </div>
           </div>
         )}
-        {advertiserLinks.map((link) => {
-          const locked = isPageLocked(link.to);
-          const active = location.pathname === link.to;
+        {groups.map((group) => {
+          const links = advertiserLinks.filter(l => l.group === group);
+          if (!links.length) return null;
           return (
-            <Link
-              key={link.to}
-              to={locked ? "#" : link.to}
-              onClick={(e) => { if (locked) e.preventDefault(); setMobileMenuOpen(false); }}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
-                locked ? "opacity-40 cursor-not-allowed text-muted-foreground" :
-                active ? "bg-primary/10 text-primary font-medium" :
-                "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              }`}
-            >
-              <link.icon className="h-4 w-4" />
-              {link.label}
-              {locked && <Lock className="h-3 w-3 ml-auto" />}
-            </Link>
+            <div key={group} className="space-y-0.5">
+              <p className="mb-1.5 px-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">{group}</p>
+              {links.map((link) => {
+                const locked = isPageLocked(link.to);
+                const active = location.pathname === link.to;
+                return (
+                  <Link
+                    key={link.to}
+                    to={locked ? "#" : link.to}
+                    onClick={(e) => { if (locked) e.preventDefault(); setMobileMenuOpen(false); }}
+                    className={`group flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors ${
+                      locked ? "opacity-40 cursor-not-allowed text-muted-foreground" :
+                      active ? "bg-foreground/[0.06] text-foreground font-medium" :
+                      "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
+                    }`}
+                  >
+                    <link.icon className={`h-4 w-4 ${active ? "text-primary" : ""}`} />
+                    <span className="flex-1">{link.label}</span>
+                    {locked && <Lock className="h-3 w-3" />}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
 
-      <div className="border-t border-border p-3 space-y-1">
-        <div className="flex items-center justify-between px-2">
-          <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-          <button onClick={toggleTheme} className="rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors">
+      <div className="border-t border-border p-3">
+        <div className="flex items-center gap-2 rounded-md px-2 py-2">
+          <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">
+            {(user?.email || "?")[0].toUpperCase()}
+          </div>
+          <p className="flex-1 truncate text-xs text-foreground">{user?.email}</p>
+          <button onClick={toggleTheme} className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors" title="Toggle theme">
             {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
           </button>
+          <button onClick={signOut} className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors" title="Sign out">
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
         </div>
-        <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-muted-foreground" onClick={signOut}>
-          <LogOut className="mr-2 h-3.5 w-3.5" /> Sign Out
-        </Button>
       </div>
     </>
   );
@@ -123,19 +139,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const lockReason = getLockReason();
 
   return (
-    <div className="relative flex min-h-screen">
-      <FluidCanvas />
-
+    <div className="relative flex min-h-screen bg-background">
       {/* Desktop sidebar */}
-      <aside className="fixed left-0 top-0 z-40 hidden lg:flex h-screen w-56 flex-col bg-card/80 backdrop-blur-xl border-r border-border">
+      <aside className="fixed left-0 top-0 z-40 hidden lg:flex h-screen w-60 flex-col bg-card border-r border-border">
         {sidebar}
       </aside>
 
       {/* Mobile header */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex lg:hidden h-12 items-center justify-between px-4 bg-card/80 backdrop-blur-xl border-b border-border">
+      <div className="fixed top-0 left-0 right-0 z-40 flex lg:hidden h-12 items-center justify-between px-4 bg-card border-b border-border">
         <Link to="/dashboard" className="flex items-center gap-2 text-sm font-semibold">
           <Logo size={18} />
-          <span className="text-gradient text-xs">Karbali Ads</span>
+          <span>Karbali</span>
         </Link>
         <button onClick={() => setMobileMenuOpen(true)} className="rounded-md p-1.5 text-muted-foreground hover:text-foreground">
           <Menu className="h-5 w-5" />
@@ -153,24 +167,35 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* Main */}
-      <main className="relative z-10 lg:ml-56 flex-1 p-4 pt-16 lg:p-6 lg:pt-6 min-w-0">
-        {maintenanceMode && !walletActivated ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
-            <h2 className="text-lg font-semibold text-foreground mb-1">Under Development</h2>
-            <p className="text-sm text-muted-foreground max-w-md">This platform is currently under development. Please check back soon.</p>
-          </div>
-        ) : currentPageLocked ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
-            <h2 className="text-lg font-semibold text-foreground mb-1">Access Restricted</h2>
-            <p className="text-sm text-muted-foreground max-w-md mb-4">{lockReason}</p>
-            {isWalletNotActivated && (
-              <Link to="/wallet"><Button size="sm"><Wallet className="mr-2 h-4 w-4" /> Go to Wallet</Button></Link>
-            )}
-          </div>
-        ) : children}
-      </main>
+      <div className="flex-1 lg:ml-60 min-w-0 flex flex-col">
+        {/* Top bar */}
+        <header className="hidden lg:flex sticky top-0 z-30 h-12 items-center gap-2 border-b border-border bg-background/80 backdrop-blur px-6">
+          <nav className="flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
+            <span>Advertiser</span>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-foreground font-medium">{currentLink?.label || "Dashboard"}</span>
+          </nav>
+        </header>
+
+        <main className="flex-1 p-4 pt-16 lg:p-8 lg:pt-6 min-w-0">
+          {maintenanceMode && !walletActivated ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
+              <h2 className="text-lg font-semibold text-foreground mb-1">Under Development</h2>
+              <p className="text-sm text-muted-foreground max-w-md">This platform is currently under development. Please check back soon.</p>
+            </div>
+          ) : currentPageLocked ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
+              <h2 className="text-lg font-semibold text-foreground mb-1">Access Restricted</h2>
+              <p className="text-sm text-muted-foreground max-w-md mb-4">{lockReason}</p>
+              {isWalletNotActivated && (
+                <Link to="/wallet"><Button size="sm"><Wallet className="mr-2 h-4 w-4" /> Go to Wallet</Button></Link>
+              )}
+            </div>
+          ) : children}
+        </main>
+      </div>
     </div>
   );
 }
