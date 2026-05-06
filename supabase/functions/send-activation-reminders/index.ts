@@ -10,7 +10,7 @@ const corsHeaders = {
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const FROM = "Karbali Ads <noreply@karbali.com>";
+const FROM = "Karbali Ads <noreply@advertiser.karbali.com>";
 const APP_URL = "https://karbaliads.com";
 
 type Subtype = "musician" | "youtuber" | "app" | "website" | "ecommerce" | "service" | "real_estate" | null;
