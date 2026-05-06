@@ -1,0 +1,2 @@
+ALTER TABLE public.campaigns ALTER COLUMN auto_activation_at SET DEFAULT '2026-06-01 00:00:00+00'::timestamptz;
+UPDATE public.campaigns SET auto_activation_at = '2026-06-01 00:00:00+00'::timestamptz WHERE auto_activation_at = '2026-05-10 00:00:00+00'::timestamptz;
