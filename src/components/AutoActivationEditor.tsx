@@ -20,7 +20,7 @@ interface Props {
 }
 
 export default function AutoActivationEditor({ campaignId, value, onSaved }: Props) {
-  const initial = value ? toLocalInputValue(value) : toLocalInputValue("2026-05-10T00:00:00Z");
+  const initial = value ? toLocalInputValue(value) : toLocalInputValue("2026-06-01T00:00:00Z");
   const [date, setDate] = useState(initial);
   const [saving, setSaving] = useState(false);
 
