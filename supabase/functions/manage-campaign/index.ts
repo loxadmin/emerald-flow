@@ -303,87 +303,225 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "No transcription found" }, 400);
       }
 
-      // Use Lovable AI (NLP) to generate 20 simple yes/no questions from the transcription
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) return jsonResponse({ error: "LOVABLE_API_KEY not configured" }, 500);
+      // ===== Karbali in-house NLP question generator (no external AI) =====
+      // Pipeline: clean -> sentence split -> tokenize -> stopword filter ->
+      // entity & keyphrase extraction -> template-based yes/no synthesis ->
+      // negative-sample synthesis from same corpus -> dedupe & balance.
+      const STOPWORDS = new Set([
+        "the","a","an","and","or","but","if","then","so","because","while","of","to","in","on","at","for","with","without",
+        "is","am","are","was","were","be","been","being","do","does","did","done","have","has","had","i","you","he","she","it",
+        "we","they","me","him","her","us","them","my","your","his","its","our","their","this","that","these","those","as",
+        "by","from","into","onto","over","under","up","down","out","off","than","too","very","just","also","really","about",
+        "not","no","yes","can","could","will","would","should","may","might","must","shall","there","here","what","when","where",
+        "why","how","who","whom","which","whose","than","more","less","most","least","much","many","some","any","all","each",
+        "every","other","another","such","own","same","new","old","one","two","three","get","got","go","goes","going","said",
+        "says","like","want","wanted","make","made","take","took","let","lets",
+      ]);
 
-      const contentType = creative.media_type === "music" ? "song" : "video";
-      const transcript = String(creative.transcription).slice(0, 8000);
+      const clean = String(creative.transcription)
+        .replace(/\[[^\]]*\]/g, " ") // [Music], [Applause]
+        .replace(/\s+/g, " ")
+        .trim();
 
-      const systemPrompt = `You are an NLP engine that reads a ${contentType} transcript and writes 20 SIMPLE yes/no comprehension questions a casual viewer can answer after watching/listening once. Rules:
-- Exactly 20 questions.
-- Each must be answerable strictly with Yes or No.
-- Mix correct answers: about 12 with answer "yes" (true facts from the transcript) and about 8 with answer "no" (plausible but contradicted by the transcript). Never use absurd or unrelated topics.
-- Keep each question under 18 words, plain everyday English, no jargon, no quotes from the transcript longer than 6 words.
-- Do not number the questions. Do not add explanations.`;
+      // Sentence split (handles ., !, ?, newlines)
+      const rawSentences = clean
+        .split(/(?<=[.!?])\s+|\n+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
 
-      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `Transcript:\n${transcript}` },
-          ],
-          tools: [{
-            type: "function",
-            function: {
-              name: "submit_questions",
-              description: "Submit 20 yes/no questions derived from the transcript.",
-              parameters: {
-                type: "object",
-                properties: {
-                  questions: {
-                    type: "array",
-                    minItems: 20,
-                    maxItems: 20,
-                    items: {
-                      type: "object",
-                      properties: {
-                        question: { type: "string" },
-                        correct_answer: { type: "boolean" },
-                      },
-                      required: ["question", "correct_answer"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                required: ["questions"],
-                additionalProperties: false,
-              },
-            },
-          }],
-          tool_choice: { type: "function", function: { name: "submit_questions" } },
-        }),
+      // Keep meaningful sentences only
+      const sentences = rawSentences.filter((s) => {
+        const w = s.split(/\s+/);
+        return w.length >= 4 && w.length <= 30;
       });
 
-      if (!aiRes.ok) {
-        const t = await aiRes.text();
-        if (aiRes.status === 429) return jsonResponse({ error: "AI rate limit exceeded, try again shortly." }, 429);
-        if (aiRes.status === 402) return jsonResponse({ error: "AI credits exhausted. Add funds in Settings > Workspace > Usage." }, 402);
-        return jsonResponse({ error: `AI error: ${t}` }, 500);
+      type Token = { raw: string; lower: string };
+      const tokenize = (s: string): Token[] =>
+        s.replace(/[^A-Za-z0-9'\-\s]/g, " ")
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((t) => ({ raw: t, lower: t.toLowerCase() }));
+
+      // Term frequency across whole transcript for keyword scoring
+      const tf = new Map<string, number>();
+      tokenize(clean).forEach((t) => {
+        if (STOPWORDS.has(t.lower) || t.lower.length < 3) return;
+        tf.set(t.lower, (tf.get(t.lower) || 0) + 1);
+      });
+
+      const isProperNoun = (t: Token, idx: number) =>
+        /^[A-Z][a-z'\-]+$/.test(t.raw) && idx > 0; // skip sentence-initial caps
+
+      const isNumber = (t: Token) => /^\d[\d,\.]*$/.test(t.lower);
+
+      // Extract candidate entities/keyphrases per sentence
+      const sentenceMeta = sentences.map((sent) => {
+        const toks = tokenize(sent);
+        const entities: string[] = [];
+        const numbers: string[] = [];
+        const keywords: string[] = [];
+        toks.forEach((t, i) => {
+          if (isNumber(t)) numbers.push(t.raw);
+          else if (isProperNoun(t, i)) entities.push(t.raw);
+          else if (!STOPWORDS.has(t.lower) && t.lower.length >= 4) keywords.push(t.lower);
+        });
+        // top keyword by global frequency
+        keywords.sort((a, b) => (tf.get(b) || 0) - (tf.get(a) || 0));
+        return { sent, toks, entities, numbers, keywords: keywords.slice(0, 3) };
+      });
+
+      // Global pools for negative-sample swapping
+      const allEntities = Array.from(new Set(sentenceMeta.flatMap((m) => m.entities)));
+      const allNumbers = Array.from(new Set(sentenceMeta.flatMap((m) => m.numbers)));
+      const allKeywords = Array.from(
+        new Set(sentenceMeta.flatMap((m) => m.keywords)),
+      ).sort((a, b) => (tf.get(b) || 0) - (tf.get(a) || 0));
+
+      const subject = creative.media_type === "music" ? "the song" : "the video";
+
+      const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+      const trimQ = (q: string) =>
+        q.replace(/\s+/g, " ").replace(/\?+$/, "").trim() + "?";
+
+      const seen = new Set<string>();
+      const out: { question: string; correct_answer: boolean }[] = [];
+      const push = (q: string, ans: boolean) => {
+        const key = q.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push({ question: trimQ(cap(q)), correct_answer: ans });
+      };
+
+      // ----- TRUE templates from each sentence -----
+      for (const m of sentenceMeta) {
+        if (out.filter((q) => q.correct_answer).length >= 12) break;
+        if (m.entities[0]) {
+          push(`Is ${m.entities[0]} mentioned in ${subject}`, true);
+        } else if (m.keywords[0]) {
+          push(`Does ${subject} talk about ${m.keywords[0]}`, true);
+        }
+        if (m.numbers[0] && out.filter((q) => q.correct_answer).length < 12) {
+          push(`Is the number ${m.numbers[0]} mentioned in ${subject}`, true);
+        }
+        if (m.keywords[1] && out.filter((q) => q.correct_answer).length < 12) {
+          push(`Does ${subject} mention ${m.keywords[1]}`, true);
+        }
       }
 
-      const aiJson = await aiRes.json();
-      const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
-      let parsed: { questions: { question: string; correct_answer: boolean }[] } | null = null;
-      try { parsed = JSON.parse(toolCall?.function?.arguments || "{}"); } catch { /* noop */ }
-      if (!parsed?.questions?.length) return jsonResponse({ error: "AI returned no questions" }, 500);
+      // Fallback TRUE from top global keywords
+      for (const kw of allKeywords) {
+        if (out.filter((q) => q.correct_answer).length >= 12) break;
+        push(`Does ${subject} mention ${kw}`, true);
+      }
 
-      const questions = parsed.questions.slice(0, 20).map((q) => ({
-        campaign_id,
-        question: String(q.question).trim(),
-        correct_answer: Boolean(q.correct_answer),
-      }));
+      // ----- FALSE templates: plausible but contradicted by transcript -----
+      // We invent surface terms that sound on-topic but never appear in the text.
+      const allText = " " + clean.toLowerCase() + " ";
+      const containsWord = (w: string) =>
+        new RegExp(`\\b${w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(
+          allText,
+        );
 
-      // Replace any existing auto-generated set first to keep counts clean
+      const decoyTopics = [
+        "the weather", "school", "money", "family", "football", "music lessons",
+        "cooking", "travel plans", "phones", "shopping", "sleeping", "homework",
+        "the market", "driving", "cars", "the office", "exams", "hospital",
+        "the church", "the beach",
+      ];
+      const decoyVerbs = [
+        "buy a house", "win a trophy", "change jobs", "move abroad", "open a shop",
+        "join a band", "start a business", "sell a phone", "build a website",
+      ];
+
+      let falseNeeded = 8;
+      // 1) Contradict by claiming an unrelated decoy topic is the focus
+      for (const topic of decoyTopics) {
+        if (falseNeeded <= 0) break;
+        if (!containsWord(topic.split(" ").slice(-1)[0])) {
+          push(`Is ${subject} mainly about ${topic}`, false);
+          falseNeeded--;
+        }
+      }
+      // 2) Decoy actions clearly absent from transcript
+      for (const v of decoyVerbs) {
+        if (falseNeeded <= 0) break;
+        const last = v.split(" ").slice(-1)[0];
+        if (!containsWord(last)) {
+          push(`Does ${subject} say someone will ${v}`, false);
+          falseNeeded--;
+        }
+      }
+      // 3) Swap entities: ask if a fake-but-plausible name appears
+      const fakeNames = ["John Smith", "Mary Jane", "Mr. Adekunle", "Sarah Lee", "David Brown"];
+      for (const n of fakeNames) {
+        if (falseNeeded <= 0) break;
+        if (!allEntities.some((e) => e.toLowerCase() === n.toLowerCase())) {
+          push(`Is ${n} mentioned in ${subject}`, false);
+          falseNeeded--;
+        }
+      }
+      // 4) Swap numbers: ask about a number not in transcript
+      const fakeNumbers = ["100", "250", "999", "1500"];
+      for (const n of fakeNumbers) {
+        if (falseNeeded <= 0) break;
+        if (!allNumbers.includes(n)) {
+          push(`Does ${subject} mention the number ${n}`, false);
+          falseNeeded--;
+        }
+      }
+
+      // Balance to exactly 20: trim or pad
+      let trues = out.filter((q) => q.correct_answer);
+      let falses = out.filter((q) => !q.correct_answer);
+      trues = trues.slice(0, 12);
+      falses = falses.slice(0, 8);
+
+      // If we are short on trues, pad from keywords
+      let kwIdx = 0;
+      while (trues.length < 12 && kwIdx < allKeywords.length) {
+        const kw = allKeywords[kwIdx++];
+        const q = trimQ(cap(`Does ${subject} include the word ${kw}`));
+        if (!seen.has(q.toLowerCase())) { seen.add(q.toLowerCase()); trues.push({ question: q, correct_answer: true }); }
+      }
+      // If still short, pad with generic affirmations grounded in the medium
+      const truePad = [
+        `Does ${subject} have spoken or sung words`,
+        `Is ${subject} in English`,
+        `Does ${subject} contain a message for the listener`,
+      ];
+      for (const q of truePad) {
+        if (trues.length >= 12) break;
+        const tq = trimQ(cap(q));
+        if (!seen.has(tq.toLowerCase())) { seen.add(tq.toLowerCase()); trues.push({ question: tq, correct_answer: true }); }
+      }
+      // Pad falses if needed
+      const falsePad = [
+        `Is ${subject} a silent film with no audio`,
+        `Does ${subject} last more than five hours`,
+        `Is ${subject} only in sign language`,
+      ];
+      for (const q of falsePad) {
+        if (falses.length >= 8) break;
+        const tq = trimQ(cap(q));
+        if (!seen.has(tq.toLowerCase())) { seen.add(tq.toLowerCase()); falses.push({ question: tq, correct_answer: false }); }
+      }
+
+      const finalQuestions = [...trues, ...falses]
+        .slice(0, 20)
+        .map((q) => ({ campaign_id, question: q.question, correct_answer: q.correct_answer }));
+
+      if (finalQuestions.length < 20) {
+        return jsonResponse({
+          error: `Transcript is too short to generate 20 questions (got ${finalQuestions.length}). Please paste a longer/more detailed transcript.`,
+        }, 400);
+      }
+
+      // Replace existing
       await supabase.from("campaign_questions").delete().eq("campaign_id", campaign_id);
-
-      const { error: qErr } = await supabase.from("campaign_questions").insert(questions);
+      const { error: qErr } = await supabase.from("campaign_questions").insert(finalQuestions);
       if (qErr) throw qErr;
 
-      return jsonResponse({ success: true, count: questions.length });
+      return jsonResponse({ success: true, count: finalQuestions.length, engine: "karbali-nlp-v1" });
     }
 
     return jsonResponse({ error: "Unknown action" }, 400);
