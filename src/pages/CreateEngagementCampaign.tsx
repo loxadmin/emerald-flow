@@ -31,7 +31,7 @@ export default function CreateEngagementCampaign() {
   const [mediaLink, setMediaLink] = useState("");
   const [transcription, setTranscription] = useState("");
   const [transcriptionConfirmed, setTranscriptionConfirmed] = useState(false);
-  const [targetInteractions, setTargetInteractions] = useState("1000");
+  const [targetInteractions, setTargetInteractions] = useState("200");
   const [transcribing, setTranscribing] = useState(false);
 
   useEffect(() => {
