@@ -125,11 +125,17 @@ Deno.serve(async (req) => {
     const c = copyFor(subtype, type, p.full_name ?? "");
     try {
       await sendEmail(p.email, c.headline, html(p.full_name ?? "", subtype, type));
-      await sb.from("activation_reminder_log").insert({ advertiser_id: p.id, email: p.email, subtype, status: "sent", sent_on: today });
+      await sb.from("activation_reminder_log").upsert(
+        { advertiser_id: p.id, email: p.email, subtype, status: "sent", error: null, sent_on: today },
+        { onConflict: "advertiser_id,sent_on" }
+      );
       sent++;
     } catch (e: any) {
       failed++;
-      await sb.from("activation_reminder_log").insert({ advertiser_id: p.id, email: p.email, subtype, status: "failed", error: String(e?.message ?? e), sent_on: today });
+      await sb.from("activation_reminder_log").upsert(
+        { advertiser_id: p.id, email: p.email, subtype, status: "failed", error: String(e?.message ?? e), sent_on: today },
+        { onConflict: "advertiser_id,sent_on" }
+      );
     }
   }
 
