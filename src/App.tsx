@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, RequireAuth, RequireAdmin } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
+import MetaPixelTracker from "@/components/MetaPixelTracker";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
