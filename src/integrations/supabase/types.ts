@@ -696,43 +696,55 @@ export type Database = {
           advertiser_id: string
           campaign_id: string
           created_at: string
+          event_types: string[]
           id: string
           media_link: string
           media_type: string
           min_interactions: number
           placement_fee: number
           rate_per_interaction: number
+          subscriber_rate: number | null
+          target_subscribers: number | null
           transcription: string | null
           transcription_confirmed: boolean | null
           updated_at: string
+          viewer_rate: number | null
         }
         Insert: {
           advertiser_id: string
           campaign_id: string
           created_at?: string
+          event_types?: string[]
           id?: string
           media_link: string
           media_type: string
           min_interactions?: number
           placement_fee?: number
           rate_per_interaction?: number
+          subscriber_rate?: number | null
+          target_subscribers?: number | null
           transcription?: string | null
           transcription_confirmed?: boolean | null
           updated_at?: string
+          viewer_rate?: number | null
         }
         Update: {
           advertiser_id?: string
           campaign_id?: string
           created_at?: string
+          event_types?: string[]
           id?: string
           media_link?: string
           media_type?: string
           min_interactions?: number
           placement_fee?: number
           rate_per_interaction?: number
+          subscriber_rate?: number | null
+          target_subscribers?: number | null
           transcription?: string | null
           transcription_confirmed?: boolean | null
           updated_at?: string
+          viewer_rate?: number | null
         }
         Relationships: [
           {

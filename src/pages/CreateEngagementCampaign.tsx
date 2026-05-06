@@ -7,14 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign } from "lucide-react";
+import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign, Eye, UserPlus } from "lucide-react";
 
 type MediaType = "music" | "video";
+type EventType = "viewer" | "subscriber";
 
-const RATES = { music: 0.20, video: 0.60 };
+const MUSIC_RATE = 0.20;
+const VIDEO_VIEWER_RATE = 0.40;
+const VIDEO_SUBSCRIBER_RATE = 0.15;
 const PLACEMENT_FEE = 10;
 const MIN_INTERACTIONS = 200;
 
@@ -27,11 +29,13 @@ export default function CreateEngagementCampaign() {
 
   // Campaign fields
   const [mediaType, setMediaType] = useState<MediaType | null>(null);
+  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [campaignName, setCampaignName] = useState("");
   const [mediaLink, setMediaLink] = useState("");
   const [transcription, setTranscription] = useState("");
   const [transcriptionConfirmed, setTranscriptionConfirmed] = useState(false);
-  const [targetInteractions, setTargetInteractions] = useState("200");
+  const [targetViewers, setTargetViewers] = useState("200");
+  const [targetSubscribers, setTargetSubscribers] = useState("200");
   const [transcribing, setTranscribing] = useState(false);
 
   useEffect(() => {
@@ -41,28 +45,66 @@ export default function CreateEngagementCampaign() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const rate = mediaType ? RATES[mediaType] : 0;
-  const interactions = Math.max(MIN_INTERACTIONS, Number(targetInteractions) || MIN_INTERACTIONS);
-  const totalCost = rate * interactions + PLACEMENT_FEE;
+  // For music: single event implicit ("listener")
+  const isMusic = mediaType === "music";
+  const isVideo = mediaType === "video";
+  const hasViewer = isMusic || eventTypes.includes("viewer");
+  const hasSubscriber = isVideo && eventTypes.includes("subscriber");
+  const needsTranscription = isMusic || (isVideo && eventTypes.includes("viewer"));
+
+  const viewerRate = isMusic ? MUSIC_RATE : VIDEO_VIEWER_RATE;
+  const subscriberRate = VIDEO_SUBSCRIBER_RATE;
+  const viewerCount = Math.max(MIN_INTERACTIONS, Number(targetViewers) || MIN_INTERACTIONS);
+  const subscriberCount = Math.max(MIN_INTERACTIONS, Number(targetSubscribers) || MIN_INTERACTIONS);
+  const viewerCost = hasViewer ? viewerRate * viewerCount : 0;
+  const subscriberCost = hasSubscriber ? subscriberRate * subscriberCount : 0;
+  const totalCost = viewerCost + subscriberCost + PLACEMENT_FEE;
+
+  const viewerLabel = isMusic ? "listener" : "viewer";
+
+  const handleAfterMediaType = (t: MediaType) => {
+    setMediaType(t);
+    if (t === "music") {
+      setEventTypes(["viewer"]); // music = listener event only
+      setStep(1);
+    } else {
+      setEventTypes([]);
+      setStep(1); // event selection step for video
+    }
+  };
 
   const handleTranscribe = async () => {
     if (!mediaLink.trim()) { toast.error("Enter a media link first"); return; }
+    if (!needsTranscription) {
+      // Skip transcription entirely, go to configure
+      setStep(4);
+      return;
+    }
     setTranscribing(true);
-    // Simulated transcription — in production this would call an AI service
-    // For now, prompt the user to paste their own lyrics/script
     setTimeout(() => {
       setTranscribing(false);
-      toast.info("Please paste your song lyrics or video script below for verification.");
-      setStep(2);
+      toast.info(`Please paste your ${isMusic ? "song lyrics" : "video script"} below for verification.`);
+      setStep(3);
     }, 1500);
   };
 
   const handleSubmit = async () => {
-    if (!user || !mediaType || !campaignName.trim() || !mediaLink.trim() || !transcription.trim()) {
+    if (!user || !mediaType || !campaignName.trim() || !mediaLink.trim()) {
       toast.error("Please fill in all fields"); return;
     }
-    if (!transcriptionConfirmed) { toast.error("Please confirm the transcription is correct"); return; }
-    if (interactions < MIN_INTERACTIONS) { toast.error(`Minimum ${MIN_INTERACTIONS} ${mediaType === "music" ? "listeners" : "viewers"}`); return; }
+    if (isVideo && eventTypes.length === 0) {
+      toast.error("Select at least one event type"); return;
+    }
+    if (needsTranscription) {
+      if (!transcription.trim()) { toast.error("Transcription is required"); return; }
+      if (!transcriptionConfirmed) { toast.error("Please confirm the transcription is correct"); return; }
+    }
+    if (hasViewer && viewerCount < MIN_INTERACTIONS) {
+      toast.error(`Minimum ${MIN_INTERACTIONS} ${viewerLabel}s`); return;
+    }
+    if (hasSubscriber && subscriberCount < MIN_INTERACTIONS) {
+      toast.error(`Minimum ${MIN_INTERACTIONS} subscribers`); return;
+    }
     if (walletBalance < totalCost) {
       toast.error(`Insufficient balance. Need $${totalCost.toFixed(2)}, have $${walletBalance.toFixed(2)}.`);
       return;
@@ -70,14 +112,13 @@ export default function CreateEngagementCampaign() {
 
     setLoading(true);
 
-    // Create campaign
     const { data: campaign, error: campErr } = await supabase.from("campaigns").insert({
       advertiser_id: user.id,
       name: campaignName.trim(),
       budget_remaining: 0,
       integration_type: "engagement",
       ad_type: "engagement",
-      target_users: interactions,
+      target_users: hasViewer ? viewerCount : subscriberCount,
       selected_milestones: [],
       total_cost: totalCost,
       price_download: 0,
@@ -88,22 +129,24 @@ export default function CreateEngagementCampaign() {
 
     if (campErr) { toast.error(campErr.message); setLoading(false); return; }
 
-    // Create creative campaign record
     const { error: creativeErr } = await supabase.from("creative_campaigns" as any).insert({
       campaign_id: campaign.id,
       advertiser_id: user.id,
       media_type: mediaType,
       media_link: mediaLink.trim(),
-      transcription: transcription.trim(),
-      transcription_confirmed: true,
-      rate_per_interaction: rate,
+      transcription: needsTranscription ? transcription.trim() : null,
+      transcription_confirmed: needsTranscription ? true : null,
+      rate_per_interaction: hasViewer ? viewerRate : subscriberRate,
       min_interactions: MIN_INTERACTIONS,
       placement_fee: PLACEMENT_FEE,
+      event_types: isMusic ? ["viewer"] : eventTypes,
+      viewer_rate: hasViewer ? viewerRate : null,
+      subscriber_rate: hasSubscriber ? subscriberRate : null,
+      target_subscribers: hasSubscriber ? subscriberCount : null,
     } as any);
 
     if (creativeErr) { toast.error(creativeErr.message); setLoading(false); return; }
 
-    // Submit for escrow
     const token = (await supabase.auth.getSession()).data.session?.access_token;
     const { data: escrowResult, error: escrowError } = await supabase.functions.invoke("manage-campaign", {
       body: { action: "submit_campaign", campaign_id: campaign.id },
@@ -117,11 +160,21 @@ export default function CreateEngagementCampaign() {
     }
 
     setLoading(false);
-    toast.success("Campaign submitted for review! Questions will be auto-generated upon approval.");
+    toast.success("Campaign submitted for review!");
     navigate(`/campaigns/${campaign.id}`);
   };
 
-  const STEPS = ["Media Type", "Upload", "Transcription", "Configure", "Submit"];
+  const STEPS = isVideo
+    ? ["Media Type", "Events", "Upload", needsTranscription ? "Transcription" : null, "Configure", "Submit"].filter(Boolean) as string[]
+    : ["Media Type", "Upload", "Transcription", "Configure", "Submit"];
+
+  // Step indices (variable due to optional transcription for video)
+  // 0 = media type, 1 = events (video) or upload (music), 2 = upload (video) or transcription (music)
+  // For clarity we use the original step numbers but skip transcription where appropriate.
+
+  const toggleEvent = (e: EventType) => {
+    setEventTypes((prev) => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e]);
+  };
 
   return (
     <DashboardLayout>
@@ -155,11 +208,11 @@ export default function CreateEngagementCampaign() {
             <div className="grid grid-cols-2 gap-3">
               {([
                 { type: "music" as MediaType, label: "Music", desc: "$0.20 per listener", icon: Music },
-                { type: "video" as MediaType, label: "Video", desc: "$0.60 per viewer", icon: MonitorPlay },
+                { type: "video" as MediaType, label: "Video", desc: "From $0.15 per event", icon: MonitorPlay },
               ]).map((opt) => (
                 <button
                   key={opt.type}
-                  onClick={() => { setMediaType(opt.type); setStep(1); }}
+                  onClick={() => handleAfterMediaType(opt.type)}
                   className="rounded-xl border border-border bg-card p-5 text-left hover:border-primary/30 transition-colors"
                 >
                   <opt.icon className="h-6 w-6 text-primary mb-2" />
@@ -171,47 +224,87 @@ export default function CreateEngagementCampaign() {
           </div>
         )}
 
-        {/* Step 1: Upload media link */}
-        {step === 1 && (
+        {/* Step 1 (video only): Choose events */}
+        {step === 1 && isVideo && (
+          <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+            <div>
+              <h3 className="text-sm font-medium text-foreground">Which events do you want to track?</h3>
+              <p className="text-xs text-muted-foreground mt-1">Select one or both. You pay per completed event.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {([
+                { type: "viewer" as EventType, label: "Viewer", desc: `$${VIDEO_VIEWER_RATE.toFixed(2)} per viewer`, sub: "Requires transcript + auto-generated quiz", icon: Eye },
+                { type: "subscriber" as EventType, label: "Subscriber", desc: `$${VIDEO_SUBSCRIBER_RATE.toFixed(2)} per subscriber`, sub: "No transcript needed", icon: UserPlus },
+              ]).map((opt) => {
+                const active = eventTypes.includes(opt.type);
+                return (
+                  <button
+                    key={opt.type}
+                    onClick={() => toggleEvent(opt.type)}
+                    className={`rounded-xl border p-5 text-left transition-colors ${active ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30"}`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <opt.icon className="h-6 w-6 text-primary mb-2" />
+                      {active && <CheckCircle className="h-4 w-4 text-primary" />}
+                    </div>
+                    <p className="text-sm font-medium text-foreground">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{opt.sub}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep(0)}>← Back</Button>
+              <Button className="flex-1" onClick={() => setStep(2)} disabled={eventTypes.length === 0}>Continue →</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Upload step: step 1 (music) or step 2 (video) */}
+        {((step === 1 && isMusic) || (step === 2 && isVideo)) && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-5">
             <div>
               <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-                {mediaType === "music" ? <Music className="h-4 w-4 text-primary" /> : <MonitorPlay className="h-4 w-4 text-primary" />}
-                {mediaType === "music" ? "Paste your song link" : "Paste your video link"}
+                {isMusic ? <Music className="h-4 w-4 text-primary" /> : <MonitorPlay className="h-4 w-4 text-primary" />}
+                {isMusic ? "Paste your song link" : "Paste your video link"}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
-                {mediaType === "music" ? "Link to your song on Spotify, Apple Music, YouTube Music, etc." : "Link to your YouTube video"}
+                {isMusic ? "Link to your song on Spotify, Apple Music, YouTube Music, etc." : "Link to your YouTube video"}
               </p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Campaign Name *</Label>
-              <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="My Music Campaign" />
+              <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="My Campaign" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">{mediaType === "music" ? "Song Link" : "Video Link"} *</Label>
-              <Input value={mediaLink} onChange={(e) => setMediaLink(e.target.value)} placeholder={mediaType === "music" ? "https://open.spotify.com/track/..." : "https://youtube.com/watch?v=..."} />
+              <Label className="text-xs text-muted-foreground">{isMusic ? "Song Link" : "Video Link"} *</Label>
+              <Input value={mediaLink} onChange={(e) => setMediaLink(e.target.value)} placeholder={isMusic ? "https://open.spotify.com/track/..." : "https://youtube.com/watch?v=..."} />
             </div>
-            <Button className="w-full" onClick={handleTranscribe} disabled={transcribing || !mediaLink.trim() || !campaignName.trim()}>
-              {transcribing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> : "Continue to Transcription →"}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep(isVideo ? 1 : 0)}>← Back</Button>
+              <Button className="flex-1" onClick={handleTranscribe} disabled={transcribing || !mediaLink.trim() || !campaignName.trim()}>
+                {transcribing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> : needsTranscription ? "Continue to Transcription →" : "Continue →"}
+              </Button>
+            </div>
           </div>
         )}
 
-        {/* Step 2: Transcription */}
-        {step === 2 && (
+        {/* Transcription step: step 2 (music) or step 3 (video, when needed) */}
+        {needsTranscription && ((step === 2 && isMusic) || (step === 3 && isVideo)) && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-5">
             <div>
               <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Edit3 className="h-4 w-4 text-primary" /> {mediaType === "music" ? "Song Lyrics / Transcription" : "Video Script / Transcription"}
+                <Edit3 className="h-4 w-4 text-primary" /> {isMusic ? "Song Lyrics / Transcription" : "Video Script / Transcription"}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Paste or edit the {mediaType === "music" ? "lyrics" : "script"} below. This will be used to generate quiz questions for listeners.
+                Paste or edit the {isMusic ? "lyrics" : "script"} below. This will be used to generate quiz questions for {viewerLabel}s.
               </p>
             </div>
             <Textarea
               value={transcription}
               onChange={(e) => { setTranscription(e.target.value); setTranscriptionConfirmed(false); }}
-              placeholder={mediaType === "music" ? "Paste your song lyrics here..." : "Paste your video script here..."}
+              placeholder={isMusic ? "Paste your song lyrics here..." : "Paste your video script here..."}
               rows={10}
               className="font-mono text-sm"
             />
@@ -225,39 +318,65 @@ export default function CreateEngagementCampaign() {
               <span className="text-sm text-foreground">I confirm this transcription is correct</span>
             </label>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(1)}>← Back</Button>
-              <Button className="flex-1" onClick={() => setStep(3)} disabled={!transcription.trim() || !transcriptionConfirmed}>
+              <Button variant="outline" onClick={() => setStep(isMusic ? 1 : 2)}>← Back</Button>
+              <Button className="flex-1" onClick={() => setStep(isMusic ? 3 : 4)} disabled={!transcription.trim() || !transcriptionConfirmed}>
                 Continue →
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Configure */}
-        {step === 3 && (
+        {/* Configure step: step 3 (music) or step 4 (video) */}
+        {((step === 3 && isMusic) || (step === 4 && isVideo)) && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-5">
             <div>
               <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-primary" /> Campaign Budget
               </h3>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
-                Target {mediaType === "music" ? "Listeners" : "Viewers"} (min {MIN_INTERACTIONS.toLocaleString()}) *
-              </Label>
-              <Input
-                type="number"
-                min={MIN_INTERACTIONS}
-                value={targetInteractions}
-                onChange={(e) => setTargetInteractions(e.target.value)}
-              />
-            </div>
+
+            {hasViewer && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  Target {viewerLabel}s (min {MIN_INTERACTIONS.toLocaleString()}) — ${viewerRate.toFixed(2)} each *
+                </Label>
+                <Input
+                  type="number"
+                  min={MIN_INTERACTIONS}
+                  value={targetViewers}
+                  onChange={(e) => setTargetViewers(e.target.value)}
+                />
+              </div>
+            )}
+
+            {hasSubscriber && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  Target subscribers (min {MIN_INTERACTIONS.toLocaleString()}) — ${subscriberRate.toFixed(2)} each *
+                </Label>
+                <Input
+                  type="number"
+                  min={MIN_INTERACTIONS}
+                  value={targetSubscribers}
+                  onChange={(e) => setTargetSubscribers(e.target.value)}
+                />
+              </div>
+            )}
+
             <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 text-sm">
               <p className="font-medium text-foreground text-xs">Cost Breakdown</p>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{interactions.toLocaleString()} {mediaType === "music" ? "listeners" : "viewers"} × ${rate.toFixed(2)}</span>
-                <span className="text-foreground">${(rate * interactions).toFixed(2)}</span>
-              </div>
+              {hasViewer && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{viewerCount.toLocaleString()} {viewerLabel}s × ${viewerRate.toFixed(2)}</span>
+                  <span className="text-foreground">${viewerCost.toFixed(2)}</span>
+                </div>
+              )}
+              {hasSubscriber && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{subscriberCount.toLocaleString()} subscribers × ${subscriberRate.toFixed(2)}</span>
+                  <span className="text-foreground">${subscriberCost.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Ad Placement Fee</span>
                 <span className="text-foreground">${PLACEMENT_FEE.toFixed(2)}</span>
@@ -282,16 +401,16 @@ export default function CreateEngagementCampaign() {
               </div>
             )}
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(2)}>← Back</Button>
-              <Button className="flex-1" onClick={() => setStep(4)} disabled={interactions < MIN_INTERACTIONS}>
+              <Button variant="outline" onClick={() => setStep(needsTranscription ? (isMusic ? 2 : 3) : 2)}>← Back</Button>
+              <Button className="flex-1" onClick={() => setStep(isMusic ? 4 : 5)}>
                 Review & Submit →
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 4: Review & Submit */}
-        {step === 4 && (
+        {/* Submit step: step 4 (music) or step 5 (video) */}
+        {((step === 4 && isMusic) || (step === 5 && isVideo)) && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <div>
               <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -301,10 +420,11 @@ export default function CreateEngagementCampaign() {
             <div className="rounded-lg bg-muted/50 p-4 space-y-2">
               {[
                 { l: "Campaign Name", v: campaignName },
-                { l: "Type", v: mediaType === "music" ? "Music (Engagement)" : "Video (Engagement)" },
+                { l: "Type", v: isMusic ? "Music (Engagement)" : "Video (Engagement)" },
+                ...(isVideo ? [{ l: "Events", v: eventTypes.map(e => e.charAt(0).toUpperCase() + e.slice(1)).join(", ") }] : []),
                 { l: "Media Link", v: mediaLink },
-                { l: `Target ${mediaType === "music" ? "Listeners" : "Viewers"}`, v: interactions.toLocaleString() },
-                { l: "Rate", v: `$${rate.toFixed(2)} per ${mediaType === "music" ? "listener" : "viewer"}` },
+                ...(hasViewer ? [{ l: `Target ${viewerLabel}s`, v: `${viewerCount.toLocaleString()} × $${viewerRate.toFixed(2)}` }] : []),
+                ...(hasSubscriber ? [{ l: "Target subscribers", v: `${subscriberCount.toLocaleString()} × $${subscriberRate.toFixed(2)}` }] : []),
                 { l: "Total Cost", v: `$${totalCost.toFixed(2)}` },
                 { l: "Balance", v: `$${walletBalance.toFixed(2)}` },
               ].map((r) => (
@@ -314,11 +434,13 @@ export default function CreateEngagementCampaign() {
                 </div>
               ))}
             </div>
-            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-              <p>Upon admin approval, 20 simple yes/no questions will be auto-generated by AI from your transcription and a referral link will be created.</p>
-            </div>
+            {needsTranscription && (
+              <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+                <p>Upon admin approval, 20 simple yes/no questions will be auto-generated by AI from your transcription and a referral link will be created.</p>
+              </div>
+            )}
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(3)}>← Back</Button>
+              <Button variant="outline" onClick={() => setStep(isMusic ? 3 : 4)}>← Back</Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit for Review"}
               </Button>
