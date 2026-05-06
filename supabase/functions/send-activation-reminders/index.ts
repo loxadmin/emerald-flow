@@ -10,7 +10,7 @@ const corsHeaders = {
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const FROM = "Karbali Ads <noreply@karbaliads.com>";
+const FROM = "Karbali Ads <noreply@karbali.com>";
 const APP_URL = "https://karbaliads.com";
 
 type Subtype = "musician" | "youtuber" | "app" | "website" | "ecommerce" | "service" | "real_estate" | null;
@@ -105,7 +105,12 @@ Deno.serve(async (req) => {
   const [{ data: profiles }, { data: cats }, { data: alreadySent }] = await Promise.all([
     sb.from("profiles").select("id, email, full_name, is_blocked").in("id", ids),
     sb.from("advertiser_categories").select("advertiser_id, advertiser_type, advertiser_subtype").in("advertiser_id", ids),
-    sb.from("activation_reminder_log").select("advertiser_id").eq("sent_on", today).in("advertiser_id", ids),
+    sb
+      .from("activation_reminder_log")
+      .select("advertiser_id")
+      .eq("sent_on", today)
+      .eq("status", "sent")
+      .in("advertiser_id", ids),
   ]);
 
   const sentToday = new Set((alreadySent ?? []).map((r: any) => r.advertiser_id));
@@ -120,11 +125,17 @@ Deno.serve(async (req) => {
     const c = copyFor(subtype, type, p.full_name ?? "");
     try {
       await sendEmail(p.email, c.headline, html(p.full_name ?? "", subtype, type));
-      await sb.from("activation_reminder_log").insert({ advertiser_id: p.id, email: p.email, subtype, status: "sent", sent_on: today });
+      await sb.from("activation_reminder_log").upsert(
+        { advertiser_id: p.id, email: p.email, subtype, status: "sent", error: null, sent_on: today },
+        { onConflict: "advertiser_id,sent_on" }
+      );
       sent++;
     } catch (e: any) {
       failed++;
-      await sb.from("activation_reminder_log").insert({ advertiser_id: p.id, email: p.email, subtype, status: "failed", error: String(e?.message ?? e), sent_on: today });
+      await sb.from("activation_reminder_log").upsert(
+        { advertiser_id: p.id, email: p.email, subtype, status: "failed", error: String(e?.message ?? e), sent_on: today },
+        { onConflict: "advertiser_id,sent_on" }
+      );
     }
   }
 
