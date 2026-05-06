@@ -2,16 +2,8 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import MobileTabBar from "@/components/MobileTabBar";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { GlassButton } from "@/components/ui/glass-button";
+import FluidCanvas from "@/components/FluidCanvas";
 import {
   Shield,
   BarChart3,
@@ -24,227 +16,131 @@ import {
   Layers,
   Wallet,
   Handshake,
+  Menu,
+  X,
   MessageSquare,
   Layout,
   Chrome,
   Gamepad2,
-  MoreHorizontal,
-  Home,
-  ChevronRight,
-  Search,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
-type NavItem = { to: string; label: string; icon: any; description: string };
-
-const navGroups: { label: string; items: NavItem[] }[] = [
-  {
-    label: "Overview",
-    items: [
-      { to: "/admin", label: "Dashboard", icon: Shield, description: "Platform snapshot" },
-      { to: "/admin/analytics", label: "Analytics", icon: BarChart3, description: "Trends and traffic" },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { to: "/admin/advertisers", label: "Advertisers", icon: Users, description: "Accounts and status" },
-      { to: "/admin/categories", label: "Categories", icon: Layers, description: "Onboarding structure" },
-      { to: "/admin/partnerships", label: "Partnerships", icon: Handshake, description: "Partner approvals" },
-      { to: "/admin/wallets", label: "Wallets", icon: Wallet, description: "Funding and balance" },
-      { to: "/admin/messages", label: "Messages", icon: MessageSquare, description: "Support conversations" },
-    ],
-  },
-  {
-    label: "Content",
-    items: [
-      { to: "/admin/blogs", label: "Blogs", icon: PenSquare, description: "Public content" },
-      { to: "/admin/content", label: "Site Content", icon: Layout, description: "Landing page sections" },
-      { to: "/admin/design", label: "Page Design", icon: Layers, description: "Visual settings" },
-    ],
-  },
-  {
-    label: "Platform",
-    items: [
-      { to: "/admin/offerwall", label: "Offerwall", icon: Gamepad2, description: "Reward inventory" },
-      { to: "/admin/extension", label: "Extension", icon: Chrome, description: "Browser tools" },
-      { to: "/admin/settings", label: "Settings", icon: Settings, description: "System controls" },
-    ],
-  },
-];
-
-const mobilePrimary = [
-  { to: "/admin", label: "Home", icon: Home },
-  { to: "/admin/advertisers", label: "Accounts", icon: Users },
-  { to: "/admin/wallets", label: "Wallets", icon: Wallet },
+const adminLinks = [
+  { to: "/admin", label: "Overview", icon: Shield },
+  { to: "/admin/advertisers", label: "Advertisers", icon: Users },
+  { to: "/admin/categories", label: "Categories", icon: Layers },
+  { to: "/admin/partnerships", label: "Partnerships", icon: Handshake },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/admin/wallets", label: "Wallets", icon: Wallet },
+  { to: "/admin/messages", label: "Messages", icon: MessageSquare },
+  { to: "/admin/blogs", label: "Blogs", icon: PenSquare },
+  { to: "/admin/content", label: "Site Content", icon: Layout },
+  { to: "/admin/design", label: "Page Design", icon: Layers },
+  { to: "/admin/offerwall", label: "Offerwall", icon: Gamepad2 },
+  { to: "/admin/extension", label: "Extension", icon: Chrome },
+  { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { pathname } = useLocation();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isActive = (to: string) => pathname === to;
-  const flatItems = navGroups.flatMap((group) => group.items);
-  const currentItem = flatItems.find((item) => item.to === pathname) ?? flatItems[0];
+  const sidebar = (
+    <>
+      <div className="flex h-16 items-center justify-between border-b border-border/30 px-6">
+        <Link to="/admin" className="flex items-center gap-2 text-xl font-bold tracking-tight">
+          <Logo size={24} />
+          <span className="text-gradient">Karbali Ads</span>
+          <span className="ml-1 text-xs font-normal text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">Admin</span>
+        </Link>
+        <button
+          className="lg:hidden rounded-lg p-1.5 text-muted-foreground hover:bg-accent/50"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+          Management
+        </p>
+        {adminLinks.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            onClick={() => setMobileMenuOpen(false)}
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${
+              location.pathname === link.to
+                ? "bg-primary/15 text-primary shadow-[0_0_15px_hsl(var(--primary)/0.1)]"
+                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+            }`}
+          >
+            <link.icon className="h-4 w-4" />
+            {link.label}
+          </Link>
+        ))}
+      </nav>
+
+      <div className="border-t border-border/30 p-4 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+          <button
+            onClick={toggleTheme}
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        </div>
+        <GlassButton variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={signOut}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sign Out
+        </GlassButton>
+      </div>
+    </>
+  );
 
   return (
-    <div className="min-h-screen bg-muted/40 text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[288px] border-r border-border bg-background lg:flex lg:flex-col">
-        <div className="border-b border-border px-5 py-4">
-          <Link to="/admin" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Logo size={22} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold">Karbali</p>
-                <Badge variant="outline" className="border-primary/20 text-primary">Admin</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">Operations workspace</p>
-            </div>
-          </Link>
-        </div>
+    <div className="relative flex min-h-screen">
+      <FluidCanvas />
 
-        <div className="border-b border-border px-4 py-4">
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{user?.email}</p>
-              <p className="text-xs text-muted-foreground">Admin account</p>
-            </div>
-          </div>
-        </div>
-
-        <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
-          {navGroups.map((group) => (
-            <div key={group.label} className="space-y-1">
-              <p className="px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                {group.label}
-              </p>
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.to);
-
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-sm ${
-                      active
-                        ? "border-primary/20 bg-primary/10 text-primary"
-                        : "border-transparent text-foreground hover:border-border hover:bg-card"
-                    }`}
-                  >
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? "bg-primary/15" : "bg-muted"}`}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">{item.label}</p>
-                      <p className="truncate text-xs text-muted-foreground">{item.description}</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div className="space-y-3 border-t border-border px-4 py-4">
-          <div className="rounded-lg border border-border bg-card p-3">
-            <p className="text-xs text-muted-foreground">Workspace</p>
-            <p className="mt-1 text-sm font-medium">Platform administration</p>
-            <p className="mt-1 text-xs text-muted-foreground">Campaign approvals, content, wallets, and monitoring.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="flex-1 justify-center" onClick={toggleTheme}>
-              {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-              {theme === "dark" ? "Light" : "Dark"}
-            </Button>
-            <Button variant="ghost" size="sm" className="flex-1 justify-center" onClick={signOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
+      {/* Desktop sidebar */}
+      <aside className="fixed left-0 top-0 z-40 hidden lg:flex h-screen w-64 flex-col glass-strong">
+        {sidebar}
       </aside>
 
-      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur lg:ml-[288px]">
-        <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Admin panel</p>
-            <h1 className="truncate text-sm font-semibold">{currentItem?.label ?? "Dashboard"}</h1>
-          </div>
-          <Badge variant="outline" className="hidden sm:inline-flex border-primary/20 text-primary">
-            Internal tools
-          </Badge>
-        </div>
-      </header>
+      {/* Mobile header */}
+      <div className="fixed top-0 left-0 right-0 z-40 flex lg:hidden h-14 items-center justify-between px-4 glass-strong border-b border-border/30">
+        <Link to="/admin" className="flex items-center gap-2 text-lg font-bold">
+          <Logo size={20} />
+          <span className="text-gradient text-xs">Karbali Ads</span>
+          <span className="ml-1 text-xs font-normal text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">Admin</span>
+        </Link>
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="rounded-lg p-2 text-muted-foreground hover:bg-accent/50"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      </div>
 
-      <main className="px-4 pb-24 pt-4 lg:ml-[288px] lg:px-6 lg:pb-6">{children}</main>
+      {/* Mobile sidebar overlay */}
+      {mobileMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/50 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+          <aside className="fixed left-0 top-0 z-50 flex h-screen w-72 flex-col glass-strong lg:hidden">
+            {sidebar}
+          </aside>
+        </>
+      )}
 
-      <MobileTabBar
-        tabs={[
-          ...mobilePrimary,
-          {
-            to: "#more",
-            label: "More",
-            icon: MoreHorizontal,
-            active: moreOpen,
-            onClick: () => setMoreOpen(true),
-          },
-        ]}
-      />
-
-      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetTrigger asChild>
-          <span className="hidden" />
-        </SheetTrigger>
-        <SheetContent side="bottom" className="max-h-[82vh] overflow-y-auto lg:hidden">
-          <SheetHeader>
-            <SheetTitle>Admin sections</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 space-y-5">
-            {navGroups.map((group) => (
-              <div key={group.label} className="space-y-2">
-                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{group.label}</p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    const active = isActive(item.to);
-
-                    return (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        onClick={() => setMoreOpen(false)}
-                        className={`flex items-center gap-3 rounded-lg border px-3 py-3 ${
-                          active ? "border-primary/20 bg-primary/10 text-primary" : "border-border bg-card"
-                        }`}
-                      >
-                        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? "bg-primary/15" : "bg-muted"}`}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium">{item.label}</p>
-                          <p className="truncate text-xs text-muted-foreground">{item.description}</p>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-            <Button variant="ghost" className="w-full justify-start" onClick={signOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Main content */}
+      <main className="relative z-10 lg:ml-64 flex-1 p-4 pt-18 lg:p-8 lg:pt-8 min-w-0">
+        {children}
+      </main>
     </div>
   );
 }

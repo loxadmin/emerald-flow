@@ -11,7 +11,6 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { GlassInput } from "@/components/ui/glass-input";
 import { useTheme } from "@/lib/theme";
 import { Sun, Moon } from "lucide-react";
-import { Helmet } from "react-helmet-async";
 
 interface Blog {
   id: string;
@@ -50,34 +49,8 @@ export default function BlogList() {
     (blog.excerpt && blog.excerpt.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const blogJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Blog",
-    name: "Karbali Ads Blog",
-    url: "https://advertiser.karbali.com/blog",
-    blogPost: filteredBlogs.slice(0, 20).map((b) => ({
-      "@type": "BlogPosting",
-      headline: b.title,
-      datePublished: b.created_at,
-      url: `https://advertiser.karbali.com/blog/${b.slug}`,
-      description: b.excerpt || "",
-    })),
-  };
-
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden">
-      <Helmet>
-        <title>Karbali Ads Blog — Customer Acquisition & Performance Marketing</title>
-        <meta
-          name="description"
-          content="Insights on performance marketing, attribution, and customer acquisition. Learn how to grow with pay-for-results advertising on Karbali Ads."
-        />
-        <link rel="canonical" href="https://advertiser.karbali.com/blog" />
-        <meta property="og:title" content="Karbali Ads Blog" />
-        <meta property="og:description" content="Performance marketing and customer acquisition insights." />
-        <meta property="og:url" content="https://advertiser.karbali.com/blog" />
-        <script type="application/ld+json">{JSON.stringify(blogJsonLd)}</script>
-      </Helmet>
       <FluidCanvas />
 
       {/* Navbar */}

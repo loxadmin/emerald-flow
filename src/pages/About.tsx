@@ -7,7 +7,6 @@ import Logo from "@/components/Logo";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper from "@/components/MotionWrapper";
 import { useTheme } from "@/lib/theme";
-import { Helmet } from "react-helmet-async";
 
 export default function About() {
   const { theme, toggleTheme } = useTheme();
@@ -19,29 +18,8 @@ export default function About() {
     });
   }, []);
 
-  const orgJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Karbali Ads",
-    url: "https://advertiser.karbali.com/",
-    logo: "https://advertiser.karbali.com/favicon.svg",
-    description: content.subtitle,
-  };
-
   return (
     <div className="relative min-h-screen bg-background text-foreground">
-      <Helmet>
-        <title>About Karbali Ads — Performance Customer Acquisition Platform</title>
-        <meta
-          name="description"
-          content="Karbali Ads is a performance-based customer acquisition platform. Pay only for measurable outcomes: signups, downloads, and sales."
-        />
-        <link rel="canonical" href="https://advertiser.karbali.com/about" />
-        <meta property="og:title" content="About Karbali Ads" />
-        <meta property="og:description" content="Performance-based customer acquisition. Pay only for real results." />
-        <meta property="og:url" content="https://advertiser.karbali.com/about" />
-        <script type="application/ld+json">{JSON.stringify(orgJsonLd)}</script>
-      </Helmet>
       <FluidCanvas />
       <div className="pointer-events-none fixed inset-0 z-0 futuristic-grid" />
 
