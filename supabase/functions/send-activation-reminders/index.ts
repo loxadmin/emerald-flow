@@ -73,7 +73,7 @@ function html(name: string, subtype: Subtype, type: string | null) {
     <p style="font-size:14px;line-height:1.6;color:#334155;margin:0 0 24px">${c.body}</p>
     <a href="${APP_URL}/wallet" style="display:inline-block;background:#10b981;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 22px;border-radius:8px">${c.cta}</a>
     <p style="font-size:12px;line-height:1.6;color:#64748b;margin:32px 0 0">You are receiving this because your Karbali Ads wallet is not yet activated. These reminders stop automatically once your wallet is active.</p>
-    <p style="font-size:12px;color:#94a3b8;margin:24px 0 0">Karbali Ads &middot; <a href="${APP_URL}" style="color:#94a3b8">karbaliads.com</a></p>
+    <p style="font-size:12px;color:#94a3b8;margin:24px 0 0">Karbali Ads &middot; <a href="${APP_URL}" style="color:#94a3b8">advertiser.karbali.com</a></p>
   </div></body></html>`;
 }
 
