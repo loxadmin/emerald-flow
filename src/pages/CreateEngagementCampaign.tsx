@@ -16,7 +16,7 @@ type MediaType = "music" | "video";
 
 const RATES = { music: 0.20, video: 0.60 };
 const PLACEMENT_FEE = 10;
-const MIN_INTERACTIONS = 1000;
+const MIN_INTERACTIONS = 200;
 
 export default function CreateEngagementCampaign() {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ export default function CreateEngagementCampaign() {
   const [mediaLink, setMediaLink] = useState("");
   const [transcription, setTranscription] = useState("");
   const [transcriptionConfirmed, setTranscriptionConfirmed] = useState(false);
-  const [targetInteractions, setTargetInteractions] = useState("1000");
+  const [targetInteractions, setTargetInteractions] = useState("200");
   const [transcribing, setTranscribing] = useState(false);
 
   useEffect(() => {
