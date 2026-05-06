@@ -303,43 +303,83 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "No transcription found" }, 400);
       }
 
-      // Auto-generate 50 yes/no questions from the transcription
-      const lines = creative.transcription.split(/[.!?\n]+/).filter((l: string) => l.trim().length > 10);
-      const questions: { campaign_id: string; question: string; correct_answer: boolean }[] = [];
+      // Use Lovable AI (NLP) to generate 20 simple yes/no questions from the transcription
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) return jsonResponse({ error: "LOVABLE_API_KEY not configured" }, 500);
+
       const contentType = creative.media_type === "music" ? "song" : "video";
+      const transcript = String(creative.transcription).slice(0, 8000);
 
-      // Generate true questions from actual content
-      for (let i = 0; i < Math.min(25, lines.length); i++) {
-        const line = lines[i].trim();
-        questions.push({
-          campaign_id,
-          question: `Does this ${contentType} mention "${line.slice(0, 50)}${line.length > 50 ? "..." : ""}"?`,
-          correct_answer: true,
-        });
+      const systemPrompt = `You are an NLP engine that reads a ${contentType} transcript and writes 20 SIMPLE yes/no comprehension questions a casual viewer can answer after watching/listening once. Rules:
+- Exactly 20 questions.
+- Each must be answerable strictly with Yes or No.
+- Mix correct answers: about 12 with answer "yes" (true facts from the transcript) and about 8 with answer "no" (plausible but contradicted by the transcript). Never use absurd or unrelated topics.
+- Keep each question under 18 words, plain everyday English, no jargon, no quotes from the transcript longer than 6 words.
+- Do not number the questions. Do not add explanations.`;
+
+      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Transcript:\n${transcript}` },
+          ],
+          tools: [{
+            type: "function",
+            function: {
+              name: "submit_questions",
+              description: "Submit 20 yes/no questions derived from the transcript.",
+              parameters: {
+                type: "object",
+                properties: {
+                  questions: {
+                    type: "array",
+                    minItems: 20,
+                    maxItems: 20,
+                    items: {
+                      type: "object",
+                      properties: {
+                        question: { type: "string" },
+                        correct_answer: { type: "boolean" },
+                      },
+                      required: ["question", "correct_answer"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["questions"],
+                additionalProperties: false,
+              },
+            },
+          }],
+          tool_choice: { type: "function", function: { name: "submit_questions" } },
+        }),
+      });
+
+      if (!aiRes.ok) {
+        const t = await aiRes.text();
+        if (aiRes.status === 429) return jsonResponse({ error: "AI rate limit exceeded, try again shortly." }, 429);
+        if (aiRes.status === 402) return jsonResponse({ error: "AI credits exhausted. Add funds in Settings > Workspace > Usage." }, 402);
+        return jsonResponse({ error: `AI error: ${t}` }, 500);
       }
 
-      // Generate false questions
-      const falsePrompts = [
-        "a spaceship going to Mars", "cooking pasta at midnight", "swimming with dolphins",
-        "building a sandcastle", "riding a unicycle", "painting the Eiffel Tower",
-        "playing chess with a robot", "dancing in the rain with penguins", "flying a kite on the moon",
-        "surfing on clouds", "racing snails", "reading books underwater",
-        "climbing Mount Everest barefoot", "singing opera to flowers", "driving a submarine",
-        "baking cookies on a volcano", "teaching cats to code", "juggling flamingos",
-        "writing letters to aliens", "knitting sweaters for trees", "skateboarding on rainbows",
-        "fishing in the desert", "gardening on Jupiter", "running a marathon backwards",
-        "photographing invisible things",
-      ];
+      const aiJson = await aiRes.json();
+      const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
+      let parsed: { questions: { question: string; correct_answer: boolean }[] } | null = null;
+      try { parsed = JSON.parse(toolCall?.function?.arguments || "{}"); } catch { /* noop */ }
+      if (!parsed?.questions?.length) return jsonResponse({ error: "AI returned no questions" }, 500);
 
-      for (let i = 0; questions.length < 50 && i < falsePrompts.length; i++) {
-        questions.push({
-          campaign_id,
-          question: `Does this ${contentType} talk about ${falsePrompts[i]}?`,
-          correct_answer: false,
-        });
-      }
+      const questions = parsed.questions.slice(0, 20).map((q) => ({
+        campaign_id,
+        question: String(q.question).trim(),
+        correct_answer: Boolean(q.correct_answer),
+      }));
 
-      // Insert questions
+      // Replace any existing auto-generated set first to keep counts clean
+      await supabase.from("campaign_questions").delete().eq("campaign_id", campaign_id);
+
       const { error: qErr } = await supabase.from("campaign_questions").insert(questions);
       if (qErr) throw qErr;
 
