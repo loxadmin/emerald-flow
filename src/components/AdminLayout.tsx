@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
-import FluidCanvas from "@/components/FluidCanvas";
+import { Badge } from "@/components/ui/badge";
 import MobileTabBar from "@/components/MobileTabBar";
 import {
   Sheet,
@@ -13,53 +13,69 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  Shield, BarChart3, Settings, LogOut, Sun, Moon, PenSquare,
-  Users, Layers, Wallet, Handshake, MessageSquare, Layout,
-  Chrome, Gamepad2, MoreHorizontal, Home,
+  Shield,
+  BarChart3,
+  Settings,
+  LogOut,
+  Sun,
+  Moon,
+  PenSquare,
+  Users,
+  Layers,
+  Wallet,
+  Handshake,
+  MessageSquare,
+  Layout,
+  Chrome,
+  Gamepad2,
+  MoreHorizontal,
+  Home,
+  ChevronRight,
+  Search,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
-type NavItem = { to: string; label: string; icon: any };
+type NavItem = { to: string; label: string; icon: any; description: string };
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Overview",
     items: [
-      { to: "/admin", label: "Dashboard", icon: Shield },
-      { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+      { to: "/admin", label: "Dashboard", icon: Shield, description: "Platform snapshot" },
+      { to: "/admin/analytics", label: "Analytics", icon: BarChart3, description: "Trends and traffic" },
     ],
   },
   {
     label: "Operations",
     items: [
-      { to: "/admin/advertisers", label: "Advertisers", icon: Users },
-      { to: "/admin/categories", label: "Categories", icon: Layers },
-      { to: "/admin/partnerships", label: "Partnerships", icon: Handshake },
-      { to: "/admin/wallets", label: "Wallets", icon: Wallet },
-      { to: "/admin/messages", label: "Messages", icon: MessageSquare },
+      { to: "/admin/advertisers", label: "Advertisers", icon: Users, description: "Accounts and status" },
+      { to: "/admin/categories", label: "Categories", icon: Layers, description: "Onboarding structure" },
+      { to: "/admin/partnerships", label: "Partnerships", icon: Handshake, description: "Partner approvals" },
+      { to: "/admin/wallets", label: "Wallets", icon: Wallet, description: "Funding and balance" },
+      { to: "/admin/messages", label: "Messages", icon: MessageSquare, description: "Support conversations" },
     ],
   },
   {
     label: "Content",
     items: [
-      { to: "/admin/blogs", label: "Blogs", icon: PenSquare },
-      { to: "/admin/content", label: "Site Content", icon: Layout },
-      { to: "/admin/design", label: "Page Design", icon: Layers },
+      { to: "/admin/blogs", label: "Blogs", icon: PenSquare, description: "Public content" },
+      { to: "/admin/content", label: "Site Content", icon: Layout, description: "Landing page sections" },
+      { to: "/admin/design", label: "Page Design", icon: Layers, description: "Visual settings" },
     ],
   },
   {
     label: "Platform",
     items: [
-      { to: "/admin/offerwall", label: "Offerwall", icon: Gamepad2 },
-      { to: "/admin/extension", label: "Extension", icon: Chrome },
-      { to: "/admin/settings", label: "Settings", icon: Settings },
+      { to: "/admin/offerwall", label: "Offerwall", icon: Gamepad2, description: "Reward inventory" },
+      { to: "/admin/extension", label: "Extension", icon: Chrome, description: "Browser tools" },
+      { to: "/admin/settings", label: "Settings", icon: Settings, description: "System controls" },
     ],
   },
 ];
 
 const mobilePrimary = [
   { to: "/admin", label: "Home", icon: Home },
-  { to: "/admin/advertisers", label: "Advertisers", icon: Users },
+  { to: "/admin/advertisers", label: "Accounts", icon: Users },
   { to: "/admin/wallets", label: "Wallets", icon: Wallet },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
@@ -71,104 +87,105 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const isActive = (to: string) => pathname === to;
+  const flatItems = navGroups.flatMap((group) => group.items);
+  const currentItem = flatItems.find((item) => item.to === pathname) ?? flatItems[0];
 
-  const SidebarBody = (
-    <>
-      <div className="flex h-14 items-center gap-2 border-b border-border px-5">
-        <Link to="/admin" className="flex items-center gap-2 font-semibold">
-          <Logo size={20} />
-          <span className="text-sm">Karbali</span>
-          <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
-            Admin
-          </span>
-        </Link>
-      </div>
+  return (
+    <div className="min-h-screen bg-muted/40 text-foreground">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[288px] border-r border-border bg-background lg:flex lg:flex-col">
+        <div className="border-b border-border px-5 py-4">
+          <Link to="/admin" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Logo size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold">Karbali</p>
+                <Badge variant="outline" className="border-primary/20 text-primary">Admin</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">Operations workspace</p>
+            </div>
+          </Link>
+        </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-        {navGroups.map((group) => (
-          <div key={group.label}>
-            <p className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-              {group.label}
-            </p>
-            <div className="space-y-0.5">
+        <div className="border-b border-border px-4 py-4">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{user?.email}</p>
+              <p className="text-xs text-muted-foreground">Admin account</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
+          {navGroups.map((group) => (
+            <div key={group.label} className="space-y-1">
+              <p className="px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                {group.label}
+              </p>
               {group.items.map((item) => {
                 const Icon = item.icon;
+                const active = isActive(item.to);
+
                 return (
                   <Link
                     key={item.to}
                     to={item.to}
-                    className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
-                      isActive(item.to)
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-sm ${
+                      active
+                        ? "border-primary/20 bg-primary/10 text-primary"
+                        : "border-transparent text-foreground hover:border-border hover:bg-card"
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? "bg-primary/15" : "bg-muted"}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{item.label}</p>
+                      <p className="truncate text-xs text-muted-foreground">{item.description}</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Link>
                 );
               })}
             </div>
+          ))}
+        </nav>
+
+        <div className="space-y-3 border-t border-border px-4 py-4">
+          <div className="rounded-lg border border-border bg-card p-3">
+            <p className="text-xs text-muted-foreground">Workspace</p>
+            <p className="mt-1 text-sm font-medium">Platform administration</p>
+            <p className="mt-1 text-xs text-muted-foreground">Campaign approvals, content, wallets, and monitoring.</p>
           </div>
-        ))}
-      </nav>
-
-      <div className="border-t border-border p-3 space-y-1">
-        <div className="flex items-center justify-between px-2">
-          <p className="truncate text-xs text-muted-foreground" title={user?.email}>
-            {user?.email}
-          </p>
-          <button
-            onClick={toggleTheme}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="flex-1 justify-center" onClick={toggleTheme}>
+              {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+              {theme === "dark" ? "Light" : "Dark"}
+            </Button>
+            <Button variant="ghost" size="sm" className="flex-1 justify-center" onClick={signOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-xs text-muted-foreground"
-          onClick={signOut}
-        >
-          <LogOut className="mr-2 h-3.5 w-3.5" /> Sign Out
-        </Button>
-      </div>
-    </>
-  );
-
-  return (
-    <div className="relative flex min-h-screen">
-      <FluidCanvas />
-
-      {/* Desktop sidebar */}
-      <aside className="fixed left-0 top-0 z-40 hidden lg:flex h-screen w-56 flex-col bg-card/90 backdrop-blur-xl border-r border-border">
-        {SidebarBody}
       </aside>
 
-      {/* Mobile header */}
-      <header className="fixed top-0 left-0 right-0 z-30 flex lg:hidden h-12 items-center justify-between px-4 bg-card/90 backdrop-blur-xl border-b border-border">
-        <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold">
-          <Logo size={18} />
-          <span>Karbali</span>
-          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary">Admin</span>
-        </Link>
-        <button
-          onClick={toggleTheme}
-          className="rounded-md p-1.5 text-muted-foreground hover:text-foreground"
-          aria-label="Toggle theme"
-        >
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </button>
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur lg:ml-[288px]">
+        <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Admin panel</p>
+            <h1 className="truncate text-sm font-semibold">{currentItem?.label ?? "Dashboard"}</h1>
+          </div>
+          <Badge variant="outline" className="hidden sm:inline-flex border-primary/20 text-primary">
+            Internal tools
+          </Badge>
+        </div>
       </header>
 
-      {/* Main */}
-      <main className="relative z-10 lg:ml-56 flex-1 p-4 pt-16 pb-20 lg:p-6 lg:pt-6 lg:pb-6 min-w-0">
-        {children}
-      </main>
+      <main className="px-4 pb-24 pt-4 lg:ml-[288px] lg:px-6 lg:pb-6">{children}</main>
 
-      {/* Mobile bottom tabs + More sheet */}
       <MobileTabBar
         tabs={[
           ...mobilePrimary,
@@ -186,30 +203,35 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <SheetTrigger asChild>
           <span className="hidden" />
         </SheetTrigger>
-        <SheetContent side="bottom" className="lg:hidden max-h-[80vh] overflow-y-auto">
+        <SheetContent side="bottom" className="max-h-[82vh] overflow-y-auto lg:hidden">
           <SheetHeader>
-            <SheetTitle>All sections</SheetTitle>
+            <SheetTitle>Admin sections</SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-5">
             {navGroups.map((group) => (
-              <div key={group.label}>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-                  {group.label}
-                </p>
-                <div className="grid grid-cols-2 gap-2">
+              <div key={group.label} className="space-y-2">
+                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{group.label}</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {group.items.map((item) => {
                     const Icon = item.icon;
+                    const active = isActive(item.to);
+
                     return (
                       <Link
                         key={item.to}
                         to={item.to}
                         onClick={() => setMoreOpen(false)}
-                        className={`flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2.5 text-sm ${
-                          isActive(item.to) ? "text-primary border-primary/30" : "text-foreground"
+                        className={`flex items-center gap-3 rounded-lg border px-3 py-3 ${
+                          active ? "border-primary/20 bg-primary/10 text-primary" : "border-border bg-card"
                         }`}
                       >
-                        <Icon className="h-4 w-4" />
-                        {item.label}
+                        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? "bg-primary/15" : "bg-muted"}`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{item.label}</p>
+                          <p className="truncate text-xs text-muted-foreground">{item.description}</p>
+                        </div>
                       </Link>
                     );
                   })}
@@ -217,7 +239,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </div>
             ))}
             <Button variant="ghost" className="w-full justify-start" onClick={signOut}>
-              <LogOut className="mr-2 h-4 w-4" /> Sign Out
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
             </Button>
           </div>
         </SheetContent>
