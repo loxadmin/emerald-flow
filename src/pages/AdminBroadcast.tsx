@@ -129,6 +129,31 @@ export default function AdminBroadcast() {
 
   const clearSelection = () => setSelected(new Set());
 
+  const handleSendTest = async () => {
+    if (!subject.trim() || !message.trim()) {
+      toast.error("Subject and message are required");
+      return;
+    }
+    if (!testRecipientId) {
+      toast.error("Pick an advertiser to send the test to");
+      return;
+    }
+    setSendingTest(true);
+    const { data, error } = await supabase.functions.invoke("admin-broadcast-email", {
+      body: {
+        subject: subject.trim(),
+        message: message.trim(),
+        all: false,
+        recipient_ids: [testRecipientId],
+      },
+    });
+    setSendingTest(false);
+    if (error) { toast.error(error.message); return; }
+    const r = data as { sent?: number; failed?: number };
+    if (r?.sent) toast.success("Test email sent");
+    else toast.error("Test email failed to send");
+  };
+
   const handleSend = async () => {
     if (!subject.trim() || !message.trim()) {
       toast.error("Subject and message are required");
