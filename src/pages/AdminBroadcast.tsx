@@ -170,14 +170,40 @@ export default function AdminBroadcast() {
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-medium text-foreground">Template</h3>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
+            <Select value={selectedTemplateId || "none"} onValueChange={v => v === "none" ? newTemplate() : applyTemplate(v)}>
+              <SelectTrigger><SelectValue placeholder="Pick a template or write a new one" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">New (blank)</SelectItem>
+                {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <GlassButton size="sm" variant="ghost" onClick={newTemplate}><Plus className="h-4 w-4 mr-1" />New</GlassButton>
+            <GlassButton size="sm" variant="ghost" onClick={saveAsTemplate} disabled={savingTemplate}>
+              <Save className="h-4 w-4 mr-1" />{selectedTemplateId ? "Update" : "Save as template"}
+            </GlassButton>
+            {selectedTemplateId && (
+              <GlassButton size="sm" variant="ghost" onClick={deleteTemplate}><Trash2 className="h-4 w-4 mr-1" />Delete</GlassButton>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Template name</Label>
+            <Input value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="e.g. Welcome email" />
+          </div>
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Subject</Label>
-            <Input value={subject} onChange={e => setSubject(e.target.value)} maxLength={200} placeholder="Important update from Karbali Ads" />
+            <Input value={subject} onChange={e => setSubject(e.target.value)} maxLength={200} placeholder="Hi {{full_name}}, welcome!" />
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Message</Label>
-            <Textarea value={message} onChange={e => setMessage(e.target.value)} maxLength={10000} rows={8} placeholder="Write your message here..." />
-            <p className="text-xs text-muted-foreground">Plain text. Line breaks are preserved. Recipients will receive a branded email.</p>
+            <Textarea value={message} onChange={e => setMessage(e.target.value)} maxLength={10000} rows={10} placeholder="Hi {{full_name}}, ..." />
+            <p className="text-xs text-muted-foreground">
+              Variables auto-fill per recipient: <code>{"{{full_name}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{company_name}}"}</code>. Line breaks preserved.
+            </p>
           </div>
         </div>
 
