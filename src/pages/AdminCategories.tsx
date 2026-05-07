@@ -65,9 +65,11 @@ export default function AdminCategories() {
     setCategories(nextCategories);
 
     if (nextCategories.length > 0) {
-      const keys = nextCategories.map((category) => `category_events:${category.id}`);
-      const [{ data: settingsData }, { data: acData }] = await Promise.all([
-        supabase.from("admin_settings").select("key, value").in("key", keys),
+      const eventKeys = nextCategories.map((c) => `category_events:${c.id}`);
+      const feeKeys = nextCategories.map((c) => `category_activation_fee:${c.id}`);
+      const [{ data: settingsData }, { data: feeData }, { data: acData }] = await Promise.all([
+        supabase.from("admin_settings").select("key, value").in("key", eventKeys),
+        supabase.from("admin_settings").select("key, value").in("key", feeKeys),
         supabase.from("advertiser_categories").select("category_id"),
       ]);
 
@@ -80,6 +82,12 @@ export default function AdminCategories() {
         eventMap[categoryId] = parseCategoryEvents(setting.value);
       });
       setCategoryEvents(eventMap);
+
+      const feeMap: Record<string, string> = {};
+      (feeData || []).forEach((s: { key: string; value: string }) => {
+        feeMap[s.key.replace("category_activation_fee:", "")] = s.value;
+      });
+      setCategoryFees(feeMap);
 
       const counts: Record<string, number> = {};
       (acData || []).forEach((ac: any) => {
