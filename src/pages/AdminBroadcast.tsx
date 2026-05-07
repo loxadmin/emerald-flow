@@ -282,6 +282,36 @@ export default function AdminBroadcast() {
           )}
         </div>
 
+        <div className="rounded-xl border border-border bg-card p-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Beaker className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-medium text-foreground">Send test email</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Preview the personalized template by sending it to a single advertiser before broadcasting.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <Select value={testRecipientId} onValueChange={setTestRecipientId}>
+              <SelectTrigger><SelectValue placeholder="Pick an advertiser" /></SelectTrigger>
+              <SelectContent>
+                {advertisers.filter(a => a.email).map(a => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {(a.full_name || a.company_name || "—")} — {a.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <GlassButton
+              variant="ghost"
+              onClick={handleSendTest}
+              disabled={sendingTest || !subject.trim() || !message.trim() || !testRecipientId}
+            >
+              <Beaker className="h-4 w-4 mr-2" />
+              {sendingTest ? "Sending..." : "Send test"}
+            </GlassButton>
+          </div>
+        </div>
+
         <div className="flex justify-end">
           <GlassButton variant="glow" onClick={handleSend} disabled={sending || !subject.trim() || !message.trim() || recipientCount === 0}>
             <Send className="h-4 w-4 mr-2" />
