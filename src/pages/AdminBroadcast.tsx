@@ -35,6 +35,19 @@ export default function AdminBroadcast() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [templateName, setTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
+  const loadTemplates = async () => {
+    const { data } = await supabase
+      .from("email_templates")
+      .select("id, name, subject, body, variables")
+      .order("name");
+    setTemplates((data || []) as EmailTemplate[]);
+  };
+
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -44,8 +57,51 @@ export default function AdminBroadcast() {
         .order("created_at", { ascending: false });
       setAdvertisers((data || []) as Advertiser[]);
       setLoading(false);
+      await loadTemplates();
     })();
   }, []);
+
+  const applyTemplate = (id: string) => {
+    setSelectedTemplateId(id);
+    const t = templates.find(x => x.id === id);
+    if (t) {
+      setSubject(t.subject);
+      setMessage(t.body);
+      setTemplateName(t.name);
+    }
+  };
+
+  const saveAsTemplate = async () => {
+    const name = templateName.trim();
+    if (!name || !subject.trim() || !message.trim()) {
+      toast.error("Name, subject and message are required");
+      return;
+    }
+    setSavingTemplate(true);
+    const existing = templates.find(t => t.id === selectedTemplateId);
+    const payload = { name, subject: subject.trim(), body: message.trim() };
+    const { error } = existing
+      ? await supabase.from("email_templates").update(payload).eq("id", existing.id)
+      : await supabase.from("email_templates").insert(payload);
+    setSavingTemplate(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(existing ? "Template updated" : "Template saved");
+    await loadTemplates();
+  };
+
+  const deleteTemplate = async () => {
+    if (!selectedTemplateId) return;
+    if (!confirm("Delete this template?")) return;
+    const { error } = await supabase.from("email_templates").delete().eq("id", selectedTemplateId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Template deleted");
+    setSelectedTemplateId(""); setTemplateName("");
+    await loadTemplates();
+  };
+
+  const newTemplate = () => {
+    setSelectedTemplateId(""); setTemplateName(""); setSubject(""); setMessage("");
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
