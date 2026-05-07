@@ -5,7 +5,7 @@ import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import {
   Shield, BarChart3, Settings, LogOut, Sun, Moon, PenSquare, Users, Layers,
-  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight,
+  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
@@ -25,6 +25,7 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
       { to: "/admin/partnerships", label: "Partnerships", icon: Handshake },
       { to: "/admin/wallets", label: "Wallets", icon: Wallet },
       { to: "/admin/messages", label: "Messages", icon: MessageSquare },
+      { to: "/admin/broadcast", label: "Broadcast", icon: Send },
     ],
   },
   {

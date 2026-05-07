@@ -34,6 +34,7 @@ import AdminAdvertisers from "./pages/AdminAdvertisers";
 import AdminWallets from "./pages/AdminWallets";
 import AdminPartnerships from "./pages/AdminPartnerships";
 import AdminMessages from "./pages/AdminMessages";
+import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminExtension from "./pages/AdminExtension";
 import AdminOfferwall from "./pages/AdminOfferwall";
 import Admin2FA from "./pages/Admin2FA";
@@ -107,6 +108,7 @@ const App = () => (
               <Route path="/admin/advertisers" element={<RequireAuth><RequireAdmin><AdminAdvertisers /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/wallets" element={<RequireAuth><RequireAdmin><AdminWallets /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/messages" element={<RequireAuth><RequireAdmin><AdminMessages /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/broadcast" element={<RequireAuth><RequireAdmin><AdminBroadcast /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/extension" element={<RequireAuth><RequireAdmin><AdminExtension /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/offerwall" element={<RequireAuth><RequireAdmin><AdminOfferwall /></RequireAdmin></RequireAuth>} />
 
