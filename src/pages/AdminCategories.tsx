@@ -48,6 +48,8 @@ export default function AdminCategories() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [savingEvents, setSavingEvents] = useState<string | null>(null);
+  const [categoryFees, setCategoryFees] = useState<Record<string, string>>({});
+  const [savingFee, setSavingFee] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
