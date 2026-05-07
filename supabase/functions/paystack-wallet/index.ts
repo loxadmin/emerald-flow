@@ -144,7 +144,25 @@ Deno.serve(async (req) => {
 
     if (action === "initialize_activation") {
       const { amount: customAmount } = body;
-      const payAmount = customAmount && Number(customAmount) >= activationFeeUsd ? Number(customAmount) : activationFeeUsd;
+      // Per-category override
+      let effectiveActivationFee = activationFeeUsd;
+      const { data: advCat } = await supabase
+        .from("advertiser_categories")
+        .select("category_id")
+        .eq("advertiser_id", user.id)
+        .maybeSingle();
+      if (advCat?.category_id) {
+        const { data: catFeeRow } = await supabase
+          .from("admin_settings")
+          .select("value")
+          .eq("key", `category_activation_fee:${advCat.category_id}`)
+          .maybeSingle();
+        if (catFeeRow?.value) {
+          const v = Number(catFeeRow.value);
+          if (!isNaN(v) && v >= 0) effectiveActivationFee = v;
+        }
+      }
+      const payAmount = customAmount && Number(customAmount) >= effectiveActivationFee ? Number(customAmount) : effectiveActivationFee;
       const amountNgn = payAmount * usdToNgn;
 
       const { data: wallet } = await supabase.from("wallets").select("*").eq("advertiser_id", user.id).maybeSingle();

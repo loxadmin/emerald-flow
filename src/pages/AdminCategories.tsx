@@ -48,6 +48,8 @@ export default function AdminCategories() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [savingEvents, setSavingEvents] = useState<string | null>(null);
+  const [categoryFees, setCategoryFees] = useState<Record<string, string>>({});
+  const [savingFee, setSavingFee] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -63,9 +65,11 @@ export default function AdminCategories() {
     setCategories(nextCategories);
 
     if (nextCategories.length > 0) {
-      const keys = nextCategories.map((category) => `category_events:${category.id}`);
-      const [{ data: settingsData }, { data: acData }] = await Promise.all([
-        supabase.from("admin_settings").select("key, value").in("key", keys),
+      const eventKeys = nextCategories.map((c) => `category_events:${c.id}`);
+      const feeKeys = nextCategories.map((c) => `category_activation_fee:${c.id}`);
+      const [{ data: settingsData }, { data: feeData }, { data: acData }] = await Promise.all([
+        supabase.from("admin_settings").select("key, value").in("key", eventKeys),
+        supabase.from("admin_settings").select("key, value").in("key", feeKeys),
         supabase.from("advertiser_categories").select("category_id"),
       ]);
 
@@ -78,6 +82,12 @@ export default function AdminCategories() {
         eventMap[categoryId] = parseCategoryEvents(setting.value);
       });
       setCategoryEvents(eventMap);
+
+      const feeMap: Record<string, string> = {};
+      (feeData || []).forEach((s: { key: string; value: string }) => {
+        feeMap[s.key.replace("category_activation_fee:", "")] = s.value;
+      });
+      setCategoryFees(feeMap);
 
       const counts: Record<string, number> = {};
       (acData || []).forEach((ac: any) => {
@@ -223,20 +233,54 @@ export default function AdminCategories() {
     toast.success("Category options updated");
   };
 
+  const saveCategoryFee = async (category: Category) => {
+    const raw = categoryFees[category.id];
+    const num = Number(raw);
+    if (!raw || isNaN(num) || num < 0) { toast.error("Enter a valid USD amount"); return; }
+    setSavingFee(category.id);
+    const key = `category_activation_fee:${category.id}`;
+    const value = String(num);
+    const { data: existing } = await supabase.from("admin_settings").select("id").eq("key", key).maybeSingle();
+    const op = existing
+      ? supabase.from("admin_settings").update({ value, updated_at: new Date().toISOString() }).eq("id", existing.id)
+      : supabase.from("admin_settings").insert({ key, value, description: `Wallet activation fee (USD) for ${category.name}` });
+    const { error } = await op;
+    setSavingFee(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Activation fee updated");
+  };
+
   const renderMilestones = (category: Category) => (
-    <div className="flex flex-wrap items-center gap-2">
-      {DEFAULT_CATEGORY_EVENTS.map((eventType) => {
-        const checked = (categoryEvents[category.id] || DEFAULT_CATEGORY_EVENTS).includes(eventType);
-        return (
-          <label key={eventType} className="flex items-center gap-2 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground">
-            <Checkbox checked={checked} onCheckedChange={(value) => toggleCategoryEvent(category.id, eventType, value === true)} />
-            <span className="capitalize">{eventType}</span>
-          </label>
-        );
-      })}
-      <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => saveCategoryEvents(category)} disabled={savingEvents === category.id}>
-        <Save className="mr-1 h-3 w-3" /> {savingEvents === category.id ? "Saving..." : "Save options"}
-      </Button>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {DEFAULT_CATEGORY_EVENTS.map((eventType) => {
+          const checked = (categoryEvents[category.id] || DEFAULT_CATEGORY_EVENTS).includes(eventType);
+          return (
+            <label key={eventType} className="flex items-center gap-2 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground">
+              <Checkbox checked={checked} onCheckedChange={(value) => toggleCategoryEvent(category.id, eventType, value === true)} />
+              <span className="capitalize">{eventType}</span>
+            </label>
+          );
+        })}
+        <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => saveCategoryEvents(category)} disabled={savingEvents === category.id}>
+          <Save className="mr-1 h-3 w-3" /> {savingEvents === category.id ? "Saving..." : "Save options"}
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Label className="text-[11px] text-muted-foreground">Wallet activation fee (USD)</Label>
+        <Input
+          type="number"
+          min={0}
+          step="0.01"
+          value={categoryFees[category.id] ?? ""}
+          onChange={(e) => setCategoryFees((c) => ({ ...c, [category.id]: e.target.value }))}
+          placeholder="Default"
+          className="h-7 w-28 text-[11px]"
+        />
+        <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => saveCategoryFee(category)} disabled={savingFee === category.id}>
+          <Save className="mr-1 h-3 w-3" /> {savingFee === category.id ? "Saving..." : "Save fee"}
+        </Button>
+      </div>
     </div>
   );
 
