@@ -76,14 +76,30 @@ Deno.serve(async (req) => {
     const { data: profiles, error: pErr } = await query;
     if (pErr) return json({ error: pErr.message }, 500);
 
-    const safeMessage = escapeHtml(message).replace(/\n/g, "<br/>");
+    const interpolate = (tpl: string, vars: Record<string, string>) =>
+      tpl.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => vars[k] ?? "");
 
     let sent = 0, failed = 0;
+    const fullProfiles = await admin
+      .from("profiles")
+      .select("id, email, full_name, company_name")
+      .in("id", (profiles || []).map((p: any) => p.id));
+    const profileMap = new Map((fullProfiles.data || []).map((p: any) => [p.id, p]));
+
     for (const p of profiles || []) {
       if (!p.email) continue;
-      const greeting = p.full_name ? `<p>Hi ${escapeHtml(p.full_name)},</p>` : "";
-      const html = wrap(escapeHtml(heading), `${greeting}<p>${safeMessage}</p>`);
-      const r = await sendEmail(p.email, subject, html);
+      const fp: any = profileMap.get(p.id) || p;
+      const vars = {
+        full_name: fp.full_name || "there",
+        email: fp.email || "",
+        company_name: fp.company_name || "",
+      };
+      const personalizedSubject = interpolate(subject, vars);
+      const personalizedMessage = interpolate(message, vars);
+      const personalizedHeading = interpolate(heading, vars);
+      const safeMessage = escapeHtml(personalizedMessage).replace(/\n/g, "<br/>");
+      const html = wrap(escapeHtml(personalizedHeading), `<p>${safeMessage}</p>`);
+      const r = await sendEmail(p.email, personalizedSubject, html);
       if ((r as any).error) failed++; else sent++;
     }
 

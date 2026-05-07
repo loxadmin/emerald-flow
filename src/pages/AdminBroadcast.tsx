@@ -6,8 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Send, Search, Users } from "lucide-react";
+import { Send, Search, Users, FileText, Save, Trash2, Plus } from "lucide-react";
+
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  variables: string[];
+}
 
 interface Advertiser {
   id: string;
@@ -26,6 +35,19 @@ export default function AdminBroadcast() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [templateName, setTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
+  const loadTemplates = async () => {
+    const { data } = await supabase
+      .from("email_templates")
+      .select("id, name, subject, body, variables")
+      .order("name");
+    setTemplates((data || []) as EmailTemplate[]);
+  };
+
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -35,8 +57,51 @@ export default function AdminBroadcast() {
         .order("created_at", { ascending: false });
       setAdvertisers((data || []) as Advertiser[]);
       setLoading(false);
+      await loadTemplates();
     })();
   }, []);
+
+  const applyTemplate = (id: string) => {
+    setSelectedTemplateId(id);
+    const t = templates.find(x => x.id === id);
+    if (t) {
+      setSubject(t.subject);
+      setMessage(t.body);
+      setTemplateName(t.name);
+    }
+  };
+
+  const saveAsTemplate = async () => {
+    const name = templateName.trim();
+    if (!name || !subject.trim() || !message.trim()) {
+      toast.error("Name, subject and message are required");
+      return;
+    }
+    setSavingTemplate(true);
+    const existing = templates.find(t => t.id === selectedTemplateId);
+    const payload = { name, subject: subject.trim(), body: message.trim() };
+    const { error } = existing
+      ? await supabase.from("email_templates").update(payload).eq("id", existing.id)
+      : await supabase.from("email_templates").insert(payload);
+    setSavingTemplate(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(existing ? "Template updated" : "Template saved");
+    await loadTemplates();
+  };
+
+  const deleteTemplate = async () => {
+    if (!selectedTemplateId) return;
+    if (!confirm("Delete this template?")) return;
+    const { error } = await supabase.from("email_templates").delete().eq("id", selectedTemplateId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Template deleted");
+    setSelectedTemplateId(""); setTemplateName("");
+    await loadTemplates();
+  };
+
+  const newTemplate = () => {
+    setSelectedTemplateId(""); setTemplateName(""); setSubject(""); setMessage("");
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -105,14 +170,40 @@ export default function AdminBroadcast() {
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-medium text-foreground">Template</h3>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
+            <Select value={selectedTemplateId || "none"} onValueChange={v => v === "none" ? newTemplate() : applyTemplate(v)}>
+              <SelectTrigger><SelectValue placeholder="Pick a template or write a new one" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">New (blank)</SelectItem>
+                {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <GlassButton size="sm" variant="ghost" onClick={newTemplate}><Plus className="h-4 w-4 mr-1" />New</GlassButton>
+            <GlassButton size="sm" variant="ghost" onClick={saveAsTemplate} disabled={savingTemplate}>
+              <Save className="h-4 w-4 mr-1" />{selectedTemplateId ? "Update" : "Save as template"}
+            </GlassButton>
+            {selectedTemplateId && (
+              <GlassButton size="sm" variant="ghost" onClick={deleteTemplate}><Trash2 className="h-4 w-4 mr-1" />Delete</GlassButton>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Template name</Label>
+            <Input value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="e.g. Welcome email" />
+          </div>
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Subject</Label>
-            <Input value={subject} onChange={e => setSubject(e.target.value)} maxLength={200} placeholder="Important update from Karbali Ads" />
+            <Input value={subject} onChange={e => setSubject(e.target.value)} maxLength={200} placeholder="Hi {{full_name}}, welcome!" />
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Message</Label>
-            <Textarea value={message} onChange={e => setMessage(e.target.value)} maxLength={10000} rows={8} placeholder="Write your message here..." />
-            <p className="text-xs text-muted-foreground">Plain text. Line breaks are preserved. Recipients will receive a branded email.</p>
+            <Textarea value={message} onChange={e => setMessage(e.target.value)} maxLength={10000} rows={10} placeholder="Hi {{full_name}}, ..." />
+            <p className="text-xs text-muted-foreground">
+              Variables auto-fill per recipient: <code>{"{{full_name}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{company_name}}"}</code>. Line breaks preserved.
+            </p>
           </div>
         </div>
 
