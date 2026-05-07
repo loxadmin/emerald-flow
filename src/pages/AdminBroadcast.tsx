@@ -34,6 +34,8 @@ export default function AdminBroadcast() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [testRecipientId, setTestRecipientId] = useState<string>("");
+  const [sendingTest, setSendingTest] = useState(false);
 
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
