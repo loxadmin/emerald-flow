@@ -130,23 +130,35 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                    filter: "blur(28px)",
                  }} />
 
-            <div className="relative mx-auto aspect-square w-full max-w-[560px]">
-              {/* Soft outer aura that fades into hero bg */}
-              <div aria-hidden className="absolute inset-[-18%] rounded-full"
+            <div className="relative mx-auto aspect-[5/4] w-full max-w-[620px]">
+              {/* Soft outer aura that bleeds into hero bg */}
+              <div aria-hidden className="pointer-events-none absolute inset-[-22%] rounded-[3rem]"
                    style={{
                      background:
-                       "radial-gradient(closest-side, hsl(var(--primary)/0.35), hsl(var(--pastel-sky)/0.35) 45%, transparent 75%)",
-                     filter: "blur(36px)",
+                       "radial-gradient(closest-side, hsl(var(--primary)/0.35), hsl(var(--pastel-sky)/0.3) 45%, transparent 75%)",
+                     filter: "blur(48px)",
                    }} />
 
-              {/* Circular video with deep gradient feather toward edges */}
+              {/* Pulsating ringing rings — spectrum effect */}
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  aria-hidden
+                  className="pointer-events-none absolute inset-[-4%] rounded-[2.25rem] border border-primary/30"
+                  style={{
+                    animation: `ringPulse 3.2s cubic-bezier(0.22,1,0.36,1) ${i * 1.05}s infinite`,
+                  }}
+                />
+              ))}
+
+              {/* Video frame with strong gradient feather to blend into hero */}
               <div
-                className="absolute inset-0 rounded-full"
+                className="absolute inset-0 overflow-hidden rounded-[2rem]"
                 style={{
                   WebkitMaskImage:
-                    "radial-gradient(circle at 50% 50%, black 0%, black 38%, rgba(0,0,0,0.85) 55%, rgba(0,0,0,0.4) 75%, transparent 95%)",
+                    "radial-gradient(120% 110% at 50% 50%, black 35%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0.35) 82%, transparent 100%)",
                   maskImage:
-                    "radial-gradient(circle at 50% 50%, black 0%, black 38%, rgba(0,0,0,0.85) 55%, rgba(0,0,0,0.4) 75%, transparent 95%)",
+                    "radial-gradient(120% 110% at 50% 50%, black 35%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0.35) 82%, transparent 100%)",
                 }}
               >
                 <video
@@ -157,25 +169,49 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                   muted
                   playsInline
                   preload="auto"
-                  className="h-full w-full rounded-full object-cover"
+                  className="h-full w-full object-cover"
                 />
-                {/* Color grade tint */}
-                <div aria-hidden className="absolute inset-0 rounded-full mix-blend-soft-light"
+
+                {/* Dark overlay for cinematic depth */}
+                <div aria-hidden className="absolute inset-0"
                      style={{
                        background:
-                         "radial-gradient(circle at 30% 30%, hsl(var(--primary)/0.35), transparent 55%), radial-gradient(circle at 70% 75%, hsl(var(--pastel-lavender)/0.4), transparent 60%)",
+                         "linear-gradient(180deg, hsl(220 25% 6% / 0.55) 0%, hsl(220 25% 6% / 0.25) 35%, hsl(220 25% 6% / 0.35) 65%, hsl(220 25% 6% / 0.7) 100%)",
                      }} />
-                {/* Subtle inner vignette to deepen blend */}
-                <div aria-hidden className="absolute inset-0 rounded-full"
+
+                {/* Color grade tint */}
+                <div aria-hidden className="absolute inset-0 mix-blend-soft-light"
                      style={{
                        background:
-                         "radial-gradient(circle at 50% 50%, transparent 55%, hsl(var(--background)/0.35) 80%, hsl(var(--background)) 100%)",
+                         "radial-gradient(circle at 30% 30%, hsl(var(--primary)/0.4), transparent 55%), radial-gradient(circle at 70% 75%, hsl(var(--pastel-lavender)/0.4), transparent 60%)",
+                     }} />
+
+                {/* Edge feather toward hero bg color */}
+                <div aria-hidden className="absolute inset-0"
+                     style={{
+                       background:
+                         "radial-gradient(130% 110% at 50% 50%, transparent 55%, hsl(var(--background)/0.55) 82%, hsl(var(--background)) 100%)",
+                     }} />
+
+                {/* Spectrum scan shimmer */}
+                <div aria-hidden className="absolute inset-0 opacity-[0.12]"
+                     style={{
+                       backgroundImage:
+                         "repeating-linear-gradient(180deg, hsl(var(--foreground)) 0 1px, transparent 1px 3px)",
                      }} />
               </div>
 
-              {/* Thin orbital ring for futuristic accent */}
-              <div aria-hidden className="absolute inset-[6%] rounded-full border border-primary/15" />
-              <div aria-hidden className="absolute inset-[14%] rounded-full border border-foreground/5" />
+              {/* Inner accent rings */}
+              <div aria-hidden className="pointer-events-none absolute inset-[6%] rounded-[1.5rem] border border-primary/15" />
+              <div aria-hidden className="pointer-events-none absolute inset-[12%] rounded-[1.25rem] border border-foreground/5" />
+
+              <style>{`
+                @keyframes ringPulse {
+                  0% { transform: scale(0.92); opacity: 0; border-color: hsl(var(--primary) / 0.55); }
+                  20% { opacity: 0.9; }
+                  100% { transform: scale(1.18); opacity: 0; border-color: hsl(var(--pastel-sky) / 0.2); }
+                }
+              `}</style>
 
 
               <motion.div
