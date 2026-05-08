@@ -43,6 +43,7 @@ export default function Index() {
   const [metrics, setMetrics] = useState({ advertisers: 0, campaigns: 0, events: 0 });
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [heroDesign, setHeroDesign] = useState<string>("default");
   const { theme, toggleTheme } = useTheme();
 
