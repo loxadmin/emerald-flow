@@ -82,7 +82,9 @@ export default function CreateEngagementCampaign() {
   };
 
   const handleTranscribe = async () => {
-    if (!mediaLink.trim()) { toast.error("Enter a media link first"); return; }
+    if (isMusic) {
+      if (validMusicLinks.length === 0) { toast.error("Add at least one song link"); return; }
+    } else if (!mediaLink.trim()) { toast.error("Enter a media link first"); return; }
     if (!needsTranscription) {
       // Skip transcription entirely, go to configure
       setStep(4);
@@ -97,7 +99,7 @@ export default function CreateEngagementCampaign() {
   };
 
   const handleSubmit = async () => {
-    if (!user || !mediaType || !campaignName.trim() || !mediaLink.trim()) {
+    if (!user || !mediaType || !campaignName.trim() || !effectiveMediaLink) {
       toast.error("Please fill in all fields"); return;
     }
     if (isVideo && eventTypes.length === 0) {
