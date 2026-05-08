@@ -143,7 +143,7 @@ export default function CreateEngagementCampaign() {
       campaign_id: campaign.id,
       advertiser_id: user.id,
       media_type: mediaType,
-      media_link: mediaLink.trim(),
+      media_link: effectiveMediaLink,
       transcription: needsTranscription ? transcription.trim() : null,
       transcription_confirmed: needsTranscription ? true : null,
       rate_per_interaction: hasViewer ? viewerRate : subscriberRate,
