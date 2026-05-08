@@ -210,15 +210,16 @@ export default function WalletPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-4xl">
+      <div className="mx-auto max-w-5xl space-y-6">
         <MotionWrapper>
-          <div className="flex items-end justify-between gap-3 flex-wrap">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Wallet</h1>
-              <p className="text-sm text-muted-foreground">Your funds, transactions and account details</p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="space-y-1.5">
+              <p className="eyebrow">Wallet</p>
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Funds & transactions</h1>
+              <p className="text-sm text-muted-foreground">Manage your balance, top up instantly, and review every movement.</p>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+            <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
               Secured by Paystack
             </div>
           </div>
@@ -228,34 +229,56 @@ export default function WalletPage() {
           <div className="flex justify-center py-12"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
         ) : (
           <>
-            {/* Balance Card - Fintech style */}
+            {/* Balance Card — embossed fintech surface */}
             <MotionWrapper delay={0.05}>
-              <div className="relative overflow-hidden rounded-2xl p-6 sm:p-7 text-white shadow-lg"
-                   style={{ background: "linear-gradient(135deg, hsl(160 84% 22%), hsl(160 84% 32%) 55%, hsl(160 70% 40%))" }}>
-                <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-                <div className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/5 blur-2xl" />
+              <div className="relative overflow-hidden rounded-2xl p-6 sm:p-8 text-white shadow-lg ring-1 ring-white/5"
+                   style={{
+                     background:
+                       "radial-gradient(120% 120% at 100% 0%, hsl(160 78% 22%) 0%, hsl(160 84% 12%) 55%, hsl(220 30% 6%) 100%)",
+                   }}>
+                <div className="absolute inset-0 opacity-[0.18] mix-blend-overlay pointer-events-none"
+                     style={{
+                       backgroundImage:
+                         "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+                       backgroundSize: "32px 32px",
+                     }} />
+                <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-emerald-400/15 blur-3xl pointer-events-none" />
+                <div className="absolute -left-12 -bottom-16 h-48 w-48 rounded-full bg-emerald-300/10 blur-3xl pointer-events-none" />
+
                 <div className="relative flex items-start justify-between">
-                  <div className="flex items-center gap-2 text-white/80">
-                    <WalletIcon className="h-4 w-4" />
-                    <span className="text-xs uppercase tracking-[0.18em]">Available Balance</span>
+                  <div className="flex items-center gap-2 text-white/70">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/10 backdrop-blur">
+                      <WalletIcon className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[10px] font-medium uppercase tracking-[0.18em]">Available balance</span>
                   </div>
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium backdrop-blur ${
-                    wallet?.is_activated ? "bg-white/20 text-white" : "bg-amber-400/90 text-amber-950"
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider backdrop-blur ${
+                    wallet?.is_activated ? "bg-emerald-400/15 text-emerald-200 ring-1 ring-emerald-400/30" : "bg-amber-400/90 text-amber-950"
                   }`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${wallet?.is_activated ? "bg-emerald-300" : "bg-amber-700"}`} />
-                    {wallet?.is_activated ? "Active" : "Not Activated"}
+                    <span className={`h-1.5 w-1.5 rounded-full ${wallet?.is_activated ? "bg-emerald-300 animate-pulse" : "bg-amber-700"}`} />
+                    {wallet?.is_activated ? "Active" : "Not activated"}
                   </span>
                 </div>
-                <div className="relative mt-5 flex items-baseline gap-2">
-                  <span className="text-2xl font-medium text-white/70">$</span>
-                  <span className="text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums">
+
+                <div className="relative mt-8 flex items-baseline gap-1.5">
+                  <span className="text-2xl font-light text-white/60">$</span>
+                  <span className="font-mono text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums">
                     {fmtMoney(Number(wallet?.balance || 0))}
                   </span>
-                  <span className="ml-1 text-sm text-white/70">{wallet?.currency || "USD"}</span>
+                  <span className="ml-1.5 text-xs font-medium text-white/50 uppercase tracking-wider">{wallet?.currency || "USD"}</span>
                 </div>
-                <div className="relative mt-6 flex items-center justify-between text-xs text-white/70">
-                  <span>NGN equivalent: <span className="text-white font-medium">{(Number(wallet?.balance || 0) * exchangeRate).toLocaleString()}</span></span>
-                  <span className="font-mono tracking-wider">KARBALI</span>
+
+                <div className="relative mt-8 flex flex-wrap items-end justify-between gap-3 text-[11px]">
+                  <div className="space-y-1">
+                    <p className="text-white/50 uppercase tracking-[0.14em]">NGN equivalent</p>
+                    <p className="font-mono text-sm text-white/90 tabular-nums">
+                      ₦ {(Number(wallet?.balance || 0) * exchangeRate).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <p className="text-white/50 uppercase tracking-[0.14em]">Account</p>
+                    <p className="font-mono text-sm text-white/90 tracking-[0.2em]">KARBALI · {(user?.id || "").slice(0, 4).toUpperCase()}</p>
+                  </div>
                 </div>
               </div>
             </MotionWrapper>
