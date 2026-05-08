@@ -176,7 +176,7 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
               {/* Thin orbital ring for futuristic accent */}
               <div aria-hidden className="absolute inset-[6%] rounded-full border border-primary/15" />
               <div aria-hidden className="absolute inset-[14%] rounded-full border border-foreground/5" />
-            </div>
+
 
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
