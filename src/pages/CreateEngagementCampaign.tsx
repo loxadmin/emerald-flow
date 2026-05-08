@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign, Eye, UserPlus } from "lucide-react";
+import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign, Eye, UserPlus, Plus, Trash2 } from "lucide-react";
 
 type MediaType = "music" | "video";
 type EventType = "viewer" | "subscriber";
