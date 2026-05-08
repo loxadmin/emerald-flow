@@ -14,6 +14,18 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Geist', 'Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Geist', 'Plus Jakarta Sans', 'ui-sans-serif', 'sans-serif'],
+        mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
+      boxShadow: {
+        xs: 'var(--shadow-xs)',
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        card: 'var(--shadow-card)',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

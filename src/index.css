@@ -2,99 +2,135 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Karbali — Premium Design System
+   Stripe-inspired fintech/adtech surface, calm Geist typography.
+   All colors HSL. Tokens drive everything; never hardcode.
+   ============================================================ */
+
 @layer base {
   :root,
   .light {
-    --background: 150 10% 96%;
-    --foreground: 165 30% 8%;
+    /* Surfaces — warm near-white, Stripe-style */
+    --background: 30 20% 99%;
+    --foreground: 220 13% 11%;
 
-    --card: 150 10% 98%;
-    --card-foreground: 165 30% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 11%;
 
-    --popover: 150 10% 98%;
-    --popover-foreground: 165 30% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 11%;
 
-    --primary: 160 84% 35%;
+    /* Brand — emerald, reserved for primary CTAs and accents */
+    --primary: 160 84% 32%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 160 78% 42%;
 
-    --secondary: 150 10% 90%;
-    --secondary-foreground: 165 30% 15%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 13% 18%;
 
-    --muted: 150 10% 90%;
-    --muted-foreground: 160 10% 40%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 42%;
 
-    --accent: 160 84% 35%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 13% 11%;
 
     --destructive: 0 72% 50%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 150 10% 85%;
-    --input: 150 10% 85%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 160 84% 32%;
 
-    --radius: 0.75rem;
+    --radius: 0.625rem;
 
     --success: 160 84% 32%;
     --warning: 38 92% 50%;
     --info: 217 91% 60%;
 
-    --sidebar-background: 150 10% 97%;
-    --sidebar-foreground: 165 30% 15%;
+    /* Sidebar */
+    --sidebar-background: 30 20% 99%;
+    --sidebar-foreground: 220 13% 26%;
     --sidebar-primary: 160 84% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 10% 92%;
-    --sidebar-accent-foreground: 165 30% 15%;
-    --sidebar-border: 150 10% 88%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 220 13% 11%;
+    --sidebar-border: 220 13% 91%;
     --sidebar-ring: 160 84% 32%;
 
-    --glass-bg: hsla(150, 10%, 98%, 0.7);
-    --glass-border: hsla(0, 0%, 0%, 0.08);
-    --glass-glow: hsla(160, 84%, 32%, 0.08);
+    /* Surface elevation tokens (Stripe layered look) */
+    --surface-1: 0 0% 100%;
+    --surface-2: 220 14% 98%;
+    --surface-3: 220 14% 96%;
+    --hairline: 220 13% 88%;
+
+    /* Elevation shadows */
+    --shadow-xs: 0 1px 2px 0 hsl(220 40% 10% / 0.04);
+    --shadow-sm: 0 1px 3px 0 hsl(220 40% 10% / 0.06), 0 1px 2px -1px hsl(220 40% 10% / 0.04);
+    --shadow-md: 0 4px 12px -2px hsl(220 40% 10% / 0.08), 0 2px 4px -2px hsl(220 40% 10% / 0.04);
+    --shadow-lg: 0 12px 32px -8px hsl(220 40% 10% / 0.12), 0 4px 12px -4px hsl(220 40% 10% / 0.06);
+    --shadow-card: 0 0 0 1px hsl(220 13% 91%), 0 1px 2px hsl(220 40% 10% / 0.04);
+
+    /* Glass (legacy compat) */
+    --glass-bg: hsla(0, 0%, 100%, 0.72);
+    --glass-border: hsla(220, 13%, 70%, 0.2);
+    --glass-glow: hsla(160, 84%, 32%, 0.06);
   }
 
   .dark {
-    /* True black base - neutral surfaces, emerald reserved for primary actions */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
+    /* Surfaces — refined near-black with subtle cool cast */
+    --background: 224 9% 4%;
+    --foreground: 210 20% 98%;
 
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 98%;
+    --card: 224 9% 7%;
+    --card-foreground: 210 20% 98%;
 
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 224 9% 8%;
+    --popover-foreground: 210 20% 98%;
 
-    --primary: 160 84% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 160 78% 42%;
+    --primary-foreground: 224 9% 6%;
+    --primary-glow: 160 78% 52%;
 
-    --secondary: 0 0% 9%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 224 9% 10%;
+    --secondary-foreground: 210 20% 95%;
 
-    --muted: 0 0% 9%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 224 9% 10%;
+    --muted-foreground: 220 9% 60%;
 
-    --accent: 0 0% 12%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 224 9% 12%;
+    --accent-foreground: 210 20% 98%;
 
-    --destructive: 0 62.8% 40%;
+    --destructive: 0 62.8% 45%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 14%;
-    --input: 0 0% 14%;
-    --ring: 160 84% 45%;
+    --border: 224 9% 14%;
+    --input: 224 9% 14%;
+    --ring: 160 78% 42%;
 
-    --sidebar-background: 0 0% 3%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 160 84% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 8%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 12%;
-    --sidebar-ring: 160 84% 45%;
+    --sidebar-background: 224 9% 5%;
+    --sidebar-foreground: 220 9% 70%;
+    --sidebar-primary: 160 78% 42%;
+    --sidebar-primary-foreground: 224 9% 6%;
+    --sidebar-accent: 224 9% 10%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 224 9% 12%;
+    --sidebar-ring: 160 78% 42%;
 
-    --glass-bg: hsla(0, 0%, 6%, 0.6);
-    --glass-border: hsla(0, 0%, 100%, 0.06);
-    --glass-glow: hsla(0, 0%, 0%, 0);
+    --surface-1: 224 9% 7%;
+    --surface-2: 224 9% 9%;
+    --surface-3: 224 9% 12%;
+    --hairline: 224 9% 14%;
+
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.5), 0 1px 2px -1px hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.5), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 12px 32px -8px hsl(0 0% 0% / 0.6), 0 4px 12px -4px hsl(0 0% 0% / 0.4);
+    --shadow-card: 0 0 0 1px hsl(224 9% 14%), 0 1px 2px hsl(0 0% 0% / 0.3);
+
+    --glass-bg: hsla(224, 9%, 7%, 0.7);
+    --glass-border: hsla(220, 9%, 100%, 0.06);
+    --glass-glow: hsla(160, 78%, 42%, 0.08);
   }
 }
 
@@ -102,43 +138,124 @@
   * {
     @apply border-border;
   }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-background text-foreground;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Geist', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    @apply text-base leading-relaxed;
+    @apply text-[15px] leading-relaxed;
+    letter-spacing: -0.005em;
   }
-  h1 {
-    @apply text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl;
+
+  h1, h2, h3, h4, h5 {
+    font-family: 'Geist', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.022em;
+    @apply text-foreground;
   }
-  h2 {
-    @apply text-3xl font-bold tracking-tight md:text-4xl;
+
+  h1 { @apply text-3xl font-semibold tracking-tight md:text-4xl; }
+  h2 { @apply text-2xl font-semibold tracking-tight md:text-3xl; }
+  h3 { @apply text-lg font-semibold tracking-tight; }
+  p  { @apply leading-relaxed; }
+
+  /* Premium tabular numerics anywhere a number lives */
+  .tabular, .tabular-nums { font-variant-numeric: tabular-nums; }
+  .font-mono, code, pre, kbd, samp {
+    font-family: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-feature-settings: 'ss01', 'cv11';
   }
-  h3 {
-    @apply text-xl font-semibold tracking-tight;
+
+  /* Selection */
+  ::selection {
+    background: hsl(var(--primary) / 0.22);
+    color: hsl(var(--foreground));
   }
-  p {
-    @apply leading-relaxed;
+
+  /* Scrollbar (subtle, premium) */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.18);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.32); background-clip: padding-box; }
+}
+
+@layer components {
+  /* Premium surface primitives */
+  .surface {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+  }
+  .surface-elevated {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+  .hairline { background: hsl(var(--hairline)); }
+
+  /* Stat number — calm fintech display */
+  .stat-number {
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: 'tnum', 'ss01';
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    @apply text-3xl font-semibold text-foreground;
+  }
+
+  /* Eyebrow / subtle uppercase label */
+  .eyebrow {
+    @apply text-[10px] font-medium uppercase text-muted-foreground;
+    letter-spacing: 0.12em;
+  }
+
+  /* Soft chip */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-xs font-medium text-foreground;
+  }
+
+  /* Section divider */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, hsl(var(--border)), transparent);
   }
 }
 
 @layer utilities {
-  .gradient-emerald {
-    background: linear-gradient(135deg, hsl(160, 84%, 45%), hsl(160, 84%, 30%));
-  }
   .text-gradient {
-    background: linear-gradient(180deg, hsl(160, 84%, 45%), hsl(160, 84%, 35%));
+    background: linear-gradient(180deg, hsl(var(--primary-glow)), hsl(var(--primary)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  .light .text-gradient {
-    background: linear-gradient(180deg, hsl(160, 84%, 35%), hsl(160, 84%, 25%));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .gradient-emerald {
+    background: linear-gradient(135deg, hsl(var(--primary-glow)), hsl(var(--primary)));
   }
+
+  /* Subtle dotted background */
+  .bg-dots {
+    background-image: radial-gradient(hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.6) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.6) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Glass (kept for legacy components) */
   .glass {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -151,47 +268,26 @@
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
   }
-  .light .glass-strong {
-    background: hsla(150, 10%, 98%, 0.85);
-    border: 1px solid hsla(0, 0%, 0%, 0.1);
-  }
-  .glass-glow {
-    box-shadow: 0 0 30px var(--glass-glow), 0 8px 32px rgba(0, 0, 0, 0.1);
-  }
-  .glass-hover {
-    /* No hover animations */
-  }
-  .clay-shadow {
-    box-shadow:
-      0 10px 20px rgba(0, 0, 0, 0.1),
-      0 6px 6px rgba(0, 0, 0, 0.1),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.1),
-      inset 0 2px 4px rgba(255, 255, 255, 0.8);
-  }
-  .perspective-1000 {
-    perspective: 1000px;
-  }
+  .glass-glow { box-shadow: 0 0 30px var(--glass-glow), var(--shadow-md); }
+  .glass-hover {}
+  .clay-shadow { box-shadow: var(--shadow-lg); }
+  .perspective-1000 { perspective: 1000px; }
+
   .noise::after {
     content: "";
     position: absolute;
     inset: 0;
-    opacity: 0.05;
+    opacity: 0.04;
     pointer-events: none;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     background-repeat: repeat;
   }
 
-  /* Futuristic utilities */
+  /* Legacy futuristic helpers (used elsewhere) */
   .futuristic-grid {
     background-image:
-      linear-gradient(hsla(160, 84%, 45%, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, hsla(160, 84%, 45%, 0.04) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }
-  .dark .futuristic-grid {
-    background-image:
-      linear-gradient(hsla(160, 84%, 45%, 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, hsla(160, 84%, 45%, 0.06) 1px, transparent 1px);
+      linear-gradient(hsl(var(--primary) / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.05) 1px, transparent 1px);
     background-size: 60px 60px;
   }
   .scan-line::before {
@@ -200,32 +296,29 @@
     inset: 0;
     pointer-events: none;
     z-index: 1;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      hsla(160, 84%, 45%, 0.015) 2px,
-      hsla(160, 84%, 45%, 0.015) 4px
-    );
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary) / 0.015) 2px, hsl(var(--primary) / 0.015) 4px);
   }
   .neon-border {
-    border: 1px solid hsla(160, 84%, 45%, 0.2);
-    box-shadow: 0 0 15px hsla(160, 84%, 45%, 0.05), inset 0 0 15px hsla(160, 84%, 45%, 0.02);
-  }
-  .dark .neon-border {
-    border: 1px solid hsla(160, 84%, 45%, 0.15);
-    box-shadow: 0 0 20px hsla(160, 84%, 45%, 0.08), inset 0 0 20px hsla(160, 84%, 45%, 0.03);
+    border: 1px solid hsl(var(--primary) / 0.2);
+    box-shadow: 0 0 15px hsl(var(--primary) / 0.05);
   }
   .futuristic-label {
     @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em];
-    border: 1px solid hsla(160, 84%, 45%, 0.25);
-    background: hsla(160, 84%, 45%, 0.06);
-    color: hsl(160, 84%, 45%);
+    border: 1px solid hsl(var(--primary) / 0.25);
+    background: hsl(var(--primary) / 0.06);
+    color: hsl(var(--primary));
   }
-  .hero-vignette {
-    box-shadow: inset 0 0 120px 40px hsla(165, 40%, 1.5%, 0.6);
-  }
-  .light .hero-vignette {
-    box-shadow: inset 0 0 120px 40px hsla(150, 10%, 96%, 0.5);
+  .hero-vignette { box-shadow: inset 0 0 120px 40px hsl(var(--background) / 0.5); }
+
+  /* Scrollbar hide for tab strips */
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Animations */
+  .animate-fade-in { animation: fade-in 0.4s ease-out both; }
+  .animate-rise { animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 }
