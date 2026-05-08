@@ -130,14 +130,23 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                    filter: "blur(28px)",
                  }} />
 
-            <div className="relative">
+            <div className="relative mx-auto aspect-square w-full max-w-[560px]">
+              {/* Soft outer aura that fades into hero bg */}
+              <div aria-hidden className="absolute inset-[-18%] rounded-full"
+                   style={{
+                     background:
+                       "radial-gradient(closest-side, hsl(var(--primary)/0.35), hsl(var(--pastel-sky)/0.35) 45%, transparent 75%)",
+                     filter: "blur(36px)",
+                   }} />
+
+              {/* Circular video with deep gradient feather toward edges */}
               <div
-                className="relative aspect-[5/4] w-full"
+                className="absolute inset-0 rounded-full"
                 style={{
                   WebkitMaskImage:
-                    "radial-gradient(75% 70% at 50% 45%, black 55%, transparent 92%)",
+                    "radial-gradient(circle at 50% 50%, black 0%, black 38%, rgba(0,0,0,0.85) 55%, rgba(0,0,0,0.4) 75%, transparent 95%)",
                   maskImage:
-                    "radial-gradient(75% 70% at 50% 45%, black 55%, transparent 92%)",
+                    "radial-gradient(circle at 50% 50%, black 0%, black 38%, rgba(0,0,0,0.85) 55%, rgba(0,0,0,0.4) 75%, transparent 95%)",
                 }}
               >
                 <video
@@ -148,19 +157,26 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                   muted
                   playsInline
                   preload="auto"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full rounded-full object-cover"
                 />
-                <div aria-hidden className="absolute inset-0 mix-blend-soft-light"
+                {/* Color grade tint */}
+                <div aria-hidden className="absolute inset-0 rounded-full mix-blend-soft-light"
                      style={{
                        background:
-                         "linear-gradient(135deg, hsl(var(--primary)/0.25), transparent 50%, hsl(var(--pastel-lavender)/0.35))",
+                         "radial-gradient(circle at 30% 30%, hsl(var(--primary)/0.35), transparent 55%), radial-gradient(circle at 70% 75%, hsl(var(--pastel-lavender)/0.4), transparent 60%)",
                      }} />
-                <div aria-hidden className="absolute inset-0 opacity-[0.08] mix-blend-overlay"
+                {/* Subtle inner vignette to deepen blend */}
+                <div aria-hidden className="absolute inset-0 rounded-full"
                      style={{
-                       backgroundImage:
-                         "repeating-linear-gradient(180deg, hsl(var(--foreground)) 0 1px, transparent 1px 3px)",
+                       background:
+                         "radial-gradient(circle at 50% 50%, transparent 55%, hsl(var(--background)/0.35) 80%, hsl(var(--background)) 100%)",
                      }} />
               </div>
+
+              {/* Thin orbital ring for futuristic accent */}
+              <div aria-hidden className="absolute inset-[6%] rounded-full border border-primary/15" />
+              <div aria-hidden className="absolute inset-[14%] rounded-full border border-foreground/5" />
+            </div>
 
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
