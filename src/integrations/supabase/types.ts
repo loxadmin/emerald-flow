@@ -1543,6 +1543,7 @@ export type Database = {
     Functions: {
       auto_activate_pending_campaigns: { Args: never; Returns: undefined }
       end_campaign_early: { Args: { _campaign_id: string }; Returns: Json }
+      expire_stale_pending_wallet_transactions: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
