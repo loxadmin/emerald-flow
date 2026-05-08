@@ -251,20 +251,55 @@ export default function Index() {
             <LandingHero title={s("hero").title} subtitle={s("hero").subtitle} metrics={metrics} metricsLoading={metricsLoading} />
           )}
 
-          {/* Feature cards */}
-          <section className="relative z-10 -mt-16 px-6 sm:px-10 lg:px-16">
-            <div className="mx-auto max-w-6xl">
-              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Trust strip */}
+          <section className="relative z-10 -mt-10 px-6 sm:px-10 lg:px-16">
+            <div className="mx-auto max-w-7xl">
+              <p className="mb-8 text-center text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                Trusted by performance teams across Africa
+              </p>
+              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3 lg:grid-cols-6">
+                {["Kuda", "Moniepoint", "Piggyvest", "Paystack", "Branch", "Chipper"].map((b) => (
+                  <div
+                    key={b}
+                    className="flex items-center justify-center bg-card py-7 text-sm font-semibold tracking-tight text-muted-foreground/70 transition-colors hover:text-foreground"
+                  >
+                    {b}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Capability grid */}
+          <section className="relative z-10 px-6 py-28 sm:px-10 lg:px-16">
+            <div className="mx-auto max-w-7xl">
+              <MotionWrapper className="mb-14 max-w-2xl">
+                <p className="eyebrow mb-3">Built for outcomes</p>
+                <h2 className="text-[32px] font-semibold leading-tight tracking-tight text-foreground sm:text-[40px]">
+                  Every dollar tied to a verified result.
+                </h2>
+                <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+                  Karbali is a performance attribution layer for advertisers who refuse to pay for noise. Track real outcomes, settle in real time, scale with confidence.
+                </p>
+              </MotionWrapper>
+
+              <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
                 {features.map((f) => (
-                  <div key={f.title} className="group flex flex-col items-start transition-all">
-                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
-                      <f.icon className="h-6 w-6" />
+                  <div
+                    key={f.title}
+                    className="group flex flex-col gap-5 bg-card p-7 transition-colors hover:bg-secondary/40"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <f.icon className="h-5 w-5" />
                     </div>
-                    <h3 className="text-lg font-bold text-foreground mb-2 flex items-center gap-2">
-                      {f.title}
-                      <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
-                    </h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground/80">{f.desc}</p>
+                    <div>
+                      <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+                        {f.title}
+                      </h3>
+                      <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
+                        {f.desc}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -273,38 +308,39 @@ export default function Index() {
 
           {/* How It Works */}
           {s("how_it_works").is_visible && (
-            <section id="how-it-works" className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 bg-background overflow-hidden">
-              <div className="absolute top-0 -left-20 h-[500px] w-[500px] rounded-full bg-purple-600/5 blur-[120px] pointer-events-none" />
-              <div className="absolute bottom-0 -right-20 h-[500px] w-[500px] rounded-full bg-emerald-600/5 blur-[120px] pointer-events-none" />
-              <div className="relative z-10 mx-auto max-w-7xl">
-                <MotionWrapper className="mb-20 text-center">
-                  <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-6 border border-primary/20">Step-by-Step</span>
-                  <h2 className="mb-6 text-foreground text-4xl md:text-5xl font-extrabold tracking-tight">{s("how_it_works").title}</h2>
-                  <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{s("how_it_works").subtitle}</p>
+            <section id="how-it-works" className="relative z-10 px-6 py-28 sm:px-10 lg:px-16">
+              <div className="mx-auto max-w-7xl">
+                <MotionWrapper className="mb-16 grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-end">
+                  <div>
+                    <p className="eyebrow mb-3">How it works</p>
+                    <h2 className="text-[32px] font-semibold leading-tight tracking-tight text-foreground sm:text-[40px]">
+                      {s("how_it_works").title}
+                    </h2>
+                  </div>
+                  <p className="text-[15px] leading-relaxed text-muted-foreground lg:max-w-md lg:justify-self-end">
+                    {s("how_it_works").subtitle}
+                  </p>
                 </MotionWrapper>
 
-                <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4">
+                <hr className="divider-dashed mb-10" />
+
+                <div className="grid grid-cols-1 gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
                   {steps.map((step, i) => {
                     const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                     const stepTitle = parts[0] || step;
                     const desc = parts.slice(1).join(": ") || "";
-                    const icons = [Zap, Terminal, CheckCircle2, BarChart3];
-                    const Icon = icons[i] || Zap;
-
                     return (
-                      <MotionWrapper key={i} delay={i * 0.1} className="relative">
-                        <div className="relative flex flex-col items-start text-left h-full rounded-[2.5rem] bg-card/40 backdrop-blur-3xl p-10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] border border-border/50 transition-all duration-700 hover:bg-card/60 hover:-translate-y-4 hover:border-primary/30 group overflow-hidden">
-                          <div className="absolute top-0 left-0 h-[2px] w-0 bg-gradient-to-r from-transparent via-primary to-transparent transition-all duration-700 group-hover:w-full" />
-                          <div className="mb-10 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-[0_0_30px_rgba(34,197,94,0.1)] transition-all duration-700 group-hover:bg-primary/20 group-hover:shadow-[0_0_40px_rgba(34,197,94,0.3)] group-hover:rotate-[10deg]">
-                            <Icon className="h-10 w-10" />
-                          </div>
-                          <div className="absolute -top-4 -right-4 text-9xl font-black text-foreground/[0.03] select-none transition-all duration-700 group-hover:text-foreground/[0.08] group-hover:scale-110">{i + 1}</div>
-                          <h3 className="mb-6 text-2xl font-bold text-foreground leading-tight tracking-tight group-hover:text-primary transition-colors duration-500">{stepTitle}</h3>
-                          <p className="text-base font-medium leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors duration-500">{desc}</p>
-                          <div className="mt-8 flex items-center text-primary/40 group-hover:text-primary transition-colors duration-500">
-                            <span className="text-xs font-bold uppercase tracking-widest">Explore</span>
-                            <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-2 transition-transform duration-500" />
-                          </div>
+                      <MotionWrapper key={i} delay={i * 0.08}>
+                        <div className="flex flex-col">
+                          <span className="font-mono text-[11px] font-semibold tracking-[0.18em] text-primary">
+                            STEP {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <h3 className="mt-4 text-[18px] font-semibold leading-snug tracking-tight text-foreground">
+                            {stepTitle}
+                          </h3>
+                          <p className="mt-3 text-[13.5px] leading-relaxed text-muted-foreground">
+                            {desc}
+                          </p>
                         </div>
                       </MotionWrapper>
                     );
@@ -314,80 +350,84 @@ export default function Index() {
             </section>
           )}
 
-          {/* CTA */}
-          <section className="relative z-10 py-20 px-6 sm:px-10">
-            <div className="mx-auto max-w-5xl">
-              <MotionWrapper className="relative overflow-hidden rounded-[2.5rem] bg-card p-12 md:p-20 text-center shadow-2xl border border-border/50">
-                <div className="absolute top-0 right-0 -mr-20 -mt-20 h-64 w-64 rounded-full bg-primary/10 blur-[80px]" />
-                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 h-64 w-64 rounded-full bg-emerald-600/10 blur-[80px]" />
-                <div className="relative z-10">
-                  <div className="mb-8 flex justify-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <CheckCircle2 className="h-8 w-8" />
-                    </div>
+          {/* CTA banner */}
+          <section className="relative z-10 px-6 py-20 sm:px-10 lg:px-16">
+            <div className="mx-auto max-w-7xl">
+              <MotionWrapper className="relative overflow-hidden rounded-[28px] border border-sidebar-border bg-sidebar p-10 sm:p-14 lg:p-20">
+                <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sidebar-primary/20 blur-[100px]" />
+                <div className="absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-sidebar-primary/15 blur-[100px]" />
+                <div className="relative z-10 grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-center">
+                  <div>
+                    <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-sidebar-primary">
+                      Ready when you are
+                    </p>
+                    <h2 className="text-[32px] font-semibold leading-tight tracking-tight text-white sm:text-[44px]">
+                      Stop paying for noise.<br className="hidden sm:block" /> Pay for outcomes.
+                    </h2>
+                    <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-sidebar-foreground">
+                      Spin up a campaign in minutes, attribute every conversion, and only settle for what's verified.
+                    </p>
                   </div>
-                  <h2 className="mb-4 text-foreground text-3xl md:text-5xl font-extrabold tracking-tight">Ready to migrate customers?</h2>
-                  <p className="mb-10 text-muted-foreground max-w-xl mx-auto text-lg">Join the next generation of performance-driven advertisers.</p>
-                  <Link to="/signup">
-                    <GlassButton size="lg" variant="glow" className="px-12 h-14 text-lg">
-                      Get Started Now <ArrowRight className="h-4 w-4 ml-2" />
-                    </GlassButton>
-                  </Link>
+                  <div className="flex flex-wrap gap-3 lg:justify-end">
+                    <Link to="/signup" className="btn-pill px-7 py-3 text-[14px] font-semibold">
+                      Get started <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      to="/about"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-7 py-3 text-[14px] font-medium text-white transition-all hover:bg-white/10"
+                    >
+                      Learn more
+                    </Link>
+                  </div>
                 </div>
               </MotionWrapper>
             </div>
           </section>
 
-          {/* Contact Form */}
+          {/* Contact */}
           {s("contact").is_visible && (
-            <section id="contact" className="relative z-10 py-32 px-6 sm:px-10 overflow-hidden">
-              <div className="mx-auto max-w-6xl">
-                <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-                  <MotionWrapper className="flex flex-col justify-center">
-                    <h2 className="mb-6 text-foreground text-4xl md:text-5xl lg:text-6xl font-extrabold">{s("contact").title}</h2>
-                    <p className="text-muted-foreground text-lg mb-10 max-w-md">{s("contact").subtitle}</p>
-                    <div className="space-y-6">
-                      {[
-                        { icon: Mail, label: "Email Us", value: "hello@karbali.com" },
-                        { icon: MapPin, label: "Visit Us", value: "Lagos, Nigeria" },
-                        { icon: Globe, label: "Follow Us", value: "@karbali_ads" }
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                            <item.icon className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{item.label}</p>
-                            <p className="text-foreground font-medium">{item.value}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </MotionWrapper>
-                  <MotionWrapper delay={0.2}>
-                    <div className="relative rounded-[3rem] bg-card p-8 md:p-12 shadow-xl border border-border/50">
-                      <form onSubmit={handleContactSubmit} className="space-y-6">
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label htmlFor="contact-name" className="text-sm font-medium text-foreground">Name</Label>
-                            <Input id="contact-name" value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Your name" maxLength={100} required className="h-12 rounded-2xl border-border/40 bg-background/50 px-5" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="contact-email" className="text-sm font-medium text-foreground">Email</Label>
-                            <Input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@company.com" maxLength={255} required className="h-12 rounded-2xl border-border/40 bg-background/50 px-5" />
-                          </div>
+            <section id="contact" className="relative z-10 px-6 py-28 sm:px-10 lg:px-16">
+              <div className="mx-auto max-w-5xl">
+                <MotionWrapper className="mb-12 text-center">
+                  <p className="eyebrow mb-3">Get in touch</p>
+                  <h2 className="text-[32px] font-semibold leading-tight tracking-tight text-foreground sm:text-[40px]">
+                    {s("contact").title}
+                  </h2>
+                  <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+                    {s("contact").subtitle}
+                  </p>
+                </MotionWrapper>
+
+                <MotionWrapper delay={0.15}>
+                  <div className="card-soft p-8 sm:p-10">
+                    <form onSubmit={handleContactSubmit} className="space-y-5">
+                      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="contact-name" className="text-[12.5px] font-medium text-foreground">Name</Label>
+                          <Input id="contact-name" value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Your name" maxLength={100} required className="h-11 rounded-xl border-border bg-background" />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="contact-message" className="text-sm font-medium text-foreground">Message</Label>
-                          <Textarea id="contact-message" value={contactMessage} onChange={e => setContactMessage(e.target.value)} placeholder="How can we help?" maxLength={2000} required rows={4} className="min-h-[120px] rounded-2xl border-border/40 bg-background/50 px-5 py-4 resize-none" />
+                          <Label htmlFor="contact-email" className="text-[12.5px] font-medium text-foreground">Email</Label>
+                          <Input id="contact-email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@company.com" maxLength={255} required className="h-11 rounded-xl border-border bg-background" />
                         </div>
-                        <GlassButton type="submit" variant="glow" className="w-full h-12 rounded-2xl text-base font-semibold" disabled={contactSending}>
-                          {contactSending ? "Processing..." : <span className="flex items-center justify-center gap-2">Send Message <Send className="h-4 w-4" /></span>}
-                        </GlassButton>
-                      </form>
-                    </div>
-                  </MotionWrapper>
-                </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-message" className="text-[12.5px] font-medium text-foreground">Message</Label>
+                        <Textarea id="contact-message" value={contactMessage} onChange={e => setContactMessage(e.target.value)} placeholder="How can we help?" maxLength={2000} required rows={5} className="min-h-[140px] rounded-xl border-border bg-background resize-none" />
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                          <Mail className="h-3.5 w-3.5" /> hello@karbali.com
+                          <span className="mx-2 text-border">·</span>
+                          <MapPin className="h-3.5 w-3.5" /> Lagos, Nigeria
+                        </div>
+                        <button type="submit" className="btn-pill px-7 py-3 text-[14px] font-semibold disabled:opacity-60" disabled={contactSending}>
+                          {contactSending ? "Sending…" : (<>Send message <Send className="h-4 w-4" /></>)}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </MotionWrapper>
               </div>
             </section>
           )}
