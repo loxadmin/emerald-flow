@@ -287,13 +287,41 @@ export default function CreateEngagementCampaign() {
               <Label className="text-xs text-muted-foreground">Campaign Name *</Label>
               <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="My Campaign" />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">{isMusic ? "Song Link" : "Video Link"} *</Label>
-              <Input value={mediaLink} onChange={(e) => setMediaLink(e.target.value)} placeholder={isMusic ? "https://open.spotify.com/track/..." : "https://youtube.com/watch?v=..."} />
-            </div>
+            {isMusic ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Song Links * <span className="text-muted-foreground/70">(up to {MAX_MUSIC_LINKS} platforms)</span></Label>
+                  {musicLinks.length < MAX_MUSIC_LINKS && (
+                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={addMusicLink}>
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Add link
+                    </Button>
+                  )}
+                </div>
+                {musicLinks.map((link, i) => (
+                  <div key={i} className="flex gap-2">
+                    <Input
+                      value={link}
+                      onChange={(e) => updateMusicLink(i, e.target.value)}
+                      placeholder={i === 0 ? "https://open.spotify.com/track/..." : i === 1 ? "https://music.apple.com/..." : "https://music.youtube.com/..."}
+                    />
+                    {musicLinks.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => removeMusicLink(i)}>
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <p className="text-[11px] text-muted-foreground">Add the same song from different platforms (Spotify, Apple Music, YouTube Music, etc.).</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Video Link *</Label>
+                <Input value={mediaLink} onChange={(e) => setMediaLink(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+              </div>
+            )}
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(isVideo ? 1 : 0)}>← Back</Button>
-              <Button className="flex-1" onClick={handleTranscribe} disabled={transcribing || !mediaLink.trim() || !campaignName.trim()}>
+              <Button className="flex-1" onClick={handleTranscribe} disabled={transcribing || !campaignName.trim() || (isMusic ? validMusicLinks.length === 0 : !mediaLink.trim())}>
                 {transcribing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> : needsTranscription ? "Continue to Transcription →" : "Continue →"}
               </Button>
             </div>
