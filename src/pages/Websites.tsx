@@ -97,28 +97,34 @@ export default function WebsitesPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-3xl">
+      <div className="mx-auto max-w-3xl space-y-6">
         <MotionWrapper>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Websites</h1>
-            <p className="text-sm text-muted-foreground">Manage and verify your business websites</p>
+          <div className="space-y-1.5">
+            <p className="eyebrow">Setup</p>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Websites</h1>
+            <p className="text-sm text-muted-foreground">Verify ownership of the domains where your campaigns will run.</p>
           </div>
         </MotionWrapper>
 
         {/* Add new website */}
         <MotionWrapper delay={0.05}>
           <div className="rounded-xl border border-border bg-card p-6">
-            <h3 className="text-sm font-medium text-foreground mb-4">Add Website</h3>
+            <div className="mb-4">
+              <p className="eyebrow mb-0.5">Add domain</p>
+              <h3 className="text-base font-semibold tracking-tight">Register a new website</h3>
+            </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Domain</Label>
-                <Input value={newDomain} onChange={(e) => setNewDomain(e.target.value)} placeholder="example.com" />
+                <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Domain</Label>
+                <Input value={newDomain} onChange={(e) => setNewDomain(e.target.value)} placeholder="example.com" className="font-mono" />
               </div>
-              <Button onClick={addWebsite} disabled={adding} className="sm:mt-6">
-                {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="mr-1 h-4 w-4" /> Add</>}
+              <Button onClick={addWebsite} disabled={adding} className="sm:mt-[26px] bg-primary hover:bg-primary/90 text-primary-foreground">
+                {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="mr-1 h-4 w-4" /> Add domain</>}
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-2">You'll need to verify ownership via an email sent to admin@yourdomain.com</p>
+            <p className="text-[11px] text-muted-foreground mt-3">
+              You will receive a one-time verification code at <span className="font-mono text-foreground">admin@yourdomain.com</span>.
+            </p>
           </div>
         </MotionWrapper>
 
