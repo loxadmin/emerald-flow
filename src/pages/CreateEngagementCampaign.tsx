@@ -32,6 +32,14 @@ export default function CreateEngagementCampaign() {
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [campaignName, setCampaignName] = useState("");
   const [mediaLink, setMediaLink] = useState("");
+  const [musicLinks, setMusicLinks] = useState<string[]>([""]);
+  const MAX_MUSIC_LINKS = 3;
+  const validMusicLinks = musicLinks.map(l => l.trim()).filter(Boolean);
+  const effectiveMediaLink = isMusicLinkMode() ? validMusicLinks.join("\n") : mediaLink.trim();
+  function isMusicLinkMode() { return mediaType === "music"; }
+  const updateMusicLink = (i: number, v: string) => setMusicLinks(prev => prev.map((x, idx) => idx === i ? v : x));
+  const addMusicLink = () => setMusicLinks(prev => prev.length < MAX_MUSIC_LINKS ? [...prev, ""] : prev);
+  const removeMusicLink = (i: number) => setMusicLinks(prev => prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev);
   const [transcription, setTranscription] = useState("");
   const [transcriptionConfirmed, setTranscriptionConfirmed] = useState(false);
   const [targetViewers, setTargetViewers] = useState("200");
