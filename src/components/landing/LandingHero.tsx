@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
-import { GlassButton } from "@/components/ui/glass-button";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface LandingHeroProps {
@@ -15,96 +15,164 @@ interface LandingHeroProps {
   };
 }
 
-export default function LandingHero({ title, subtitle }: LandingHeroProps) {
+export default function LandingHero({ title, subtitle, metrics, metricsLoading }: LandingHeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [index, setIndex] = useState(0);
   const words = ["Brand", "Business", "App", "Shop"];
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});
-
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % words.length);
-    }, 3000);
-    return () => clearInterval(interval);
+    const id = setInterval(() => setIndex((p) => (p + 1) % words.length), 2800);
+    return () => clearInterval(id);
   }, []);
 
+  // Strip leading "Your Brand" prefix for split rendering
+  const renderTitle = () => {
+    if (title?.includes("Your Brand")) {
+      const before = title.split("Your Brand")[0];
+      return (
+        <>
+          {before}Your{" "}
+          <span className="inline-grid align-baseline">
+            <span className="invisible pointer-events-none col-start-1 row-start-1">Business</span>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={words[index]}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -12, opacity: 0 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="col-start-1 row-start-1 text-primary"
+              >
+                {words[index]}
+              </motion.span>
+            </AnimatePresence>
+          </span>
+        </>
+      );
+    }
+    return title;
+  };
+
+  const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k+` : `${n}+`);
+
   return (
-    <section className="relative z-0 overflow-hidden">
-      {/* Video background — full bleed, sits behind transparent navbar */}
-      <div className="absolute inset-0 z-0">
-        <video
-          ref={videoRef}
-          src="/hero-animation.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          className="h-full w-full object-cover"
-        />
-        {/* Dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-black/60 z-[1]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80 z-[2]" />
+    <section className="relative isolate overflow-hidden bg-background">
+      {/* Soft ambient backdrop — calm fintech */}
+      <div aria-hidden className="absolute inset-0 -z-10">
+        <div className="absolute inset-x-0 top-0 h-[640px]"
+             style={{
+               background:
+                 "radial-gradient(60% 50% at 80% 0%, hsl(var(--primary)/0.10), transparent 60%), radial-gradient(50% 40% at 10% 10%, hsl(var(--pastel-sky)), transparent 60%)",
+             }} />
+        <div className="absolute inset-0 bg-grid opacity-[0.35] [mask-image:radial-gradient(60%_50%_at_50%_30%,black,transparent)]" />
       </div>
 
-      {/* Bottom seamless fade into page background */}
-      <div className="absolute bottom-0 left-0 right-0 z-[1] h-64 bg-gradient-to-t from-background via-background/90 to-transparent" />
-
-      {/* Content — left-aligned like wan.video */}
-      <div className="relative z-10 flex min-h-screen items-end px-6 pb-32 pt-32 sm:px-10 lg:px-16">
-        <div className="max-w-2xl">
+      <div className="mx-auto max-w-7xl px-6 pb-24 pt-32 sm:px-10 lg:px-16 lg:pt-40">
+        <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
+          {/* Copy */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-6"
           >
-            <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-              {title?.includes("Your Brand") ? (
-                <>
-                  {title.split("Your Brand")[0]}Your{" "}
-                  <span className="inline-grid">
-                    <span className="invisible pointer-events-none col-start-1 row-start-1">Business</span>
-                    <AnimatePresence mode="wait">
-                      <motion.span
-                        key={words[index]}
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -20, opacity: 0 }}
-                        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                        className="col-start-1 row-start-1 text-[#22c55e]"
-                      >
-                        {words[index]}
-                      </motion.span>
-                    </AnimatePresence>
-                  </span>
-                </>
-              ) : (
-                title
-              )}
+            <span className="pill-emerald">
+              <Sparkles className="h-3.5 w-3.5" />
+              Performance attribution, simplified
+            </span>
+
+            <h1 className="display-xl mt-6 text-foreground">
+              {renderTitle()}
             </h1>
 
-            <p className="mt-6 max-w-lg text-base leading-relaxed text-white/60 sm:text-lg">
+            <p className="lede mt-6">
               {subtitle}
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <Link to="/signup">
-                <GlassButton size="lg" variant="glow" className="px-10">
-                  Start Free <ArrowRight className="h-4 w-4" />
-                </GlassButton>
+                <Button size="lg" className="h-12 rounded-full px-7 text-sm font-semibold shadow-sm">
+                  Start free <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Button>
               </Link>
               <Link to="/docs">
-                <GlassButton
-                  size="lg"
-                  variant="outline"
-                  className="border-white/40 bg-white/10 px-10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] group"
-                >
-                  <span className="text-white font-bold drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] group-hover:drop-shadow-[0_4px_16px_rgba(0,0,0,1)] transition-all duration-300">
-                    View API Docs
-                  </span>
-                </GlassButton>
+                <Button size="lg" variant="outline" className="h-12 rounded-full border-border bg-card px-7 text-sm font-semibold hover:bg-secondary">
+                  View API docs
+                </Button>
               </Link>
+            </div>
+
+            {/* Trust strip */}
+            <div className="mt-10 grid max-w-md grid-cols-3 gap-6 border-t border-border pt-6">
+              {[
+                { v: metrics.advertisers, l: "Advertisers" },
+                { v: metrics.campaigns, l: "Campaigns" },
+                { v: metrics.events, l: "Tracked events" },
+              ].map((s) => (
+                <div key={s.l}>
+                  <div className="stat-number !text-2xl">
+                    {metricsLoading ? "—" : fmt(s.v)}
+                  </div>
+                  <div className="eyebrow mt-1">{s.l}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Hero video — floating fintech panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="relative lg:col-span-6"
+          >
+            <div className="relative hero-halo">
+              <div className="hero-frame relative">
+                {/* Faux window chrome */}
+                <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    karbali · live
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                    </span>
+                    realtime
+                  </span>
+                </div>
+
+                <div className="aspect-[16/10] w-full bg-secondary">
+                  <video
+                    ref={videoRef}
+                    src="/hero-animation.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="auto"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              </div>
+
+              {/* Floating metric chip */}
+              <div className="absolute -bottom-5 -left-4 hidden rounded-2xl border border-border bg-card px-4 py-3 shadow-md sm:block">
+                <div className="eyebrow">Today</div>
+                <div className="mt-0.5 stat-number !text-xl">+24.8%</div>
+                <div className="text-[11px] text-muted-foreground">verified conversions</div>
+              </div>
+              <div className="absolute -right-4 -top-5 hidden rounded-2xl border border-border bg-card px-4 py-3 shadow-md sm:block">
+                <div className="eyebrow">Spend</div>
+                <div className="mt-0.5 stat-number !text-xl">$12,480</div>
+                <div className="text-[11px] text-muted-foreground">across 14 campaigns</div>
+              </div>
             </div>
           </motion.div>
         </div>
