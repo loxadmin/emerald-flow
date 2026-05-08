@@ -130,29 +130,42 @@ export default function WebsitesPage() {
 
         {/* Websites list */}
         <MotionWrapper delay={0.1}>
-          <div className="rounded-xl border border-border bg-card">
-            <div className="p-5 pb-3">
-              <h3 className="text-sm font-medium text-foreground">Your Websites</h3>
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <p className="eyebrow mb-0.5">Verified domains</p>
+              <h3 className="text-base font-semibold tracking-tight">Your websites</h3>
             </div>
-            <div className="px-5 pb-5">
+            <div>
               {loading ? (
-                <div className="flex justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+                <div className="flex justify-center py-10">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
               ) : websites.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-8">No websites added yet</p>
+                <div className="px-6 py-12 text-center">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">No websites yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Add your first domain above to get started.</p>
+                </div>
               ) : (
-                <div className="divide-y divide-border">
+                <ul className="divide-y divide-border">
                   {websites.map((w) => (
-                    <div key={w.id} className="py-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium text-foreground">{w.domain}</span>
-                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${w.is_verified ? "text-primary border-primary/20 bg-primary/5" : "text-amber-600 border-amber-500/20 bg-amber-500/5"}`}>
-                            {w.is_verified ? <><ShieldCheck className="h-2.5 w-2.5 mr-0.5" /> Verified</> : "Unverified"}
-                          </Badge>
+                    <li key={w.id} className="px-6 py-4 space-y-3">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
+                            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-mono text-sm font-medium text-foreground truncate">{w.domain}</p>
+                            <Badge variant="outline" className={`mt-0.5 text-[10px] px-1.5 py-0 font-medium uppercase tracking-wider ${w.is_verified ? "text-primary border-primary/25 bg-primary/5" : "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/5"}`}>
+                              {w.is_verified ? <><ShieldCheck className="h-2.5 w-2.5 mr-0.5" /> Verified</> : "Unverified"}
+                            </Badge>
+                          </div>
                         </div>
                         {!w.is_verified && verifyingId !== w.id && (
-                          <Button variant="outline" size="sm" onClick={() => sendOtp(w.id, w.domain)} disabled={sendingOtp === w.id}>
+                          <Button variant="outline" size="sm" onClick={() => sendOtp(w.id, w.domain)} disabled={sendingOtp === w.id} className="border-border">
                             {sendingOtp === w.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Mail className="mr-1 h-3 w-3" /> Send OTP</>}
                           </Button>
                         )}
