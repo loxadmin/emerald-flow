@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -8,14 +8,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Wallet as WalletIcon, CreditCard, ArrowUpCircle, Loader2, AlertCircle, ArrowDownRight, ArrowUpRight, Building2 } from "lucide-react";
+import {
+  Wallet as WalletIcon,
+  CreditCard,
+  ArrowUpCircle,
+  Loader2,
+  AlertCircle,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Building2,
+  Copy,
+  Check,
+  ShieldCheck,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Ban,
+  RotateCcw,
+} from "lucide-react";
 
 interface WalletData {
   id: string; balance: number; currency: string; is_activated: boolean;
   paystack_dva_account_number: string | null; paystack_dva_bank_name: string | null;
 }
 const walletSelectFields = "id, balance, currency, is_activated, paystack_dva_account_number, paystack_dva_bank_name";
-interface WalletTx { id: string; amount: number; type: string; description: string | null; status: string; created_at: string; }
+interface WalletTx { id: string; amount: number; type: string; description: string | null; status: string; created_at: string; reference: string | null; }
 interface WalletFunctionResponse { wallet?: WalletData; authorization_url?: string; reference?: string; error?: string; details?: { message?: string }; }
 
 const parseResponse = (payload: unknown): WalletFunctionResponse | null => {
@@ -23,6 +40,43 @@ const parseResponse = (payload: unknown): WalletFunctionResponse | null => {
   if (typeof payload === "string") { try { return JSON.parse(payload); } catch { return null; } }
   return typeof payload === "object" ? (payload as WalletFunctionResponse) : null;
 };
+
+type StatusKey = "completed" | "pending" | "failed" | "declined" | "stopped" | "refunded" | "unknown";
+
+const normalizeStatus = (raw: string | null | undefined): StatusKey => {
+  const s = (raw || "").toLowerCase().trim();
+  if (["completed", "success", "successful", "paid", "settled"].includes(s)) return "completed";
+  if (["pending", "processing", "initiated", "queued"].includes(s)) return "pending";
+  if (["failed", "error", "unsuccessful"].includes(s)) return "failed";
+  if (["declined", "rejected"].includes(s)) return "declined";
+  if (["stopped", "cancelled", "canceled", "aborted"].includes(s)) return "stopped";
+  if (["refunded", "reversed"].includes(s)) return "refunded";
+  return "unknown";
+};
+
+const STATUS_META: Record<StatusKey, { label: string; className: string; Icon: typeof Clock }> = {
+  completed: { label: "Successful", className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20", Icon: CheckCircle2 },
+  pending:   { label: "Pending",    className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20", Icon: Clock },
+  failed:    { label: "Failed",     className: "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20", Icon: XCircle },
+  declined:  { label: "Declined",   className: "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20", Icon: Ban },
+  stopped:   { label: "Stopped",    className: "bg-muted text-muted-foreground border border-border", Icon: Ban },
+  refunded:  { label: "Refunded",   className: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20", Icon: RotateCcw },
+  unknown:   { label: "Unknown",    className: "bg-muted text-muted-foreground border border-border", Icon: Clock },
+};
+
+const TYPE_LABEL: Record<string, string> = {
+  charge: "Charge",
+  debit: "Debit",
+  funding: "Wallet Funding",
+  topup: "Top-up",
+  activation: "Activation",
+  refund: "Refund",
+  escrow_topup: "Escrow Top-up",
+  escrow_refund: "Escrow Refund",
+  bonus: "Bonus",
+};
+
+const isOutflow = (type: string) => ["charge", "debit", "escrow_topup"].includes(type);
 
 export default function WalletPage() {
   const { user, refreshAccessState } = useAuth();
@@ -35,6 +89,8 @@ export default function WalletPage() {
   const [activationFee, setActivationFee] = useState<number | null>(null);
   const [exchangeRate, setExchangeRate] = useState(1500);
   const [activationAmount, setActivationAmount] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | StatusKey>("all");
 
   const fetchData = async () => {
     if (!user) return;
@@ -50,12 +106,8 @@ export default function WalletPage() {
       const { data: txData } = await supabase.from("wallet_transactions").select("*").eq("wallet_id", walletData.id).order("created_at", { ascending: false }).limit(50);
       setTransactions((txData as WalletTx[]) || []);
     }
-    // Resolve advertiser's category, then fetch global + category-specific activation fee
     const { data: advCat } = await supabase
-      .from("advertiser_categories")
-      .select("category_id")
-      .eq("advertiser_id", user.id)
-      .maybeSingle();
+      .from("advertiser_categories").select("category_id").eq("advertiser_id", user.id).maybeSingle();
     const categoryFeeKey = advCat?.category_id ? `category_activation_fee:${advCat.category_id}` : null;
     const keys = ["activation_fee_usd", "usd_to_ngn_rate", ...(categoryFeeKey ? [categoryFeeKey] : [])];
     const { data: settings } = await supabase.from("admin_settings").select("key, value").in("key", keys);
@@ -130,13 +182,45 @@ export default function WalletPage() {
     } catch (err: unknown) { toast.error((err as Error).message || "Failed to initialize funding"); } finally { setFunding(false); }
   };
 
+  const copy = async (label: string, value: string) => {
+    try { await navigator.clipboard.writeText(value); setCopied(label); toast.success(`${label} copied`); setTimeout(() => setCopied(null), 1500); }
+    catch { toast.error("Copy failed"); }
+  };
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: transactions.length };
+    transactions.forEach(t => { const k = normalizeStatus(t.status); c[k] = (c[k] || 0) + 1; });
+    return c;
+  }, [transactions]);
+
+  const filtered = filter === "all" ? transactions : transactions.filter(t => normalizeStatus(t.status) === filter);
+
+  const fmtMoney = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtDate = (s: string) => new Date(s).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+
+  const filterTabs: Array<{ key: "all" | StatusKey; label: string }> = [
+    { key: "all", label: "All" },
+    { key: "completed", label: "Successful" },
+    { key: "pending", label: "Pending" },
+    { key: "failed", label: "Failed" },
+    { key: "declined", label: "Declined" },
+    { key: "stopped", label: "Stopped" },
+    { key: "refunded", label: "Refunded" },
+  ];
+
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-4xl">
         <MotionWrapper>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Wallet</h1>
-            <p className="text-sm text-muted-foreground">Manage your balance and payment methods</p>
+          <div className="flex items-end justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Wallet</h1>
+              <p className="text-sm text-muted-foreground">Your funds, transactions and account details</p>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+              Secured by Paystack
+            </div>
           </div>
         </MotionWrapper>
 
@@ -144,22 +228,34 @@ export default function WalletPage() {
           <div className="flex justify-center py-12"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
         ) : (
           <>
-            {/* Balance Card */}
+            {/* Balance Card - Fintech style */}
             <MotionWrapper delay={0.05}>
-              <div className="rounded-xl border border-border bg-card p-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                      <WalletIcon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Available Balance</p>
-                      <p className="text-3xl font-semibold text-foreground">${wallet?.balance?.toFixed(2) || "0.00"}</p>
-                    </div>
+              <div className="relative overflow-hidden rounded-2xl p-6 sm:p-7 text-white shadow-lg"
+                   style={{ background: "linear-gradient(135deg, hsl(160 84% 22%), hsl(160 84% 32%) 55%, hsl(160 70% 40%))" }}>
+                <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+                <div className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/5 blur-2xl" />
+                <div className="relative flex items-start justify-between">
+                  <div className="flex items-center gap-2 text-white/80">
+                    <WalletIcon className="h-4 w-4" />
+                    <span className="text-xs uppercase tracking-[0.18em]">Available Balance</span>
                   </div>
-                  <Badge variant="outline" className={wallet?.is_activated ? "text-primary border-primary/20 bg-primary/5" : "text-amber-600 border-amber-500/20 bg-amber-500/5"}>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium backdrop-blur ${
+                    wallet?.is_activated ? "bg-white/20 text-white" : "bg-amber-400/90 text-amber-950"
+                  }`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${wallet?.is_activated ? "bg-emerald-300" : "bg-amber-700"}`} />
                     {wallet?.is_activated ? "Active" : "Not Activated"}
-                  </Badge>
+                  </span>
+                </div>
+                <div className="relative mt-5 flex items-baseline gap-2">
+                  <span className="text-2xl font-medium text-white/70">$</span>
+                  <span className="text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums">
+                    {fmtMoney(Number(wallet?.balance || 0))}
+                  </span>
+                  <span className="ml-1 text-sm text-white/70">{wallet?.currency || "USD"}</span>
+                </div>
+                <div className="relative mt-6 flex items-center justify-between text-xs text-white/70">
+                  <span>NGN equivalent: <span className="text-white font-medium">{(Number(wallet?.balance || 0) * exchangeRate).toLocaleString()}</span></span>
+                  <span className="font-mono tracking-wider">KARBALI</span>
                 </div>
               </div>
             </MotionWrapper>
@@ -179,11 +275,11 @@ export default function WalletPage() {
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
                     <div className="flex-1 space-y-1.5 w-full">
-                      <Label className="text-xs text-muted-foreground">Amount (USD) — min ${activationFee}</Label>
+                      <Label className="text-xs text-muted-foreground">Amount (USD), min ${activationFee}</Label>
                       <Input type="number" min={activationFee} step="1" value={activationAmount || String(activationFee)} onChange={(e) => setActivationAmount(e.target.value)} />
                       {Number(activationAmount || activationFee) > 0 && <p className="text-[10px] text-muted-foreground">= NGN {(Number(activationAmount || activationFee) * exchangeRate).toLocaleString()}</p>}
                     </div>
-                    <Button onClick={handleActivate} disabled={activating} className="w-full sm:w-auto">
+                    <Button onClick={handleActivate} disabled={activating} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white">
                       {activating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</> : <><CreditCard className="mr-2 h-4 w-4" /> Pay to Activate</>}
                     </Button>
                   </div>
@@ -191,72 +287,146 @@ export default function WalletPage() {
               </MotionWrapper>
             )}
 
-            {/* Fund Wallet */}
-            {wallet?.is_activated && (
-              <MotionWrapper delay={0.1}>
-                <div className="rounded-xl border border-border bg-card p-6">
-                  <h3 className="text-sm font-medium text-foreground mb-1">Fund Wallet</h3>
-                  <p className="text-xs text-muted-foreground mb-4">Add funds via Paystack</p>
-                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-                    <div className="flex-1 space-y-1.5 w-full">
-                      <Label className="text-xs text-muted-foreground">Amount (USD)</Label>
-                      <Input type="number" min="1" step="1" value={fundAmount} onChange={(e) => setFundAmount(e.target.value)} placeholder="Enter amount" />
-                      {fundAmount && Number(fundAmount) > 0 && <p className="text-[10px] text-muted-foreground">= NGN {(Number(fundAmount) * exchangeRate).toLocaleString()}</p>}
+            {/* Fund + Virtual Account side by side on larger screens */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {wallet?.is_activated && (
+                <MotionWrapper delay={0.1}>
+                  <div className="h-full rounded-xl border border-border bg-card p-6">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ArrowUpCircle className="h-4 w-4 text-emerald-600" />
+                      <h3 className="text-sm font-medium text-foreground">Fund Wallet</h3>
                     </div>
-                    <Button onClick={handleFund} disabled={funding} className="w-full sm:w-auto">
-                      {funding ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ArrowUpCircle className="mr-2 h-4 w-4" /> Fund</>}
-                    </Button>
+                    <p className="text-xs text-muted-foreground mb-4">Top up instantly via Paystack</p>
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Amount (USD)</Label>
+                        <Input type="number" min="1" step="1" value={fundAmount} onChange={(e) => setFundAmount(e.target.value)} placeholder="Enter amount" />
+                        {fundAmount && Number(fundAmount) > 0 && <p className="text-[10px] text-muted-foreground">= NGN {(Number(fundAmount) * exchangeRate).toLocaleString()}</p>}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[10, 25, 50, 100, 250].map(v => (
+                          <button key={v} type="button" onClick={() => setFundAmount(String(v))}
+                            className="rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground hover:bg-accent transition-colors">
+                            ${v}
+                          </button>
+                        ))}
+                      </div>
+                      <Button onClick={handleFund} disabled={funding} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                        {funding ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ArrowUpCircle className="mr-2 h-4 w-4" /> Fund Wallet</>}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </MotionWrapper>
-            )}
+                </MotionWrapper>
+              )}
 
-            {/* DVA Info */}
-            {wallet?.paystack_dva_account_number && (
-              <MotionWrapper delay={0.15}>
-                <div className="rounded-xl border border-border bg-card p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-medium text-foreground">Virtual Account</h3>
+              {wallet?.paystack_dva_account_number && (
+                <MotionWrapper delay={0.15}>
+                  <div className="h-full rounded-xl border border-border bg-card p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="text-sm font-medium text-foreground">Virtual Account</h3>
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Bank Transfer</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">Send money to this account to fund your wallet automatically.</p>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Bank</p>
+                          <p className="text-sm font-medium text-foreground truncate">{wallet.paystack_dva_bank_name}</p>
+                        </div>
+                        <button onClick={() => copy("Bank", wallet.paystack_dva_bank_name || "")} className="text-muted-foreground hover:text-foreground transition-colors p-1.5">
+                          {copied === "Bank" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Account Number</p>
+                          <p className="text-base font-mono font-semibold tracking-wider text-foreground">{wallet.paystack_dva_account_number}</p>
+                        </div>
+                        <button onClick={() => copy("Account number", wallet.paystack_dva_account_number || "")} className="text-muted-foreground hover:text-foreground transition-colors p-1.5">
+                          {copied === "Account number" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><p className="text-xs text-muted-foreground">Bank</p><p className="font-medium text-foreground">{wallet.paystack_dva_bank_name}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Account Number</p><p className="font-mono font-medium text-foreground">{wallet.paystack_dva_account_number}</p></div>
-                  </div>
-                </div>
-              </MotionWrapper>
-            )}
+                </MotionWrapper>
+              )}
+            </div>
 
             {/* Transactions */}
             <MotionWrapper delay={0.2}>
               <div className="rounded-xl border border-border bg-card">
-                <div className="p-5 pb-3">
-                  <h3 className="text-sm font-medium text-foreground">Transaction History</h3>
+                <div className="flex items-center justify-between gap-3 p-5 pb-3">
+                  <div>
+                    <h3 className="text-sm font-medium text-foreground">Transaction History</h3>
+                    <p className="text-xs text-muted-foreground">Last 50 transactions</p>
+                  </div>
+                  <Badge variant="outline" className="text-xs">{filtered.length} of {transactions.length}</Badge>
                 </div>
-                <div className="px-5 pb-5">
-                  {transactions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">No transactions yet</p>
+
+                {/* Status filter tabs */}
+                <div className="px-5 pb-3 -mt-1 flex gap-1.5 overflow-x-auto scrollbar-hide">
+                  {filterTabs.map(t => {
+                    const active = filter === t.key;
+                    const count = counts[t.key] || 0;
+                    return (
+                      <button key={t.key} onClick={() => setFilter(t.key)}
+                        className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                          active ? "bg-foreground text-background" : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                        }`}>
+                        {t.label}
+                        {count > 0 && <span className={`rounded-full px-1.5 text-[10px] ${active ? "bg-background/20" : "bg-background/60"}`}>{count}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="px-2 sm:px-3 pb-3">
+                  {filtered.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-10">No transactions in this view</p>
                   ) : (
                     <div className="divide-y divide-border">
-                      {transactions.map((tx) => (
-                        <div key={tx.id} className="flex items-center justify-between py-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${tx.type === "charge" ? "bg-destructive/10" : "bg-primary/10"}`}>
-                              {tx.type === "charge" ? <ArrowDownRight className="h-4 w-4 text-destructive" /> : <ArrowUpRight className="h-4 w-4 text-primary" />}
+                      {filtered.map((tx) => {
+                        const status = normalizeStatus(tx.status);
+                        const meta = STATUS_META[status];
+                        const StatusIcon = meta.Icon;
+                        const out = isOutflow(tx.type);
+                        const dim = status === "failed" || status === "declined" || status === "stopped";
+                        return (
+                          <div key={tx.id} className="flex items-center justify-between gap-3 px-3 py-3.5 rounded-lg hover:bg-muted/30 transition-colors">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`relative flex h-10 w-10 items-center justify-center rounded-full shrink-0 ${
+                                out ? "bg-red-500/10 text-red-600 dark:text-red-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                              } ${dim ? "opacity-60" : ""}`}>
+                                {out ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownLeft className="h-4 w-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-sm font-medium text-foreground">{TYPE_LABEL[tx.type] || tx.type.replace(/_/g, " ")}</p>
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${meta.className}`}>
+                                    <StatusIcon className="h-3 w-3" />
+                                    {meta.label}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground truncate max-w-[220px] sm:max-w-md">
+                                  {tx.description || (tx.reference ? `Ref: ${tx.reference}` : "No description")}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground/80 mt-0.5">{fmtDate(tx.created_at)}</p>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-foreground capitalize">{tx.type}</p>
-                              <p className="text-xs text-muted-foreground truncate">{tx.description || "—"}</p>
+                            <div className="text-right shrink-0">
+                              <p className={`text-sm font-semibold tabular-nums ${
+                                dim ? "text-muted-foreground line-through" : out ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+                              }`}>
+                                {out ? "-" : "+"}${fmtMoney(Math.abs(Number(tx.amount)))}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{wallet?.currency || "USD"}</p>
                             </div>
                           </div>
-                          <div className="text-right shrink-0 ml-3">
-                            <p className={`text-sm font-medium ${tx.type === "charge" ? "text-destructive" : "text-primary"}`}>
-                              {tx.type === "charge" ? "-" : "+"}${Math.abs(tx.amount).toFixed(2)}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">{new Date(tx.created_at).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
