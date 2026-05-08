@@ -380,27 +380,34 @@ export default function WalletPage() {
 
             {/* Transactions */}
             <MotionWrapper delay={0.2}>
-              <div className="rounded-xl border border-border bg-card">
-                <div className="flex items-center justify-between gap-3 p-5 pb-3">
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-3">
                   <div>
-                    <h3 className="text-sm font-medium text-foreground">Transaction History</h3>
-                    <p className="text-xs text-muted-foreground">Last 50 transactions</p>
+                    <p className="eyebrow mb-0.5">Activity</p>
+                    <h3 className="text-base font-semibold tracking-tight">Transaction history</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Last 50 movements on this wallet</p>
                   </div>
-                  <Badge variant="outline" className="text-xs">{filtered.length} of {transactions.length}</Badge>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">{filtered.length} of {transactions.length}</span>
                 </div>
 
                 {/* Status filter tabs */}
-                <div className="px-5 pb-3 -mt-1 flex gap-1.5 overflow-x-auto scrollbar-hide">
+                <div className="px-6 pb-3 flex gap-1.5 overflow-x-auto scrollbar-hide">
                   {filterTabs.map(t => {
                     const active = filter === t.key;
                     const count = counts[t.key] || 0;
                     return (
                       <button key={t.key} onClick={() => setFilter(t.key)}
-                        className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                          active ? "bg-foreground text-background" : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                        className={`shrink-0 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11.5px] font-medium transition-colors ${
+                          active
+                            ? "bg-foreground text-background border-foreground"
+                            : "border-border bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
                         }`}>
                         {t.label}
-                        {count > 0 && <span className={`rounded-full px-1.5 text-[10px] ${active ? "bg-background/20" : "bg-background/60"}`}>{count}</span>}
+                        {count > 0 && (
+                          <span className={`rounded-sm px-1 text-[10px] tabular-nums ${active ? "bg-background/20" : "bg-background/70 text-foreground/70"}`}>
+                            {count}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
