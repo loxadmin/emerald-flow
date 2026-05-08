@@ -5,7 +5,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Button } from "@/components/ui/button";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe } from "lucide-react";
+import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe, Menu, X } from "lucide-react";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
 import { useTheme } from "@/lib/theme";
