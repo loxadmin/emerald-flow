@@ -460,7 +460,7 @@ export default function CreateEngagementCampaign() {
                 { l: "Campaign Name", v: campaignName },
                 { l: "Type", v: isMusic ? "Music (Engagement)" : "Video (Engagement)" },
                 ...(isVideo ? [{ l: "Events", v: eventTypes.map(e => e.charAt(0).toUpperCase() + e.slice(1)).join(", ") }] : []),
-                { l: "Media Link", v: mediaLink },
+                { l: isMusic && validMusicLinks.length > 1 ? `Song Links (${validMusicLinks.length})` : "Media Link", v: isMusic ? validMusicLinks.join(" • ") : mediaLink },
                 ...(hasViewer ? [{ l: `Target ${viewerLabel}s`, v: `${viewerCount.toLocaleString()} × $${viewerRate.toFixed(2)}` }] : []),
                 ...(hasSubscriber ? [{ l: "Target subscribers", v: `${subscriberCount.toLocaleString()} × $${subscriberRate.toFixed(2)}` }] : []),
                 { l: "Total Cost", v: `$${totalCost.toFixed(2)}` },
