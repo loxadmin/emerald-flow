@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles, ShieldCheck, Zap, LineChart } from "lucide-react";
+import { ArrowRight, ShieldCheck, Zap, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -61,7 +61,6 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
 
   return (
     <section className="relative isolate overflow-hidden bg-background">
-      {/* Local backdrop sits ABOVE FluidCanvas so the hero is always crisp */}
       <div aria-hidden className="absolute inset-0 -z-[1] bg-background" />
       <div aria-hidden className="absolute inset-0 -z-[1]"
            style={{
@@ -72,19 +71,13 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
 
       <div className="mx-auto max-w-7xl px-6 pb-24 pt-32 sm:px-10 lg:px-16 lg:pt-36">
         <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-14">
-          {/* Copy */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="lg:col-span-6"
           >
-            <span className="pill-emerald">
-              <Sparkles className="h-3.5 w-3.5" />
-              Performance attribution, simplified
-            </span>
-
-            <h1 className="display-xl mt-6 !text-foreground">
+            <h1 className="display-xl !text-foreground">
               {renderTitle()}
             </h1>
 
@@ -105,7 +98,6 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
               </Link>
             </div>
 
-            {/* Value props strip — replaces fake metrics */}
             <ul className="mt-10 grid gap-3 border-t border-border pt-6 sm:grid-cols-3">
               {valueProps.map((v) => (
                 <li key={v.label} className="flex items-start gap-2.5">
@@ -118,36 +110,88 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
             </ul>
           </motion.div>
 
-          {/* Hero video — clean cinematic frame, no chrome */}
+          {/* Hero video — futuristic blended composition */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.1, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             className="relative lg:col-span-6"
           >
-            <div className="relative hero-halo">
-              <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-[0_30px_80px_-30px_hsl(var(--primary)/0.35),0_12px_40px_-12px_hsl(220_40%_10%/0.18)]">
-                <div className="aspect-[16/10] w-full bg-secondary">
-                  <video
-                    ref={videoRef}
-                    src="/hero-animation.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                {/* Subtle live indicator overlaid on video */}
-                <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white backdrop-blur">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  </span>
-                  Live attribution
-                </div>
+            <div aria-hidden className="pointer-events-none absolute -inset-16"
+                 style={{
+                   background:
+                     "radial-gradient(50% 50% at 50% 50%, hsl(var(--primary)/0.28), transparent 65%), radial-gradient(40% 40% at 80% 20%, hsl(var(--pastel-sky)/0.6), transparent 70%)",
+                   filter: "blur(40px)",
+                 }} />
+            <div aria-hidden className="pointer-events-none absolute inset-0 -m-6 rounded-[3rem] opacity-60"
+                 style={{
+                   background:
+                     "conic-gradient(from 140deg at 50% 50%, transparent 0deg, hsl(var(--primary)/0.35) 60deg, transparent 140deg, hsl(var(--pastel-lavender)/0.5) 220deg, transparent 320deg)",
+                   filter: "blur(28px)",
+                 }} />
+
+            <div className="relative">
+              <div
+                className="relative aspect-[5/4] w-full"
+                style={{
+                  WebkitMaskImage:
+                    "radial-gradient(75% 70% at 50% 45%, black 55%, transparent 92%)",
+                  maskImage:
+                    "radial-gradient(75% 70% at 50% 45%, black 55%, transparent 92%)",
+                }}
+              >
+                <video
+                  ref={videoRef}
+                  src="/hero-animation.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  className="h-full w-full object-cover"
+                />
+                <div aria-hidden className="absolute inset-0 mix-blend-soft-light"
+                     style={{
+                       background:
+                         "linear-gradient(135deg, hsl(var(--primary)/0.25), transparent 50%, hsl(var(--pastel-lavender)/0.35))",
+                     }} />
+                <div aria-hidden className="absolute inset-0 opacity-[0.08] mix-blend-overlay"
+                     style={{
+                       backgroundImage:
+                         "repeating-linear-gradient(180deg, hsl(var(--foreground)) 0 1px, transparent 1px 3px)",
+                     }} />
               </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.6 }}
+                className="absolute -left-2 top-10 hidden rounded-2xl border border-border/60 bg-card/80 px-3.5 py-2.5 shadow-xl backdrop-blur-xl sm:block"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  </span>
+                  <div>
+                    <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Attribution</div>
+                    <div className="text-xs font-semibold text-foreground">Live · realtime</div>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8, duration: 0.6 }}
+                className="absolute -right-2 bottom-10 hidden rounded-2xl border border-border/60 bg-card/80 px-3.5 py-2.5 shadow-xl backdrop-blur-xl sm:block"
+              >
+                <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">ROAS today</div>
+                <div className="mt-0.5 flex items-baseline gap-1.5">
+                  <span className="text-base font-semibold text-foreground">4.82×</span>
+                  <span className="text-[10px] font-medium text-emerald-500">+12.4%</span>
+                </div>
+              </motion.div>
             </div>
           </motion.div>
         </div>
