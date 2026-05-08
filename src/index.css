@@ -75,6 +75,14 @@
     --glass-bg: hsla(0, 0%, 100%, 0.72);
     --glass-border: hsla(220, 13%, 70%, 0.2);
     --glass-glow: hsla(160, 84%, 32%, 0.06);
+
+    /* Pastel section surfaces — soft termii/wise warmth */
+    --pastel-mint:     150 50% 96%;
+    --pastel-cream:    38 60% 96%;
+    --pastel-lavender: 250 45% 97%;
+    --pastel-sky:      205 70% 96%;
+    --pastel-blush:    10 60% 97%;
+    --ink: 220 18% 9%;
   }
 
   .dark {
@@ -131,6 +139,14 @@
     --glass-bg: hsla(224, 9%, 7%, 0.7);
     --glass-border: hsla(220, 9%, 100%, 0.06);
     --glass-glow: hsla(160, 78%, 42%, 0.08);
+
+    /* Pastels — deep, low-saturation tints that read in dark mode */
+    --pastel-mint:     158 28% 9%;
+    --pastel-cream:    36 16% 9%;
+    --pastel-lavender: 248 20% 10%;
+    --pastel-sky:      210 28% 10%;
+    --pastel-blush:    8 22% 10%;
+    --ink: 210 20% 98%;
   }
 }
 
@@ -229,6 +245,84 @@
   .section-divider {
     height: 1px;
     background: linear-gradient(to right, transparent, hsl(var(--border)), transparent);
+  }
+
+  /* Premium section surfaces — soft pastels for landing rhythm */
+  .section-mint     { background: hsl(var(--pastel-mint)); }
+  .section-cream    { background: hsl(var(--pastel-cream)); }
+  .section-lavender { background: hsl(var(--pastel-lavender)); }
+  .section-sky      { background: hsl(var(--pastel-sky)); }
+  .section-blush    { background: hsl(var(--pastel-blush)); }
+  .section-ink      { background: hsl(var(--ink)); color: hsl(var(--background)); }
+
+  /* Calm display headline — Wise/Stripe rhythm */
+  .display-xl {
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    @apply text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl;
+    letter-spacing: -0.035em;
+    line-height: 1.04;
+  }
+  .display-lg {
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    @apply text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl;
+    letter-spacing: -0.03em;
+    line-height: 1.06;
+  }
+  .lede {
+    @apply text-base leading-relaxed text-muted-foreground md:text-lg;
+    max-width: 38rem;
+  }
+
+  /* Fintech card — flat, hairline border, soft hover lift */
+  .card-flat {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) + 2px);
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  .card-flat:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: hsl(var(--foreground) / 0.14);
+  }
+
+  /* Premium pill */
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium;
+    border-color: hsl(var(--border));
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+  }
+  .pill-emerald {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium;
+    border: 1px solid hsl(var(--primary) / 0.25);
+    background: hsl(var(--primary) / 0.08);
+    color: hsl(var(--primary));
+  }
+
+  /* Hero video frame — soft ambient halo, fintech panel */
+  .hero-frame {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow:
+      0 1px 0 hsl(var(--foreground) / 0.04) inset,
+      0 30px 80px -30px hsl(var(--primary) / 0.25),
+      0 12px 40px -12px hsl(220 40% 10% / 0.18);
+  }
+  .hero-halo::before {
+    content: "";
+    position: absolute;
+    inset: -10% -5% auto -5%;
+    height: 60%;
+    background:
+      radial-gradient(60% 60% at 30% 30%, hsl(var(--primary) / 0.18), transparent 60%),
+      radial-gradient(50% 50% at 80% 20%, hsl(var(--pastel-sky)), transparent 60%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
   }
 }
 
