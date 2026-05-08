@@ -115,7 +115,7 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.1, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="relative lg:col-span-6"
+            className="relative hidden lg:col-span-6 lg:block"
           >
             <div aria-hidden className="pointer-events-none absolute -inset-16"
                  style={{
