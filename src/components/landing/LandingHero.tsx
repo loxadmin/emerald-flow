@@ -59,7 +59,18 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           >
-            <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
+            {/* Live status pill */}
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 backdrop-blur-md">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/80">
+                Migrating customers in real-time
+              </span>
+            </div>
+
+            <h1 className="text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
               {title?.includes("Your Brand") ? (
                 <>
                   {title.split("Your Brand")[0]}Your{" "}
@@ -72,7 +83,7 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: -20, opacity: 0 }}
                         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                        className="col-start-1 row-start-1 text-[#22c55e]"
+                        className="col-start-1 row-start-1 text-emerald-400"
                       >
                         {words[index]}
                       </motion.span>
@@ -84,26 +95,22 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
               )}
             </h1>
 
-            <p className="mt-6 max-w-lg text-base leading-relaxed text-white/60 sm:text-lg">
+            <p className="mt-6 max-w-lg text-base leading-relaxed text-white/65 sm:text-lg">
               {subtitle}
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
-              <Link to="/signup">
-                <GlassButton size="lg" variant="glow" className="px-10">
-                  Start Free <ArrowRight className="h-4 w-4" />
-                </GlassButton>
+              <Link
+                to="/signup"
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-7 py-3 text-sm font-semibold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)] hover:bg-emerald-500 transition-colors"
+              >
+                Start Free <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/docs">
-                <GlassButton
-                  size="lg"
-                  variant="outline"
-                  className="border-white/40 bg-white/10 px-10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] group"
-                >
-                  <span className="text-white font-bold drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] group-hover:drop-shadow-[0_4px_16px_rgba(0,0,0,1)] transition-all duration-300">
-                    View API Docs
-                  </span>
-                </GlassButton>
+              <Link
+                to="/docs"
+                className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/5 px-7 py-3 text-sm font-semibold text-white backdrop-blur-md hover:bg-white/10 transition-colors"
+              >
+                View API Docs
               </Link>
             </div>
           </motion.div>
