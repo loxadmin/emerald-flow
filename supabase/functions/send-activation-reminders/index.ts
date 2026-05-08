@@ -19,44 +19,44 @@ function copyFor(subtype: Subtype, type: string | null, name: string) {
   const greeting = name ? `Hi ${name.split(" ")[0]},` : "Hi there,";
   const map: Record<string, { headline: string; body: string; cta: string }> = {
     youtuber: {
-      headline: "Activate your Karbali Ads account to start getting more views on your channel",
-      body: "Your YouTube audience is waiting. Activate your account today and start running interactive offerwalls that pay viewers to watch and engage with your videos.",
-      cta: "Start getting more views",
+      headline: "Get up to 500,000 real views on your next YouTube video",
+      body: "Activate your Karbali Ads wallet today and put your videos in front of half a million real viewers across Nigeria and beyond. You only get charged when someone actually watches, subscribes or engages — no wasted spend, no bots, just real growth for your channel.",
+      cta: "Activate and get 500,000 views",
     },
     musician: {
-      headline: "Activate your account to grow your listeners on Karbali Ads",
-      body: "Get real listeners on your tracks. Activate now to launch engagement campaigns that reward fans for streaming your music.",
-      cta: "Grow my audience",
+      headline: "Get up to 100,000 real streams on your next song",
+      body: "Activate your Karbali Ads wallet and we'll push your music to real listeners who get rewarded for streaming, sharing and following you. You only pay after a fan actually engages with your song — so every naira goes toward growing your fanbase, not into thin air.",
+      cta: "Activate and get 100,000 streams",
     },
     app: {
-      headline: "Activate your account to start getting installs for your app",
-      body: "Track real downloads, signups and in-app purchases with Karbali Ads. Activate your wallet to launch your first performance campaign.",
-      cta: "Get app installs",
+      headline: "Get up to 50,000 real installs for your app this month",
+      body: "Activate your Karbali Ads wallet and start driving real, attributable installs to your app. You only get charged after a user installs, signs up or completes the action you care about — never just for an impression. Track every event live from your dashboard.",
+      cta: "Activate and get 50,000 installs",
     },
     website: {
-      headline: "Activate your account to start driving signups to your website",
-      body: "Karbali Ads brings real users to your website with full conversion tracking. Activate your wallet to go live.",
-      cta: "Start driving signups",
+      headline: "Get up to 20,000 real signups on your website",
+      body: "Activate your Karbali Ads wallet and we'll send real, intent-driven traffic to your site. You only pay when a visitor actually signs up or completes a conversion you defined — every charge is tied to a real result you can verify in your dashboard.",
+      cta: "Activate and get 20,000 signups",
     },
     ecommerce: {
-      headline: "Activate your account to start getting paying customers",
-      body: "Reach buyers ready to purchase. Activate your Karbali Ads wallet to launch commerce campaigns that pay only for real sales.",
-      cta: "Get paying customers",
+      headline: "Get up to 10,000 paying customers to your store",
+      body: "Activate your Karbali Ads wallet and start reaching shoppers ready to buy. With Karbali Commerce you only pay a small flat fee plus commission after a real sale happens — no upfront waste, no paying for clicks that never convert.",
+      cta: "Activate and get paying customers",
     },
     service: {
-      headline: "Activate your account to start getting paying clients",
-      body: "Get qualified leads for your service. Activate your wallet today to launch commerce campaigns and start receiving real clients.",
-      cta: "Get paying clients",
+      headline: "Get up to 5,000 paying clients booking your service",
+      body: "Activate your Karbali Ads wallet and we'll connect you with people actively looking for your service. You only get charged after a real client books or pays — so your ad budget always turns into actual revenue.",
+      cta: "Activate and get paying clients",
     },
     real_estate: {
-      headline: "Activate your account to start getting property buyers and renters",
-      body: "Reach serious property seekers on Karbali Ads. Activate your wallet to launch listings campaigns that bring real enquiries.",
-      cta: "Get property leads",
+      headline: "Get up to 5,000 serious buyers and renters on your listings",
+      body: "Activate your Karbali Ads wallet and put your properties in front of thousands of qualified buyers and renters. You only pay when a real prospect enquires or schedules a viewing — never for empty clicks.",
+      cta: "Activate and get property leads",
     },
   };
   const fallback = {
-    headline: "Activate your Karbali Ads account to start getting customers",
-    body: "Your Karbali Ads account is ready, but your wallet is not yet activated. Fund and activate your wallet to launch your first campaign.",
+    headline: "Activate your Karbali Ads account and only pay for real results",
+    body: "Your Karbali Ads account is ready. Activate your wallet today to launch your first campaign — you only get charged after a real user engages, signs up or buys. No wasted spend, no bots, just measurable growth for your business.",
     cta: "Activate my account",
   };
   const c = (subtype && map[subtype]) || fallback;
