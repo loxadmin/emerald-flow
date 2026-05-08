@@ -211,31 +211,26 @@ export default function Index() {
       </Helmet>
       <FluidCanvas />
 
-      {/* Floating pill nav (Termii-inspired) */}
-      <header className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${scrolled ? "py-3" : "py-5"}`}>
-        <div className="mx-auto max-w-6xl px-4 sm:px-8">
-          <div className={`flex h-14 items-center justify-between gap-4 rounded-full border px-3 pl-5 pr-2 transition-all duration-300 ${
-            scrolled
-              ? "border-border bg-background/85 backdrop-blur-xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.15)]"
-              : "border-white/15 bg-white/5 backdrop-blur-md"
-          }`}>
+      {/* Navbar */}
+      <header className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${scrolled ? "bg-background/80 backdrop-blur-md border-b border-border py-2" : "bg-transparent py-4"}`}>
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16">
+          <div className="flex h-16 items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <Logo size={20} />
-              <span className={`text-[15px] font-semibold tracking-tight ${scrolled ? "text-foreground" : "text-white"}`}>Karbali</span>
+              <Logo size={22} />
+              <span className={`text-lg font-bold tracking-tight transition-colors ${scrolled ? "text-foreground" : "text-white"}`}>Karbali Ads</span>
             </Link>
-            <nav className="hidden md:flex items-center gap-7 text-[13px]">
-              <Link to="/about" className={`transition-colors ${scrolled ? "text-muted-foreground hover:text-foreground" : "text-white/70 hover:text-white"}`}>About</Link>
-              <Link to="/docs" className={`transition-colors ${scrolled ? "text-muted-foreground hover:text-foreground" : "text-white/70 hover:text-white"}`}>API</Link>
-              <Link to="/blog" className={`transition-colors ${scrolled ? "text-muted-foreground hover:text-foreground" : "text-white/70 hover:text-white"}`}>Blog</Link>
-              <Link to="/use-cases" className={`transition-colors ${scrolled ? "text-muted-foreground hover:text-foreground" : "text-white/70 hover:text-white"}`}>Use cases</Link>
-            </nav>
-            <div className="flex items-center gap-1.5">
-              <button onClick={toggleTheme} className={`rounded-full p-2 transition-colors ${scrolled ? "text-muted-foreground hover:text-foreground hover:bg-accent" : "text-white/70 hover:text-white hover:bg-white/10"}`} aria-label="Toggle theme">
+            <div className="flex items-center gap-4">
+              <Link to="/about" className={`hidden text-sm transition-colors sm:block ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`}>About</Link>
+              <Link to="/docs" className={`hidden text-sm transition-colors sm:block ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`}>API</Link>
+              <Link to="/blog" className={`hidden text-sm transition-colors sm:block ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`}>Blog</Link>
+              <button onClick={toggleTheme} className={`rounded-lg p-2 transition-colors ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`} aria-label="Toggle theme">
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
-              <Link to="/login" className={`hidden sm:inline-flex text-[13px] font-medium px-3 py-1.5 rounded-full transition-colors ${scrolled ? "text-foreground hover:bg-accent" : "text-white hover:bg-white/10"}`}>Log in</Link>
-              <Link to="/signup" className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-[13px] font-semibold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)] hover:bg-emerald-500 transition-colors">
-                Get Started
+              <Link to="/login" className={`text-sm font-medium transition-colors ${scrolled ? "text-foreground hover:text-primary" : "text-white hover:text-white/80"}`}>Log in</Link>
+              <Link to="/signup">
+                <GlassButton variant={scrolled ? "default" : "outline"} size="sm" className={scrolled ? "" : "border-white/20 bg-white/5 text-white backdrop-blur-sm hover:bg-white/10"}>
+                  Get Started
+                </GlassButton>
               </Link>
             </div>
           </div>
