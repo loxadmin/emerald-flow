@@ -79,12 +79,7 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="lg:col-span-6"
           >
-            <span className="pill-emerald">
-              <Sparkles className="h-3.5 w-3.5" />
-              Performance attribution, simplified
-            </span>
-
-            <h1 className="display-xl mt-6 !text-foreground">
+            <h1 className="display-xl !text-foreground">
               {renderTitle()}
             </h1>
 
