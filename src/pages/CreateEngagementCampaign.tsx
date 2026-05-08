@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign, Eye, UserPlus } from "lucide-react";
+import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign, Eye, UserPlus, Plus, Trash2 } from "lucide-react";
 
 type MediaType = "music" | "video";
 type EventType = "viewer" | "subscriber";
@@ -32,6 +32,14 @@ export default function CreateEngagementCampaign() {
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [campaignName, setCampaignName] = useState("");
   const [mediaLink, setMediaLink] = useState("");
+  const [musicLinks, setMusicLinks] = useState<string[]>([""]);
+  const MAX_MUSIC_LINKS = 3;
+  const validMusicLinks = musicLinks.map(l => l.trim()).filter(Boolean);
+  const effectiveMediaLink = isMusicLinkMode() ? validMusicLinks.join("\n") : mediaLink.trim();
+  function isMusicLinkMode() { return mediaType === "music"; }
+  const updateMusicLink = (i: number, v: string) => setMusicLinks(prev => prev.map((x, idx) => idx === i ? v : x));
+  const addMusicLink = () => setMusicLinks(prev => prev.length < MAX_MUSIC_LINKS ? [...prev, ""] : prev);
+  const removeMusicLink = (i: number) => setMusicLinks(prev => prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev);
   const [transcription, setTranscription] = useState("");
   const [transcriptionConfirmed, setTranscriptionConfirmed] = useState(false);
   const [targetViewers, setTargetViewers] = useState("200");
@@ -74,7 +82,9 @@ export default function CreateEngagementCampaign() {
   };
 
   const handleTranscribe = async () => {
-    if (!mediaLink.trim()) { toast.error("Enter a media link first"); return; }
+    if (isMusic) {
+      if (validMusicLinks.length === 0) { toast.error("Add at least one song link"); return; }
+    } else if (!mediaLink.trim()) { toast.error("Enter a media link first"); return; }
     if (!needsTranscription) {
       // Skip transcription entirely, go to configure
       setStep(4);
@@ -89,7 +99,7 @@ export default function CreateEngagementCampaign() {
   };
 
   const handleSubmit = async () => {
-    if (!user || !mediaType || !campaignName.trim() || !mediaLink.trim()) {
+    if (!user || !mediaType || !campaignName.trim() || !effectiveMediaLink) {
       toast.error("Please fill in all fields"); return;
     }
     if (isVideo && eventTypes.length === 0) {
@@ -133,7 +143,7 @@ export default function CreateEngagementCampaign() {
       campaign_id: campaign.id,
       advertiser_id: user.id,
       media_type: mediaType,
-      media_link: mediaLink.trim(),
+      media_link: effectiveMediaLink,
       transcription: needsTranscription ? transcription.trim() : null,
       transcription_confirmed: needsTranscription ? true : null,
       rate_per_interaction: hasViewer ? viewerRate : subscriberRate,
@@ -277,13 +287,41 @@ export default function CreateEngagementCampaign() {
               <Label className="text-xs text-muted-foreground">Campaign Name *</Label>
               <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="My Campaign" />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">{isMusic ? "Song Link" : "Video Link"} *</Label>
-              <Input value={mediaLink} onChange={(e) => setMediaLink(e.target.value)} placeholder={isMusic ? "https://open.spotify.com/track/..." : "https://youtube.com/watch?v=..."} />
-            </div>
+            {isMusic ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Song Links * <span className="text-muted-foreground/70">(up to {MAX_MUSIC_LINKS} platforms)</span></Label>
+                  {musicLinks.length < MAX_MUSIC_LINKS && (
+                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={addMusicLink}>
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Add link
+                    </Button>
+                  )}
+                </div>
+                {musicLinks.map((link, i) => (
+                  <div key={i} className="flex gap-2">
+                    <Input
+                      value={link}
+                      onChange={(e) => updateMusicLink(i, e.target.value)}
+                      placeholder={i === 0 ? "https://open.spotify.com/track/..." : i === 1 ? "https://music.apple.com/..." : "https://music.youtube.com/..."}
+                    />
+                    {musicLinks.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => removeMusicLink(i)}>
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <p className="text-[11px] text-muted-foreground">Add the same song from different platforms (Spotify, Apple Music, YouTube Music, etc.).</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Video Link *</Label>
+                <Input value={mediaLink} onChange={(e) => setMediaLink(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+              </div>
+            )}
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(isVideo ? 1 : 0)}>← Back</Button>
-              <Button className="flex-1" onClick={handleTranscribe} disabled={transcribing || !mediaLink.trim() || !campaignName.trim()}>
+              <Button className="flex-1" onClick={handleTranscribe} disabled={transcribing || !campaignName.trim() || (isMusic ? validMusicLinks.length === 0 : !mediaLink.trim())}>
                 {transcribing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> : needsTranscription ? "Continue to Transcription →" : "Continue →"}
               </Button>
             </div>
@@ -422,7 +460,7 @@ export default function CreateEngagementCampaign() {
                 { l: "Campaign Name", v: campaignName },
                 { l: "Type", v: isMusic ? "Music (Engagement)" : "Video (Engagement)" },
                 ...(isVideo ? [{ l: "Events", v: eventTypes.map(e => e.charAt(0).toUpperCase() + e.slice(1)).join(", ") }] : []),
-                { l: "Media Link", v: mediaLink },
+                { l: isMusic && validMusicLinks.length > 1 ? `Song Links (${validMusicLinks.length})` : "Media Link", v: isMusic ? validMusicLinks.join(" • ") : mediaLink },
                 ...(hasViewer ? [{ l: `Target ${viewerLabel}s`, v: `${viewerCount.toLocaleString()} × $${viewerRate.toFixed(2)}` }] : []),
                 ...(hasSubscriber ? [{ l: "Target subscribers", v: `${subscriberCount.toLocaleString()} × $${subscriberRate.toFixed(2)}` }] : []),
                 { l: "Total Cost", v: `$${totalCost.toFixed(2)}` },
