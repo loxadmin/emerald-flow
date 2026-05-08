@@ -218,18 +218,18 @@ export default function Index() {
           <div className="flex h-16 items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
               <Logo size={22} />
-              <span className={`text-lg font-bold tracking-tight transition-colors ${scrolled ? "text-foreground" : "text-white"}`}>Karbali Ads</span>
+              <span className="text-lg font-bold tracking-tight text-foreground transition-colors">Karbali Ads</span>
             </Link>
             <div className="flex items-center gap-4">
-              <Link to="/about" className={`hidden text-sm transition-colors sm:block ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`}>About</Link>
-              <Link to="/docs" className={`hidden text-sm transition-colors sm:block ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`}>API</Link>
-              <Link to="/blog" className={`hidden text-sm transition-colors sm:block ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`}>Blog</Link>
-              <button onClick={toggleTheme} className={`rounded-lg p-2 transition-colors ${scrolled ? "text-muted-foreground hover:text-primary" : "text-white/60 hover:text-white"}`} aria-label="Toggle theme">
+              <Link to="/about" className="hidden text-sm text-muted-foreground transition-colors hover:text-primary sm:block">About</Link>
+              <Link to="/docs" className="hidden text-sm text-muted-foreground transition-colors hover:text-primary sm:block">API</Link>
+              <Link to="/blog" className="hidden text-sm text-muted-foreground transition-colors hover:text-primary sm:block">Blog</Link>
+              <button onClick={toggleTheme} className="rounded-lg p-2 text-muted-foreground transition-colors hover:text-primary" aria-label="Toggle theme">
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
-              <Link to="/login" className={`text-sm font-medium transition-colors ${scrolled ? "text-foreground hover:text-primary" : "text-white hover:text-white/80"}`}>Log in</Link>
+              <Link to="/login" className="text-sm font-medium text-foreground transition-colors hover:text-primary">Log in</Link>
               <Link to="/signup">
-                <GlassButton variant={scrolled ? "default" : "outline"} size="sm" className={scrolled ? "" : "border-white/20 bg-white/5 text-white backdrop-blur-sm hover:bg-white/10"}>
+                <GlassButton variant="default" size="sm">
                   Get Started
                 </GlassButton>
               </Link>
