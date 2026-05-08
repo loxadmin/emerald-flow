@@ -5,7 +5,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Button } from "@/components/ui/button";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe } from "lucide-react";
+import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe, Menu, X } from "lucide-react";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
 import { useTheme } from "@/lib/theme";
@@ -43,6 +43,7 @@ export default function Index() {
   const [metrics, setMetrics] = useState({ advertisers: 0, campaigns: 0, events: 0 });
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [heroDesign, setHeroDesign] = useState<string>("default");
   const { theme, toggleTheme } = useTheme();
 
@@ -213,17 +214,19 @@ export default function Index() {
       <FluidCanvas />
 
       {/* Navbar */}
-      <header className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${scrolled ? "bg-background/80 backdrop-blur-md border-b border-border py-2" : "bg-transparent py-4"}`}>
+      <header className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${scrolled || mobileMenuOpen ? "bg-background/90 backdrop-blur-md border-b border-border py-2" : "bg-transparent py-4"}`}>
         <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16">
           <div className="flex h-16 items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
               <Logo size={22} />
               <span className="text-lg font-bold tracking-tight text-foreground transition-colors">Karbali Ads</span>
             </Link>
-            <div className="flex items-center gap-4">
-              <Link to="/about" className="hidden text-sm text-muted-foreground transition-colors hover:text-primary sm:block">About</Link>
-              <Link to="/docs" className="hidden text-sm text-muted-foreground transition-colors hover:text-primary sm:block">API</Link>
-              <Link to="/blog" className="hidden text-sm text-muted-foreground transition-colors hover:text-primary sm:block">Blog</Link>
+
+            {/* Desktop nav */}
+            <div className="hidden items-center gap-4 md:flex">
+              <Link to="/about" className="text-sm text-muted-foreground transition-colors hover:text-primary">About</Link>
+              <Link to="/docs" className="text-sm text-muted-foreground transition-colors hover:text-primary">API</Link>
+              <Link to="/blog" className="text-sm text-muted-foreground transition-colors hover:text-primary">Blog</Link>
               <button onClick={toggleTheme} className="rounded-lg p-2 text-muted-foreground transition-colors hover:text-primary" aria-label="Toggle theme">
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
@@ -234,6 +237,36 @@ export default function Index() {
                 </GlassButton>
               </Link>
             </div>
+
+            {/* Mobile controls */}
+            <div className="flex items-center gap-1 md:hidden">
+              <button onClick={toggleTheme} className="rounded-lg p-2 text-muted-foreground transition-colors hover:text-primary" aria-label="Toggle theme">
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => setMobileMenuOpen((v) => !v)}
+                className="rounded-lg p-2 text-foreground transition-colors hover:text-primary"
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileMenuOpen}
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile menu panel */}
+          <div className={`overflow-hidden transition-all duration-300 md:hidden ${mobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
+            <nav className="flex flex-col gap-1 border-t border-border py-4">
+              <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="rounded-md px-3 py-2.5 text-sm text-foreground hover:bg-secondary">About</Link>
+              <Link to="/docs" onClick={() => setMobileMenuOpen(false)} className="rounded-md px-3 py-2.5 text-sm text-foreground hover:bg-secondary">API</Link>
+              <Link to="/blog" onClick={() => setMobileMenuOpen(false)} className="rounded-md px-3 py-2.5 text-sm text-foreground hover:bg-secondary">Blog</Link>
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-secondary">Log in</Link>
+              <Link to="/signup" onClick={() => setMobileMenuOpen(false)} className="mt-2">
+                <GlassButton variant="default" size="sm" className="w-full">
+                  Get Started
+                </GlassButton>
+              </Link>
+            </nav>
           </div>
         </div>
       </header>
