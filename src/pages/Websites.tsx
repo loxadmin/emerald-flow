@@ -179,9 +179,9 @@ export default function WebsitesPage() {
                           <Button variant="ghost" size="sm" onClick={() => { setVerifyingId(null); setOtpInput(""); }}>Cancel</Button>
                         </div>
                       )}
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
           </div>
