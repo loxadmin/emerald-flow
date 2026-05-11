@@ -289,16 +289,10 @@ export default function Index() {
           <section className="relative z-10 border-y border-border bg-card/30 py-10">
             <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16">
               <p className="eyebrow text-center">Trusted by teams shipping in these industries</p>
-              <div className="mt-6 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-                <div className="flex w-max animate-[marquee_28s_linear_infinite] gap-x-12 opacity-70 hover:[animation-play-state:paused]">
-                  {[...Array(2)].map((_, i) => (
-                    <div key={i} className="flex shrink-0 items-center gap-x-12" aria-hidden={i === 1}>
-                      {["Oil and Gas", "Fintech", "Banking and MFBs", "E-commerce & storefronts", "Youtubers & Musicians"].map((c) => (
-                        <span key={c} className="whitespace-nowrap text-sm font-medium tracking-tight text-muted-foreground">{c}</span>
-                      ))}
-                    </div>
-                  ))}
-                </div>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
+                {["Oil and Gas", "Fintech", "Banking and MFBs", "E-commerce & storefronts", "Youtubers & Musicians"].map((c) => (
+                  <span key={c} className="text-sm font-medium tracking-tight text-muted-foreground">{c}</span>
+                ))}
               </div>
             </div>
           </section>
