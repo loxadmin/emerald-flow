@@ -288,9 +288,9 @@ export default function Index() {
           {/* Logos / trust band */}
           <section className="relative z-10 border-y border-border bg-card/30 py-10">
             <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16">
-              <p className="eyebrow text-center">Trusted by performance teams shipping in these industries</p>
+              <p className="eyebrow text-center">Trusted by performance teams shipping in</p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
-                {["Oil and Gas", "Fintech", "Banking and MFBs", "E-commerce & storefronts", "Youtubers & Musicians"].map((c) => (
+                {["Lagos", "Nairobi", "Accra", "Cairo", "Cape Town", "Kigali"].map((c) => (
                   <span key={c} className="text-sm font-medium tracking-tight text-muted-foreground">{c}</span>
                 ))}
               </div>
