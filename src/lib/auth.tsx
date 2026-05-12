@@ -15,6 +15,8 @@ interface AuthContextType {
   categoryStatus: string | null;
   walletActivated: boolean | null;
   maintenanceMode: boolean;
+  advertiserType: string | null;
+  businessVerified: boolean | null;
   refreshAccessState: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -28,6 +30,8 @@ const AuthContext = createContext<AuthContextType>({
   categoryStatus: null,
   walletActivated: null,
   maintenanceMode: false,
+  advertiserType: null,
+  businessVerified: null,
   refreshAccessState: async () => {},
   signOut: async () => {},
 });
