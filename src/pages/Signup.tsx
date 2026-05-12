@@ -235,10 +235,10 @@ export default function Signup() {
           </div>
         </div>
 
-        {!creator && (
+        {!creator && !offline && (
           <div className="space-y-1.5">
             <Label htmlFor="website" className="text-sm text-foreground">Website *</Label>
-            <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} placeholder="yourbusiness.com" autoComplete="url" required={!creator} className="h-11 rounded-lg border-border bg-background px-4" />
+            <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} placeholder="yourbusiness.com" autoComplete="url" required={!creator && !offline} className="h-11 rounded-lg border-border bg-background px-4" />
             {isForbiddenDomain ? (
               <p className="text-[10px] leading-none text-destructive">Email provider domains are not accepted.</p>
             ) : websiteDomain ? (
@@ -249,7 +249,7 @@ export default function Signup() {
 
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-sm text-foreground">
-            {creator ? "Email *" : "Business Email *"}
+            {creator || offline ? "Email *" : "Business Email *"}
           </Label>
           <Input
             id="email"
@@ -260,7 +260,7 @@ export default function Signup() {
             required
             autoComplete="email"
             placeholder={
-              creator
+              creator || offline
                 ? "you@gmail.com"
                 : websiteDomain && !isForbiddenDomain
                   ? `you@${websiteDomain}`
@@ -268,9 +268,9 @@ export default function Signup() {
             }
             className="h-11 rounded-lg border-border bg-background px-4"
           />
-          {creator && (
+          {(creator || offline) && (
             <p className="text-[10px] leading-none text-muted-foreground">
-              Use Gmail, Yahoo, Outlook or another popular provider.
+              Any email works (corporate or personal).
             </p>
           )}
         </div>
