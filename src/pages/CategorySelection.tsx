@@ -8,11 +8,11 @@ import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
-import { CheckCircle, Lock, Loader2, Music, MonitorPlay, ShoppingBag, Globe, Smartphone, Wrench, Home, ChevronDown } from "lucide-react";
+import { CheckCircle, Lock, Loader2, Music, MonitorPlay, ShoppingBag, Globe, Smartphone, Wrench, Home, ChevronDown, Truck, Fuel } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-type AdType = "engagement" | "performance" | "commerce";
-type Subtype = "musician" | "youtuber" | "app" | "website" | "ecommerce" | "service" | "real_estate";
+type AdType = "engagement" | "performance" | "commerce" | "offline";
+type Subtype = "musician" | "youtuber" | "app" | "website" | "ecommerce" | "service" | "real_estate" | "oil_gas" | "distributor";
 
 interface SubcategoryOption {
   id: Subtype;
