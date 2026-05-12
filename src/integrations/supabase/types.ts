@@ -241,6 +241,45 @@ export type Database = {
         }
         Relationships: []
       }
+      business_verifications: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          created_at: string
+          document_type: string
+          document_url: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          created_at?: string
+          document_type?: string
+          document_url: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          created_at?: string
+          document_type?: string
+          document_url?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       campaign_questions: {
         Row: {
           campaign_id: string
@@ -1109,6 +1148,143 @@ export type Database = {
           },
         ]
       }
+      offline_offers: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          business_address: string
+          business_email: string
+          business_phone: string
+          created_at: string
+          description: string | null
+          id: string
+          moq_unit: Database["public"]["Enums"]["moq_unit"]
+          moq_value: number
+          product_name: string
+          reviewed_at: string | null
+          state: string
+          status: string
+          submission_fee: number
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          business_address: string
+          business_email: string
+          business_phone: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          moq_unit: Database["public"]["Enums"]["moq_unit"]
+          moq_value: number
+          product_name: string
+          reviewed_at?: string | null
+          state: string
+          status?: string
+          submission_fee?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          business_address?: string
+          business_email?: string
+          business_phone?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          moq_unit?: Database["public"]["Enums"]["moq_unit"]
+          moq_value?: number
+          product_name?: string
+          reviewed_at?: string | null
+          state?: string
+          status?: string
+          submission_fee?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      offline_orders: {
+        Row: {
+          accept_deadline: string
+          accepted_at: string | null
+          admin_notes: string | null
+          advertiser_id: string
+          buyer_email: string | null
+          buyer_name: string
+          buyer_phone: string | null
+          commission_amount: number
+          commission_rate: number
+          confirmed_at: string | null
+          created_at: string
+          fulfill_deadline: string | null
+          fulfilled_at: string | null
+          id: string
+          notification_sent_at: string | null
+          offer_id: string
+          quantity: number
+          status: Database["public"]["Enums"]["offline_order_status"]
+          total_amount: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          accept_deadline?: string
+          accepted_at?: string | null
+          admin_notes?: string | null
+          advertiser_id: string
+          buyer_email?: string | null
+          buyer_name: string
+          buyer_phone?: string | null
+          commission_amount?: number
+          commission_rate?: number
+          confirmed_at?: string | null
+          created_at?: string
+          fulfill_deadline?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          notification_sent_at?: string | null
+          offer_id: string
+          quantity: number
+          status?: Database["public"]["Enums"]["offline_order_status"]
+          total_amount: number
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          accept_deadline?: string
+          accepted_at?: string | null
+          admin_notes?: string | null
+          advertiser_id?: string
+          buyer_email?: string | null
+          buyer_name?: string
+          buyer_phone?: string | null
+          commission_amount?: number
+          commission_rate?: number
+          confirmed_at?: string | null
+          created_at?: string
+          fulfill_deadline?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          notification_sent_at?: string | null
+          offer_id?: string
+          quantity?: number
+          status?: Database["public"]["Enums"]["offline_order_status"]
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offline_orders_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offline_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -1541,9 +1717,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_offline_order: { Args: { _order_id: string }; Returns: Json }
       auto_activate_pending_campaigns: { Args: never; Returns: undefined }
+      confirm_offline_order: {
+        Args: { _notes: string; _order_id: string }
+        Returns: Json
+      }
       end_campaign_early: { Args: { _campaign_id: string }; Returns: Json }
+      expire_stale_offline_orders: { Args: never; Returns: number }
       expire_stale_pending_wallet_transactions: { Args: never; Returns: number }
+      fulfill_offline_order: { Args: { _order_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1555,6 +1738,11 @@ export type Database = {
         Args: { _campaign_id: string }
         Returns: number
       }
+      review_offline_offer: {
+        Args: { _approve: boolean; _notes: string; _offer_id: string }
+        Returns: Json
+      }
+      submit_offline_offer: { Args: { _offer_id: string }; Returns: Json }
       topup_campaign_escrow: {
         Args: { _amount: number; _campaign_id: string }
         Returns: Json
@@ -1569,7 +1757,9 @@ export type Database = {
         | "ecommerce"
         | "service"
         | "real_estate"
-      advertiser_type: "engagement" | "performance" | "commerce"
+        | "oil_gas"
+        | "distributor"
+      advertiser_type: "engagement" | "performance" | "commerce" | "offline"
       app_role: "admin" | "user"
       campaign_status:
         | "pending"
@@ -1579,6 +1769,14 @@ export type Database = {
         | "paused"
         | "ended"
       event_type: "download" | "signup" | "purchase"
+      moq_unit: "liter" | "kg" | "piece"
+      offline_order_status:
+        | "pending_acceptance"
+        | "accepted"
+        | "fulfilled_by_advertiser"
+        | "confirmed_by_admin"
+        | "expired"
+        | "rejected"
       source_type: "web" | "android" | "ios"
     }
     CompositeTypes: {
@@ -1715,8 +1913,10 @@ export const Constants = {
         "ecommerce",
         "service",
         "real_estate",
+        "oil_gas",
+        "distributor",
       ],
-      advertiser_type: ["engagement", "performance", "commerce"],
+      advertiser_type: ["engagement", "performance", "commerce", "offline"],
       app_role: ["admin", "user"],
       campaign_status: [
         "pending",
@@ -1727,6 +1927,15 @@ export const Constants = {
         "ended",
       ],
       event_type: ["download", "signup", "purchase"],
+      moq_unit: ["liter", "kg", "piece"],
+      offline_order_status: [
+        "pending_acceptance",
+        "accepted",
+        "fulfilled_by_advertiser",
+        "confirmed_by_admin",
+        "expired",
+        "rejected",
+      ],
       source_type: ["web", "android", "ios"],
     },
   },
