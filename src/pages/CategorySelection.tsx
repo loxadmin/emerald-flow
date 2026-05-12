@@ -8,11 +8,11 @@ import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
-import { CheckCircle, Lock, Loader2, Music, MonitorPlay, ShoppingBag, Globe, Smartphone, Wrench, Home, ChevronDown } from "lucide-react";
+import { CheckCircle, Lock, Loader2, Music, MonitorPlay, ShoppingBag, Globe, Smartphone, Wrench, Home, ChevronDown, Truck, Fuel } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-type AdType = "engagement" | "performance" | "commerce";
-type Subtype = "musician" | "youtuber" | "app" | "website" | "ecommerce" | "service" | "real_estate";
+type AdType = "engagement" | "performance" | "commerce" | "offline";
+type Subtype = "musician" | "youtuber" | "app" | "website" | "ecommerce" | "service" | "real_estate" | "oil_gas" | "distributor";
 
 interface SubcategoryOption {
   id: Subtype;
@@ -61,6 +61,16 @@ const AD_TYPES: AdTypeOption[] = [
       { id: "real_estate", label: "Real Estate", description: "Property sales and rentals", icon: Home },
     ],
   },
+  {
+    id: "offline",
+    label: "Offline Ads",
+    description: "For offline businesses (Oil & Gas, Distributors). Submit offers and receive admin-managed orders.",
+    icon: Truck,
+    subcategories: [
+      { id: "oil_gas", label: "Oil & Gas", description: "Petroleum, lubricants, fuel sales", icon: Fuel },
+      { id: "distributor", label: "Distributor", description: "Bulk product distribution", icon: Truck },
+    ],
+  },
 ];
 
 interface Category {
@@ -87,9 +97,10 @@ export default function CategorySelection() {
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null);
   const [changeReason, setChangeReason] = useState("");
 
-  // Subtype chosen at signup ("musician" | "youtuber" | "app" | "startup" | "business")
+  // Subtype chosen at signup
   const signupSubtype = (user?.user_metadata as any)?.advertiser_subtype as string | undefined;
   const isCreator = signupSubtype === "musician" || signupSubtype === "youtuber";
+  const isOfflineSignup = signupSubtype === "oil_gas" || signupSubtype === "distributor";
   const isBusinessSignup = signupSubtype === "app" || signupSubtype === "startup" || signupSubtype === "business";
 
   useEffect(() => {
@@ -110,13 +121,19 @@ export default function CategorySelection() {
         }
       }
 
-      // Auto-route creators straight to engagement; pre-expand for business signups
+      // Auto-route based on signup subtype
       if (!isChangeMode) {
         if (isCreator) {
           setExpandedType("engagement");
           setSelectedType("engagement");
           setSelectedSubtype(signupSubtype as Subtype);
           const topCat = cats.find((c) => c.name === "Engagement Ads");
+          if (topCat) setSelectedCategoryId(topCat.id);
+        } else if (isOfflineSignup) {
+          setExpandedType("offline");
+          setSelectedType("offline");
+          setSelectedSubtype(signupSubtype as Subtype);
+          const topCat = cats.find((c) => c.name === "Offline Ads");
           if (topCat) setSelectedCategoryId(topCat.id);
         } else if (isBusinessSignup) {
           setExpandedType("performance");
@@ -129,15 +146,16 @@ export default function CategorySelection() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, hasCategory]);
 
-  // Hide Engagement card for business signups; hide Performance/Commerce for creators
+  // Filter visible types per signup subtype
   const visibleAdTypes = AD_TYPES.filter((t) => {
     if (isCreator) return t.id === "engagement";
-    if (isBusinessSignup) return t.id !== "engagement";
+    if (isOfflineSignup) return t.id === "offline";
+    if (isBusinessSignup) return t.id !== "engagement" && t.id !== "offline";
     return true;
   });
 
   const performanceSubcategories = categories.filter(
-    (c) => !["Engagement Ads", "Performance Ads", "Commerce Ads"].includes(c.name)
+    (c) => !["Engagement Ads", "Performance Ads", "Commerce Ads", "Offline Ads"].includes(c.name)
   );
 
   const handleSubtypeSelect = (type: AdType, subtype: Subtype) => {

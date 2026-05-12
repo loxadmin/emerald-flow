@@ -48,17 +48,20 @@ const DISPOSABLE_DOMAINS = [
 
 const FORBIDDEN_DOMAINS = [...PUBLIC_EMAIL_DOMAINS, ...DISPOSABLE_DOMAINS];
 
-type Subtype = "musician" | "youtuber" | "app" | "startup" | "business";
+type Subtype = "musician" | "youtuber" | "app" | "startup" | "business" | "oil_gas" | "distributor";
 
-const SUBTYPE_OPTIONS: { id: Subtype; label: string; group: "engagement" | "business" }[] = [
+const SUBTYPE_OPTIONS: { id: Subtype; label: string; group: "engagement" | "business" | "offline" }[] = [
   { id: "musician", label: "Musician / Music Artist", group: "engagement" },
   { id: "youtuber", label: "YouTuber / Video Creator", group: "engagement" },
   { id: "app", label: "App Owner", group: "business" },
   { id: "startup", label: "Startup Founder", group: "business" },
   { id: "business", label: "Business Owner", group: "business" },
+  { id: "oil_gas", label: "Oil & Gas (Offline Sales)", group: "offline" },
+  { id: "distributor", label: "Distributor (Offline Sales)", group: "offline" },
 ];
 
 const isCreator = (s: Subtype | "") => s === "musician" || s === "youtuber";
+const isOffline = (s: Subtype | "") => s === "oil_gas" || s === "distributor";
 
 function extractDomain(url: string): string {
   try {
@@ -81,6 +84,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
 
   const creator = isCreator(subtype);
+  const offline = isOffline(subtype);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,12 +117,9 @@ export default function Signup() {
 
     let websiteValue = "";
 
-    if (creator) {
-      // Creators: must use a popular email provider, no website needed
-      if (!PUBLIC_EMAIL_DOMAINS.includes(emailDomain)) {
-        toast.error("Please use a popular email provider (Gmail, Yahoo, Outlook, etc.)");
-        return;
-      }
+    if (creator || offline) {
+      // Creators and offline advertisers can use any email; no website required
+      // (Disposable already blocked above.)
     } else {
       // Business advertisers: must have business website matching email domain
       if (!website.trim()) {
@@ -178,7 +179,7 @@ export default function Signup() {
   };
 
   const websiteDomain = extractDomain(website);
-  const isForbiddenDomain = !creator && websiteDomain && FORBIDDEN_DOMAINS.includes(websiteDomain);
+  const isForbiddenDomain = !creator && !offline && websiteDomain && FORBIDDEN_DOMAINS.includes(websiteDomain);
 
   return (
     <AuthSplitShell
@@ -186,7 +187,9 @@ export default function Signup() {
       title="Create your account"
       description={creator
         ? "Register as a creator to start running engagement ads."
-        : "Register with your business email to start tracking."}
+        : offline
+          ? "Register your offline business — we'll verify your CAC document next."
+          : "Register with your business email to start tracking."}
       footer={
         <>
           Already have an account?{" "}
@@ -213,7 +216,9 @@ export default function Signup() {
             <p className="text-[10px] leading-none text-muted-foreground">
               {creator
                 ? "You'll run Engagement Ads. No business website required."
-                : "You'll run Performance & Commerce Ads. Business website required."}
+                : offline
+                  ? "You'll run Offline Ads. You'll upload your CAC/business document after signup."
+                  : "You'll run Performance & Commerce Ads. Business website required."}
             </p>
           )}
         </div>
@@ -232,10 +237,10 @@ export default function Signup() {
           </div>
         </div>
 
-        {!creator && (
+        {!creator && !offline && (
           <div className="space-y-1.5">
             <Label htmlFor="website" className="text-sm text-foreground">Website *</Label>
-            <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} placeholder="yourbusiness.com" autoComplete="url" required={!creator} className="h-11 rounded-lg border-border bg-background px-4" />
+            <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} maxLength={255} placeholder="yourbusiness.com" autoComplete="url" required={!creator && !offline} className="h-11 rounded-lg border-border bg-background px-4" />
             {isForbiddenDomain ? (
               <p className="text-[10px] leading-none text-destructive">Email provider domains are not accepted.</p>
             ) : websiteDomain ? (
@@ -246,7 +251,7 @@ export default function Signup() {
 
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-sm text-foreground">
-            {creator ? "Email *" : "Business Email *"}
+            {creator || offline ? "Email *" : "Business Email *"}
           </Label>
           <Input
             id="email"
@@ -257,7 +262,7 @@ export default function Signup() {
             required
             autoComplete="email"
             placeholder={
-              creator
+              creator || offline
                 ? "you@gmail.com"
                 : websiteDomain && !isForbiddenDomain
                   ? `you@${websiteDomain}`
@@ -265,9 +270,9 @@ export default function Signup() {
             }
             className="h-11 rounded-lg border-border bg-background px-4"
           />
-          {creator && (
+          {(creator || offline) && (
             <p className="text-[10px] leading-none text-muted-foreground">
-              Use Gmail, Yahoo, Outlook or another popular provider.
+              Any email works (corporate or personal).
             </p>
           )}
         </div>
