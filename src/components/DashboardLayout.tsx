@@ -7,39 +7,43 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
   Menu, X, Lock, AlertCircle, Megaphone, Globe, ChevronRight,
-  Sparkles,
+  Sparkles, ShieldCheck, Package, ClipboardList,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
-const baseAdvertiserLinks = [
+type NavLink = {
+  to: string;
+  label: string;
+  icon: any;
+  group: string;
+  hideForEngagement?: boolean;
+  hideForOffline?: boolean;
+  onlyForOffline?: boolean;
+};
+
+const baseAdvertiserLinks: NavLink[] = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, group: "Workspace" },
-  { to: "/ads", label: "Campaigns", icon: Megaphone, group: "Workspace" },
-  { to: "/campaigns/create", label: "New campaign", icon: Plus, group: "Workspace" },
-  { to: "/websites", label: "Websites", icon: Globe, hideForEngagement: true, group: "Account" },
+  { to: "/ads", label: "Campaigns", icon: Megaphone, group: "Workspace", hideForOffline: true },
+  { to: "/campaigns/create", label: "New campaign", icon: Plus, group: "Workspace", hideForOffline: true },
+  { to: "/offline/verify", label: "Business verification", icon: ShieldCheck, group: "Workspace", onlyForOffline: true },
+  { to: "/offline/offers", label: "My offers", icon: Package, group: "Workspace", onlyForOffline: true },
+  { to: "/offline/orders", label: "Orders", icon: ClipboardList, group: "Workspace", onlyForOffline: true },
+  { to: "/websites", label: "Websites", icon: Globe, hideForEngagement: true, hideForOffline: true, group: "Account" },
   { to: "/wallet", label: "Wallet", icon: Wallet, group: "Account" },
-  { to: "/docs", label: "API & Docs", icon: FileText, hideForEngagement: true, group: "Account" },
+  { to: "/docs", label: "API & Docs", icon: FileText, hideForEngagement: true, hideForOffline: true, group: "Account" },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, signOut, walletActivated, categoryStatus, maintenanceMode } = useAuth();
-  const [advertiserType, setAdvertiserType] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user?.id) { setAdvertiserType(null); return; }
-    supabase
-      .from("advertiser_categories")
-      .select("advertiser_type")
-      .eq("advertiser_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setAdvertiserType((data as { advertiser_type?: string } | null)?.advertiser_type ?? null);
-      });
-  }, [user?.id]);
+  const { user, signOut, walletActivated, categoryStatus, maintenanceMode, advertiserType, businessVerified } = useAuth();
 
   const isEngagement = advertiserType === "engagement";
-  const advertiserLinks = baseAdvertiserLinks.filter(
-    (link) => !(isEngagement && link.hideForEngagement)
-  );
+  const isOffline = advertiserType === "offline";
+  const advertiserLinks = baseAdvertiserLinks.filter((link) => {
+    if (isEngagement && link.hideForEngagement) return false;
+    if (isOffline && link.hideForOffline) return false;
+    if (!isOffline && link.onlyForOffline) return false;
+    return true;
+  });
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
