@@ -106,10 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const [{ data: categoryData }, { data: walletData }, { data: maintenanceData }, { data: profileData }] = await Promise.all([
+      const [{ data: categoryData }, { data: walletData }, { data: maintenanceData }, { data: profileData }, { data: verificationData }] = await Promise.all([
         supabase
           .from("advertiser_categories")
-          .select("status")
+          .select("status, advertiser_type")
           .eq("advertiser_id", activeUser.id)
           .maybeSingle(),
         supabase
@@ -127,6 +127,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select("is_blocked")
           .eq("id", activeUser.id)
           .maybeSingle(),
+        supabase
+          .from("business_verifications" as any)
+          .select("status")
+          .eq("advertiser_id", activeUser.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       if (requestId !== accessRequestIdRef.current) return;
@@ -142,8 +149,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setHasCategory(!!categoryData);
       setCategoryStatus(categoryData?.status || null);
+      setAdvertiserType((categoryData as any)?.advertiser_type || null);
       setWalletActivated(walletData?.is_activated ?? false);
       setMaintenanceMode(maintenanceData?.value === "true");
+      setBusinessVerified(((verificationData as any)?.status === "approved"));
     } catch (error) {
       if (requestId !== accessRequestIdRef.current) return;
       console.error("Failed to load access state:", error);
