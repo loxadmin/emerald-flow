@@ -270,6 +270,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         categoryStatus,
         walletActivated,
         maintenanceMode,
+        advertiserType,
+        businessVerified,
         refreshAccessState,
         signOut,
       }}
