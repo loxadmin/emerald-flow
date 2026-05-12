@@ -46,6 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [categoryStatus, setCategoryStatus] = useState<string | null>(null);
   const [walletActivated, setWalletActivated] = useState<boolean | null>(null);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [advertiserType, setAdvertiserType] = useState<string | null>(null);
+  const [businessVerified, setBusinessVerified] = useState<boolean | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const accessRequestIdRef = useRef(0);
@@ -56,6 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setHasCategory(null);
     setCategoryStatus(null);
     setWalletActivated(null);
+    setAdvertiserType(null);
+    setBusinessVerified(null);
   }, []);
 
   const signOut = useCallback(async () => {
