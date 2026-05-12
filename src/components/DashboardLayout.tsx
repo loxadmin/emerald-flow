@@ -1,9 +1,8 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
   Menu, X, Lock, AlertCircle, Megaphone, Globe, ChevronRight,
@@ -54,6 +53,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const isPageLocked = (path: string) => {
     if (path === "/wallet" || path === "/docs" || path === "/websites") return false;
+    if (path === "/offline/verify") return false;
+    if (isOffline && (path === "/offline/offers" || path === "/offline/orders")) {
+      if (isCategoryInactive) return true;
+      if (isWalletNotActivated) return true;
+      if (businessVerified !== true) return true;
+      return false;
+    }
     if (isCategoryInactive) return true;
     if (isWalletNotActivated) return true;
     return false;
@@ -62,6 +68,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const getLockReason = () => {
     if (isCategoryInactive) return "Your category is not live yet. Please wait for activation.";
     if (isWalletNotActivated) return "Activate your wallet to unlock the rest of your workspace.";
+    if (isOffline && businessVerified !== true) return "Submit your business verification documents to unlock offers and orders.";
     return "";
   };
 
