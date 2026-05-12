@@ -117,12 +117,9 @@ export default function Signup() {
 
     let websiteValue = "";
 
-    if (creator) {
-      // Creators: must use a popular email provider, no website needed
-      if (!PUBLIC_EMAIL_DOMAINS.includes(emailDomain)) {
-        toast.error("Please use a popular email provider (Gmail, Yahoo, Outlook, etc.)");
-        return;
-      }
+    if (creator || offline) {
+      // Creators and offline advertisers can use any email; no website required
+      // (Disposable already blocked above.)
     } else {
       // Business advertisers: must have business website matching email domain
       if (!website.trim()) {
