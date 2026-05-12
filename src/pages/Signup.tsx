@@ -179,7 +179,7 @@ export default function Signup() {
   };
 
   const websiteDomain = extractDomain(website);
-  const isForbiddenDomain = !creator && websiteDomain && FORBIDDEN_DOMAINS.includes(websiteDomain);
+  const isForbiddenDomain = !creator && !offline && websiteDomain && FORBIDDEN_DOMAINS.includes(websiteDomain);
 
   return (
     <AuthSplitShell
@@ -187,7 +187,9 @@ export default function Signup() {
       title="Create your account"
       description={creator
         ? "Register as a creator to start running engagement ads."
-        : "Register with your business email to start tracking."}
+        : offline
+          ? "Register your offline business — we'll verify your CAC document next."
+          : "Register with your business email to start tracking."}
       footer={
         <>
           Already have an account?{" "}
