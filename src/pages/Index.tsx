@@ -131,13 +131,16 @@ export default function Index() {
 
   const productJsonLd = {
     "@context": "https://schema.org",
-    "@type": "Product",
+    "@type": "SoftwareApplication",
     "name": "Karbali Ads — Customer Acquisition Platform",
     "description": "Karbali Ads helps businesses find customers and get paying clients with performance-based advertising. Pay only for real signups, downloads, and sales.",
     "image": [
       "https://advertiser.karbali.com/og-image.jpg",
       "https://advertiser.karbali.com/icon-512-v4.png"
     ],
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "url": "https://advertiser.karbali.com/",
     "brand": { "@type": "Brand", "name": "Karbali" },
     "offers": {
       "@type": "Offer",
