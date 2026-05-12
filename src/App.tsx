@@ -37,6 +37,10 @@ import AdminMessages from "./pages/AdminMessages";
 import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminExtension from "./pages/AdminExtension";
 import AdminOfferwall from "./pages/AdminOfferwall";
+import AdminOffline from "./pages/AdminOffline";
+import OfflineVerification from "./pages/OfflineVerification";
+import OfflineOffers from "./pages/OfflineOffers";
+import OfflineOrders from "./pages/OfflineOrders";
 import Admin2FA from "./pages/Admin2FA";
 import About from "./pages/About";
 import Docs from "./pages/Docs";
@@ -72,6 +76,11 @@ const App = () => (
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/ads" element={<RequireAuth><Ads /></RequireAuth>} />
               <Route path="/websites" element={<RequireAuth><Websites /></RequireAuth>} />
+
+              {/* Offline Ads */}
+              <Route path="/offline/verify" element={<RequireAuth><OfflineVerification /></RequireAuth>} />
+              <Route path="/offline/offers" element={<RequireAuth><OfflineOffers /></RequireAuth>} />
+              <Route path="/offline/orders" element={<RequireAuth><OfflineOrders /></RequireAuth>} />
               
               <Route path="/campaigns/create" element={<RequireAuth><CampaignRouter /></RequireAuth>} />
               <Route path="/campaigns/create/performance" element={<RequireAuth><CreateCampaign /></RequireAuth>} />
@@ -111,6 +120,7 @@ const App = () => (
               <Route path="/admin/broadcast" element={<RequireAuth><RequireAdmin><AdminBroadcast /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/extension" element={<RequireAuth><RequireAdmin><AdminExtension /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/offerwall" element={<RequireAuth><RequireAdmin><AdminOfferwall /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/offline" element={<RequireAuth><RequireAdmin><AdminOffline /></RequireAdmin></RequireAuth>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
