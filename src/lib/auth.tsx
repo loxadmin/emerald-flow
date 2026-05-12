@@ -103,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setHasCategory(true);
         setCategoryStatus("active");
         setWalletActivated(true);
+        setBusinessVerified(true);
         return;
       }
 
