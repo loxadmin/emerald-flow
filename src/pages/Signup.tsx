@@ -214,7 +214,9 @@ export default function Signup() {
             <p className="text-[10px] leading-none text-muted-foreground">
               {creator
                 ? "You'll run Engagement Ads. No business website required."
-                : "You'll run Performance & Commerce Ads. Business website required."}
+                : offline
+                  ? "You'll run Offline Ads. You'll upload your CAC/business document after signup."
+                  : "You'll run Performance & Commerce Ads. Business website required."}
             </p>
           )}
         </div>
