@@ -48,17 +48,20 @@ const DISPOSABLE_DOMAINS = [
 
 const FORBIDDEN_DOMAINS = [...PUBLIC_EMAIL_DOMAINS, ...DISPOSABLE_DOMAINS];
 
-type Subtype = "musician" | "youtuber" | "app" | "startup" | "business";
+type Subtype = "musician" | "youtuber" | "app" | "startup" | "business" | "oil_gas" | "distributor";
 
-const SUBTYPE_OPTIONS: { id: Subtype; label: string; group: "engagement" | "business" }[] = [
+const SUBTYPE_OPTIONS: { id: Subtype; label: string; group: "engagement" | "business" | "offline" }[] = [
   { id: "musician", label: "Musician / Music Artist", group: "engagement" },
   { id: "youtuber", label: "YouTuber / Video Creator", group: "engagement" },
   { id: "app", label: "App Owner", group: "business" },
   { id: "startup", label: "Startup Founder", group: "business" },
   { id: "business", label: "Business Owner", group: "business" },
+  { id: "oil_gas", label: "Oil & Gas (Offline Sales)", group: "offline" },
+  { id: "distributor", label: "Distributor (Offline Sales)", group: "offline" },
 ];
 
 const isCreator = (s: Subtype | "") => s === "musician" || s === "youtuber";
+const isOffline = (s: Subtype | "") => s === "oil_gas" || s === "distributor";
 
 function extractDomain(url: string): string {
   try {
