@@ -84,6 +84,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
 
   const creator = isCreator(subtype);
+  const offline = isOffline(subtype);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
