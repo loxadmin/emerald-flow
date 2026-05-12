@@ -61,6 +61,16 @@ const AD_TYPES: AdTypeOption[] = [
       { id: "real_estate", label: "Real Estate", description: "Property sales and rentals", icon: Home },
     ],
   },
+  {
+    id: "offline",
+    label: "Offline Ads",
+    description: "For offline businesses (Oil & Gas, Distributors). Submit offers and receive admin-managed orders.",
+    icon: Truck,
+    subcategories: [
+      { id: "oil_gas", label: "Oil & Gas", description: "Petroleum, lubricants, fuel sales", icon: Fuel },
+      { id: "distributor", label: "Distributor", description: "Bulk product distribution", icon: Truck },
+    ],
+  },
 ];
 
 interface Category {
