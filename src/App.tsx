@@ -51,6 +51,8 @@ import UseCases from "./pages/UseCases";
 import Comparison from "./pages/Comparison";
 import ProblemSolution from "./pages/ProblemSolution";
 import ReferralRedirect from "./pages/ReferralRedirect";
+import LearnHub from "./pages/LearnHub";
+import LearnArticle from "./pages/LearnArticle";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -92,6 +94,8 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/blog" element={<BlogList />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/learn" element={<LearnHub />} />
+              <Route path="/learn/:slug" element={<LearnArticle />} />
               <Route path="/what-is-karbali" element={<WhatIsKarbali />} />
               <Route path="/use-cases" element={<UseCases />} />
               <Route path="/vs/:competitor" element={<Comparison />} />
