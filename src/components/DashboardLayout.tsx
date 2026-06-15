@@ -9,6 +9,7 @@ import {
   Sparkles, ShieldCheck, Package, ClipboardList,
 } from "lucide-react";
 import Logo from "@/components/Logo";
+import KarbaliAssistant from "@/components/KarbaliAssistant";
 
 type NavLink = {
   to: string;
@@ -307,6 +308,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           )}
         </main>
       </div>
+      <KarbaliAssistant />
     </div>
   );
 }
