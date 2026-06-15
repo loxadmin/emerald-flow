@@ -1,5 +1,6 @@
-// Lightweight inbuilt NLP intent matcher. No external APIs.
-// Rule-based: tokenization, stemming-lite, synonym expansion, weighted keyword scoring.
+// Inbuilt Karbali Assistant NLP. No external APIs.
+// Rule-based: tokenization, light stemming, synonym groups, weighted scoring,
+// plus a knowledge base so it can actually answer questions about the platform.
 
 export type AssistantContext = {
   walletActivated: boolean | null;
@@ -18,15 +19,19 @@ export type AssistantReply = {
 
 type Intent = {
   id: string;
-  keywords: string[][]; // groups: each inner array = synonyms; intent matches when at least one word from each group present
-  any?: string[]; // any of these alone is enough
+  // Each inner array is a synonym group. Intent fires when every non-empty group has at least one hit.
+  keywords: string[][];
+  // Strong single-word triggers (any one of these alone bumps the score).
+  any?: string[];
   handler: (ctx: AssistantContext) => AssistantReply;
 };
 
 const STOPWORDS = new Set([
-  "the","a","an","is","i","to","my","me","of","for","on","in","at","do","how",
-  "can","you","please","kindly","abeg","wetin","wan","go","just","want","need",
-  "and","or","with","this","that","be","am","are","it","get","got","make","let","us",
+  "the","a","an","is","i","to","my","me","of","for","on","in","at","do",
+  "can","you","please","and","or","with","this","that","be","am","are","it",
+  "what","whats","tell","about","explain","mean","means","there","here","does",
+  "should","would","will","have","has","had","was","were","into","from","by",
+  "if","so","as","but","then","also","too","not","no","yes","ok","okay",
 ]);
 
 function normalize(text: string): string[] {
@@ -43,71 +48,177 @@ function hasAny(tokens: string[], group: string[]): boolean {
   return tokens.some((t) => norm.includes(t));
 }
 
-// Light Naija flavor — warm, encouraging, no heavy pidgin
-const naijaPrefix = () => {
-  const opts = ["Sharp!", "Gotcha.", "No wahala.", "Easy one.", "On it.", "Say no more.", ""];
+// Light naija seasoning — sparing, used only sometimes for warmth. Clean English otherwise.
+const spice = () => {
+  const opts = ["", "", "", "Sharp!", "Oya,", "Got you.", "Cool —", "Alright,"];
   return opts[Math.floor(Math.random() * opts.length)];
 };
-
-const join = (...parts: string[]) => parts.filter(Boolean).join(" ").trim();
+const join = (...p: string[]) => p.filter(Boolean).join(" ").trim();
 
 const INTENTS: Intent[] = [
+  // ===== Platform knowledge =====
+  {
+    id: "what_is_karbali",
+    keywords: [["karbali","platform","system","app","product"], ["what","explain","about","tell","describe"]],
+    any: [],
+    handler: () => ({
+      text: "Karbali is a Nigerian performance ad platform. You fund a wallet, run campaigns (engagement, performance, or commerce), and only pay for real results — clicks, conversions, or sales.",
+      suggestions: ["Types of campaigns", "How does billing work?", "How is tracking done?"],
+    }),
+  },
+  {
+    id: "campaign_types",
+    keywords: [["type","kind","category","option","difference"], ["campaign","ad","advert"]],
+    handler: () => ({
+      text: "Three campaign types: Engagement (media, quizzes — users earn points), Performance (pay per click or conversion), and Commerce (pay flat fee + commission on sales).",
+      suggestions: ["What is Commerce?", "What is Engagement?", "Create a campaign"],
+    }),
+  },
+  {
+    id: "engagement_ads",
+    keywords: [["engagement","quiz","point","reward","media"], []],
+    any: ["engagement","quiz","points","reward"],
+    handler: () => ({
+      text: "Engagement ads let users interact with media or quizzes and earn points. 1 point equals 0.50 Naira. Great for awareness and lead capture.",
+      suggestions: ["Performance ads", "Commerce ads", "Create campaign"],
+    }),
+  },
+  {
+    id: "performance_ads",
+    keywords: [["performance","cpa","cpc","conversion","click"], []],
+    any: ["cpa","cpc","performance"],
+    handler: () => ({
+      text: "Performance ads charge you per click (CPC) or per conversion (CPA). You set the budget, we track every click with a unique click_id, and only valid actions count.",
+      suggestions: ["What is CPA?", "What is CPC?", "Setup tracking"],
+    }),
+  },
+  {
+    id: "commerce_ads",
+    keywords: [["commerce","shopify","ecommerce","store","shop","sale"], []],
+    any: ["commerce","ecommerce","shopify"],
+    handler: () => ({
+      text: "Commerce ads are for ecommerce stores. Minimum wallet balance is $200. You pay a flat fee plus a small commission only when a sale happens.",
+      suggestions: ["How much is the minimum?", "How is tracking done?"],
+    }),
+  },
+  {
+    id: "cpa_vs_cpc",
+    keywords: [["cpa","cpc","difference"], []],
+    any: ["cpa","cpc"],
+    handler: () => ({
+      text: "CPC = Cost Per Click — you pay each time someone clicks. CPA = Cost Per Action — you pay only when a real action (signup, purchase) happens. CPA costs more per event but is lower risk.",
+    }),
+  },
+  {
+    id: "tracking_how",
+    keywords: [["track","attribution","conversion","pixel","sdk"], []],
+    any: ["tracking","attribution","pixel","sdk"],
+    handler: () => ({
+      text: "We use a deterministic click_id (UUID). Install the Karbali script or WordPress plugin on your site, fire a conversion event, and we attribute the sale back to the right campaign.",
+      suggestions: ["Open docs", "Verify my integration"],
+    }),
+  },
+  {
+    id: "ad_fraud",
+    keywords: [["fraud","fake","bot","invalid"], []],
+    any: ["fraud"],
+    handler: () => ({
+      text: "Karbali filters bot traffic, duplicate clicks, and suspicious patterns before billing. You only pay for clean, attributable activity.",
+    }),
+  },
+  {
+    id: "minimum_funding",
+    keywords: [["minimum","least","start","fund","activation"], ["wallet","balance","fund","amount","money"]],
+    any: ["minimum"],
+    handler: () => ({
+      text: "Minimum wallet activation is $10. For Commerce campaigns you need at least $200 balance. Partnership accounts need a $50 fee and $200 minimum.",
+      suggestions: ["Activate my wallet", "Fund wallet"],
+    }),
+  },
+  {
+    id: "payment_methods",
+    keywords: [["pay","payment","fund","topup","deposit"], ["method","option","how","gateway"]],
+    any: ["paystack","flutterwave"],
+    handler: () => ({
+      text: "Fund through Paystack or Flutterwave — card, bank transfer, or your dedicated virtual account. Funds land in your wallet instantly after confirmation.",
+      suggestions: ["Open wallet"],
+    }),
+  },
+  {
+    id: "verify_business",
+    keywords: [["verify","verification","approve","kyc","business"], []],
+    any: ["verification","kyc"],
+    handler: () => ({
+      text: "Business verification confirms your brand details and unlocks higher limits. Submit your documents on the Verification page and we review within 24–48 hours.",
+      navigateTo: "/verification",
+    }),
+  },
+  {
+    id: "website_verify",
+    keywords: [["verify","add","connect"], ["website","domain","site"]],
+    handler: () => ({
+      text: "Add your website, then verify via OTP or DNS. Once verified the domain locks — you can't change it later, so confirm before submitting.",
+      navigateTo: "/websites",
+    }),
+  },
+
+  // ===== Navigation intents =====
   {
     id: "activate_wallet",
-    keywords: [["activate","activation","fund","top","add","enable","setup"], ["wallet","account","balance","fund"]],
+    keywords: [["activate","enable","setup","start"], ["wallet","account"]],
     any: ["activate"],
     handler: (ctx) => ({
       text: ctx.walletActivated
-        ? "Your wallet is already active. ✅ You fit place campaigns now."
-        : join(naijaPrefix(), "Taking you to the Wallet page to activate. Minimum is $10."),
+        ? "Your wallet is already active. You can place campaigns now."
+        : join(spice(), "Taking you to the Wallet page to activate. Minimum is $10."),
       navigateTo: ctx.walletActivated ? "/dashboard" : "/wallet",
     }),
   },
   {
     id: "create_campaign",
-    keywords: [["create","start","new","launch","place","run","make","set"], ["campaign","ad","advert","promotion"]],
-    any: [],
+    keywords: [["create","start","new","launch","place","run","make"], ["campaign","ad","advert","promotion"]],
     handler: (ctx) => {
       if (ctx.walletActivated !== true) {
         return {
-          text: "First things first — activate your wallet, then we go launch.",
+          text: "Activate your wallet first, then we launch. Minimum is $10.",
           navigateTo: "/wallet",
           suggestions: ["Activate my wallet", "How much do I need?"],
         };
       }
       return {
-        text: join(naijaPrefix(), "Let's set up a new campaign."),
+        text: join(spice(), "Let's set up a new campaign."),
         navigateTo: "/campaigns/create",
-        suggestions: ["Help me fill the form", "What's the budget?"],
+        suggestions: ["Help me fill the form", "What's a good budget?"],
       };
     },
   },
   {
     id: "fill_campaign_form",
-    keywords: [["fill","help","guide","explain","complete"], ["form","campaign","field"]],
+    keywords: [["fill","help","guide","walk"], ["form","campaign","field","step"]],
     handler: () => ({
-      text: "Quick tips: pick a clear title, your destination URL, daily budget, then target. Ask me about any field.",
-      suggestions: ["What's a good budget?", "What's CPA?", "Pick targeting"],
+      text: "Quick rundown: pick a clear title, paste your destination URL, set daily budget, then choose targeting. Ask about any field and I'll explain it.",
+      suggestions: ["What's a good budget?", "What is CPA?", "Targeting tips"],
     }),
   },
   {
     id: "wallet_view",
-    keywords: [[ "show","check","view","see","balance","my"], ["wallet","balance","fund","money"]],
-    handler: () => ({ text: "Opening your wallet now.", navigateTo: "/wallet" }),
+    keywords: [["show","check","view","see","open","my"], ["wallet","balance","fund","money"]],
+    any: ["balance","wallet"],
+    handler: () => ({ text: "Opening your wallet.", navigateTo: "/wallet" }),
   },
   {
     id: "campaigns_view",
-    keywords: [["my","show","view","see","list","check"], ["campaign","ad","advert"]],
+    keywords: [["my","show","view","see","list","check","open"], ["campaign","ad","advert"]],
     handler: () => ({ text: "Here are your campaigns.", navigateTo: "/ads" }),
   },
   {
     id: "category",
-    keywords: [["category","industry","niche","type"], []],
+    keywords: [["category","industry","niche"], []],
     any: ["category","categories","niche"],
     handler: (ctx) => ({
       text: ctx.categoryStatus === "active"
-        ? "Your category dey live. ✅"
-        : "Your category is still pending activation. We'll notify you sharp-sharp.",
+        ? "Your category is live and active."
+        : "Your category is still pending. We'll notify you once it's approved.",
       navigateTo: "/category",
     }),
   },
@@ -119,48 +230,53 @@ const INTENTS: Intent[] = [
   },
   {
     id: "docs",
-    keywords: [["doc","api","integration","sdk","script","track","install"], []],
-    any: ["docs","api","sdk","integration","tracking"],
-    handler: () => ({ text: "Here's the docs hub.", navigateTo: "/docs" }),
+    keywords: [["doc","documentation","guide","manual"], []],
+    any: ["docs","documentation"],
+    handler: () => ({ text: "Here's the documentation hub.", navigateTo: "/docs" }),
   },
   {
-    id: "pricing_budget",
-    keywords: [["budget","cost","price","pricing","minimum","fee","how","much"], []],
-    any: ["budget","minimum","pricing","cpa","cpc"],
+    id: "integration",
+    keywords: [["install","integrate","script","plugin","wordpress","setup"], ["track","conversion","site"]],
+    any: ["integration"],
     handler: () => ({
-      text: "Minimum wallet funding is $10. For commerce campaigns you need $200+ balance.",
-      suggestions: ["Activate wallet", "Create campaign"],
+      text: "Two options: drop our JS snippet on your site, or use the WordPress plugin. Both fire the conversion event automatically.",
+      navigateTo: "/docs",
     }),
   },
-  {
-    id: "support",
-    keywords: [["talk","contact","support","human","agent","help"], []],
-    any: ["support","human","contact"],
-    handler: () => ({
-      text: "Drop your question and I go try first. If e pass me, support@karbali.com dey on standby.",
-    }),
-  },
+
+  // ===== Conversational =====
   {
     id: "greet",
-    keywords: [["hi","hello","hey","yo","howdy","greeting","good"], []],
-    any: ["hi","hello","hey","yo","howfar","abeg"],
+    keywords: [["hi","hello","hey","yo","howdy","greeting","good","morning","evening","afternoon"], []],
+    any: ["hi","hello","hey","yo"],
     handler: (ctx) => ({
-      text: `Howfar${ctx.userName ? ", " + ctx.userName.split(/[\s@]/)[0] : ""}! What you wan handle today?`,
-      suggestions: ["Activate my wallet", "Create campaign", "View my campaigns"],
+      text: `Hey${ctx.userName ? " " + ctx.userName.split(/[\s@]/)[0] : ""}! What can I help you with today?`,
+      suggestions: ["What is Karbali?", "Create a campaign", "Activate my wallet"],
     }),
   },
   {
     id: "thanks",
-    keywords: [["thank","thanks","appreciate","bless"], []],
+    keywords: [["thank","appreciate","bless","grateful"], []],
     any: ["thanks","thank"],
-    handler: () => ({ text: "Anytime. I dey here whenever you need me. 🙌" }),
+    handler: () => ({ text: "Anytime — I'm right here whenever you need me." }),
+  },
+  {
+    id: "support",
+    keywords: [["talk","contact","support","human","agent"], []],
+    any: ["support","human"],
+    handler: () => ({
+      text: "Ask me anything first — I can usually help. If you still need a human, reach support@karbali.com.",
+    }),
   },
 ];
 
 export function detectIntent(input: string, ctx: AssistantContext): AssistantReply {
   const tokens = normalize(input);
   if (!tokens.length) {
-    return { text: "Talk to me — wetin you wan do?", suggestions: ["Activate wallet", "Create campaign"] };
+    return {
+      text: "Ask me anything about Karbali — campaigns, wallet, tracking, fees.",
+      suggestions: ["What is Karbali?", "Create a campaign", "How does billing work?"],
+    };
   }
 
   let best: { score: number; intent: Intent | null } = { score: 0, intent: null };
@@ -168,36 +284,33 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
     let score = 0;
     if (intent.any?.some((w) => tokens.includes(w.replace(/(ing|ed|s)$/g, "")))) score += 3;
     let groupHits = 0;
-    for (const group of intent.keywords) {
-      if (group.length === 0) continue;
-      if (hasAny(tokens, group)) groupHits++;
-    }
-    const nonEmpty = intent.keywords.filter((g) => g.length > 0).length;
-    if (nonEmpty > 0 && groupHits === nonEmpty) score += 5;
+    const nonEmpty = intent.keywords.filter((g) => g.length > 0);
+    for (const group of nonEmpty) if (hasAny(tokens, group)) groupHits++;
+    if (nonEmpty.length > 0 && groupHits === nonEmpty.length) score += 5;
     else if (groupHits > 0) score += groupHits;
     if (score > best.score) best = { score, intent };
   }
 
   if (!best.intent || best.score < 2) {
     return {
-      text: "I no fully catch that. Try one of these:",
-      suggestions: ["Activate my wallet", "Create a campaign", "Show my campaigns", "Talk to support"],
+      text: "I'm not sure I caught that. Try rephrasing, or pick one below:",
+      suggestions: ["What is Karbali?", "Types of campaigns", "How does tracking work?", "Activate wallet"],
     };
   }
   return best.intent.handler(ctx);
 }
 
 export function getProactiveGreeting(ctx: AssistantContext): AssistantReply {
-  const name = ctx.userName ? ", " + ctx.userName.split(/[\s@]/)[0] : "";
+  const name = ctx.userName ? " " + ctx.userName.split(/[\s@]/)[0] : "";
   if (ctx.walletActivated !== true) {
     return {
-      text: `Welcome${name}! 👋 Make we activate your wallet first so you fit run campaigns.`,
-      suggestions: ["Activate my wallet", "How much do I need?", "Maybe later"],
+      text: `Welcome${name}! Let's activate your wallet so you can start running campaigns.`,
+      suggestions: ["Activate my wallet", "How much do I need?", "What is Karbali?"],
     };
   }
   if (ctx.categoryStatus !== "active") {
     return {
-      text: `Howfar${name}! Your category dey pending. I go ping you once it dey live.`,
+      text: `Hey${name}! Your category is still pending — I'll ping you once it goes live.`,
       suggestions: ["Check category", "View campaigns"],
     };
   }

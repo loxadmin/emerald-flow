@@ -92,8 +92,8 @@ export default function KarbaliAssistant() {
                 <Sparkles className="h-3.5 w-3.5" />
               </div>
               <div className="leading-tight">
-                <p className="text-[13px] font-semibold">Kara</p>
-                <p className="text-[10px] opacity-80">Your Karbali guide</p>
+                <p className="text-[13px] font-semibold">Karbali Assistant</p>
+                <p className="text-[10px] opacity-80">Here to help you navigate</p>
               </div>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Close" className="rounded-md p-1 hover:bg-white/15">
@@ -154,7 +154,7 @@ export default function KarbaliAssistant() {
               autoFocus
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Kara anything..."
+              placeholder="Ask Karbali Assistant anything..."
               className="flex-1 px-3 py-2 text-[13px] rounded-lg bg-muted/50 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-600"
             />
             <button
