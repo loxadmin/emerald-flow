@@ -1,0 +1,342 @@
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth";
+import { useAiMode } from "@/lib/ai-mode";
+import { useTheme } from "@/lib/theme";
+import { detectIntent, getProactiveGreeting, type AssistantContext } from "@/lib/assistant-nlp";
+import Logo from "@/components/Logo";
+import { Send, Paperclip, X, ArrowUpRight, Sparkles, Sun, Moon, LogOut, ToggleRight, FileText } from "lucide-react";
+
+type Attachment = { id: string; name: string; type: string; size: number; dataUrl?: string };
+type Msg = {
+  role: "user" | "bot";
+  text: string;
+  suggestions?: string[];
+  navigateTo?: string;
+  attachments?: Attachment[];
+};
+
+const PAGE_LABELS: Record<string, string> = {
+  "/wallet": "Wallet",
+  "/dashboard": "Overview",
+  "/ads": "Campaigns",
+  "/campaigns/create": "New campaign",
+  "/websites": "Websites",
+  "/docs": "Docs",
+  "/category": "Category",
+  "/verification": "Verification",
+};
+
+export default function AiMode() {
+  const { user, signOut, walletActivated, categoryStatus, advertiserType, businessVerified } = useAuth();
+  const { setAiMode } = useAiMode();
+  const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
+  const [pending, setPending] = useState<Attachment[]>([]);
+  const [typing, setTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+
+  const ctx: AssistantContext = {
+    walletActivated,
+    categoryStatus,
+    advertiserType,
+    businessVerified,
+    pathname: location.pathname,
+    userName: user?.email ?? undefined,
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    const greet = getProactiveGreeting(ctx);
+    setMessages([{ role: "bot", text: greet.text, suggestions: greet.suggestions }]);
+    setTimeout(() => taRef.current?.focus(), 100);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, typing]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Link to="/login" className="text-sm text-primary underline">Sign in to use AI mode</Link>
+      </div>
+    );
+  }
+
+  const sendMessage = (rawText: string) => {
+    const text = rawText.trim();
+    if (!text && pending.length === 0) return;
+
+    const userMsg: Msg = {
+      role: "user",
+      text: text || (pending.length ? `Sent ${pending.length} file${pending.length > 1 ? "s" : ""}.` : ""),
+      attachments: pending.length ? pending : undefined,
+    };
+    setMessages((m) => [...m, userMsg]);
+    setInput("");
+    setPending([]);
+    setTyping(true);
+
+    setTimeout(() => {
+      let reply;
+      if (!text && userMsg.attachments?.length) {
+        reply = {
+          text: `Got your file${userMsg.attachments.length > 1 ? "s" : ""}. What should I do with ${userMsg.attachments.length > 1 ? "them" : "it"}? Verification, business document, or campaign creative?`,
+          suggestions: ["For business verification", "Campaign creative", "Just review it"],
+        };
+      } else {
+        reply = detectIntent(text, ctx);
+      }
+      setMessages((m) => [
+        ...m,
+        {
+          role: "bot",
+          text: reply.text,
+          suggestions: reply.suggestions,
+          navigateTo: reply.navigateTo,
+        },
+      ]);
+      setTyping(false);
+      if (reply.navigateTo && reply.autoNavigate) {
+        setTimeout(() => navigate(reply.navigateTo!), 900);
+      }
+      setTimeout(() => taRef.current?.focus(), 50);
+    }, 450 + Math.random() * 300);
+  };
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    const list = Array.from(files).slice(0, 5);
+    list.forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setPending((p) => [
+            ...p,
+            { id: Math.random().toString(36).slice(2), name: file.name, type: file.type, size: file.size, dataUrl: reader.result as string },
+          ]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setPending((p) => [
+          ...p,
+          { id: Math.random().toString(36).slice(2), name: file.name, type: file.type, size: file.size },
+        ]);
+      }
+    });
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const exitAiMode = () => {
+    setAiMode(false);
+    navigate("/dashboard");
+  };
+
+  const initial = (user.email || "?")[0].toUpperCase();
+
+  return (
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <header className="flex items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 lg:px-6 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-600 text-white">
+            <Logo size={14} />
+          </div>
+          <div className="leading-tight">
+            <p className="text-[13px] font-semibold flex items-center gap-1.5">
+              Karbali Assistant
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider">
+                <Sparkles className="h-2.5 w-2.5" /> AI Mode
+              </span>
+            </p>
+            <p className="text-[10.5px] text-muted-foreground">Chat to run your workspace</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={toggleTheme} className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Toggle theme">
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={exitAiMode}
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-accent transition-colors"
+            title="Switch to normal dashboard"
+          >
+            <ToggleRight className="h-3.5 w-3.5" /> Normal mode
+          </button>
+          <button onClick={signOut} className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Sign out">
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      </header>
+
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-2xl px-4 lg:px-6 py-6 space-y-5">
+          {messages.map((m, i) => (
+            <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+              <div className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ${
+                m.role === "user" ? "bg-foreground text-background" : "bg-emerald-600 text-white"
+              }`}>
+                {m.role === "user" ? initial : <Sparkles className="h-3.5 w-3.5" />}
+              </div>
+              <div className={`flex-1 space-y-2 ${m.role === "user" ? "items-end flex flex-col" : ""}`}>
+                {m.text && (
+                  <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13.5px] leading-relaxed ${
+                    m.role === "user"
+                      ? "bg-emerald-600 text-white rounded-tr-sm"
+                      : "bg-muted/60 text-foreground rounded-tl-sm"
+                  }`}>
+                    {m.text}
+                  </div>
+                )}
+
+                {m.attachments && m.attachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2 max-w-[85%]">
+                    {m.attachments.map((a) => (
+                      <div key={a.id} className="rounded-lg border border-border bg-background p-1.5 flex items-center gap-2 max-w-[200px]">
+                        {a.dataUrl ? (
+                          <img src={a.dataUrl} alt={a.name} className="h-10 w-10 rounded object-cover" />
+                        ) : (
+                          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="text-[11px] leading-tight min-w-0">
+                          <p className="truncate font-medium">{a.name}</p>
+                          <p className="text-muted-foreground">{(a.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {m.role === "bot" && m.navigateTo && (
+                  <button
+                    onClick={() => navigate(m.navigateTo!)}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-[12px] font-medium hover:bg-emerald-700 transition-colors"
+                  >
+                    Open {PAGE_LABELS[m.navigateTo] || m.navigateTo} <ArrowUpRight className="h-3 w-3" />
+                  </button>
+                )}
+
+                {m.role === "bot" && m.suggestions && m.suggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {m.suggestions.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => sendMessage(s)}
+                        className="text-[11.5px] px-2.5 py-1 rounded-full border border-emerald-600/30 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {typing && (
+            <div className="flex gap-3">
+              <div className="h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                <Sparkles className="h-3.5 w-3.5" />
+              </div>
+              <div className="px-3.5 py-2.5 rounded-2xl bg-muted/60 rounded-tl-sm">
+                <div className="flex gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "120ms" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "240ms" }} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="border-t border-border bg-background">
+        <div className="mx-auto max-w-2xl px-4 lg:px-6 py-3">
+          {pending.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {pending.map((a) => (
+                <div key={a.id} className="rounded-lg border border-border bg-muted/40 p-1.5 flex items-center gap-2 max-w-[200px]">
+                  {a.dataUrl ? (
+                    <img src={a.dataUrl} alt={a.name} className="h-8 w-8 rounded object-cover" />
+                  ) : (
+                    <div className="h-8 w-8 rounded bg-background flex items-center justify-center">
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <span className="text-[11px] truncate max-w-[100px]">{a.name}</span>
+                  <button
+                    onClick={() => setPending((p) => p.filter((x) => x.id !== a.id))}
+                    className="rounded-md p-0.5 text-muted-foreground hover:bg-background"
+                    aria-label="Remove"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendMessage(input);
+            }}
+            className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 focus-within:border-emerald-600/50 transition-colors"
+          >
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0"
+              aria-label="Attach file"
+              title="Attach image or document"
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
+              onChange={(e) => handleFiles(e.target.files)}
+              className="hidden"
+            />
+            <textarea
+              ref={taRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage(input);
+                }
+              }}
+              rows={1}
+              placeholder="Ask Karbali Assistant anything... (Shift+Enter for new line)"
+              className="flex-1 resize-none bg-transparent px-2 py-2 text-[14px] focus:outline-none placeholder:text-muted-foreground max-h-32"
+              style={{ minHeight: "36px" }}
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() && pending.length === 0}
+              className="rounded-lg bg-emerald-600 text-white p-2 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              aria-label="Send"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </form>
+          <p className="text-[10.5px] text-muted-foreground text-center mt-1.5 sm:hidden">
+            <button onClick={exitAiMode} className="underline">Switch to normal mode</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

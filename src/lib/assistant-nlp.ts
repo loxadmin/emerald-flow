@@ -14,8 +14,12 @@ export type AssistantContext = {
 export type AssistantReply = {
   text: string;
   navigateTo?: string;
+  // Only true when the assistant should auto-redirect (payment / account activation).
+  // Otherwise navigateTo is exposed as a clickable suggestion the user opts into.
+  autoNavigate?: boolean;
   suggestions?: string[];
 };
+
 
 type Intent = {
   id: string;
@@ -171,9 +175,21 @@ const INTENTS: Intent[] = [
       text: ctx.walletActivated
         ? "Your wallet is already active. You can place campaigns now."
         : join(spice(), "Taking you to the Wallet page to activate. Minimum is $10."),
-      navigateTo: ctx.walletActivated ? "/dashboard" : "/wallet",
+      navigateTo: ctx.walletActivated ? undefined : "/wallet",
+      autoNavigate: ctx.walletActivated ? false : true,
     }),
   },
+  {
+    id: "fund_wallet",
+    keywords: [["fund","topup","top","deposit","add"], ["wallet","balance","money","fund"]],
+    any: ["fund","topup","deposit"],
+    handler: () => ({
+      text: join(spice(), "Opening the wallet so you can fund via Paystack or Flutterwave."),
+      navigateTo: "/wallet",
+      autoNavigate: true,
+    }),
+  },
+
   {
     id: "create_campaign",
     keywords: [["create","start","new","launch","place","run","make"], ["campaign","ad","advert","promotion"]],
