@@ -4,6 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, RequireAuth, RequireAdmin } from "@/lib/auth";
+import { AiModeProvider } from "@/lib/ai-mode";
+import AiMode from "@/pages/AiMode";
+
 import { ThemeProvider } from "@/lib/theme";
 import MetaPixelTracker from "@/components/MetaPixelTracker";
 
@@ -65,8 +68,11 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <AiModeProvider>
             <MetaPixelTracker />
             <Routes>
+              <Route path="/ai" element={<RequireAuth><AiMode /></RequireAuth>} />
+
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
@@ -128,8 +134,10 @@ const App = () => (
 
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </AiModeProvider>
           </AuthProvider>
         </BrowserRouter>
+
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
