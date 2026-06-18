@@ -1,13 +1,16 @@
 import { ReactNode, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
+import { useAiMode } from "@/lib/ai-mode";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
   Menu, X, Lock, AlertCircle, Megaphone, Globe, ChevronRight,
   Sparkles, ShieldCheck, Package, ClipboardList,
 } from "lucide-react";
+
 import Logo from "@/components/Logo";
 import KarbaliAssistant from "@/components/KarbaliAssistant";
 
@@ -45,8 +48,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return true;
   });
   const { theme, toggleTheme } = useTheme();
+  const { setAiMode } = useAiMode();
+  const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const enableAiMode = () => {
+    setAiMode(true);
+    navigate("/ai");
+  };
+
 
   const isWalletNotActivated = walletActivated !== true;
   const isCategoryInactive = categoryStatus === "waiting_list";
@@ -222,6 +233,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <span className="text-sm font-semibold tracking-tight">Karbali</span>
         </Link>
         <div className="flex items-center gap-1">
+          <button
+            onClick={enableAiMode}
+            className="rounded-md p-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+            aria-label="AI mode"
+            title="AI mode"
+          >
+            <Sparkles className="h-4 w-4" />
+          </button>
           <Link
             to="/wallet"
             className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -229,6 +248,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           >
             <Wallet className="h-4 w-4" />
           </Link>
+
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -267,6 +287,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </span>
           </nav>
           <div className="flex items-center gap-2">
+            <button
+              onClick={enableAiMode}
+              className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-1.5 text-xs font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+              title="Switch to AI chat mode"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              AI mode
+            </button>
             <Link
               to="/campaigns/create"
               className="hidden xl:inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
@@ -275,6 +303,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               Launch a campaign
             </Link>
           </div>
+
         </header>
 
         <main className="flex-1 px-4 pt-20 pb-10 lg:px-10 lg:pt-8 lg:pb-14 min-w-0">
