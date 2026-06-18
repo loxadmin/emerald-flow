@@ -233,6 +233,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <span className="text-sm font-semibold tracking-tight">Karbali</span>
         </Link>
         <div className="flex items-center gap-1">
+          <button
+            onClick={enableAiMode}
+            className="rounded-md p-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+            aria-label="AI mode"
+            title="AI mode"
+          >
+            <Sparkles className="h-4 w-4" />
+          </button>
           <Link
             to="/wallet"
             className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -240,6 +248,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           >
             <Wallet className="h-4 w-4" />
           </Link>
+
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
