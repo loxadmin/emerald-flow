@@ -11,6 +11,7 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, ShoppingBag, Download, RotateCcw } from "lucide-react";
 import JSZip from "jszip";
+import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
 
@@ -39,6 +40,7 @@ export default function CreateCommerceCampaign() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState("");
+  const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
 
   const syncDraftUrl = (draftId: string, nextStep: number) => {
     const currentStep = Number(stepParam ?? "0");
@@ -118,6 +120,18 @@ export default function CreateCommerceCampaign() {
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, draftParam, stepParam]);
+
+  useEffect(() => {
+    if (aiPrefillApplied || draftParam || campaignId) return;
+    const prefill = loadAiCampaignPrefill();
+    if (prefill?.type !== "commerce") return;
+    if (prefill.campaignName) setCampaignName(prefill.campaignName);
+    if (prefill.targetSales) setTargetSales(prefill.targetSales);
+    if (prefill.integrationType) setIntegrationType(prefill.integrationType);
+    clearAiCampaignPrefill();
+    setAiPrefillApplied(true);
+    toast.success("AI campaign details applied");
+  }, [aiPrefillApplied, draftParam, campaignId]);
 
   useEffect(() => {
     if (!selectedWebsiteId) return;
