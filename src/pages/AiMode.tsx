@@ -157,6 +157,7 @@ export default function AiMode() {
   const [input, setInput] = useState("");
   const [pending, setPending] = useState<Attachment[]>([]);
   const [typing, setTyping] = useState(false);
+  const [campaignFlow, setCampaignFlow] = useState<CampaignFlow | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -205,15 +206,31 @@ export default function AiMode() {
     setTyping(true);
 
     setTimeout(() => {
-      let reply;
+      let reply: Msg & { autoNavigate?: boolean };
+      let nextFlow = campaignFlow;
       if (!text && userMsg.attachments?.length) {
         reply = {
+          role: "bot",
           text: `Got your file${userMsg.attachments.length > 1 ? "s" : ""}. What should I do with ${userMsg.attachments.length > 1 ? "them" : "it"}? Verification, business document, or campaign creative?`,
           suggestions: ["For business verification", "Campaign creative", "Just review it"],
         };
+      } else if (campaignFlow) {
+        const result = nextCampaignPrompt(campaignFlow, text);
+        nextFlow = result.flow;
+        reply = result.reply;
       } else {
-        reply = detectIntent(text, ctx);
+        const detected = detectIntent(text, ctx);
+        if (detected.action === "start_campaign_flow") {
+          const startFlow: CampaignFlow = { type: detected.campaignType ?? null, data: detected.campaignType ? { type: detected.campaignType, createdAt: Date.now() } : {}, step: detected.campaignType ? "name" : "type" };
+          nextFlow = startFlow;
+          reply = detected.campaignType
+            ? { role: "bot", text: `Good. What should we call this ${detected.campaignType} campaign?` }
+            : { role: "bot", text: detected.text, suggestions: detected.suggestions };
+        } else {
+          reply = { role: "bot", text: detected.text, suggestions: detected.suggestions, navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };
+        }
       }
+      setCampaignFlow(nextFlow);
       setMessages((m) => [
         ...m,
         {
