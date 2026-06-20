@@ -83,10 +83,35 @@ function hasAny(tokens: string[], group: string[]): boolean {
 
 // Light naija seasoning — sparing, used only sometimes for warmth. Clean English otherwise.
 const spice = () => {
-  const opts = ["", "", "", "Sharp!", "Oya,", "Got you.", "Cool —", "Alright,"];
+  const opts = ["", "", "", "Sharp!", "Oya,", "Got you.", "Cool.", "Alright,"];
   return opts[Math.floor(Math.random() * opts.length)];
 };
 const join = (...p: string[]) => p.filter(Boolean).join(" ").trim();
+
+const campaignFlowReply = (ctx: AssistantContext, input: string, tokens: string[]): AssistantReply => {
+  const type = inferCampaignType(tokens);
+  if (ctx.walletActivated !== true) {
+    return {
+      text: "Activate your wallet first, then I can set up the campaign with you. Minimum is $10.",
+      navigateTo: "/wallet",
+      autoNavigate: true,
+      suggestions: ["Activate wallet", "How much do I need?"],
+    };
+  }
+  if (!type) {
+    return {
+      text: "I can set it up in chat. Which campaign type do you want?",
+      action: "start_campaign_flow",
+      campaignType: null,
+      suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"],
+    };
+  }
+  return {
+    text: `Good. Let's build your ${type} campaign here.`,
+    action: "start_campaign_flow",
+    campaignType: type,
+  };
+};
 
 const INTENTS: Intent[] = [
   // ===== Platform knowledge =====
