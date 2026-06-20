@@ -775,7 +775,7 @@ new KarbaliTracking();`;
               {[
                 { l: "Campaign Name", v: campaignName },
                 { l: "Platform", v: platformType === "mobile_app" ? "Mobile App" : "Website" },
-                { l: "Website", v: selectedDomain || websites[0]?.domain || "—" },
+                { l: "Website", v: selectedDomain || websites[0]?.domain || "Not selected" },
                 ...(platformType === "mobile_app" && appLink ? [{ l: "App Link", v: appLink }] : []),
                 { l: "Type", v: isPartnership ? "External Referral" : integrationType === "wordpress" ? "WordPress" : "Custom API" },
                 ...(isPartnership ? [] : [{ l: "Verified", v: verified ? "Yes ✓" : "Pending" }]),
