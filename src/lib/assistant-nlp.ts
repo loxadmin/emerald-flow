@@ -118,7 +118,7 @@ const INTENTS: Intent[] = [
   {
     id: "what_is_karbali",
     keywords: [["karbali","platform","system","app","product"], ["what","explain","about","tell","describe"]],
-    any: [],
+    any: ["karbali"],
     handler: () => ({
       text: "Karbali is a Nigerian performance ad platform. You fund a wallet, run campaigns (engagement, performance, or commerce), and only pay for real results — clicks, conversions, or sales.",
       suggestions: ["Types of campaigns", "How does billing work?", "How is tracking done?"],
@@ -126,7 +126,7 @@ const INTENTS: Intent[] = [
   },
   {
     id: "campaign_types",
-    keywords: [["type","kind","category","option","difference"], ["campaign","ad","advert"]],
+    keywords: [["type","kind","category","option","difference","which","choose"], ["campaign","ad","advert"]],
     handler: () => ({
       text: "Three campaign types: Engagement (media, quizzes — users earn points), Performance (pay per click or conversion), and Commerce (pay flat fee + commission on sales).",
       suggestions: ["What is Commerce?", "What is Engagement?", "Create a campaign"],
@@ -246,29 +246,14 @@ const INTENTS: Intent[] = [
 
   {
     id: "create_campaign",
-    keywords: [["create","start","new","launch","place","run","make"], ["campaign","ad","advert","promotion"]],
-    handler: (ctx) => {
-      if (ctx.walletActivated !== true) {
-        return {
-          text: "Activate your wallet first, then we launch. Minimum is $10.",
-          navigateTo: "/wallet",
-          suggestions: ["Activate my wallet", "How much do I need?"],
-        };
-      }
-      return {
-        text: join(spice(), "Let's set up a new campaign."),
-        navigateTo: "/campaigns/create",
-        suggestions: ["Help me fill the form", "What's a good budget?"],
-      };
-    },
+    keywords: [["create","start","new","launch","place","run","make","setup","build"], ["campaign","ad","advert","promotion"]],
+    any: ["campaign"],
+    handler: campaignFlowReply,
   },
   {
     id: "fill_campaign_form",
-    keywords: [["fill","help","guide","walk"], ["form","campaign","field","step"]],
-    handler: () => ({
-      text: "Quick rundown: pick a clear title, paste your destination URL, set daily budget, then choose targeting. Ask about any field and I'll explain it.",
-      suggestions: ["What's a good budget?", "What is CPA?", "Targeting tips"],
-    }),
+    keywords: [["fill","help","guide","walk","complete","assist"], ["form","campaign","field","step"]],
+    handler: campaignFlowReply,
   },
   {
     id: "wallet_view",
@@ -367,7 +352,7 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
       suggestions: ["What is Karbali?", "Types of campaigns", "How does tracking work?", "Activate wallet"],
     };
   }
-  return best.intent.handler(ctx);
+  return best.intent.handler(ctx, input, tokens);
 }
 
 export function getProactiveGreeting(ctx: AssistantContext): AssistantReply {
