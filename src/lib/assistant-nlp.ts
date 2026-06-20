@@ -81,7 +81,7 @@ function hasAny(tokens: string[], group: string[]): boolean {
   return tokens.some((t) => norm.includes(t));
 }
 
-// Light naija seasoning — sparing, used only sometimes for warmth. Clean English otherwise.
+// Light naija seasoning, sparing and clean English otherwise.
 const spice = () => {
   const opts = ["", "", "", "Sharp!", "Oya,", "Got you.", "Cool.", "Alright,"];
   return opts[Math.floor(Math.random() * opts.length)];
@@ -120,7 +120,7 @@ const INTENTS: Intent[] = [
     keywords: [["karbali","platform","system","app","product"], ["what","explain","about","tell","describe"]],
     any: ["karbali"],
     handler: () => ({
-      text: "Karbali is a Nigerian performance ad platform. You fund a wallet, run campaigns (engagement, performance, or commerce), and only pay for real results — clicks, conversions, or sales.",
+      text: "Karbali is a Nigerian performance ad platform. You fund a wallet, run campaigns (engagement, performance, or commerce), and only pay for real results like clicks, conversions, or sales.",
       suggestions: ["Types of campaigns", "How does billing work?", "How is tracking done?"],
     }),
   },
@@ -128,7 +128,7 @@ const INTENTS: Intent[] = [
     id: "campaign_types",
     keywords: [["type","kind","category","option","difference","which","choose"], ["campaign","ad","advert"]],
     handler: () => ({
-      text: "Three campaign types: Engagement (media, quizzes — users earn points), Performance (pay per click or conversion), and Commerce (pay flat fee + commission on sales).",
+      text: "Three campaign types: Engagement (media and quizzes where users earn points), Performance (pay per click or conversion), and Commerce (flat fee plus commission on sales).",
       suggestions: ["What is Commerce?", "What is Engagement?", "Create a campaign"],
     }),
   },
@@ -164,7 +164,7 @@ const INTENTS: Intent[] = [
     keywords: [["cpa","cpc","difference"], []],
     any: ["cpa","cpc"],
     handler: () => ({
-      text: "CPC = Cost Per Click — you pay each time someone clicks. CPA = Cost Per Action — you pay only when a real action (signup, purchase) happens. CPA costs more per event but is lower risk.",
+      text: "CPC means Cost Per Click: you pay per click. CPA means Cost Per Action: you pay only when a signup, purchase, or other action happens. CPA costs more per event but carries lower risk.",
     }),
   },
   {
@@ -198,7 +198,7 @@ const INTENTS: Intent[] = [
     keywords: [["pay","payment","fund","topup","deposit"], ["method","option","how","gateway"]],
     any: ["paystack","flutterwave"],
     handler: () => ({
-      text: "Fund through Paystack or Flutterwave — card, bank transfer, or your dedicated virtual account. Funds land in your wallet instantly after confirmation.",
+      text: "Fund through Paystack or Flutterwave using card, bank transfer, or your dedicated virtual account. Funds land in your wallet after confirmation.",
       suggestions: ["Open wallet"],
     }),
   },
@@ -215,7 +215,7 @@ const INTENTS: Intent[] = [
     id: "website_verify",
     keywords: [["verify","add","connect"], ["website","domain","site"]],
     handler: () => ({
-      text: "Add your website, then verify via OTP or DNS. Once verified the domain locks — you can't change it later, so confirm before submitting.",
+      text: "Add your website, then verify via OTP or DNS. Once verified the domain locks, so confirm it before submitting.",
       navigateTo: "/websites",
     }),
   },
@@ -313,14 +313,14 @@ const INTENTS: Intent[] = [
     id: "thanks",
     keywords: [["thank","appreciate","bless","grateful"], []],
     any: ["thanks","thank"],
-    handler: () => ({ text: "Anytime — I'm right here whenever you need me." }),
+    handler: () => ({ text: "Anytime. I'm right here whenever you need me." }),
   },
   {
     id: "support",
     keywords: [["talk","contact","support","human","agent"], []],
     any: ["support","human"],
     handler: () => ({
-      text: "Ask me anything first — I can usually help. If you still need a human, reach support@karbali.com.",
+      text: "Ask me anything first. I can usually help. If you still need a human, reach support@karbali.com.",
     }),
   },
 ];
@@ -329,7 +329,7 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
   const tokens = normalize(input);
   if (!tokens.length) {
     return {
-      text: "Ask me anything about Karbali — campaigns, wallet, tracking, fees.",
+      text: "Ask me anything about Karbali: campaigns, wallet, tracking, fees.",
       suggestions: ["What is Karbali?", "Create a campaign", "How does billing work?"],
     };
   }
@@ -365,7 +365,7 @@ export function getProactiveGreeting(ctx: AssistantContext): AssistantReply {
   }
   if (ctx.categoryStatus !== "active") {
     return {
-      text: `Hey${name}! Your category is still pending — I'll ping you once it goes live.`,
+      text: `Hey${name}! Your category is still pending. I'll ping you once it goes live.`,
       suggestions: ["Check category", "View campaigns"],
     };
   }
