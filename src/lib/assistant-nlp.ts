@@ -1,3 +1,5 @@
+import type { AiCampaignType } from "@/lib/ai-campaign-prefill";
+
 // Inbuilt Karbali Assistant NLP. No external APIs.
 // Rule-based: tokenization, light stemming, synonym groups, weighted scoring,
 // plus a knowledge base so it can actually answer questions about the platform.
@@ -14,6 +16,8 @@ export type AssistantContext = {
 export type AssistantReply = {
   text: string;
   navigateTo?: string;
+  action?: "start_campaign_flow";
+  campaignType?: AiCampaignType | null;
   // Only true when the assistant should auto-redirect (payment / account activation).
   // Otherwise navigateTo is exposed as a clickable suggestion the user opts into.
   autoNavigate?: boolean;
@@ -27,16 +31,31 @@ type Intent = {
   keywords: string[][];
   // Strong single-word triggers (any one of these alone bumps the score).
   any?: string[];
-  handler: (ctx: AssistantContext) => AssistantReply;
+  handler: (ctx: AssistantContext, input: string, tokens: string[]) => AssistantReply;
 };
 
 const STOPWORDS = new Set([
   "the","a","an","is","i","to","my","me","of","for","on","in","at","do",
   "can","you","please","and","or","with","this","that","be","am","are","it",
-  "what","whats","tell","about","explain","mean","means","there","here","does",
+  "there","here",
   "should","would","will","have","has","had","was","were","into","from","by",
   "if","so","as","but","then","also","too","not","no","yes","ok","okay",
 ]);
+
+const TYPO_FIXES: Record<string, string> = {
+  camaign: "campaign",
+  camaigns: "campaign",
+  campain: "campaign",
+  campains: "campaign",
+  advertis: "advertise",
+  advertiz: "advertise",
+  ecommerce: "commerce",
+  ecom: "commerce",
+  shopify: "commerce",
+  client: "customer",
+  customers: "customer",
+  costumer: "customer",
+};
 
 function normalize(text: string): string[] {
   return text
@@ -44,7 +63,17 @@ function normalize(text: string): string[] {
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter((w) => w && !STOPWORDS.has(w))
-    .map((w) => w.replace(/(ing|ed|s)$/g, ""));
+    .map((w) => {
+      const stem = w.replace(/(ing|ed|s)$/g, "");
+      return TYPO_FIXES[stem] || TYPO_FIXES[w] || stem;
+    });
+}
+
+function inferCampaignType(tokens: string[]): AiCampaignType | null {
+  if (hasAny(tokens, ["commerce", "store", "shop", "sale", "purchase", "woocommerce", "product"])) return "commerce";
+  if (hasAny(tokens, ["engagement", "music", "video", "viewer", "views", "subscriber", "listener", "youtube"])) return "engagement";
+  if (hasAny(tokens, ["performance", "cpa", "cpc", "conversion", "signup", "download", "lead", "app"])) return "performance";
+  return null;
 }
 
 function hasAny(tokens: string[], group: string[]): boolean {
