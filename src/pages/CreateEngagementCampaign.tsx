@@ -398,7 +398,7 @@ export default function CreateEngagementCampaign() {
             {hasViewer && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">
-                  Target {viewerLabel}s (min {MIN_INTERACTIONS.toLocaleString()}) — ${viewerRate.toFixed(2)} each *
+                  Target {viewerLabel}s (min {MIN_INTERACTIONS.toLocaleString()}) - ${viewerRate.toFixed(2)} each *
                 </Label>
                 <Input
                   type="number"
@@ -412,7 +412,7 @@ export default function CreateEngagementCampaign() {
             {hasSubscriber && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">
-                  Target subscribers (min {MIN_INTERACTIONS.toLocaleString()}) — ${subscriberRate.toFixed(2)} each *
+                  Target subscribers (min {MIN_INTERACTIONS.toLocaleString()}) - ${subscriberRate.toFixed(2)} each *
                 </Label>
                 <Input
                   type="number"
