@@ -127,6 +127,7 @@ const INTENTS: Intent[] = [
   {
     id: "campaign_types",
     keywords: [["type","kind","category","option","difference","which","choose"], ["campaign","ad","advert"]],
+    any: ["types", "options"],
     handler: () => ({
       text: "Three campaign types: Engagement (media and quizzes where users earn points), Performance (pay per click or conversion), and Commerce (flat fee plus commission on sales).",
       suggestions: ["What is Commerce?", "What is Engagement?", "Create a campaign"],
@@ -203,6 +204,31 @@ const INTENTS: Intent[] = [
     }),
   },
   {
+    id: "billing_how",
+    keywords: [["billing","cost","charge","escrow","deduct","pay"], ["work","how","explain"]],
+    any: ["billing", "escrow", "deduct"],
+    handler: () => ({
+      text: "Karbali uses escrow. When you submit a campaign, the cost is held from your wallet first. Spend is released only as valid campaign results happen.",
+      suggestions: ["Minimum funding", "Create a campaign", "Open wallet"],
+    }),
+  },
+  {
+    id: "campaign_process",
+    keywords: [["process","steps","flow","how"], ["campaign","ad","launch","approve"]],
+    handler: () => ({
+      text: "Campaign flow is simple: activate wallet, add/verify website, choose campaign type, set goals, install tracking if needed, submit for review, then admin approval.",
+      suggestions: ["Create a campaign", "Setup tracking", "Add website"],
+    }),
+  },
+  {
+    id: "customer_acquisition",
+    keywords: [["get","bring","find","acquire","gain"], ["customer","client","buyer","sales","users","traffic"]],
+    handler: () => ({
+      text: "For ecommerce, start with Commerce ads if you want sales, or Performance ads if you want signups/leads first. Karbali tracks results so you avoid paying for empty exposure.",
+      suggestions: ["Create commerce campaign", "Create performance campaign", "CPA vs CPC"],
+    }),
+  },
+  {
     id: "verify_business",
     keywords: [["verify","verification","approve","kyc","business"], []],
     any: ["verification","kyc"],
@@ -247,7 +273,6 @@ const INTENTS: Intent[] = [
   {
     id: "create_campaign",
     keywords: [["create","start","new","launch","place","run","make","setup","build"], ["campaign","ad","advert","promotion"]],
-    any: ["campaign"],
     handler: campaignFlowReply,
   },
   {
