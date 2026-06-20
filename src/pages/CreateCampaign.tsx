@@ -13,6 +13,7 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertCircle, Handshake, Globe, RotateCcw, Smartphone } from "lucide-react";
 import JSZip from "jszip";
+import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 
 interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
 interface Website { id: string; domain: string; is_verified: boolean; }
@@ -61,6 +62,7 @@ export default function CreateCampaign() {
 
   // Draft loading
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
 
   const syncDraftUrl = (draftId: string, nextStep: number) => {
     const currentStep = Number(stepParam ?? "0");
@@ -171,6 +173,19 @@ export default function CreateCampaign() {
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, draftParam, stepParam]);
+
+  useEffect(() => {
+    if (!draftLoaded || aiPrefillApplied || draftParam || campaignId) return;
+    const prefill = loadAiCampaignPrefill();
+    if (prefill?.type !== "performance") return;
+    if (prefill.campaignName) setCampaignName(prefill.campaignName);
+    if (prefill.targetUsers) setTargetUsers(prefill.targetUsers);
+    if (prefill.milestones?.length) setMilestones(prefill.milestones.filter((m) => allowedEvents.includes(m)));
+    if (prefill.integrationType) setIntegrationType(prefill.integrationType);
+    clearAiCampaignPrefill();
+    setAiPrefillApplied(true);
+    toast.success("AI campaign details applied");
+  }, [draftLoaded, aiPrefillApplied, draftParam, campaignId, allowedEvents]);
 
   useEffect(() => {
     if (!selectedWebsiteId) return;
@@ -760,7 +775,7 @@ new KarbaliTracking();`;
               {[
                 { l: "Campaign Name", v: campaignName },
                 { l: "Platform", v: platformType === "mobile_app" ? "Mobile App" : "Website" },
-                { l: "Website", v: selectedDomain || websites[0]?.domain || "—" },
+                { l: "Website", v: selectedDomain || websites[0]?.domain || "Not selected" },
                 ...(platformType === "mobile_app" && appLink ? [{ l: "App Link", v: appLink }] : []),
                 { l: "Type", v: isPartnership ? "External Referral" : integrationType === "wordpress" ? "WordPress" : "Custom API" },
                 ...(isPartnership ? [] : [{ l: "Verified", v: verified ? "Yes ✓" : "Pending" }]),

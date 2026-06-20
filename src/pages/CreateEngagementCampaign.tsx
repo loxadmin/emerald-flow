@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign, Eye, UserPlus, Plus, Trash2 } from "lucide-react";
+import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 
 type MediaType = "music" | "video";
 type EventType = "viewer" | "subscriber";
@@ -45,6 +46,7 @@ export default function CreateEngagementCampaign() {
   const [targetViewers, setTargetViewers] = useState("200");
   const [targetSubscribers, setTargetSubscribers] = useState("200");
   const [transcribing, setTranscribing] = useState(false);
+  const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -52,6 +54,26 @@ export default function CreateEngagementCampaign() {
       .then(({ data }) => { if (data) setWalletBalance(Number(data.balance)); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  useEffect(() => {
+    if (aiPrefillApplied) return;
+    const prefill = loadAiCampaignPrefill();
+    if (prefill?.type !== "engagement") return;
+    if (prefill.mediaType) setMediaType(prefill.mediaType);
+    if (prefill.eventTypes?.length) setEventTypes(prefill.eventTypes as EventType[]);
+    if (prefill.campaignName) setCampaignName(prefill.campaignName);
+    if (prefill.mediaLink) setMediaLink(prefill.mediaLink);
+    if (prefill.musicLinks?.length) setMusicLinks(prefill.musicLinks);
+    if (prefill.transcription) setTranscription(prefill.transcription);
+    if (prefill.transcriptionConfirmed) setTranscriptionConfirmed(true);
+    if (prefill.targetViewers) setTargetViewers(prefill.targetViewers);
+    if (prefill.targetSubscribers) setTargetSubscribers(prefill.targetSubscribers);
+    const hasTranscriptStep = prefill.mediaType === "music" || prefill.eventTypes?.includes("viewer");
+    setStep(hasTranscriptStep ? (prefill.mediaType === "music" ? 3 : 4) : 4);
+    clearAiCampaignPrefill();
+    setAiPrefillApplied(true);
+    toast.success("AI campaign details applied");
+  }, [aiPrefillApplied]);
 
   // For music: single event implicit ("listener")
   const isMusic = mediaType === "music";
@@ -376,7 +398,7 @@ export default function CreateEngagementCampaign() {
             {hasViewer && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">
-                  Target {viewerLabel}s (min {MIN_INTERACTIONS.toLocaleString()}) — ${viewerRate.toFixed(2)} each *
+                  Target {viewerLabel}s (min {MIN_INTERACTIONS.toLocaleString()}) - ${viewerRate.toFixed(2)} each *
                 </Label>
                 <Input
                   type="number"
@@ -390,7 +412,7 @@ export default function CreateEngagementCampaign() {
             {hasSubscriber && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">
-                  Target subscribers (min {MIN_INTERACTIONS.toLocaleString()}) — ${subscriberRate.toFixed(2)} each *
+                  Target subscribers (min {MIN_INTERACTIONS.toLocaleString()}) - ${subscriberRate.toFixed(2)} each *
                 </Label>
                 <Input
                   type="number"

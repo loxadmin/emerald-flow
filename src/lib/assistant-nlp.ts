@@ -1,3 +1,5 @@
+import type { AiCampaignType } from "@/lib/ai-campaign-prefill";
+
 // Inbuilt Karbali Assistant NLP. No external APIs.
 // Rule-based: tokenization, light stemming, synonym groups, weighted scoring,
 // plus a knowledge base so it can actually answer questions about the platform.
@@ -14,6 +16,8 @@ export type AssistantContext = {
 export type AssistantReply = {
   text: string;
   navigateTo?: string;
+  action?: "start_campaign_flow";
+  campaignType?: AiCampaignType | null;
   // Only true when the assistant should auto-redirect (payment / account activation).
   // Otherwise navigateTo is exposed as a clickable suggestion the user opts into.
   autoNavigate?: boolean;
@@ -27,16 +31,31 @@ type Intent = {
   keywords: string[][];
   // Strong single-word triggers (any one of these alone bumps the score).
   any?: string[];
-  handler: (ctx: AssistantContext) => AssistantReply;
+  handler: (ctx: AssistantContext, input: string, tokens: string[]) => AssistantReply;
 };
 
 const STOPWORDS = new Set([
   "the","a","an","is","i","to","my","me","of","for","on","in","at","do",
   "can","you","please","and","or","with","this","that","be","am","are","it",
-  "what","whats","tell","about","explain","mean","means","there","here","does",
+  "there","here",
   "should","would","will","have","has","had","was","were","into","from","by",
   "if","so","as","but","then","also","too","not","no","yes","ok","okay",
 ]);
+
+const TYPO_FIXES: Record<string, string> = {
+  camaign: "campaign",
+  camaigns: "campaign",
+  campain: "campaign",
+  campains: "campaign",
+  advertis: "advertise",
+  advertiz: "advertise",
+  ecommerce: "commerce",
+  ecom: "commerce",
+  shopify: "commerce",
+  client: "customer",
+  customers: "customer",
+  costumer: "customer",
+};
 
 function normalize(text: string): string[] {
   return text
@@ -44,7 +63,17 @@ function normalize(text: string): string[] {
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter((w) => w && !STOPWORDS.has(w))
-    .map((w) => w.replace(/(ing|ed|s)$/g, ""));
+    .map((w) => {
+      const stem = w.replace(/(ing|ed|s)$/g, "");
+      return TYPO_FIXES[stem] || TYPO_FIXES[w] || stem;
+    });
+}
+
+function inferCampaignType(tokens: string[]): AiCampaignType | null {
+  if (hasAny(tokens, ["commerce", "store", "shop", "sale", "purchase", "woocommerce", "product"])) return "commerce";
+  if (hasAny(tokens, ["engagement", "music", "video", "viewer", "views", "subscriber", "listener", "youtube"])) return "engagement";
+  if (hasAny(tokens, ["performance", "cpa", "cpc", "conversion", "signup", "download", "lead", "app"])) return "performance";
+  return null;
 }
 
 function hasAny(tokens: string[], group: string[]): boolean {
@@ -52,29 +81,55 @@ function hasAny(tokens: string[], group: string[]): boolean {
   return tokens.some((t) => norm.includes(t));
 }
 
-// Light naija seasoning — sparing, used only sometimes for warmth. Clean English otherwise.
+// Light naija seasoning, sparing and clean English otherwise.
 const spice = () => {
-  const opts = ["", "", "", "Sharp!", "Oya,", "Got you.", "Cool —", "Alright,"];
+  const opts = ["", "", "", "Sharp!", "Oya,", "Got you.", "Cool.", "Alright,"];
   return opts[Math.floor(Math.random() * opts.length)];
 };
 const join = (...p: string[]) => p.filter(Boolean).join(" ").trim();
+
+const campaignFlowReply = (ctx: AssistantContext, input: string, tokens: string[]): AssistantReply => {
+  const type = inferCampaignType(tokens);
+  if (ctx.walletActivated !== true) {
+    return {
+      text: "Activate your wallet first, then I can set up the campaign with you. Minimum is $10.",
+      navigateTo: "/wallet",
+      autoNavigate: true,
+      suggestions: ["Activate wallet", "How much do I need?"],
+    };
+  }
+  if (!type) {
+    return {
+      text: "I can set it up in chat. Which campaign type do you want?",
+      action: "start_campaign_flow",
+      campaignType: null,
+      suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"],
+    };
+  }
+  return {
+    text: `Good. Let's build your ${type} campaign here.`,
+    action: "start_campaign_flow",
+    campaignType: type,
+  };
+};
 
 const INTENTS: Intent[] = [
   // ===== Platform knowledge =====
   {
     id: "what_is_karbali",
     keywords: [["karbali","platform","system","app","product"], ["what","explain","about","tell","describe"]],
-    any: [],
+    any: ["karbali"],
     handler: () => ({
-      text: "Karbali is a Nigerian performance ad platform. You fund a wallet, run campaigns (engagement, performance, or commerce), and only pay for real results — clicks, conversions, or sales.",
+      text: "Karbali is a Nigerian performance ad platform. You fund a wallet, run campaigns (engagement, performance, or commerce), and only pay for real results like clicks, conversions, or sales.",
       suggestions: ["Types of campaigns", "How does billing work?", "How is tracking done?"],
     }),
   },
   {
     id: "campaign_types",
-    keywords: [["type","kind","category","option","difference"], ["campaign","ad","advert"]],
+    keywords: [["type","kind","category","option","difference","which","choose"], ["campaign","ad","advert"]],
+    any: ["types", "options"],
     handler: () => ({
-      text: "Three campaign types: Engagement (media, quizzes — users earn points), Performance (pay per click or conversion), and Commerce (pay flat fee + commission on sales).",
+      text: "Three campaign types: Engagement (media and quizzes where users earn points), Performance (pay per click or conversion), and Commerce (flat fee plus commission on sales).",
       suggestions: ["What is Commerce?", "What is Engagement?", "Create a campaign"],
     }),
   },
@@ -110,7 +165,7 @@ const INTENTS: Intent[] = [
     keywords: [["cpa","cpc","difference"], []],
     any: ["cpa","cpc"],
     handler: () => ({
-      text: "CPC = Cost Per Click — you pay each time someone clicks. CPA = Cost Per Action — you pay only when a real action (signup, purchase) happens. CPA costs more per event but is lower risk.",
+      text: "CPC means Cost Per Click: you pay per click. CPA means Cost Per Action: you pay only when a signup, purchase, or other action happens. CPA costs more per event but carries lower risk.",
     }),
   },
   {
@@ -144,8 +199,33 @@ const INTENTS: Intent[] = [
     keywords: [["pay","payment","fund","topup","deposit"], ["method","option","how","gateway"]],
     any: ["paystack","flutterwave"],
     handler: () => ({
-      text: "Fund through Paystack or Flutterwave — card, bank transfer, or your dedicated virtual account. Funds land in your wallet instantly after confirmation.",
+      text: "Fund through Paystack or Flutterwave using card, bank transfer, or your dedicated virtual account. Funds land in your wallet after confirmation.",
       suggestions: ["Open wallet"],
+    }),
+  },
+  {
+    id: "billing_how",
+    keywords: [["billing","cost","charge","escrow","deduct","pay"], ["work","how","explain"]],
+    any: ["billing", "escrow", "deduct"],
+    handler: () => ({
+      text: "Karbali uses escrow. When you submit a campaign, the cost is held from your wallet first. Spend is released only as valid campaign results happen.",
+      suggestions: ["Minimum funding", "Create a campaign", "Open wallet"],
+    }),
+  },
+  {
+    id: "campaign_process",
+    keywords: [["process","steps","flow","how"], ["campaign","ad","launch","approve"]],
+    handler: () => ({
+      text: "Campaign flow is simple: activate wallet, add/verify website, choose campaign type, set goals, install tracking if needed, submit for review, then admin approval.",
+      suggestions: ["Create a campaign", "Setup tracking", "Add website"],
+    }),
+  },
+  {
+    id: "customer_acquisition",
+    keywords: [["get","bring","find","acquire","gain"], ["customer","client","buyer","sales","users","traffic"]],
+    handler: () => ({
+      text: "For ecommerce, start with Commerce ads if you want sales, or Performance ads if you want signups/leads first. Karbali tracks results so you avoid paying for empty exposure.",
+      suggestions: ["Create commerce campaign", "Create performance campaign", "CPA vs CPC"],
     }),
   },
   {
@@ -161,7 +241,7 @@ const INTENTS: Intent[] = [
     id: "website_verify",
     keywords: [["verify","add","connect"], ["website","domain","site"]],
     handler: () => ({
-      text: "Add your website, then verify via OTP or DNS. Once verified the domain locks — you can't change it later, so confirm before submitting.",
+      text: "Add your website, then verify via OTP or DNS. Once verified the domain locks, so confirm it before submitting.",
       navigateTo: "/websites",
     }),
   },
@@ -192,29 +272,13 @@ const INTENTS: Intent[] = [
 
   {
     id: "create_campaign",
-    keywords: [["create","start","new","launch","place","run","make"], ["campaign","ad","advert","promotion"]],
-    handler: (ctx) => {
-      if (ctx.walletActivated !== true) {
-        return {
-          text: "Activate your wallet first, then we launch. Minimum is $10.",
-          navigateTo: "/wallet",
-          suggestions: ["Activate my wallet", "How much do I need?"],
-        };
-      }
-      return {
-        text: join(spice(), "Let's set up a new campaign."),
-        navigateTo: "/campaigns/create",
-        suggestions: ["Help me fill the form", "What's a good budget?"],
-      };
-    },
+    keywords: [["create","start","new","launch","place","run","make","setup","build"], ["campaign","ad","advert","promotion"]],
+    handler: campaignFlowReply,
   },
   {
     id: "fill_campaign_form",
-    keywords: [["fill","help","guide","walk"], ["form","campaign","field","step"]],
-    handler: () => ({
-      text: "Quick rundown: pick a clear title, paste your destination URL, set daily budget, then choose targeting. Ask about any field and I'll explain it.",
-      suggestions: ["What's a good budget?", "What is CPA?", "Targeting tips"],
-    }),
+    keywords: [["fill","help","guide","walk","complete","assist"], ["form","campaign","field","step"]],
+    handler: campaignFlowReply,
   },
   {
     id: "wallet_view",
@@ -274,14 +338,14 @@ const INTENTS: Intent[] = [
     id: "thanks",
     keywords: [["thank","appreciate","bless","grateful"], []],
     any: ["thanks","thank"],
-    handler: () => ({ text: "Anytime — I'm right here whenever you need me." }),
+    handler: () => ({ text: "Anytime. I'm right here whenever you need me." }),
   },
   {
     id: "support",
     keywords: [["talk","contact","support","human","agent"], []],
     any: ["support","human"],
     handler: () => ({
-      text: "Ask me anything first — I can usually help. If you still need a human, reach support@karbali.com.",
+      text: "Ask me anything first. I can usually help. If you still need a human, reach support@karbali.com.",
     }),
   },
 ];
@@ -290,7 +354,7 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
   const tokens = normalize(input);
   if (!tokens.length) {
     return {
-      text: "Ask me anything about Karbali — campaigns, wallet, tracking, fees.",
+      text: "Ask me anything about Karbali: campaigns, wallet, tracking, fees.",
       suggestions: ["What is Karbali?", "Create a campaign", "How does billing work?"],
     };
   }
@@ -308,12 +372,21 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
   }
 
   if (!best.intent || best.score < 2) {
+    if (hasAny(tokens, ["campaign", "ad", "advert", "form", "launch", "setup"])) {
+      return campaignFlowReply(ctx, input, tokens);
+    }
+    if (hasAny(tokens, ["wallet", "fund", "pay", "activate", "balance"])) {
+      return {
+        text: "Wallet first, campaign next. Activate with at least $10, then fund based on the campaign cost.",
+        suggestions: ["Activate wallet", "Fund wallet", "Minimum funding"],
+      };
+    }
     return {
-      text: "I'm not sure I caught that. Try rephrasing, or pick one below:",
+      text: "I can help with Karbali campaigns, wallet, websites, tracking, billing, and approvals. Pick one and I will guide you.",
       suggestions: ["What is Karbali?", "Types of campaigns", "How does tracking work?", "Activate wallet"],
     };
   }
-  return best.intent.handler(ctx);
+  return best.intent.handler(ctx, input, tokens);
 }
 
 export function getProactiveGreeting(ctx: AssistantContext): AssistantReply {
@@ -326,7 +399,7 @@ export function getProactiveGreeting(ctx: AssistantContext): AssistantReply {
   }
   if (ctx.categoryStatus !== "active") {
     return {
-      text: `Hey${name}! Your category is still pending — I'll ping you once it goes live.`,
+      text: `Hey${name}! Your category is still pending. I'll ping you once it goes live.`,
       suggestions: ["Check category", "View campaigns"],
     };
   }

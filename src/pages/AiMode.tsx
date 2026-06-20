@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { useAiMode } from "@/lib/ai-mode";
 import { useTheme } from "@/lib/theme";
 import { detectIntent, getProactiveGreeting, type AssistantContext } from "@/lib/assistant-nlp";
+import { saveAiCampaignPrefill, type AiCampaignPrefill, type AiCampaignType } from "@/lib/ai-campaign-prefill";
 import Logo from "@/components/Logo";
 import { Send, Paperclip, X, ArrowUpRight, Sparkles, Sun, Moon, LogOut, ToggleRight, FileText } from "lucide-react";
 
@@ -16,16 +17,138 @@ type Msg = {
   attachments?: Attachment[];
 };
 
+type CampaignFlow = {
+  type: AiCampaignType | null;
+  data: Partial<AiCampaignPrefill>;
+  step: string;
+};
+
 const PAGE_LABELS: Record<string, string> = {
   "/wallet": "Wallet",
   "/dashboard": "Overview",
   "/ads": "Campaigns",
   "/campaigns/create": "New campaign",
+  "/campaigns/create/performance": "Performance campaign",
+  "/campaigns/create/engagement": "Engagement campaign",
+  "/campaigns/create/commerce": "Commerce campaign",
   "/websites": "Websites",
   "/docs": "Docs",
   "/category": "Category",
   "/verification": "Verification",
 };
+
+const CAMPAIGN_ROUTES: Record<AiCampaignType, string> = {
+  performance: "/campaigns/create/performance",
+  engagement: "/campaigns/create/engagement",
+  commerce: "/campaigns/create/commerce",
+};
+
+function norm(value: string) {
+  return value.toLowerCase().trim();
+}
+
+function pickCampaignType(text: string): AiCampaignType | null {
+  const t = norm(text);
+  if (/commerce|shop|store|sale|product|woocommerce/.test(t)) return "commerce";
+  if (/engagement|music|song|video|viewer|subscriber|youtube|listener/.test(t)) return "engagement";
+  if (/performance|cpa|cpc|lead|signup|download|conversion|app/.test(t)) return "performance";
+  return null;
+}
+
+function pickIntegration(text: string): "custom" | "wordpress" {
+  return /word\s*press|woo/.test(norm(text)) ? "wordpress" : "custom";
+}
+
+function extractNumber(text: string, fallback: string) {
+  const matched = text.replace(/,/g, "").match(/\d+/);
+  return matched ? matched[0] : fallback;
+}
+
+function parseMilestones(text: string) {
+  const t = norm(text);
+  const milestones: string[] = [];
+  if (/download|install/.test(t)) milestones.push("download");
+  if (/signup|sign up|lead|register|registration/.test(t)) milestones.push("signup");
+  if (/purchase|sale|subscription|subscribe|pay/.test(t)) milestones.push("purchase");
+  return milestones.length ? milestones : ["signup"];
+}
+
+function nextCampaignPrompt(flow: CampaignFlow, text: string): { flow: CampaignFlow | null; reply: Msg } {
+  const input = text.trim();
+  let next: CampaignFlow = { ...flow, data: { ...flow.data } };
+
+  if (!next.type) {
+    const type = pickCampaignType(input);
+    if (!type) return { flow: next, reply: { role: "bot", text: "Which one should we create?", suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"] } };
+    next = { type, data: { type, createdAt: Date.now() }, step: "name" };
+    return { flow: next, reply: { role: "bot", text: `Nice. What should we call this ${type} campaign?` } };
+  }
+
+  if (next.step === "name") {
+    next.data.campaignName = input;
+    if (next.type === "performance") next.step = "milestones";
+    if (next.type === "engagement") next.step = "mediaType";
+    if (next.type === "commerce") next.step = "sales";
+  } else if (next.step === "milestones") {
+    next.data.milestones = parseMilestones(input);
+    next.step = "targetUsers";
+  } else if (next.step === "targetUsers") {
+    next.data.targetUsers = extractNumber(input, "100");
+    next.step = "integration";
+  } else if (next.step === "integration") {
+    next.data.integrationType = pickIntegration(input);
+    const prefill = { ...next.data, type: next.type, createdAt: Date.now() } as AiCampaignPrefill;
+    saveAiCampaignPrefill(prefill);
+    return { flow: null, reply: { role: "bot", text: "Done. I filled the campaign details I can. Open the form to generate the API key, verify tracking, then submit.", navigateTo: CAMPAIGN_ROUTES[next.type] } };
+  } else if (next.step === "mediaType") {
+    next.data.mediaType = /music|song|audio|artist/.test(norm(input)) ? "music" : "video";
+    next.step = next.data.mediaType === "video" ? "events" : "mediaLink";
+  } else if (next.step === "events") {
+    const t = norm(input);
+    const eventTypes = [];
+    if (/view|watch|quiz/.test(t)) eventTypes.push("viewer");
+    if (/subscrib|follow/.test(t)) eventTypes.push("subscriber");
+    next.data.eventTypes = eventTypes.length ? eventTypes : ["viewer"];
+    next.step = "mediaLink";
+  } else if (next.step === "mediaLink") {
+    if (next.data.mediaType === "music") next.data.musicLinks = input.split(/\s+/).filter(Boolean).slice(0, 3);
+    else next.data.mediaLink = input;
+    const needsTranscription = next.data.mediaType === "music" || next.data.eventTypes?.includes("viewer");
+    next.step = needsTranscription ? "transcription" : "engagementTargets";
+  } else if (next.step === "transcription") {
+    next.data.transcription = input;
+    next.data.transcriptionConfirmed = true;
+    next.step = "engagementTargets";
+  } else if (next.step === "engagementTargets") {
+    if (next.data.mediaType === "music" || next.data.eventTypes?.includes("viewer")) next.data.targetViewers = extractNumber(input, "200");
+    if (next.data.eventTypes?.includes("subscriber")) next.data.targetSubscribers = extractNumber(input, "200");
+    const prefill = { ...next.data, type: "engagement", createdAt: Date.now() } as AiCampaignPrefill;
+    saveAiCampaignPrefill(prefill);
+    return { flow: null, reply: { role: "bot", text: "Done. I filled your engagement campaign draft. Open it to review cost and submit.", navigateTo: CAMPAIGN_ROUTES.engagement } };
+  } else if (next.step === "sales") {
+    next.data.targetSales = extractNumber(input, "100");
+    next.step = "commerceIntegration";
+  } else if (next.step === "commerceIntegration") {
+    next.data.integrationType = pickIntegration(input);
+    const prefill = { ...next.data, type: "commerce", createdAt: Date.now() } as AiCampaignPrefill;
+    saveAiCampaignPrefill(prefill);
+    return { flow: null, reply: { role: "bot", text: "Done. I filled your commerce campaign draft. Open it to generate tracking and submit.", navigateTo: CAMPAIGN_ROUTES.commerce } };
+  }
+
+  const prompts: Record<string, Msg> = {
+    milestones: { role: "bot", text: "What result should Karbali track?", suggestions: ["Signups", "Purchases", "Downloads and signups"] },
+    targetUsers: { role: "bot", text: "How many users should we target? Minimum is 100." },
+    integration: { role: "bot", text: "Is your site WordPress or custom code?", suggestions: ["WordPress", "Custom code"] },
+    mediaType: { role: "bot", text: "Is this for music or video?", suggestions: ["Music", "Video"] },
+    events: { role: "bot", text: "Which video event should we track?", suggestions: ["Viewers", "Subscribers", "Both"] },
+    mediaLink: { role: "bot", text: next.data.mediaType === "music" ? "Paste up to 3 music links." : "Paste the video link." },
+    transcription: { role: "bot", text: next.data.mediaType === "music" ? "Paste the song lyrics." : "Paste the video script." },
+    engagementTargets: { role: "bot", text: "How many interactions should we target? Minimum is 200." },
+    sales: { role: "bot", text: "How many sales should we target? Minimum is 100." },
+    commerceIntegration: { role: "bot", text: "Is your store WordPress/WooCommerce or custom code?", suggestions: ["WooCommerce", "Custom code"] },
+  };
+  return { flow: next, reply: prompts[next.step] };
+}
 
 export default function AiMode() {
   const { user, signOut, walletActivated, categoryStatus, advertiserType, businessVerified } = useAuth();
@@ -37,6 +160,7 @@ export default function AiMode() {
   const [input, setInput] = useState("");
   const [pending, setPending] = useState<Attachment[]>([]);
   const [typing, setTyping] = useState(false);
+  const [campaignFlow, setCampaignFlow] = useState<CampaignFlow | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -85,15 +209,36 @@ export default function AiMode() {
     setTyping(true);
 
     setTimeout(() => {
-      let reply;
+      let reply: Msg & { autoNavigate?: boolean };
+      let nextFlow = campaignFlow;
       if (!text && userMsg.attachments?.length) {
         reply = {
+          role: "bot",
           text: `Got your file${userMsg.attachments.length > 1 ? "s" : ""}. What should I do with ${userMsg.attachments.length > 1 ? "them" : "it"}? Verification, business document, or campaign creative?`,
           suggestions: ["For business verification", "Campaign creative", "Just review it"],
         };
+      } else if (campaignFlow) {
+        if (/^(cancel|stop|exit|start over)$/i.test(text)) {
+          nextFlow = null;
+          reply = { role: "bot", text: "No problem. Campaign setup stopped.", suggestions: ["Create a campaign", "What is Karbali?", "Open wallet"] };
+        } else {
+          const result = nextCampaignPrompt(campaignFlow, text);
+          nextFlow = result.flow;
+          reply = result.reply;
+        }
       } else {
-        reply = detectIntent(text, ctx);
+        const detected = detectIntent(text, ctx);
+        if (detected.action === "start_campaign_flow") {
+          const startFlow: CampaignFlow = { type: detected.campaignType ?? null, data: detected.campaignType ? { type: detected.campaignType, createdAt: Date.now() } : {}, step: detected.campaignType ? "name" : "type" };
+          nextFlow = startFlow;
+          reply = detected.campaignType
+            ? { role: "bot", text: `Good. What should we call this ${detected.campaignType} campaign?` }
+            : { role: "bot", text: detected.text, suggestions: detected.suggestions };
+        } else {
+          reply = { role: "bot", text: detected.text, suggestions: detected.suggestions, navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };
+        }
       }
+      setCampaignFlow(nextFlow);
       setMessages((m) => [
         ...m,
         {
