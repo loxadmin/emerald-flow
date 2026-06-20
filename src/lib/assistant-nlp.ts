@@ -372,8 +372,17 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
   }
 
   if (!best.intent || best.score < 2) {
+    if (hasAny(tokens, ["campaign", "ad", "advert", "form", "launch", "setup"])) {
+      return campaignFlowReply(ctx, input, tokens);
+    }
+    if (hasAny(tokens, ["wallet", "fund", "pay", "activate", "balance"])) {
+      return {
+        text: "Wallet first, campaign next. Activate with at least $10, then fund based on the campaign cost.",
+        suggestions: ["Activate wallet", "Fund wallet", "Minimum funding"],
+      };
+    }
     return {
-      text: "I'm not sure I caught that. Try rephrasing, or pick one below:",
+      text: "I can help with Karbali campaigns, wallet, websites, tracking, billing, and approvals. Pick one and I will guide you.",
       suggestions: ["What is Karbali?", "Types of campaigns", "How does tracking work?", "Activate wallet"],
     };
   }
