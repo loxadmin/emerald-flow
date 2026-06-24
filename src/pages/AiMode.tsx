@@ -3,7 +3,15 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useAiMode } from "@/lib/ai-mode";
 import { useTheme } from "@/lib/theme";
-import { detectIntent, getProactiveGreeting, type AssistantContext } from "@/lib/assistant-nlp";
+import {
+  CAMPAIGN_TYPE_LABELS,
+  campaignTypeMismatchReply,
+  detectIntent,
+  getAllowedCampaignType,
+  getProactiveGreeting,
+  isCampaignTypeAllowed,
+  type AssistantContext,
+} from "@/lib/assistant-nlp";
 import { saveAiCampaignPrefill, type AiCampaignPrefill, type AiCampaignType } from "@/lib/ai-campaign-prefill";
 import Logo from "@/components/Logo";
 import { Send, Paperclip, X, ArrowUpRight, Sparkles, Sun, Moon, LogOut, ToggleRight, FileText } from "lucide-react";
@@ -22,6 +30,21 @@ type CampaignFlow = {
   data: Partial<AiCampaignPrefill>;
   step: string;
 };
+
+const CAMPAIGN_INFO_KEYWORDS = /\b(what|explain|tell|about|meaning|mean|difference|why|how|karbali|billing|wallet|tracking|track|attribution|fraud|cpa|cpc|cost|minimum|fee|profile|account|platform|system)\b/i;
+const CAMPAIGN_VALUE_STEPS = new Set([
+  "name",
+  "milestones",
+  "targetUsers",
+  "integration",
+  "mediaType",
+  "events",
+  "mediaLink",
+  "transcription",
+  "engagementTargets",
+  "sales",
+  "commerceIntegration",
+]);
 
 const PAGE_LABELS: Record<string, string> = {
   "/wallet": "Wallet",
@@ -73,13 +96,17 @@ function parseMilestones(text: string) {
   return milestones.length ? milestones : ["signup"];
 }
 
-function nextCampaignPrompt(flow: CampaignFlow, text: string): { flow: CampaignFlow | null; reply: Msg } {
+function nextCampaignPrompt(flow: CampaignFlow, text: string, ctx: AssistantContext): { flow: CampaignFlow | null; reply: Msg } {
   const input = text.trim();
   let next: CampaignFlow = { ...flow, data: { ...flow.data } };
 
   if (!next.type) {
-    const type = pickCampaignType(input);
+    const type = pickCampaignType(input) || getAllowedCampaignType(ctx);
     if (!type) return { flow: next, reply: { role: "bot", text: "Which one should we create?", suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"] } };
+    if (!isCampaignTypeAllowed(type, ctx)) {
+      const blocked = campaignTypeMismatchReply(type, ctx);
+      return { flow: null, reply: { role: "bot", text: blocked.text, suggestions: blocked.suggestions, navigateTo: blocked.navigateTo } };
+    }
     next = { type, data: { type, createdAt: Date.now() }, step: "name" };
     return { flow: next, reply: { role: "bot", text: `Nice. What should we call this ${type} campaign?` } };
   }
@@ -222,9 +249,23 @@ export default function AiMode() {
           nextFlow = null;
           reply = { role: "bot", text: "No problem. Campaign setup stopped.", suggestions: ["Create a campaign", "What is Karbali?", "Open wallet"] };
         } else {
-          const result = nextCampaignPrompt(campaignFlow, text);
-          nextFlow = result.flow;
-          reply = result.reply;
+          const userChangedContext = CAMPAIGN_VALUE_STEPS.has(campaignFlow.step) && CAMPAIGN_INFO_KEYWORDS.test(text);
+          const requestedType = pickCampaignType(text);
+          if (userChangedContext) {
+            const detected = detectIntent(text, ctx);
+            nextFlow = campaignFlow;
+            reply = { role: "bot", text: detected.text, suggestions: [...(detected.suggestions || []), "Continue campaign setup"].slice(0, 4), navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };
+          } else if (requestedType && campaignFlow.type && requestedType !== campaignFlow.type) {
+            const blocked = campaignTypeMismatchReply(requestedType, ctx);
+            nextFlow = isCampaignTypeAllowed(requestedType, ctx) ? { type: requestedType, data: { type: requestedType, createdAt: Date.now() }, step: "name" } : campaignFlow;
+            reply = isCampaignTypeAllowed(requestedType, ctx)
+              ? { role: "bot", text: `Switching to ${CAMPAIGN_TYPE_LABELS[requestedType]}. What should we call it?` }
+              : { role: "bot", text: blocked.text, suggestions: [...(blocked.suggestions || []), "Continue campaign setup"].slice(0, 4), navigateTo: blocked.navigateTo };
+          } else {
+            const result = nextCampaignPrompt(campaignFlow, text, ctx);
+            nextFlow = result.flow;
+            reply = result.reply;
+          }
         }
       } else {
         const detected = detectIntent(text, ctx);
