@@ -407,8 +407,7 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
 
   const requestedCampaignType = inferCampaignType(tokens);
   if (requestedCampaignType && hasAny(tokens, ["create", "start", "new", "launch", "place", "run", "make", "setup", "build"])) {
-    const mismatch = campaignTypeMismatchReply(requestedCampaignType, ctx);
-    if (mismatch.campaignType !== requestedCampaignType) return mismatch;
+    return campaignTypeMismatchReply(requestedCampaignType, ctx);
   }
 
   let best: { score: number; intent: Intent | null } = { score: 0, intent: null };
