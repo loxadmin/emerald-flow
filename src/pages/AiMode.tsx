@@ -31,7 +31,6 @@ type CampaignFlow = {
   step: string;
 };
 
-const CAMPAIGN_INFO_KEYWORDS = /\b(what|explain|tell|about|meaning|mean|difference|why|how|karbali|billing|wallet|attribution|fraud|cpa|cpc|profile|account|platform|system)\b/i;
 const CAMPAIGN_VALUE_STEPS = new Set([
   "name",
   "milestones",
@@ -94,6 +93,13 @@ function parseMilestones(text: string) {
   if (/signup|sign up|lead|register|registration/.test(t)) milestones.push("signup");
   if (/purchase|sale|subscription|subscribe|pay/.test(t)) milestones.push("purchase");
   return milestones.length ? milestones : ["signup"];
+}
+
+function isCampaignKnowledgeQuestion(text: string) {
+  const t = norm(text);
+  const hasQuestionCue = /\?|\b(what|explain|tell|about|meaning|mean|difference|why|how|did not|didn t|i asked|i said)\b/.test(t);
+  const hasPlatformTopic = /\b(karbali|billing|wallet|tracking|attribution|fraud|cpa|cpc|cost|minimum|fee|profile|account|platform|system|advertiser type)\b/.test(t);
+  return hasQuestionCue && hasPlatformTopic;
 }
 
 function currentCampaignQuestion(flow: CampaignFlow): Msg {
@@ -262,7 +268,7 @@ export default function AiMode() {
           nextFlow = campaignFlow;
           reply = currentCampaignQuestion(campaignFlow);
         } else {
-          const userChangedContext = CAMPAIGN_VALUE_STEPS.has(campaignFlow.step) && CAMPAIGN_INFO_KEYWORDS.test(text);
+          const userChangedContext = CAMPAIGN_VALUE_STEPS.has(campaignFlow.step) && isCampaignKnowledgeQuestion(text);
           const requestedType = pickCampaignType(text);
           if (userChangedContext) {
             const detected = detectIntent(text, ctx);
