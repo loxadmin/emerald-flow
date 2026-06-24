@@ -24,7 +24,7 @@ export type AssistantReply = {
   suggestions?: string[];
 };
 
-const CAMPAIGN_TYPE_LABELS: Record<AiCampaignType, string> = {
+export const CAMPAIGN_TYPE_LABELS: Record<AiCampaignType, string> = {
   performance: "Performance Ads",
   engagement: "Engagement Ads",
   commerce: "Commerce Ads",
