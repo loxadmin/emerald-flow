@@ -345,6 +345,28 @@ const INTENTS: Intent[] = [
     }),
   },
   {
+    id: "change_advertiser_type",
+    keywords: [["change","switch","update"], ["advertiser","profile","type","category"]],
+    handler: () => ({
+      text: "Your campaign type follows your approved advertiser profile. To switch, submit a category change request for admin review.",
+      navigateTo: "/category",
+      suggestions: ["Open category", "Why can't I create this?"],
+    }),
+  },
+  {
+    id: "profile_restriction",
+    keywords: [["why","can","cannot","cant"], ["create","use","choose"], ["campaign","type","this"]],
+    handler: (ctx) => {
+      const allowedType = getAllowedCampaignType(ctx);
+      return {
+        text: allowedType
+          ? `Because your approved advertiser profile is ${CAMPAIGN_TYPE_LABELS[allowedType]}. Karbali keeps campaign setup locked to that profile for billing, tracking, and approval accuracy.`
+          : "Campaign setup follows the advertiser profile selected during category approval.",
+        suggestions: allowedType ? [`Create ${CAMPAIGN_TYPE_LABELS[allowedType]}`, "Change advertiser type"] : ["Open category"],
+      };
+    },
+  },
+  {
     id: "websites",
     keywords: [["website","site","domain","url"], []],
     any: ["website","websites","domain","domains"],
