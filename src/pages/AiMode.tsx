@@ -31,7 +31,7 @@ type CampaignFlow = {
   step: string;
 };
 
-const CAMPAIGN_INFO_KEYWORDS = /\b(what|explain|tell|about|meaning|mean|difference|why|how|karbali|billing|wallet|tracking|track|attribution|fraud|cpa|cpc|cost|minimum|fee|profile|account|platform|system)\b/i;
+const CAMPAIGN_INFO_KEYWORDS = /\b(what|explain|tell|about|meaning|mean|difference|why|how|karbali|billing|wallet|attribution|fraud|cpa|cpc|profile|account|platform|system)\b/i;
 const CAMPAIGN_VALUE_STEPS = new Set([
   "name",
   "milestones",
