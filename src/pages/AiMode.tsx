@@ -32,6 +32,7 @@ type CampaignFlow = {
 };
 
 const CAMPAIGN_VALUE_STEPS = new Set([
+  "type",
   "name",
   "milestones",
   "targetUsers",
