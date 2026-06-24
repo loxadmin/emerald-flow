@@ -24,6 +24,12 @@ export type AssistantReply = {
   suggestions?: string[];
 };
 
+const CAMPAIGN_TYPE_LABELS: Record<AiCampaignType, string> = {
+  performance: "Performance Ads",
+  engagement: "Engagement Ads",
+  commerce: "Commerce Ads",
+};
+
 
 type Intent = {
   id: string;
@@ -47,6 +53,10 @@ const TYPO_FIXES: Record<string, string> = {
   camaigns: "campaign",
   campain: "campaign",
   campains: "campaign",
+  engagemnet: "engagement",
+  engagmnt: "engagement",
+  inteligent: "intelligent",
+  isnt: "is not",
   advertis: "advertise",
   advertiz: "advertise",
   ecommerce: "commerce",
@@ -76,6 +86,29 @@ function inferCampaignType(tokens: string[]): AiCampaignType | null {
   return null;
 }
 
+export function getAllowedCampaignType(ctx: AssistantContext): AiCampaignType | null {
+  const type = String(ctx.advertiserType || "").toLowerCase();
+  if (type === "performance" || type === "engagement" || type === "commerce") return type;
+  return null;
+}
+
+export function isCampaignTypeAllowed(type: AiCampaignType, ctx: AssistantContext): boolean {
+  const allowedType = getAllowedCampaignType(ctx);
+  return !allowedType || allowedType === type;
+}
+
+export function campaignTypeMismatchReply(type: AiCampaignType, ctx: AssistantContext): AssistantReply {
+  const allowedType = getAllowedCampaignType(ctx);
+  if (!allowedType || allowedType === type) {
+    return { text: `Good. Let's build your ${type} campaign here.`, action: "start_campaign_flow", campaignType: type };
+  }
+  return {
+    text: `Your account is set for ${CAMPAIGN_TYPE_LABELS[allowedType]}. I can only create that campaign type unless your advertiser type is changed.`,
+    suggestions: [`Create ${CAMPAIGN_TYPE_LABELS[allowedType]}`, "Change advertiser type", "Why can't I create this?"],
+    navigateTo: "/category",
+  };
+}
+
 function hasAny(tokens: string[], group: string[]): boolean {
   const norm = group.map((g) => g.replace(/(ing|ed|s)$/g, ""));
   return tokens.some((t) => norm.includes(t));
@@ -99,6 +132,14 @@ const campaignFlowReply = (ctx: AssistantContext, input: string, tokens: string[
     };
   }
   if (!type) {
+    const allowedType = getAllowedCampaignType(ctx);
+    if (allowedType) {
+      return {
+        text: `Your profile is ${CAMPAIGN_TYPE_LABELS[allowedType]}, so I'll set up that campaign type for you. What should we call it?`,
+        action: "start_campaign_flow",
+        campaignType: allowedType,
+      };
+    }
     return {
       text: "I can set it up in chat. Which campaign type do you want?",
       action: "start_campaign_flow",
@@ -106,6 +147,7 @@ const campaignFlowReply = (ctx: AssistantContext, input: string, tokens: string[
       suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"],
     };
   }
+  if (!isCampaignTypeAllowed(type, ctx)) return campaignTypeMismatchReply(type, ctx);
   return {
     text: `Good. Let's build your ${type} campaign here.`,
     action: "start_campaign_flow",
@@ -117,10 +159,10 @@ const INTENTS: Intent[] = [
   // ===== Platform knowledge =====
   {
     id: "what_is_karbali",
-    keywords: [["karbali","platform","system","app","product"], ["what","explain","about","tell","describe"]],
+    keywords: [["karbali","platform","system","app","product"], ["what","explain","about","tell","describe","mean"]],
     any: ["karbali"],
     handler: () => ({
-      text: "Karbali is a Nigerian performance ad platform. You fund a wallet, run campaigns (engagement, performance, or commerce), and only pay for real results like clicks, conversions, or sales.",
+      text: "Karbali helps Nigerian advertisers buy real outcomes, not empty impressions. You fund your wallet, create the right campaign type, track results, and pay only for valid clicks, conversions, engagement, or sales.",
       suggestions: ["Types of campaigns", "How does billing work?", "How is tracking done?"],
     }),
   },
@@ -138,7 +180,7 @@ const INTENTS: Intent[] = [
     keywords: [["engagement","quiz","point","reward","media"], []],
     any: ["engagement","quiz","points","reward"],
     handler: () => ({
-      text: "Engagement ads let users interact with media or quizzes and earn points. 1 point equals 0.50 Naira. Great for awareness and lead capture.",
+      text: "Engagement Ads are for creators and media campaigns. Users watch, listen, subscribe, answer quizzes, or complete approved actions, then earn points while you buy real attention.",
       suggestions: ["Performance ads", "Commerce ads", "Create campaign"],
     }),
   },
@@ -147,7 +189,7 @@ const INTENTS: Intent[] = [
     keywords: [["performance","cpa","cpc","conversion","click"], []],
     any: ["cpa","cpc","performance"],
     handler: () => ({
-      text: "Performance ads charge you per click (CPC) or per conversion (CPA). You set the budget, we track every click with a unique click_id, and only valid actions count.",
+      text: "Performance Ads are for apps and websites. You pay for measurable actions like clicks, downloads, signups, or purchases, tracked with Karbali attribution.",
       suggestions: ["What is CPA?", "What is CPC?", "Setup tracking"],
     }),
   },
@@ -156,7 +198,7 @@ const INTENTS: Intent[] = [
     keywords: [["commerce","shopify","ecommerce","store","shop","sale"], []],
     any: ["commerce","ecommerce","shopify"],
     handler: () => ({
-      text: "Commerce ads are for ecommerce stores. Minimum wallet balance is $200. You pay a flat fee plus a small commission only when a sale happens.",
+      text: "Commerce Ads are for stores and vendors. You pay a flat fee plus commission when sales happen, with a $200 minimum wallet balance before launch.",
       suggestions: ["How much is the minimum?", "How is tracking done?"],
     }),
   },
@@ -359,6 +401,16 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
     };
   }
 
+  if (tokens.includes("karbali") && hasAny(tokens, ["what", "about", "explain", "mean", "platform", "system", "all"])) {
+    return INTENTS.find((intent) => intent.id === "what_is_karbali")!.handler(ctx, input, tokens);
+  }
+
+  const requestedCampaignType = inferCampaignType(tokens);
+  if (requestedCampaignType && hasAny(tokens, ["create", "start", "new", "launch", "place", "run", "make", "setup", "build", "campaign", "ad", "advert"])) {
+    const mismatch = campaignTypeMismatchReply(requestedCampaignType, ctx);
+    if (mismatch.campaignType !== requestedCampaignType) return mismatch;
+  }
+
   let best: { score: number; intent: Intent | null } = { score: 0, intent: null };
   for (const intent of INTENTS) {
     let score = 0;
@@ -401,6 +453,13 @@ export function getProactiveGreeting(ctx: AssistantContext): AssistantReply {
     return {
       text: `Hey${name}! Your category is still pending. I'll ping you once it goes live.`,
       suggestions: ["Check category", "View campaigns"],
+    };
+  }
+  const allowedType = getAllowedCampaignType(ctx);
+  if (allowedType) {
+    return {
+      text: `Welcome back${name}! Your profile is ${CAMPAIGN_TYPE_LABELS[allowedType]}. I can help you create that campaign or answer Karbali questions.`,
+      suggestions: [`Create ${CAMPAIGN_TYPE_LABELS[allowedType]}`, "What is Karbali?", "Open wallet"],
     };
   }
   return {
