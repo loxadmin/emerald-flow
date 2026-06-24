@@ -406,7 +406,7 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
   }
 
   const requestedCampaignType = inferCampaignType(tokens);
-  if (requestedCampaignType && hasAny(tokens, ["create", "start", "new", "launch", "place", "run", "make", "setup", "build", "campaign", "ad", "advert"])) {
+  if (requestedCampaignType && hasAny(tokens, ["create", "start", "new", "launch", "place", "run", "make", "setup", "build"])) {
     const mismatch = campaignTypeMismatchReply(requestedCampaignType, ctx);
     if (mismatch.campaignType !== requestedCampaignType) return mismatch;
   }
