@@ -96,6 +96,24 @@ function parseMilestones(text: string) {
   return milestones.length ? milestones : ["signup"];
 }
 
+function currentCampaignQuestion(flow: CampaignFlow): Msg {
+  const prompts: Record<string, Msg> = {
+    type: { role: "bot", text: "Which campaign type should I set up?", suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"] },
+    name: { role: "bot", text: `What should we call this ${flow.type || "campaign"}?` },
+    milestones: { role: "bot", text: "What result should Karbali track?", suggestions: ["Signups", "Purchases", "Downloads and signups"] },
+    targetUsers: { role: "bot", text: "How many users should we target? Minimum is 100." },
+    integration: { role: "bot", text: "Is your site WordPress or custom code?", suggestions: ["WordPress", "Custom code"] },
+    mediaType: { role: "bot", text: "Is this for music or video?", suggestions: ["Music", "Video"] },
+    events: { role: "bot", text: "Which video event should we track?", suggestions: ["Viewers", "Subscribers", "Both"] },
+    mediaLink: { role: "bot", text: flow.data.mediaType === "music" ? "Paste up to 3 music links." : "Paste the video link." },
+    transcription: { role: "bot", text: flow.data.mediaType === "music" ? "Paste the song lyrics." : "Paste the video script." },
+    engagementTargets: { role: "bot", text: "How many interactions should we target? Minimum is 200." },
+    sales: { role: "bot", text: "How many sales should we target? Minimum is 100." },
+    commerceIntegration: { role: "bot", text: "Is your store WordPress/WooCommerce or custom code?", suggestions: ["WooCommerce", "Custom code"] },
+  };
+  return prompts[flow.step] || { role: "bot", text: "Tell me the next campaign detail." };
+}
+
 function nextCampaignPrompt(flow: CampaignFlow, text: string, ctx: AssistantContext): { flow: CampaignFlow | null; reply: Msg } {
   const input = text.trim();
   let next: CampaignFlow = { ...flow, data: { ...flow.data } };
@@ -162,19 +180,7 @@ function nextCampaignPrompt(flow: CampaignFlow, text: string, ctx: AssistantCont
     return { flow: null, reply: { role: "bot", text: "Done. I filled your commerce campaign draft. Open it to generate tracking and submit.", navigateTo: CAMPAIGN_ROUTES.commerce } };
   }
 
-  const prompts: Record<string, Msg> = {
-    milestones: { role: "bot", text: "What result should Karbali track?", suggestions: ["Signups", "Purchases", "Downloads and signups"] },
-    targetUsers: { role: "bot", text: "How many users should we target? Minimum is 100." },
-    integration: { role: "bot", text: "Is your site WordPress or custom code?", suggestions: ["WordPress", "Custom code"] },
-    mediaType: { role: "bot", text: "Is this for music or video?", suggestions: ["Music", "Video"] },
-    events: { role: "bot", text: "Which video event should we track?", suggestions: ["Viewers", "Subscribers", "Both"] },
-    mediaLink: { role: "bot", text: next.data.mediaType === "music" ? "Paste up to 3 music links." : "Paste the video link." },
-    transcription: { role: "bot", text: next.data.mediaType === "music" ? "Paste the song lyrics." : "Paste the video script." },
-    engagementTargets: { role: "bot", text: "How many interactions should we target? Minimum is 200." },
-    sales: { role: "bot", text: "How many sales should we target? Minimum is 100." },
-    commerceIntegration: { role: "bot", text: "Is your store WordPress/WooCommerce or custom code?", suggestions: ["WooCommerce", "Custom code"] },
-  };
-  return { flow: next, reply: prompts[next.step] };
+  return { flow: next, reply: currentCampaignQuestion(next) };
 }
 
 export default function AiMode() {
@@ -248,6 +254,9 @@ export default function AiMode() {
         if (/^(cancel|stop|exit|start over)$/i.test(text)) {
           nextFlow = null;
           reply = { role: "bot", text: "No problem. Campaign setup stopped.", suggestions: ["Create a campaign", "What is Karbali?", "Open wallet"] };
+        } else if (/^continue campaign setup$/i.test(text)) {
+          nextFlow = campaignFlow;
+          reply = currentCampaignQuestion(campaignFlow);
         } else {
           const userChangedContext = CAMPAIGN_VALUE_STEPS.has(campaignFlow.step) && CAMPAIGN_INFO_KEYWORDS.test(text);
           const requestedType = pickCampaignType(text);
