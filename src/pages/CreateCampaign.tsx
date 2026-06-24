@@ -24,7 +24,7 @@ const SALE_FLAT_FEE = 1;
 export default function CreateCampaign() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, walletActivated } = useAuth();
+  const { user, walletActivated, advertiserType } = useAuth();
   const draftParam = searchParams.get("draft");
   const stepParam = searchParams.get("step");
   const [step, setStep] = useState(0);
@@ -69,6 +69,14 @@ export default function CreateCampaign() {
     if (draftParam === draftId && currentStep === nextStep) return;
     navigate(`/campaigns/create/performance?draft=${draftId}&step=${nextStep}`, { replace: true });
   };
+
+  useEffect(() => {
+    if (!user?.id || !advertiserType || advertiserType === "performance") return;
+    toast.error("Your advertiser profile is not set for Performance Ads.");
+    if (advertiserType === "engagement") navigate("/campaigns/create/engagement", { replace: true });
+    else if (advertiserType === "commerce") navigate("/campaigns/create/commerce", { replace: true });
+    else navigate("/dashboard", { replace: true });
+  }, [user?.id, advertiserType, navigate]);
 
   const goToStep = (nextStep: number, draftId = campaignId) => {
     setStep(nextStep);

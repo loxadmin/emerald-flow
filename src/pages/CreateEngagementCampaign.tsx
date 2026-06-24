@@ -23,7 +23,7 @@ const MIN_INTERACTIONS = 200;
 
 export default function CreateEngagementCampaign() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, advertiserType } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -47,6 +47,14 @@ export default function CreateEngagementCampaign() {
   const [targetSubscribers, setTargetSubscribers] = useState("200");
   const [transcribing, setTranscribing] = useState(false);
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id || !advertiserType || advertiserType === "engagement") return;
+    toast.error("Your advertiser profile is not set for Engagement Ads.");
+    if (advertiserType === "commerce") navigate("/campaigns/create/commerce", { replace: true });
+    else if (advertiserType === "performance") navigate("/campaigns/create/performance", { replace: true });
+    else navigate("/dashboard", { replace: true });
+  }, [user?.id, advertiserType, navigate]);
 
   useEffect(() => {
     if (!user) return;

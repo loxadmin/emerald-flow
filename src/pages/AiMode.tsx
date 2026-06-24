@@ -3,7 +3,15 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useAiMode } from "@/lib/ai-mode";
 import { useTheme } from "@/lib/theme";
-import { detectIntent, getProactiveGreeting, type AssistantContext } from "@/lib/assistant-nlp";
+import {
+  CAMPAIGN_TYPE_LABELS,
+  campaignTypeMismatchReply,
+  detectIntent,
+  getAllowedCampaignType,
+  getProactiveGreeting,
+  isCampaignTypeAllowed,
+  type AssistantContext,
+} from "@/lib/assistant-nlp";
 import { saveAiCampaignPrefill, type AiCampaignPrefill, type AiCampaignType } from "@/lib/ai-campaign-prefill";
 import Logo from "@/components/Logo";
 import { Send, Paperclip, X, ArrowUpRight, Sparkles, Sun, Moon, LogOut, ToggleRight, FileText } from "lucide-react";
@@ -22,6 +30,21 @@ type CampaignFlow = {
   data: Partial<AiCampaignPrefill>;
   step: string;
 };
+
+const CAMPAIGN_VALUE_STEPS = new Set([
+  "type",
+  "name",
+  "milestones",
+  "targetUsers",
+  "integration",
+  "mediaType",
+  "events",
+  "mediaLink",
+  "transcription",
+  "engagementTargets",
+  "sales",
+  "commerceIntegration",
+]);
 
 const PAGE_LABELS: Record<string, string> = {
   "/wallet": "Wallet",
@@ -73,13 +96,42 @@ function parseMilestones(text: string) {
   return milestones.length ? milestones : ["signup"];
 }
 
-function nextCampaignPrompt(flow: CampaignFlow, text: string): { flow: CampaignFlow | null; reply: Msg } {
+function isCampaignKnowledgeQuestion(text: string) {
+  const t = norm(text);
+  const hasQuestionCue = /\?|\b(what|explain|tell|about|meaning|mean|difference|why|how|did not|didn t|i asked|i said)\b/.test(t);
+  const hasPlatformTopic = /\b(karbali|billing|wallet|tracking|attribution|fraud|cpa|cpc|cost|minimum|fee|profile|account|platform|system|advertiser type)\b/.test(t);
+  return hasQuestionCue && hasPlatformTopic;
+}
+
+function currentCampaignQuestion(flow: CampaignFlow): Msg {
+  const prompts: Record<string, Msg> = {
+    type: { role: "bot", text: "Which campaign type should I set up?", suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"] },
+    name: { role: "bot", text: `What should we call this ${flow.type || "campaign"}?` },
+    milestones: { role: "bot", text: "What result should Karbali track?", suggestions: ["Signups", "Purchases", "Downloads and signups"] },
+    targetUsers: { role: "bot", text: "How many users should we target? Minimum is 100." },
+    integration: { role: "bot", text: "Is your site WordPress or custom code?", suggestions: ["WordPress", "Custom code"] },
+    mediaType: { role: "bot", text: "Is this for music or video?", suggestions: ["Music", "Video"] },
+    events: { role: "bot", text: "Which video event should we track?", suggestions: ["Viewers", "Subscribers", "Both"] },
+    mediaLink: { role: "bot", text: flow.data.mediaType === "music" ? "Paste up to 3 music links." : "Paste the video link." },
+    transcription: { role: "bot", text: flow.data.mediaType === "music" ? "Paste the song lyrics." : "Paste the video script." },
+    engagementTargets: { role: "bot", text: "How many interactions should we target? Minimum is 200." },
+    sales: { role: "bot", text: "How many sales should we target? Minimum is 100." },
+    commerceIntegration: { role: "bot", text: "Is your store WordPress/WooCommerce or custom code?", suggestions: ["WooCommerce", "Custom code"] },
+  };
+  return prompts[flow.step] || { role: "bot", text: "Tell me the next campaign detail." };
+}
+
+function nextCampaignPrompt(flow: CampaignFlow, text: string, ctx: AssistantContext): { flow: CampaignFlow | null; reply: Msg } {
   const input = text.trim();
   let next: CampaignFlow = { ...flow, data: { ...flow.data } };
 
   if (!next.type) {
-    const type = pickCampaignType(input);
+    const type = pickCampaignType(input) || getAllowedCampaignType(ctx);
     if (!type) return { flow: next, reply: { role: "bot", text: "Which one should we create?", suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"] } };
+    if (!isCampaignTypeAllowed(type, ctx)) {
+      const blocked = campaignTypeMismatchReply(type, ctx);
+      return { flow: null, reply: { role: "bot", text: blocked.text, suggestions: blocked.suggestions, navigateTo: blocked.navigateTo } };
+    }
     next = { type, data: { type, createdAt: Date.now() }, step: "name" };
     return { flow: next, reply: { role: "bot", text: `Nice. What should we call this ${type} campaign?` } };
   }
@@ -135,23 +187,11 @@ function nextCampaignPrompt(flow: CampaignFlow, text: string): { flow: CampaignF
     return { flow: null, reply: { role: "bot", text: "Done. I filled your commerce campaign draft. Open it to generate tracking and submit.", navigateTo: CAMPAIGN_ROUTES.commerce } };
   }
 
-  const prompts: Record<string, Msg> = {
-    milestones: { role: "bot", text: "What result should Karbali track?", suggestions: ["Signups", "Purchases", "Downloads and signups"] },
-    targetUsers: { role: "bot", text: "How many users should we target? Minimum is 100." },
-    integration: { role: "bot", text: "Is your site WordPress or custom code?", suggestions: ["WordPress", "Custom code"] },
-    mediaType: { role: "bot", text: "Is this for music or video?", suggestions: ["Music", "Video"] },
-    events: { role: "bot", text: "Which video event should we track?", suggestions: ["Viewers", "Subscribers", "Both"] },
-    mediaLink: { role: "bot", text: next.data.mediaType === "music" ? "Paste up to 3 music links." : "Paste the video link." },
-    transcription: { role: "bot", text: next.data.mediaType === "music" ? "Paste the song lyrics." : "Paste the video script." },
-    engagementTargets: { role: "bot", text: "How many interactions should we target? Minimum is 200." },
-    sales: { role: "bot", text: "How many sales should we target? Minimum is 100." },
-    commerceIntegration: { role: "bot", text: "Is your store WordPress/WooCommerce or custom code?", suggestions: ["WooCommerce", "Custom code"] },
-  };
-  return { flow: next, reply: prompts[next.step] };
+  return { flow: next, reply: currentCampaignQuestion(next) };
 }
 
 export default function AiMode() {
-  const { user, signOut, walletActivated, categoryStatus, advertiserType, businessVerified } = useAuth();
+  const { user, signOut, walletActivated, categoryStatus, advertiserType, businessVerified, isLoading } = useAuth();
   const { setAiMode } = useAiMode();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -211,20 +251,43 @@ export default function AiMode() {
     setTimeout(() => {
       let reply: Msg & { autoNavigate?: boolean };
       let nextFlow = campaignFlow;
-      if (!text && userMsg.attachments?.length) {
+      if (isLoading) {
+        reply = { role: "bot", text: "One second. I am still loading your advertiser profile so I do not guide you into the wrong campaign type." };
+      } else if (!text && userMsg.attachments?.length) {
         reply = {
           role: "bot",
           text: `Got your file${userMsg.attachments.length > 1 ? "s" : ""}. What should I do with ${userMsg.attachments.length > 1 ? "them" : "it"}? Verification, business document, or campaign creative?`,
           suggestions: ["For business verification", "Campaign creative", "Just review it"],
         };
       } else if (campaignFlow) {
-        if (/^(cancel|stop|exit|start over)$/i.test(text)) {
+        if (campaignFlow.type && !isCampaignTypeAllowed(campaignFlow.type, ctx)) {
+          const blocked = campaignTypeMismatchReply(campaignFlow.type, ctx);
+          nextFlow = null;
+          reply = { role: "bot", text: blocked.text, suggestions: blocked.suggestions, navigateTo: blocked.navigateTo };
+        } else if (/^(cancel|stop|exit|start over)$/i.test(text)) {
           nextFlow = null;
           reply = { role: "bot", text: "No problem. Campaign setup stopped.", suggestions: ["Create a campaign", "What is Karbali?", "Open wallet"] };
+        } else if (/^continue campaign setup$/i.test(text)) {
+          nextFlow = campaignFlow;
+          reply = currentCampaignQuestion(campaignFlow);
         } else {
-          const result = nextCampaignPrompt(campaignFlow, text);
-          nextFlow = result.flow;
-          reply = result.reply;
+          const userChangedContext = CAMPAIGN_VALUE_STEPS.has(campaignFlow.step) && isCampaignKnowledgeQuestion(text);
+          const requestedType = pickCampaignType(text);
+          if (userChangedContext) {
+            const detected = detectIntent(text, ctx);
+            nextFlow = campaignFlow;
+            reply = { role: "bot", text: detected.text, suggestions: [...(detected.suggestions || []), "Continue campaign setup"].slice(0, 4), navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };
+          } else if (requestedType && campaignFlow.type && requestedType !== campaignFlow.type) {
+            const blocked = campaignTypeMismatchReply(requestedType, ctx);
+            nextFlow = isCampaignTypeAllowed(requestedType, ctx) ? { type: requestedType, data: { type: requestedType, createdAt: Date.now() }, step: "name" } : campaignFlow;
+            reply = isCampaignTypeAllowed(requestedType, ctx)
+              ? { role: "bot", text: `Switching to ${CAMPAIGN_TYPE_LABELS[requestedType]}. What should we call it?` }
+              : { role: "bot", text: blocked.text, suggestions: [...(blocked.suggestions || []), "Continue campaign setup"].slice(0, 4), navigateTo: blocked.navigateTo };
+          } else {
+            const result = nextCampaignPrompt(campaignFlow, text, ctx);
+            nextFlow = result.flow;
+            reply = result.reply;
+          }
         }
       } else {
         const detected = detectIntent(text, ctx);
