@@ -23,7 +23,7 @@ const PAGE_LABELS: Record<string, string> = {
 const STORAGE_KEY = "karbali_assistant_greeted";
 
 export default function KarbaliAssistant() {
-  const { user, walletActivated, categoryStatus, advertiserType, businessVerified } = useAuth();
+  const { user, walletActivated, categoryStatus, advertiserType, businessVerified, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -69,6 +69,11 @@ export default function KarbaliAssistant() {
     setInput("");
     setTyping(true);
     setTimeout(() => {
+      if (isLoading) {
+        setMessages((m) => [...m, { role: "bot", text: "One second. I am still loading your advertiser profile." }]);
+        setTyping(false);
+        return;
+      }
       const r = detectIntent(userText, ctx);
       setMessages((m) => [...m, { role: "bot", text: r.text, suggestions: r.suggestions, navigateTo: r.navigateTo }]);
       setTyping(false);
