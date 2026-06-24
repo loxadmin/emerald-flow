@@ -428,10 +428,6 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
   }
 
   const requestedCampaignType = inferCampaignType(tokens);
-  if (requestedCampaignType && hasAny(tokens, ["create", "start", "new", "launch", "place", "run", "make", "setup", "build"])) {
-    return campaignTypeMismatchReply(requestedCampaignType, ctx);
-  }
-
   if (hasAny(tokens, ["why"]) && hasAny(tokens, ["create", "use", "choose"])) {
     const allowedType = getAllowedCampaignType(ctx);
     if (allowedType) {
@@ -440,6 +436,10 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
         suggestions: [`Create ${CAMPAIGN_TYPE_LABELS[allowedType]}`, "Change advertiser type"],
       };
     }
+  }
+
+  if (requestedCampaignType && hasAny(tokens, ["create", "start", "new", "launch", "place", "run", "make", "setup", "build"])) {
+    return campaignTypeMismatchReply(requestedCampaignType, ctx);
   }
 
   let best: { score: number; intent: Intent | null } = { score: 0, intent: null };
