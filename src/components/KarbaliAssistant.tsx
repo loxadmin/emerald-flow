@@ -4,7 +4,21 @@ import { useAuth } from "@/lib/auth";
 import { MessageCircle, X, Send, Sparkles } from "lucide-react";
 import { detectIntent, getProactiveGreeting, type AssistantContext } from "@/lib/assistant-nlp";
 
-type Msg = { role: "user" | "bot"; text: string; suggestions?: string[] };
+type Msg = { role: "user" | "bot"; text: string; suggestions?: string[]; navigateTo?: string };
+
+const PAGE_LABELS: Record<string, string> = {
+  "/wallet": "Wallet",
+  "/dashboard": "Overview",
+  "/ads": "Campaigns",
+  "/campaigns/create": "New campaign",
+  "/campaigns/create/performance": "Performance campaign",
+  "/campaigns/create/engagement": "Engagement campaign",
+  "/campaigns/create/commerce": "Commerce campaign",
+  "/websites": "Websites",
+  "/docs": "Docs",
+  "/category": "Category",
+  "/verification": "Verification",
+};
 
 const STORAGE_KEY = "karbali_assistant_greeted";
 
@@ -56,9 +70,9 @@ export default function KarbaliAssistant() {
     setTyping(true);
     setTimeout(() => {
       const r = detectIntent(userText, ctx);
-      setMessages((m) => [...m, { role: "bot", text: r.text, suggestions: r.suggestions }]);
+      setMessages((m) => [...m, { role: "bot", text: r.text, suggestions: r.suggestions, navigateTo: r.navigateTo }]);
       setTyping(false);
-      if (r.navigateTo && r.navigateTo !== location.pathname) {
+      if (r.navigateTo && r.autoNavigate && r.navigateTo !== location.pathname) {
         setTimeout(() => navigate(r.navigateTo!), 600);
       }
     }, 450 + Math.random() * 300);
@@ -126,6 +140,14 @@ export default function KarbaliAssistant() {
                         </button>
                       ))}
                     </div>
+                  )}
+                  {m.role === "bot" && m.navigateTo && (
+                    <button
+                      onClick={() => navigate(m.navigateTo!)}
+                      className="text-[11px] px-2.5 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                    >
+                      Open {PAGE_LABELS[m.navigateTo] || m.navigateTo}
+                    </button>
                   )}
                 </div>
               </div>
