@@ -432,6 +432,16 @@ export function detectIntent(input: string, ctx: AssistantContext): AssistantRep
     return campaignTypeMismatchReply(requestedCampaignType, ctx);
   }
 
+  if (hasAny(tokens, ["why"]) && hasAny(tokens, ["create", "use", "choose"])) {
+    const allowedType = getAllowedCampaignType(ctx);
+    if (allowedType) {
+      return {
+        text: `Because your approved advertiser profile is ${CAMPAIGN_TYPE_LABELS[allowedType]}. Karbali keeps campaign setup locked to that profile for billing, tracking, and approval accuracy.`,
+        suggestions: [`Create ${CAMPAIGN_TYPE_LABELS[allowedType]}`, "Change advertiser type"],
+      };
+    }
+  }
+
   let best: { score: number; intent: Intent | null } = { score: 0, intent: null };
   for (const intent of INTENTS) {
     let score = 0;
