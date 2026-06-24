@@ -23,7 +23,7 @@ const COMMISSION_BUFFER = 100; // Extra escrow held to cover unknown 10% commiss
 export default function CreateCommerceCampaign() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, walletActivated } = useAuth();
+  const { user, walletActivated, advertiserType } = useAuth();
   const draftParam = searchParams.get("draft");
   const stepParam = searchParams.get("step");
   const [step, setStep] = useState(0);
@@ -52,6 +52,14 @@ export default function CreateCommerceCampaign() {
     setStep(nextStep);
     if (draftId) syncDraftUrl(draftId, nextStep);
   };
+
+  useEffect(() => {
+    if (!user?.id || !advertiserType || advertiserType === "commerce") return;
+    toast.error("Your advertiser profile is not set for Commerce Ads.");
+    if (advertiserType === "engagement") navigate("/campaigns/create/engagement", { replace: true });
+    else if (advertiserType === "performance") navigate("/campaigns/create/performance", { replace: true });
+    else navigate("/dashboard", { replace: true });
+  }, [user?.id, advertiserType, navigate]);
 
   useEffect(() => {
     if (!user) return;
