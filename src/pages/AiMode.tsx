@@ -190,7 +190,7 @@ function nextCampaignPrompt(flow: CampaignFlow, text: string, ctx: AssistantCont
 }
 
 export default function AiMode() {
-  const { user, signOut, walletActivated, categoryStatus, advertiserType, businessVerified } = useAuth();
+  const { user, signOut, walletActivated, categoryStatus, advertiserType, businessVerified, isLoading } = useAuth();
   const { setAiMode } = useAiMode();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -250,7 +250,9 @@ export default function AiMode() {
     setTimeout(() => {
       let reply: Msg & { autoNavigate?: boolean };
       let nextFlow = campaignFlow;
-      if (!text && userMsg.attachments?.length) {
+      if (isLoading) {
+        reply = { role: "bot", text: "One second. I am still loading your advertiser profile so I do not guide you into the wrong campaign type." };
+      } else if (!text && userMsg.attachments?.length) {
         reply = {
           role: "bot",
           text: `Got your file${userMsg.attachments.length > 1 ? "s" : ""}. What should I do with ${userMsg.attachments.length > 1 ? "them" : "it"}? Verification, business document, or campaign creative?`,
