@@ -251,7 +251,11 @@ export default function AiMode() {
           suggestions: ["For business verification", "Campaign creative", "Just review it"],
         };
       } else if (campaignFlow) {
-        if (/^(cancel|stop|exit|start over)$/i.test(text)) {
+        if (campaignFlow.type && !isCampaignTypeAllowed(campaignFlow.type, ctx)) {
+          const blocked = campaignTypeMismatchReply(campaignFlow.type, ctx);
+          nextFlow = null;
+          reply = { role: "bot", text: blocked.text, suggestions: blocked.suggestions, navigateTo: blocked.navigateTo };
+        } else if (/^(cancel|stop|exit|start over)$/i.test(text)) {
           nextFlow = null;
           reply = { role: "bot", text: "No problem. Campaign setup stopped.", suggestions: ["Create a campaign", "What is Karbali?", "Open wallet"] };
         } else if (/^continue campaign setup$/i.test(text)) {
