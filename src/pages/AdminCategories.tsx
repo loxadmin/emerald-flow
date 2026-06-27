@@ -17,6 +17,16 @@ interface Category {
   description: string | null;
   is_active: boolean;
   is_partnership: boolean;
+  group_id: string | null;
+  mode: "online" | "offline";
+}
+
+interface CategoryGroup {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  display_order: number;
 }
 
 const DEFAULT_CATEGORY_EVENTS = ["download", "signup", "purchase"];
@@ -24,6 +34,7 @@ const CORE_CATEGORY_META: Record<string, string> = {
   "Engagement Ads": "Top-level system category for musicians and YouTubers.",
   "Performance Ads": "Top-level system category for app and website owners.",
   "Commerce Ads": "Top-level system category for vendors and sales-driven businesses.",
+  "Offline Ads": "Top-level system category for offline businesses (oil & gas, distributors).",
 };
 const CORE_CATEGORY_NAMES = Object.keys(CORE_CATEGORY_META);
 
