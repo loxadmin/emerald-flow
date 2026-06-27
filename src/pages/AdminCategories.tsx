@@ -165,6 +165,8 @@ export default function AdminCategories() {
       description: newDesc.trim() || null,
       is_active: newActive,
       is_partnership: newPartnership,
+      group_id: newGroupId || null,
+      mode: newMode,
     } as any);
 
     setAdding(false);
@@ -179,6 +181,27 @@ export default function AdminCategories() {
     setNewDesc("");
     setNewActive(true);
     setNewPartnership(false);
+    setNewGroupId("");
+    setNewMode("online");
+    fetchCategories();
+  };
+
+  const setGroup = async (id: string, groupId: string | null) => {
+    const { error } = await supabase
+      .from("categories")
+      .update({ group_id: groupId, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Group updated");
+    fetchCategories();
+  };
+
+  const setMode = async (id: string, mode: "online" | "offline") => {
+    const { error } = await supabase
+      .from("categories")
+      .update({ mode, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (error) { toast.error(error.message); return; }
     fetchCategories();
   };
 
