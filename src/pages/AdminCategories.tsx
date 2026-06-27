@@ -484,12 +484,36 @@ export default function AdminCategories() {
                     </div>
                   </div>
 
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Label className="text-[11px] text-muted-foreground">Group</Label>
+                    <select
+                      value={category.group_id || ""}
+                      onChange={(e) => setGroup(category.id, e.target.value || null)}
+                      className="h-7 rounded-md border border-input bg-background px-2 text-[11px]"
+                    >
+                      <option value="">— None —</option>
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                    <Label className="text-[11px] text-muted-foreground ml-2">Mode</Label>
+                    <select
+                      value={category.mode}
+                      onChange={(e) => setMode(category.id, e.target.value as "online" | "offline")}
+                      className="h-7 rounded-md border border-input bg-background px-2 text-[11px]"
+                    >
+                      <option value="online">Online</option>
+                      <option value="offline">Offline</option>
+                    </select>
+                  </div>
+
                   {renderMilestones(category)}
                 </div>
               ))}
             </div>
           )}
         </div>
+
       </MotionWrapper>
     </AdminLayout>
   );
