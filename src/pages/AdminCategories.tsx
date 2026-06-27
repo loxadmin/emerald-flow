@@ -391,6 +391,32 @@ export default function AdminCategories() {
               <Input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={100} placeholder="e.g. Fintech, Banks & MFBs, Product Vendors" />
               <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} maxLength={255} placeholder="Optional description" />
             </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="text-[11px] text-muted-foreground">Group</Label>
+                <select
+                  value={newGroupId}
+                  onChange={(e) => setNewGroupId(e.target.value)}
+                  className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="">— None (top-level / partnership) —</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[11px] text-muted-foreground">Ad Mode</Label>
+                <select
+                  value={newMode}
+                  onChange={(e) => setNewMode(e.target.value as "online" | "offline")}
+                  className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
+            </div>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -407,6 +433,7 @@ export default function AdminCategories() {
               </Button>
             </div>
           </div>
+
 
           {loading ? (
             <div className="flex justify-center py-6"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
