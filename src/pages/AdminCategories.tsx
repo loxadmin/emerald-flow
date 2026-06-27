@@ -399,7 +399,7 @@ export default function AdminCategories() {
                   onChange={(e) => setNewGroupId(e.target.value)}
                   className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                 >
-                  <option value="">— None (top-level / partnership) —</option>
+                  <option value="">- None (top-level or partnership) -</option>
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
@@ -491,7 +491,7 @@ export default function AdminCategories() {
                       onChange={(e) => setGroup(category.id, e.target.value || null)}
                       className="h-7 rounded-md border border-input bg-background px-2 text-[11px]"
                     >
-                      <option value="">— None —</option>
+                      <option value="">- None -</option>
                       {groups.map((g) => (
                         <option key={g.id} value={g.id}>{g.name}</option>
                       ))}
