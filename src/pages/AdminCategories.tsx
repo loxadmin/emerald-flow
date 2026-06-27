@@ -54,6 +54,7 @@ function parseCategoryEvents(value: string | null | undefined) {
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [categoryEvents, setCategoryEvents] = useState<Record<string, string[]>>({});
   const [advertiserCounts, setAdvertiserCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -68,12 +69,18 @@ export default function AdminCategories() {
   const [newDesc, setNewDesc] = useState("");
   const [newActive, setNewActive] = useState(true);
   const [newPartnership, setNewPartnership] = useState(false);
+  const [newGroupId, setNewGroupId] = useState<string>("");
+  const [newMode, setNewMode] = useState<"online" | "offline">("online");
 
   const fetchCategories = async () => {
     setLoading(true);
-    const { data } = await supabase.from("categories").select("*").order("name");
+    const [{ data }, { data: grpData }] = await Promise.all([
+      supabase.from("categories").select("*").order("name"),
+      supabase.from("category_groups").select("*").order("display_order"),
+    ]);
     const nextCategories = (data as Category[]) || [];
     setCategories(nextCategories);
+    setGroups((grpData as CategoryGroup[]) || []);
 
     if (nextCategories.length > 0) {
       const eventKeys = nextCategories.map((c) => `category_events:${c.id}`);
