@@ -53,7 +53,7 @@ const ONLINE_GROUPS: OnlineGroup[] = [
     slug: "engagement",
     advertiserType: "engagement",
     label: "Engagement",
-    description: "Reward-based attention for creators — musicians and YouTubers earn per listener/viewer.",
+    description: "Reward-based attention for creators - musicians and YouTubers earn per listener/viewer.",
     icon: Music,
     subtypes: [
       { id: "musician", label: "Musician", description: "Promote your music to listeners", icon: Music },
@@ -64,7 +64,7 @@ const ONLINE_GROUPS: OnlineGroup[] = [
     slug: "performance",
     advertiserType: "performance",
     label: "Performance",
-    description: "Trackable actions for apps and websites — downloads, signups, and purchases.",
+    description: "Trackable actions for apps and websites - downloads, signups, and purchases.",
     icon: Globe,
     subtypes: [
       { id: "app", label: "App Owner", description: "Mobile or desktop application", icon: Smartphone },
@@ -75,7 +75,7 @@ const ONLINE_GROUPS: OnlineGroup[] = [
     slug: "commerce",
     advertiserType: "commerce",
     label: "Commerce",
-    description: "Sales-driven verticals — e-commerce, services, real estate, fintech, vendors.",
+    description: "Sales-driven verticals - e-commerce, services, real estate, fintech, vendors.",
     icon: ShoppingBag,
     subtypes: [
       { id: "ecommerce", label: "E-commerce Vendor", description: "Online store selling products", icon: ShoppingBag },
@@ -115,7 +115,7 @@ export default function CategorySelection() {
 
   const [selectedType, setSelectedType] = useState<AdType | null>(null);
   const [selectedSubtype, setSelectedSubtype] = useState<Subtype | null>(null);
-  // Optional sub-category row (e.g. Fintech, Product Vendors) — only required when a group exposes them
+  // Optional sub-category row (e.g. Fintech, Product Vendors) - only required when a group exposes them
   const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<CategoryRow[]>([]);
@@ -176,7 +176,7 @@ export default function CategorySelection() {
       map[slug] = categories.filter(
         (c) =>
           c.group_id === g.id &&
-          // Hide the catch-all top-level row (e.g. "Engagement Ads") — it's the default landing row, not a sub-niche
+          // Hide the catch-all top-level row (e.g. "Engagement Ads") - it's the default landing row, not a sub-niche
           !["Engagement Ads", "Performance Ads", "Commerce Ads", "Offline Ads"].includes(c.name) &&
           !c.is_partnership,
       );
