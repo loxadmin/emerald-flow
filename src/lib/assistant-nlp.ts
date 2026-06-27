@@ -171,8 +171,8 @@ const INTENTS: Intent[] = [
     keywords: [["type","kind","category","option","difference","which","choose"], ["campaign","ad","advert"]],
     any: ["types", "options"],
     handler: () => ({
-      text: "Three campaign types: Engagement (media and quizzes where users earn points), Performance (pay per click or conversion), and Commerce (flat fee plus commission on sales).",
-      suggestions: ["What is Commerce?", "What is Engagement?", "Create a campaign"],
+      text: "Karbali has two ad types: Online and Offline. Online has three groups: Engagement (creators), Performance (apps/websites), and Commerce (e-commerce, fintech, real estate, vendors). Offline is for oil and gas, distributors, and similar businesses that fulfil orders offline.",
+      suggestions: ["What is Engagement?", "What is Performance?", "What is Commerce?"],
     }),
   },
   {
