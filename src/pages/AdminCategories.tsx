@@ -17,6 +17,16 @@ interface Category {
   description: string | null;
   is_active: boolean;
   is_partnership: boolean;
+  group_id: string | null;
+  mode: "online" | "offline";
+}
+
+interface CategoryGroup {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  display_order: number;
 }
 
 const DEFAULT_CATEGORY_EVENTS = ["download", "signup", "purchase"];
@@ -24,6 +34,7 @@ const CORE_CATEGORY_META: Record<string, string> = {
   "Engagement Ads": "Top-level system category for musicians and YouTubers.",
   "Performance Ads": "Top-level system category for app and website owners.",
   "Commerce Ads": "Top-level system category for vendors and sales-driven businesses.",
+  "Offline Ads": "Top-level system category for offline businesses (oil & gas, distributors).",
 };
 const CORE_CATEGORY_NAMES = Object.keys(CORE_CATEGORY_META);
 
@@ -43,6 +54,7 @@ function parseCategoryEvents(value: string | null | undefined) {
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [categoryEvents, setCategoryEvents] = useState<Record<string, string[]>>({});
   const [advertiserCounts, setAdvertiserCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -57,12 +69,18 @@ export default function AdminCategories() {
   const [newDesc, setNewDesc] = useState("");
   const [newActive, setNewActive] = useState(true);
   const [newPartnership, setNewPartnership] = useState(false);
+  const [newGroupId, setNewGroupId] = useState<string>("");
+  const [newMode, setNewMode] = useState<"online" | "offline">("online");
 
   const fetchCategories = async () => {
     setLoading(true);
-    const { data } = await supabase.from("categories").select("*").order("name");
+    const [{ data }, { data: grpData }] = await Promise.all([
+      supabase.from("categories").select("*").order("name"),
+      supabase.from("category_groups").select("*").order("display_order"),
+    ]);
     const nextCategories = (data as Category[]) || [];
     setCategories(nextCategories);
+    setGroups((grpData as CategoryGroup[]) || []);
 
     if (nextCategories.length > 0) {
       const eventKeys = nextCategories.map((c) => `category_events:${c.id}`);
@@ -147,6 +165,8 @@ export default function AdminCategories() {
       description: newDesc.trim() || null,
       is_active: newActive,
       is_partnership: newPartnership,
+      group_id: newGroupId || null,
+      mode: newMode,
     } as any);
 
     setAdding(false);
@@ -161,6 +181,27 @@ export default function AdminCategories() {
     setNewDesc("");
     setNewActive(true);
     setNewPartnership(false);
+    setNewGroupId("");
+    setNewMode("online");
+    fetchCategories();
+  };
+
+  const setGroup = async (id: string, groupId: string | null) => {
+    const { error } = await supabase
+      .from("categories")
+      .update({ group_id: groupId, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Group updated");
+    fetchCategories();
+  };
+
+  const setMode = async (id: string, mode: "online" | "offline") => {
+    const { error } = await supabase
+      .from("categories")
+      .update({ mode, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (error) { toast.error(error.message); return; }
     fetchCategories();
   };
 
@@ -350,6 +391,32 @@ export default function AdminCategories() {
               <Input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={100} placeholder="e.g. Fintech, Banks & MFBs, Product Vendors" />
               <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} maxLength={255} placeholder="Optional description" />
             </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="text-[11px] text-muted-foreground">Group</Label>
+                <select
+                  value={newGroupId}
+                  onChange={(e) => setNewGroupId(e.target.value)}
+                  className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="">- None (top-level or partnership) -</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[11px] text-muted-foreground">Ad Mode</Label>
+                <select
+                  value={newMode}
+                  onChange={(e) => setNewMode(e.target.value as "online" | "offline")}
+                  className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
+            </div>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -366,6 +433,7 @@ export default function AdminCategories() {
               </Button>
             </div>
           </div>
+
 
           {loading ? (
             <div className="flex justify-center py-6"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
@@ -416,12 +484,36 @@ export default function AdminCategories() {
                     </div>
                   </div>
 
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Label className="text-[11px] text-muted-foreground">Group</Label>
+                    <select
+                      value={category.group_id || ""}
+                      onChange={(e) => setGroup(category.id, e.target.value || null)}
+                      className="h-7 rounded-md border border-input bg-background px-2 text-[11px]"
+                    >
+                      <option value="">- None -</option>
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                    <Label className="text-[11px] text-muted-foreground ml-2">Mode</Label>
+                    <select
+                      value={category.mode}
+                      onChange={(e) => setMode(category.id, e.target.value as "online" | "offline")}
+                      className="h-7 rounded-md border border-input bg-background px-2 text-[11px]"
+                    >
+                      <option value="online">Online</option>
+                      <option value="offline">Offline</option>
+                    </select>
+                  </div>
+
                   {renderMilestones(category)}
                 </div>
               ))}
             </div>
           )}
         </div>
+
       </MotionWrapper>
     </AdminLayout>
   );

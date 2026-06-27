@@ -603,31 +603,45 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          group_id: string | null
           id: string
           is_active: boolean
           is_partnership: boolean
+          mode: string
           name: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           description?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean
           is_partnership?: boolean
+          mode?: string
           name: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean
           is_partnership?: boolean
+          mode?: string
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "category_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       category_change_requests: {
         Row: {
@@ -661,6 +675,36 @@ export type Database = {
           reason?: string
           requested_category_id?: string
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      category_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          slug?: string
           updated_at?: string
         }
         Relationships: []
