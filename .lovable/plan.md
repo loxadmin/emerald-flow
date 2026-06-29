@@ -1,96 +1,84 @@
+# Ad Packages (Ad Templates)
 
-# Offline Ads Category
-
-A new advertiser vertical for businesses that sell offline (oil & gas, distributors, etc.). They don't connect a website — they upload a CAC business doc, get verified, fund their wallet, create offers, then admin manually relays orders that they accept and fulfill.
+Admin-created, pre-priced ad templates that advertisers buy in one click instead of building a full campaign. Each template targets a category or subcategory, has a fixed unit (e.g. daily user), price per unit, duration, and a min/max range the advertiser can choose from.
 
 ---
 
-## 1. Category & Signup
+## 1. Data model
 
-- Add a new category **"Offline Ads"** (active, not partnership) to the `categories` table.
-- Add new advertiser subtypes for the signup dropdown: **Oil & Gas** and **Distributor**, both routed to `advertiser_type = 'offline'`.
-- Add new `advertiser_type` enum value `'offline'`.
-- Signup remains open to any email (corporate or Gmail) — relax the business-domain check for offline subtypes only.
+New table `ad_packages` (admin-managed):
+- `name`, `description`, `image_url`
+- `category_group_id` (Engagement / Performance / Commerce) and optional `category_id` (subcategory like Fintech)
+- `mode` (`online` | `offline`) — defaults to `online`
+- `unit_label` (e.g. "daily user", "install", "transacting user")
+- `unit_price_usd` (e.g. 1.20)
+- `min_units`, `max_units` (e.g. 500 → 10,000)
+- `duration_days` (e.g. 30)
+- `max_links` (default 3)
+- `discount_pct` (optional, for display)
+- `is_active`, `sort_order`, timestamps
 
-## 2. Business Verification (replaces website verification)
-
-New table `business_verifications`:
-- `advertiser_id`, `document_url`, `document_type` (CAC / business license), `status` (pending / approved / rejected), `admin_notes`, `reviewed_by`, `reviewed_at`.
-- New storage bucket `business-documents` (private, RLS: owner can upload/read own, admins read all).
-- Until approved, the advertiser dashboard shows **only** the upload card — no campaigns, wallet actions, etc.
-- Admin panel gets an "Offline Verifications" page to approve/reject with notes; rejected → user can re-upload.
-
-## 3. Wallet Activation
-
-- Reuse existing wallet activation flow with a per-category fee setting `category_activation_fee:offline` (default $35, admin-editable in settings).
-- Wallet must be activated before offer creation is unlocked.
-
-## 4. Offer Creation (instead of campaigns)
-
-New table `offline_offers`:
-- `advertiser_id`, `product_name`, `description`
-- `moq_value` (number), `moq_unit` (`liter` | `kg` | `piece`)
-- `state` (one of 36 Nigerian states + FCT, seeded as a constant), `business_address`, `business_phone`, `business_email`
-- `submission_fee` (snapshot, default $100), `status` (pending / approved / rejected), `admin_notes`
+New table `package_orders` (advertiser purchases):
+- `advertiser_id`, `package_id` (snapshot of name/unit/price kept too)
+- `units`, `unit_price_usd`, `duration_days`, `total_amount_usd`
+- `app_links` (text[] up to 3)
+- `payment_method` (`wallet` | `paystack`), `payment_reference`
+- `status`: `pending_payment` → `pending_review` → `approved` → `active` → `completed` (or `rejected`, `refunded`)
+- `admin_notes`, `reviewed_by`, `reviewed_at`, `starts_at`, `ends_at`
 - timestamps
 
-Submission flow:
-- On submit, $100 moves wallet → escrow (new `wallet_transactions` row type `offer_escrow`).
-- Admin approves → escrow deducted (kept by platform). Admin rejects → refunded to wallet.
-- Admin-editable setting `offline_offer_submission_fee` (default $100).
+RLS:
+- `ad_packages`: anyone authenticated can SELECT active ones; only admins write.
+- `package_orders`: owner reads/inserts own; admin reads/updates all.
 
-## 5. Orders (admin-initiated)
+RPC `purchase_package_with_wallet(_package_id, _units, _links[])` — validates, deducts wallet → escrow, creates order in `pending_review`.
 
-New table `offline_orders`:
-- `offer_id`, `advertiser_id`, `buyer_name`, `buyer_phone`, `buyer_email`, `quantity`, `unit_price`, `total_amount`
-- `commission_rate` (snapshot, default 0.5%), `commission_amount`
-- `status`: `pending_acceptance` → `accepted` → `fulfilled_by_advertiser` → `confirmed_by_admin` (or `expired` / `rejected`)
-- `accept_deadline` (12h from creation), `fulfill_deadline` (12h from acceptance)
-- timestamps + `notification_sent_at`
+## 2. Admin UI — `/admin/packages`
 
-Lifecycle:
-1. Admin creates a pending order → email + SMS notification to advertiser.
-2. Advertiser has 12h to **Accept**. On accept, `commission = total × 0.5%` is deducted from wallet → platform. If wallet < commission, must top up first.
-3. After accept, advertiser has 12h to click **Order Fulfilled**.
-4. Admin reviews fulfillment → marks **Confirmed**.
-5. Cron job expires orders past their deadlines.
+New page `AdminPackages.tsx`:
+- Table of all packages with toggle active, edit, delete.
+- Create/Edit dialog: pick group + optional subcategory, unit label, unit price, min/max units, duration, max links, description, image.
+- Orders tab: list `pending_review` package orders → Approve / Reject (with notes). Approve sets `status=active`, `starts_at=now()`, `ends_at=now()+duration`.
 
-Admin-editable setting `offline_commission_rate` (default 0.005) and `offline_min_wallet_balance` (default $300, enforced before accepting orders).
+Add link in `AdminLayout` sidebar.
 
-## 6. SMS notifications
+## 3. Advertiser UI
 
-- Add `RESEND_API_KEY` is already present for email. For SMS, we'll need an SMS provider — I'll use a simple Twilio-style edge function stub and ask you for credentials (Twilio SID/Token) when you're ready to wire real sending. Email will work immediately.
+New page `/packages` (`Packages.tsx`):
+- Lists active packages filtered to the advertiser's group/subcategory (Engagement-only advertisers see Engagement packages, etc.).
+- Each card shows: name, unit, price/unit, duration, range, sample total.
+- "Buy" button → opens `PackageCheckout` dialog.
 
-## 7. Admin UI additions
+`PackageCheckout` dialog:
+- Slider/input to pick units (min–max), live total calculation.
+- Up to 3 app link inputs (validated URLs).
+- Payment choice: **Wallet** (if balance ≥ total) or **Paystack** (calls existing `paystack-wallet` flow with a `package_order_id` metadata).
+- On wallet pay → call RPC → success → order in pending review.
+- On Paystack pay → create order in `pending_payment` → redirect; `paystack-webhook` marks paid and moves to `pending_review`.
 
-- **Offline Verifications**: list pending docs, view, approve/reject.
-- **Offline Offers**: list pending offers, approve/reject (handles escrow).
-- **Offline Orders**: create pending orders for any approved offer, mark fulfillment as confirmed.
-- Settings: edit activation fee, submission fee, commission rate, min balance.
+New page `/packages/orders` (`PackageOrders.tsx`): advertiser sees their package orders, status, dates, links.
 
-## 8. Advertiser UI additions
+Add "Ad Packages" link in `DashboardLayout` sidebar (above Create Campaign).
 
-- Dashboard gating: doc upload → wallet activation → offers → orders.
-- **Offers** page: create offer form (product, MOQ + unit, state dropdown, address, contact), list with status.
-- **Orders** page: pending / accepted / fulfilled tabs, Accept and Fulfilled buttons with countdown timers.
+## 4. Paystack webhook update
+
+Extend `supabase/functions/paystack-webhook` to recognize `package_order_id` in metadata: on `charge.success` mark that order paid and `status=pending_review` (no wallet credit).
+
+## 5. AI assistant
+
+Add a small intent in `assistant-nlp.ts` so "packages", "ad templates", "buy package" navigates to `/packages`.
 
 ---
 
 ## Technical notes
 
-- New enum value `'offline'` added to `advertiser_type`.
-- New tables: `business_verifications`, `offline_offers`, `offline_orders`. All with RLS (owner read/write own, admin manage all).
-- New storage bucket `business-documents` with owner-folder RLS.
-- New edge function `offline-orders` for state transitions (accept / fulfill / admin-create / admin-confirm) so wallet deductions and escrow stay server-side.
-- Reuse existing wallet activation + escrow patterns.
-- Pg_cron job to expire stale orders every 5 min.
+- All money in USD, displayed in NGN using existing `usd_to_ngn_rate` setting.
+- Package orders do not create rows in `campaigns` — they are their own track. Admin fulfills them off-platform / manually attaches to campaigns later (out of scope here).
+- Escrow on wallet purchase uses a new `wallet_transactions.type = 'package_escrow'`. Rejection refunds via RPC `refund_package_order`.
+- Cron (reuse existing scheduler) marks `active` → `completed` when `ends_at < now()`.
 
----
+## Open questions
 
-## Questions before I build
-
-1. **SMS provider**: do you already have Twilio (or another SMS provider) credentials, or should I scaffold the SMS code and you'll add credentials later? Email notifications will work immediately either way.
-2. **Currency**: offers, orders, and the $100/$300/$35 thresholds — should these be in USD (matching the rest of the platform) and converted to NGN at display time using the existing `usd_to_ngn_rate` setting? I'll assume yes unless you say otherwise.
-3. **Order pricing**: when admin creates a pending order, do they enter `total_amount` directly, or `quantity × unit_price`? I'll use `quantity × unit_price` (admin enters both) unless you prefer just a single total.
-
-Once you confirm, I'll run the migration and build everything end-to-end.
+1. Should rejected Paystack-paid orders refund to the **wallet** or back to the card? (Default: credit to wallet — simpler.)
+2. Should packages be visible to **all** advertisers regardless of category, or strictly filtered to their group? (Default: strictly filtered, with an "All packages" toggle.)
+3. Do you want a featured/discount badge on certain packages on the listing page? (Default: yes, using `discount_pct`.)
