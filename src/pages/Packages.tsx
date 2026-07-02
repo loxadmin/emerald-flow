@@ -143,14 +143,11 @@ export default function Packages() {
       sessionStorage.removeItem(PENDING_KEY);
       return toast.error((data as any)?.error || error?.message || "Payment failed");
     }
-    const url = (data as any)?.authorization_url;
-    if (!url) return toast.error("No payment URL");
-    // Rewrite callback so we come back to /packages
-    const withPackage = url.includes("?") ? `${url}&pkgReturn=1` : `${url}?pkgReturn=1`;
-    // Simpler: store return in session and redirect to Paystack; on funded=true we redirect back
+    // Store return path — Wallet page will bounce us back here after payment
     sessionStorage.setItem("karbali_return_to", `/packages?funded=package`);
-    window.location.href = withPackage;
+    window.location.href = url;
   };
+
 
 
 
