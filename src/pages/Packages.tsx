@@ -35,7 +35,7 @@ export default function Packages() {
   const { user, walletActivated } = useAuth();
   const [searchParams] = useSearchParams();
   const [packages, setPackages] = useState<Pkg[]>([]);
-  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [wallet, setWallet] = useState<WalletInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Pkg | null>(null);
   const [units, setUnits] = useState<number>(500);
