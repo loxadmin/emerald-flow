@@ -41,6 +41,7 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
     links: [
       { to: "/admin/offerwall", label: "Offerwall", icon: Gamepad2 },
       { to: "/admin/offline", label: "Offline Ads", icon: Handshake },
+      { to: "/admin/packages", label: "Ad Packages", icon: Package },
       { to: "/admin/extension", label: "Extension", icon: Chrome },
       { to: "/admin/settings", label: "Settings", icon: Settings },
     ],
