@@ -32,7 +32,7 @@ type WalletInfo = { balance: number; is_activated: boolean };
 const PENDING_KEY = "karbali_pending_package_purchase";
 
 export default function Packages() {
-  const { user, walletActivated } = useAuth();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [packages, setPackages] = useState<Pkg[]>([]);
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
