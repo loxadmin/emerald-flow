@@ -152,14 +152,8 @@ export default function Packages() {
     window.location.href = withPackage;
   };
 
-  // Handle post-Paystack: /wallet?funded=true redirect — bounce back to /packages
-  useEffect(() => {
-    const returnTo = sessionStorage.getItem("karbali_return_to");
-    if (returnTo && window.location.pathname === "/wallet" && searchParams.get("funded") === "true") {
-      sessionStorage.removeItem("karbali_return_to");
-      window.location.href = returnTo;
-    }
-  }, [searchParams]);
+
+
 
   return (
     <DashboardLayout>
