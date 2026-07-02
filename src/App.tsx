@@ -87,6 +87,8 @@ const App = () => (
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/ads" element={<RequireAuth><Ads /></RequireAuth>} />
               <Route path="/websites" element={<RequireAuth><Websites /></RequireAuth>} />
+              <Route path="/packages" element={<RequireAuth><Packages /></RequireAuth>} />
+              <Route path="/packages/orders" element={<RequireAuth><PackageOrders /></RequireAuth>} />
 
               {/* Offline Ads */}
               <Route path="/offline/verify" element={<RequireAuth><OfflineVerification /></RequireAuth>} />
