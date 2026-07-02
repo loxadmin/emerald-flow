@@ -41,6 +41,9 @@ import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminExtension from "./pages/AdminExtension";
 import AdminOfferwall from "./pages/AdminOfferwall";
 import AdminOffline from "./pages/AdminOffline";
+import AdminPackages from "./pages/AdminPackages";
+import Packages from "./pages/Packages";
+import PackageOrders from "./pages/PackageOrders";
 import OfflineVerification from "./pages/OfflineVerification";
 import OfflineOffers from "./pages/OfflineOffers";
 import OfflineOrders from "./pages/OfflineOrders";
@@ -84,6 +87,8 @@ const App = () => (
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/ads" element={<RequireAuth><Ads /></RequireAuth>} />
               <Route path="/websites" element={<RequireAuth><Websites /></RequireAuth>} />
+              <Route path="/packages" element={<RequireAuth><Packages /></RequireAuth>} />
+              <Route path="/packages/orders" element={<RequireAuth><PackageOrders /></RequireAuth>} />
 
               {/* Offline Ads */}
               <Route path="/offline/verify" element={<RequireAuth><OfflineVerification /></RequireAuth>} />
@@ -131,6 +136,7 @@ const App = () => (
               <Route path="/admin/extension" element={<RequireAuth><RequireAdmin><AdminExtension /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/offerwall" element={<RequireAuth><RequireAdmin><AdminOfferwall /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/offline" element={<RequireAuth><RequireAdmin><AdminOffline /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/packages" element={<RequireAuth><RequireAdmin><AdminPackages /></RequireAdmin></RequireAuth>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
