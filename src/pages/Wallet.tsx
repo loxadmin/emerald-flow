@@ -133,6 +133,13 @@ export default function WalletPage() {
     const trxref = params.get("trxref") || params.get("reference") || params.get("ref");
     const isActivated = params.get("activated") === "true";
     const isFunded = params.get("funded") === "true";
+    // Bounce back to /packages if this funding was for a package purchase
+    const returnTo = sessionStorage.getItem("karbali_return_to");
+    if (isFunded && returnTo) {
+      sessionStorage.removeItem("karbali_return_to");
+      window.location.href = returnTo;
+      return;
+    }
     if (trxref || isActivated || isFunded) {
       const verifyAndRefresh = async () => {
         if (trxref) {
