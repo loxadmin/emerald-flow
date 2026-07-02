@@ -27,7 +27,7 @@ type Pkg = {
   discount_pct: number | null;
 };
 
-type Wallet = { balance: number; is_activated: boolean };
+type WalletInfo = { balance: number; is_activated: boolean };
 
 const PENDING_KEY = "karbali_pending_package_purchase";
 
