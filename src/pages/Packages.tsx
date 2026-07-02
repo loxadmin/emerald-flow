@@ -143,6 +143,8 @@ export default function Packages() {
       sessionStorage.removeItem(PENDING_KEY);
       return toast.error((data as any)?.error || error?.message || "Payment failed");
     }
+    const url = (data as any)?.authorization_url;
+    if (!url) { sessionStorage.removeItem(PENDING_KEY); return toast.error("No payment URL"); }
     // Store return path — Wallet page will bounce us back here after payment
     sessionStorage.setItem("karbali_return_to", `/packages?funded=package`);
     window.location.href = url;
