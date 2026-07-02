@@ -47,6 +47,84 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_packages: {
+        Row: {
+          category_group_id: string | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          discount_pct: number | null
+          duration_days: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          max_links: number
+          max_units: number
+          min_units: number
+          mode: string
+          name: string
+          sort_order: number
+          unit_label: string
+          unit_price_usd: number
+          updated_at: string
+        }
+        Insert: {
+          category_group_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          discount_pct?: number | null
+          duration_days?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_links?: number
+          max_units?: number
+          min_units?: number
+          mode?: string
+          name: string
+          sort_order?: number
+          unit_label?: string
+          unit_price_usd: number
+          updated_at?: string
+        }
+        Update: {
+          category_group_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          discount_pct?: number | null
+          duration_days?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_links?: number
+          max_units?: number
+          min_units?: number
+          mode?: string
+          name?: string
+          sort_order?: number
+          unit_label?: string
+          unit_price_usd?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_packages_category_group_id_fkey"
+            columns: ["category_group_id"]
+            isOneToOne: false
+            referencedRelation: "category_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_packages_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_2fa_codes: {
         Row: {
           code_hash: string
@@ -1329,6 +1407,83 @@ export type Database = {
           },
         ]
       }
+      package_orders: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          app_links: string[]
+          created_at: string
+          duration_days: number
+          ends_at: string | null
+          id: string
+          package_id: string | null
+          package_name: string
+          payment_method: string
+          payment_reference: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          starts_at: string | null
+          status: string
+          total_amount_usd: number
+          unit_label: string
+          unit_price_usd: number
+          units: number
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          app_links?: string[]
+          created_at?: string
+          duration_days: number
+          ends_at?: string | null
+          id?: string
+          package_id?: string | null
+          package_name: string
+          payment_method: string
+          payment_reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          starts_at?: string | null
+          status?: string
+          total_amount_usd: number
+          unit_label: string
+          unit_price_usd: number
+          units: number
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          app_links?: string[]
+          created_at?: string
+          duration_days?: number
+          ends_at?: string | null
+          id?: string
+          package_id?: string | null
+          package_name?: string
+          payment_method?: string
+          payment_reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          starts_at?: string | null
+          status?: string
+          total_amount_usd?: number
+          unit_label?: string
+          unit_price_usd?: number
+          units?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_orders_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "ad_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -1763,6 +1918,7 @@ export type Database = {
     Functions: {
       accept_offline_order: { Args: { _order_id: string }; Returns: Json }
       auto_activate_pending_campaigns: { Args: never; Returns: undefined }
+      complete_expired_package_orders: { Args: never; Returns: number }
       confirm_offline_order: {
         Args: { _notes: string; _order_id: string }
         Returns: Json
@@ -1778,12 +1934,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      purchase_package_with_wallet: {
+        Args: { _links: string[]; _package_id: string; _units: number }
+        Returns: Json
+      }
       refund_campaign_escrow: {
         Args: { _campaign_id: string }
         Returns: number
       }
       review_offline_offer: {
         Args: { _approve: boolean; _notes: string; _offer_id: string }
+        Returns: Json
+      }
+      review_package_order: {
+        Args: { _approve: boolean; _notes: string; _order_id: string }
         Returns: Json
       }
       submit_offline_offer: { Args: { _offer_id: string }; Returns: Json }
