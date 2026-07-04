@@ -1,84 +1,111 @@
-# Ad Packages (Ad Templates)
+# Ad Packages v2 + Category enforcement
 
-Admin-created, pre-priced ad templates that advertisers buy in one click instead of building a full campaign. Each template targets a category or subcategory, has a fixed unit (e.g. daily user), price per unit, duration, and a min/max range the advertiser can choose from.
+Rebuild the packages system around admin-managed milestones with strict category scoping, and lock the whole app so advertisers can only interact with their own category.
 
----
+## 1. New concept: milestones
 
-## 1. Data model
+New table `milestones` (global catalog, admin-managed):
+- `name` (e.g. "App install", "Signup", "KYC", "Engagement", "Deposit", "Sale")
+- `slug`, `description`, `default_order` (int), `is_active`
 
-New table `ad_packages` (admin-managed):
-- `name`, `description`, `image_url`
-- `category_group_id` (Engagement / Performance / Commerce) and optional `category_id` (subcategory like Fintech)
-- `mode` (`online` | `offline`) — defaults to `online`
-- `unit_label` (e.g. "daily user", "install", "transacting user")
-- `unit_price_usd` (e.g. 1.20)
-- `min_units`, `max_units` (e.g. 500 → 10,000)
-- `duration_days` (e.g. 30)
-- `max_links` (default 3)
-- `discount_pct` (optional, for display)
-- `is_active`, `sort_order`, timestamps
+New table `package_milestones` (per-package pricing + order):
+- `package_id`, `milestone_id`, `step_order` (int), `price_usd`
+- Unique on (package_id, milestone_id)
 
-New table `package_orders` (advertiser purchases):
-- `advertiser_id`, `package_id` (snapshot of name/unit/price kept too)
-- `units`, `unit_price_usd`, `duration_days`, `total_amount_usd`
-- `app_links` (text[] up to 3)
-- `payment_method` (`wallet` | `paystack`), `payment_reference`
-- `status`: `pending_payment` → `pending_review` → `approved` → `active` → `completed` (or `rejected`, `refunded`)
-- `admin_notes`, `reviewed_by`, `reviewed_at`, `starts_at`, `ends_at`
-- timestamps
+**Pricing math (locked from your answer):** advertiser picks target milestone X. Total = `units × SUM(price of every milestone in the package with step_order ≤ X.step_order)`. Duration is delivery window only, not a multiplier.
 
-RLS:
-- `ad_packages`: anyone authenticated can SELECT active ones; only admins write.
-- `package_orders`: owner reads/inserts own; admin reads/updates all.
+New admin page `/admin/milestones` — full CRUD.
 
-RPC `purchase_package_with_wallet(_package_id, _units, _links[])` — validates, deducts wallet → escrow, creates order in `pending_review`.
+## 2. `ad_packages` restructure
 
-## 2. Admin UI — `/admin/packages`
+Add:
+- `duration_options` int[] (e.g. `{30,60,90,365}`) — advertiser picks one at checkout
+- `platform_support` text[] (e.g. `{mobile,web}`) — controls the platform toggle
 
-New page `AdminPackages.tsx`:
-- Table of all packages with toggle active, edit, delete.
-- Create/Edit dialog: pick group + optional subcategory, unit label, unit price, min/max units, duration, max links, description, image.
-- Orders tab: list `pending_review` package orders → Approve / Reject (with notes). Approve sets `status=active`, `starts_at=now()`, `ends_at=now()+duration`.
+Drop from active use (kept nullable for back-compat, unused by new UI):
+- `unit_price_usd`, `unit_label`, `duration_days`, `discount_pct`
 
-Add link in `AdminLayout` sidebar.
+Keep: name, description, category_group_id, category_id, min_units, max_units, is_active, sort_order.
 
-## 3. Advertiser UI
+`max_links` becomes derived: web = 1, mobile = 2.
 
-New page `/packages` (`Packages.tsx`):
-- Lists active packages filtered to the advertiser's group/subcategory (Engagement-only advertisers see Engagement packages, etc.).
-- Each card shows: name, unit, price/unit, duration, range, sample total.
-- "Buy" button → opens `PackageCheckout` dialog.
+Every package MUST have a `category_group_id`. Subcategory optional.
 
-`PackageCheckout` dialog:
-- Slider/input to pick units (min–max), live total calculation.
-- Up to 3 app link inputs (validated URLs).
-- Payment choice: **Wallet** (if balance ≥ total) or **Paystack** (calls existing `paystack-wallet` flow with a `package_order_id` metadata).
-- On wallet pay → call RPC → success → order in pending review.
-- On Paystack pay → create order in `pending_payment` → redirect; `paystack-webhook` marks paid and moves to `pending_review`.
+## 3. `package_orders` restructure
 
-New page `/packages/orders` (`PackageOrders.tsx`): advertiser sees their package orders, status, dates, links.
+Add columns:
+- `platform` (`mobile` | `web`)
+- `target_milestone_id` (which milestone the advertiser is buying up to)
+- `duration_days` (already exists — now user-selected from `duration_options`)
+- `milestone_breakdown` jsonb — snapshot `[{name, price, included:true}, …]` for admin review + advertiser receipt
 
-Add "Ad Packages" link in `DashboardLayout` sidebar (above Create Campaign).
+`app_links` rules enforced by RPC:
+- `web` → exactly 1 link, and it must exist in `advertiser_websites` for this user with `verified=true`
+- `mobile` → 1 or 2 links
 
-## 4. Paystack webhook update
+## 4. New RPC `purchase_package_v2`
 
-Extend `supabase/functions/paystack-webhook` to recognize `package_order_id` in metadata: on `charge.success` mark that order paid and `status=pending_review` (no wallet credit).
+Signature: `(_package_id, _units, _duration_days, _target_milestone_id, _platform, _links[])`
 
-## 5. AI assistant
+Validates:
+1. Package active
+2. Advertiser has a category in `advertiser_categories` matching package's `category_group_id` (and `category_id` if set) — otherwise reject "Package not available for your category"
+3. Units in [min, max]
+4. `_duration_days` ∈ `duration_options`
+5. `_platform` ∈ `platform_support`
+6. Links match platform rules; web link is verified for this advertiser
+7. Target milestone belongs to package
+8. Computes total = units × sum(prices where step_order ≤ target.step_order)
+9. Deducts wallet → escrow → inserts order with `milestone_breakdown` snapshot, status `pending_review`
 
-Add a small intent in `assistant-nlp.ts` so "packages", "ad templates", "buy package" navigates to `/packages`.
+Old `purchase_package_with_wallet` kept but no longer wired to UI (safe to drop later).
 
----
+## 5. Admin UI changes
 
-## Technical notes
+**`/admin/milestones` (new):** table with add/edit/delete/toggle-active, drag-free numeric `default_order`.
 
-- All money in USD, displayed in NGN using existing `usd_to_ngn_rate` setting.
-- Package orders do not create rows in `campaigns` — they are their own track. Admin fulfills them off-platform / manually attaches to campaigns later (out of scope here).
-- Escrow on wallet purchase uses a new `wallet_transactions.type = 'package_escrow'`. Rejection refunds via RPC `refund_package_order`.
-- Cron (reuse existing scheduler) marks `active` → `completed` when `ends_at < now()`.
+**`/admin/packages` (rewrite of form):**
+- Remove: unit label, unit price, duration_days, discount, max_links
+- Add: duration options multi-checkbox (30/60/90/180/365 + custom), platform support checkboxes (mobile/web), milestones section — pick from global list, set `step_order` and `price_usd` per row
+- Orders tab: show `platform`, `target_milestone`, and the milestone breakdown snapshot alongside total
 
-## Open questions
+## 6. Advertiser UI changes
 
-1. Should rejected Paystack-paid orders refund to the **wallet** or back to the card? (Default: credit to wallet — simpler.)
-2. Should packages be visible to **all** advertisers regardless of category, or strictly filtered to their group? (Default: strictly filtered, with an "All packages" toggle.)
-3. Do you want a featured/discount badge on certain packages on the listing page? (Default: yes, using `discount_pct`.)
+**`/packages`:** server-side filtered by advertiser's category group + (subcategory if package has one). No "show all" escape hatch.
+
+**Checkout dialog (rewritten):**
+1. Platform toggle (only shows platforms the package supports)
+2. Duration select (from package's duration_options)
+3. Units input (min–max)
+4. Target milestone select — shows ordered list with cumulative price; picking one auto-includes everything before it (grayed with checkmarks)
+5. Link inputs — for web: dropdown of the advertiser's verified sites (blocked with "Verify a website first →" if none); for mobile: 1–2 free-text URL inputs
+6. Live total = units × sum(prices up to selected milestone). Duration shown as "Delivered over D days"
+7. Pay from wallet / Paystack
+
+## 7. Category enforcement across the app
+
+Root cause: nothing checks the advertiser's `advertiser_categories` before offering other flows.
+
+Fix in these surfaces:
+- **`CategorySelection` / `CampaignRouter` / `CreateCampaign`:** on mount, load the user's `advertiser_categories`. Only show/allow their own group's create flow. Deep links to a mismatched create page redirect back with a toast.
+- **`DashboardLayout` sidebar:** hide "Websites" for anyone whose only groups are Engagement (websites are for Performance/Commerce tracking). Same rule hides "Offline offers" for non-Commerce, keep as-is if already correct.
+- **`KarbaliAssistant` + `assistant-nlp.ts`:** intent handlers for "create engagement/performance/commerce ad" first check the user's groups; wrong-group intent replies "That's outside your category — you're set up for X" and offers to switch (link to category change request flow, already exists).
+- **`/packages`:** server-filtered as above; no client-side "all" toggle.
+
+## 8. Technical notes
+
+- New migration: `milestones`, `package_milestones`, alter `ad_packages` (add duration_options, platform_support), alter `package_orders` (add platform, target_milestone_id, milestone_breakdown), RPC `purchase_package_v2`, updated `review_package_order` (no change needed to signature).
+- All money still USD, displayed via existing NGN rate.
+- Advertiser category scope helper: new SQL function `advertiser_can_use_package(_user, _package)` returning boolean — reused by RPC and by a `SELECT` RLS policy on `ad_packages` so the packages list is filtered at the DB layer.
+- Seed a default milestone catalog: App install, Signup, KYC, Engagement, Deposit, Sale (default_order 10,20,30,40,50,60).
+
+## Files touched
+
+New: `supabase/migrations/…_packages_v2.sql`, `src/pages/AdminMilestones.tsx`
+Rewrite: `src/pages/AdminPackages.tsx`, `src/pages/Packages.tsx`
+Update: `src/pages/PackageOrders.tsx` (show platform + target milestone), `src/components/AdminLayout.tsx` (add Milestones link), `src/components/DashboardLayout.tsx` (hide Websites for Engagement-only), `src/App.tsx` (route for /admin/milestones), `src/pages/CategorySelection.tsx`, `src/pages/CampaignRouter.tsx`, `src/pages/CreateCampaign.tsx`, `src/components/KarbaliAssistant.tsx`, `src/lib/assistant-nlp.ts`
+
+## Out of scope for this pass
+
+- Migrating any existing package_orders created under the old pricing model (there shouldn't be real ones yet; old rows keep their historical fields).
+- Milestone completion tracking / payout automation — orders still fulfill off-platform for now.
