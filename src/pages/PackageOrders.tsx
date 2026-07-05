@@ -76,10 +76,22 @@ export default function PackageOrders() {
                       <p className="font-medium">{o.package_name}</p>
                       <Badge variant="outline" className={STATUS[o.status] || ""}>{o.status.replace(/_/g, " ")}</Badge>
                       <Badge variant="secondary">{o.payment_method}</Badge>
+                      {o.platform && <Badge variant="outline" className="capitalize">{o.platform}</Badge>}
+                      {o.target_milestone_id && (
+                        <Badge variant="outline">
+                          Goal: {milestones.find((m) => m.id === o.target_milestone_id)?.name || "—"}
+                        </Badge>
+                      )}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {o.units.toLocaleString()} {o.unit_label} · ${o.total_amount_usd} · {o.duration_days} days
+                      {o.units.toLocaleString()} daily users · ${o.total_amount_usd} · {o.duration_days} days
                     </p>
+                    {Array.isArray(o.milestone_breakdown) && o.milestone_breakdown.length > 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Includes: {o.milestone_breakdown.map((b: any) => `${b.name} $${b.price_usd}`).join(" + ")}
+                      </p>
+                    )}
+
                     {o.starts_at && (
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         Running: {new Date(o.starts_at).toLocaleDateString()} → {o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "—"}
