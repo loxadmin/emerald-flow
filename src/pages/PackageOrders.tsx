@@ -13,7 +13,10 @@ type Order = {
   units: number; unit_price_usd: number; total_amount_usd: number; duration_days: number;
   app_links: string[]; payment_method: string; status: string;
   admin_notes: string | null; created_at: string; starts_at: string | null; ends_at: string | null;
+  platform: string | null; target_milestone_id: string | null; milestone_breakdown: any;
 };
+type Milestone = { id: string; name: string };
+
 
 const STATUS: Record<string, string> = {
   pending_payment: "bg-amber-500/10 text-amber-600 border-amber-500/20",
