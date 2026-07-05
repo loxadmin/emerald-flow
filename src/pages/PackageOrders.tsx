@@ -30,17 +30,23 @@ const STATUS: Record<string, string> = {
 export default function PackageOrders() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase.from("package_orders" as any)
-        .select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false });
+      const [{ data }, { data: ms }] = await Promise.all([
+        supabase.from("package_orders" as any)
+          .select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("milestones" as any).select("id,name"),
+      ]);
       setOrders((data as any) || []);
+      setMilestones((ms as any) || []);
       setLoading(false);
     })();
   }, [user?.id]);
+
 
   return (
     <DashboardLayout>
