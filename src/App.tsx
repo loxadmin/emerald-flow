@@ -45,6 +45,8 @@ import AdminExtension from "./pages/AdminExtension";
 import AdminOfferwall from "./pages/AdminOfferwall";
 import AdminOffline from "./pages/AdminOffline";
 import AdminPackages from "./pages/AdminPackages";
+import AdminMilestones from "./pages/AdminMilestones";
+
 import Packages from "./pages/Packages";
 import PackageOrders from "./pages/PackageOrders";
 import OfflineVerification from "./pages/OfflineVerification";
