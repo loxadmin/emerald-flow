@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const [{ data: categoryData }, { data: walletData }, { data: maintenanceData }, { data: profileData }, { data: verificationData }] = await Promise.all([
         supabase
           .from("advertiser_categories")
-          .select("status, advertiser_type")
+          .select("status, advertiser_type, category_id")
           .eq("advertiser_id", activeUser.id)
           .maybeSingle(),
         supabase
@@ -148,12 +148,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Derive advertiserType. Prefer the stored advertiser_type; otherwise fall back
+      // to the category's group slug so category-scoped UI (assistant, sidebar tabs,
+      // package filtering) works for users whose row predates the column.
+      let derivedType: string | null = (categoryData as any)?.advertiser_type || null;
+      if (!derivedType && (categoryData as any)?.category_id) {
+        const { data: catRow } = await supabase
+          .from("categories")
+          .select("group_id, category_groups:group_id(slug)")
+          .eq("id", (categoryData as any).category_id)
+          .maybeSingle();
+        const slug = String((catRow as any)?.category_groups?.slug || "").toLowerCase();
+        if (slug === "engagement" || slug === "performance" || slug === "commerce") {
+          derivedType = slug;
+        }
+      }
+
       setHasCategory(!!categoryData);
       setCategoryStatus(categoryData?.status || null);
-      setAdvertiserType((categoryData as any)?.advertiser_type || null);
+      setAdvertiserType(derivedType);
       setWalletActivated(walletData?.is_activated ?? false);
       setMaintenanceMode(maintenanceData?.value === "true");
       setBusinessVerified(((verificationData as any)?.status === "approved"));
+
     } catch (error) {
       if (requestId !== accessRequestIdRef.current) return;
       console.error("Failed to load access state:", error);

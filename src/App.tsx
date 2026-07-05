@@ -1,14 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider, RequireAuth, RequireAdmin } from "@/lib/auth";
+import { AuthProvider, RequireAuth, RequireAdmin, useAuth } from "@/lib/auth";
 import { AiModeProvider } from "@/lib/ai-mode";
 import AiMode from "@/pages/AiMode";
+import { ReactNode, useEffect } from "react";
+import { toast } from "sonner";
 
 import { ThemeProvider } from "@/lib/theme";
 import MetaPixelTracker from "@/components/MetaPixelTracker";
+
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -42,6 +45,8 @@ import AdminExtension from "./pages/AdminExtension";
 import AdminOfferwall from "./pages/AdminOfferwall";
 import AdminOffline from "./pages/AdminOffline";
 import AdminPackages from "./pages/AdminPackages";
+import AdminMilestones from "./pages/AdminMilestones";
+
 import Packages from "./pages/Packages";
 import PackageOrders from "./pages/PackageOrders";
 import OfflineVerification from "./pages/OfflineVerification";
@@ -62,6 +67,23 @@ import LearnArticle from "./pages/LearnArticle";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Blocks direct navigation to a create-campaign page that doesn't match the
+// advertiser's approved category. Redirects back to the router with a toast.
+function RequireCampaignType({ allow, children }: { allow: "performance" | "engagement" | "commerce"; children: ReactNode }) {
+  const { advertiserType, isLoading } = useAuth() as any;
+  useEffect(() => {
+    if (!isLoading && advertiserType && advertiserType !== allow) {
+      toast.error(`This campaign type isn't available for your ${advertiserType} account.`);
+    }
+  }, [isLoading, advertiserType, allow]);
+  if (isLoading) return null;
+  if (advertiserType && advertiserType !== allow) {
+    return <Navigate to="/campaigns/create" replace />;
+  }
+  return <>{children}</>;
+}
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -96,10 +118,11 @@ const App = () => (
               <Route path="/offline/orders" element={<RequireAuth><OfflineOrders /></RequireAuth>} />
               
               <Route path="/campaigns/create" element={<RequireAuth><CampaignRouter /></RequireAuth>} />
-              <Route path="/campaigns/create/performance" element={<RequireAuth><CreateCampaign /></RequireAuth>} />
-              <Route path="/campaigns/create/engagement" element={<RequireAuth><CreateEngagementCampaign /></RequireAuth>} />
-              <Route path="/campaigns/create/commerce" element={<RequireAuth><CreateCommerceCampaign /></RequireAuth>} />
+              <Route path="/campaigns/create/performance" element={<RequireAuth><RequireCampaignType allow="performance"><CreateCampaign /></RequireCampaignType></RequireAuth>} />
+              <Route path="/campaigns/create/engagement" element={<RequireAuth><RequireCampaignType allow="engagement"><CreateEngagementCampaign /></RequireCampaignType></RequireAuth>} />
+              <Route path="/campaigns/create/commerce" element={<RequireAuth><RequireCampaignType allow="commerce"><CreateCommerceCampaign /></RequireCampaignType></RequireAuth>} />
               <Route path="/campaigns/create/manual" element={<RequireAuth><CreateManualCampaign /></RequireAuth>} />
+
               <Route path="/campaigns/:id" element={<RequireAuth><CampaignDetail /></RequireAuth>} />
               <Route path="/docs" element={<Docs />} />
               <Route path="/about" element={<About />} />
@@ -137,6 +160,8 @@ const App = () => (
               <Route path="/admin/offerwall" element={<RequireAuth><RequireAdmin><AdminOfferwall /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/offline" element={<RequireAuth><RequireAdmin><AdminOffline /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/packages" element={<RequireAuth><RequireAdmin><AdminPackages /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/milestones" element={<RequireAuth><RequireAdmin><AdminMilestones /></RequireAdmin></RequireAuth>} />
+
 
               <Route path="*" element={<NotFound />} />
             </Routes>

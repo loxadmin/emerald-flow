@@ -13,7 +13,10 @@ type Order = {
   units: number; unit_price_usd: number; total_amount_usd: number; duration_days: number;
   app_links: string[]; payment_method: string; status: string;
   admin_notes: string | null; created_at: string; starts_at: string | null; ends_at: string | null;
+  platform: string | null; target_milestone_id: string | null; milestone_breakdown: any;
 };
+type Milestone = { id: string; name: string };
+
 
 const STATUS: Record<string, string> = {
   pending_payment: "bg-amber-500/10 text-amber-600 border-amber-500/20",
@@ -27,17 +30,23 @@ const STATUS: Record<string, string> = {
 export default function PackageOrders() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase.from("package_orders" as any)
-        .select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false });
+      const [{ data }, { data: ms }] = await Promise.all([
+        supabase.from("package_orders" as any)
+          .select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("milestones" as any).select("id,name"),
+      ]);
       setOrders((data as any) || []);
+      setMilestones((ms as any) || []);
       setLoading(false);
     })();
   }, [user?.id]);
+
 
   return (
     <DashboardLayout>
@@ -67,10 +76,22 @@ export default function PackageOrders() {
                       <p className="font-medium">{o.package_name}</p>
                       <Badge variant="outline" className={STATUS[o.status] || ""}>{o.status.replace(/_/g, " ")}</Badge>
                       <Badge variant="secondary">{o.payment_method}</Badge>
+                      {o.platform && <Badge variant="outline" className="capitalize">{o.platform}</Badge>}
+                      {o.target_milestone_id && (
+                        <Badge variant="outline">
+                          Goal: {milestones.find((m) => m.id === o.target_milestone_id)?.name || "—"}
+                        </Badge>
+                      )}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {o.units.toLocaleString()} {o.unit_label} · ${o.total_amount_usd} · {o.duration_days} days
+                      {o.units.toLocaleString()} daily users · ${o.total_amount_usd} · {o.duration_days} days
                     </p>
+                    {Array.isArray(o.milestone_breakdown) && o.milestone_breakdown.length > 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Includes: {o.milestone_breakdown.map((b: any) => `${b.name} $${b.price_usd}`).join(" + ")}
+                      </p>
+                    )}
+
                     {o.starts_at && (
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         Running: {new Date(o.starts_at).toLocaleDateString()} → {o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "—"}
