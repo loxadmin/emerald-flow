@@ -118,10 +118,11 @@ const App = () => (
               <Route path="/offline/orders" element={<RequireAuth><OfflineOrders /></RequireAuth>} />
               
               <Route path="/campaigns/create" element={<RequireAuth><CampaignRouter /></RequireAuth>} />
-              <Route path="/campaigns/create/performance" element={<RequireAuth><CreateCampaign /></RequireAuth>} />
-              <Route path="/campaigns/create/engagement" element={<RequireAuth><CreateEngagementCampaign /></RequireAuth>} />
-              <Route path="/campaigns/create/commerce" element={<RequireAuth><CreateCommerceCampaign /></RequireAuth>} />
+              <Route path="/campaigns/create/performance" element={<RequireAuth><RequireCampaignType allow="performance"><CreateCampaign /></RequireCampaignType></RequireAuth>} />
+              <Route path="/campaigns/create/engagement" element={<RequireAuth><RequireCampaignType allow="engagement"><CreateEngagementCampaign /></RequireCampaignType></RequireAuth>} />
+              <Route path="/campaigns/create/commerce" element={<RequireAuth><RequireCampaignType allow="commerce"><CreateCommerceCampaign /></RequireCampaignType></RequireAuth>} />
               <Route path="/campaigns/create/manual" element={<RequireAuth><CreateManualCampaign /></RequireAuth>} />
+
               <Route path="/campaigns/:id" element={<RequireAuth><CampaignDetail /></RequireAuth>} />
               <Route path="/docs" element={<Docs />} />
               <Route path="/about" element={<About />} />
