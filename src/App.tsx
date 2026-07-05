@@ -68,6 +68,23 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Blocks direct navigation to a create-campaign page that doesn't match the
+// advertiser's approved category. Redirects back to the router with a toast.
+function RequireCampaignType({ allow, children }: { allow: "performance" | "engagement" | "commerce"; children: ReactNode }) {
+  const { advertiserType, isLoading } = useAuth() as any;
+  useEffect(() => {
+    if (!isLoading && advertiserType && advertiserType !== allow) {
+      toast.error(`This campaign type isn't available for your ${advertiserType} account.`);
+    }
+  }, [isLoading, advertiserType, allow]);
+  if (isLoading) return null;
+  if (advertiserType && advertiserType !== allow) {
+    return <Navigate to="/campaigns/create" replace />;
+  }
+  return <>{children}</>;
+}
+
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
