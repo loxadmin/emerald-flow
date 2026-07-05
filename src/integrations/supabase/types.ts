@@ -54,7 +54,8 @@ export type Database = {
           created_at: string
           description: string | null
           discount_pct: number | null
-          duration_days: number
+          duration_days: number | null
+          duration_options: number[]
           id: string
           image_url: string | null
           is_active: boolean
@@ -63,9 +64,10 @@ export type Database = {
           min_units: number
           mode: string
           name: string
+          platform_support: string[]
           sort_order: number
-          unit_label: string
-          unit_price_usd: number
+          unit_label: string | null
+          unit_price_usd: number | null
           updated_at: string
         }
         Insert: {
@@ -74,7 +76,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           discount_pct?: number | null
-          duration_days?: number
+          duration_days?: number | null
+          duration_options?: number[]
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -83,9 +86,10 @@ export type Database = {
           min_units?: number
           mode?: string
           name: string
+          platform_support?: string[]
           sort_order?: number
-          unit_label?: string
-          unit_price_usd: number
+          unit_label?: string | null
+          unit_price_usd?: number | null
           updated_at?: string
         }
         Update: {
@@ -94,7 +98,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           discount_pct?: number | null
-          duration_days?: number
+          duration_days?: number | null
+          duration_options?: number[]
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -103,9 +108,10 @@ export type Database = {
           min_units?: number
           mode?: string
           name?: string
+          platform_support?: string[]
           sort_order?: number
-          unit_label?: string
-          unit_price_usd?: number
+          unit_label?: string | null
+          unit_price_usd?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1219,6 +1225,39 @@ export type Database = {
           },
         ]
       }
+      milestones: {
+        Row: {
+          created_at: string
+          default_order: number
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_order?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_order?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       offerwall_interactions: {
         Row: {
           attempt_number: number
@@ -1407,6 +1446,51 @@ export type Database = {
           },
         ]
       }
+      package_milestones: {
+        Row: {
+          created_at: string
+          id: string
+          milestone_id: string
+          package_id: string
+          price_usd: number
+          step_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          milestone_id: string
+          package_id: string
+          price_usd: number
+          step_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          milestone_id?: string
+          package_id?: string
+          price_usd?: number
+          step_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_milestones_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_milestones_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "ad_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       package_orders: {
         Row: {
           admin_notes: string | null
@@ -1416,14 +1500,17 @@ export type Database = {
           duration_days: number
           ends_at: string | null
           id: string
+          milestone_breakdown: Json | null
           package_id: string | null
           package_name: string
           payment_method: string
           payment_reference: string | null
+          platform: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           starts_at: string | null
           status: string
+          target_milestone_id: string | null
           total_amount_usd: number
           unit_label: string
           unit_price_usd: number
@@ -1438,14 +1525,17 @@ export type Database = {
           duration_days: number
           ends_at?: string | null
           id?: string
+          milestone_breakdown?: Json | null
           package_id?: string | null
           package_name: string
           payment_method: string
           payment_reference?: string | null
+          platform?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           starts_at?: string | null
           status?: string
+          target_milestone_id?: string | null
           total_amount_usd: number
           unit_label: string
           unit_price_usd: number
@@ -1460,14 +1550,17 @@ export type Database = {
           duration_days?: number
           ends_at?: string | null
           id?: string
+          milestone_breakdown?: Json | null
           package_id?: string | null
           package_name?: string
           payment_method?: string
           payment_reference?: string | null
+          platform?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           starts_at?: string | null
           status?: string
+          target_milestone_id?: string | null
           total_amount_usd?: number
           unit_label?: string
           unit_price_usd?: number
@@ -1480,6 +1573,13 @@ export type Database = {
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "ad_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_orders_target_milestone_id_fkey"
+            columns: ["target_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
             referencedColumns: ["id"]
           },
         ]
@@ -1917,6 +2017,10 @@ export type Database = {
     }
     Functions: {
       accept_offline_order: { Args: { _order_id: string }; Returns: Json }
+      advertiser_can_use_package: {
+        Args: { _package_id: string; _user: string }
+        Returns: boolean
+      }
       auto_activate_pending_campaigns: { Args: never; Returns: undefined }
       complete_expired_package_orders: { Args: never; Returns: number }
       confirm_offline_order: {
@@ -1933,6 +2037,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      purchase_package_v2: {
+        Args: {
+          _duration_days: number
+          _links: string[]
+          _package_id: string
+          _platform: string
+          _target_milestone_id: string
+          _units: number
+        }
+        Returns: Json
       }
       purchase_package_with_wallet: {
         Args: { _links: string[]; _package_id: string; _units: number }
