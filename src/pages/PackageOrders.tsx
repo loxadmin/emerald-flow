@@ -77,18 +77,21 @@ export default function PackageOrders() {
                       <Badge variant="outline" className={STATUS[o.status] || ""}>{o.status.replace(/_/g, " ")}</Badge>
                       <Badge variant="secondary">{o.payment_method}</Badge>
                       {o.platform && <Badge variant="outline" className="capitalize">{o.platform}</Badge>}
-                      {o.target_milestone_id && (
-                        <Badge variant="outline">
-                          Goal: {milestones.find((m) => m.id === o.target_milestone_id)?.name || "—"}
-                        </Badge>
-                      )}
+                      {(o.selected_milestone_ids || []).map((mid) => {
+                        const m = milestones.find((x) => x.id === mid);
+                        return m ? <Badge key={mid} variant="outline">{m.name}</Badge> : null;
+                      })}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {o.units.toLocaleString()} daily users · ${o.total_amount_usd} · {o.duration_days} days
                     </p>
                     {Array.isArray(o.milestone_breakdown) && o.milestone_breakdown.length > 0 && (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Includes: {o.milestone_breakdown.map((b: any) => `${b.name} $${b.price_usd}`).join(" + ")}
+                        Includes: {o.milestone_breakdown.map((b: any) =>
+                          b.pricing_type === "commission_pct"
+                            ? `${b.name} ${b.commission_pct}%/sale`
+                            : `${b.name} $${b.price_usd}`
+                        ).join(" · ")}
                       </p>
                     )}
 
