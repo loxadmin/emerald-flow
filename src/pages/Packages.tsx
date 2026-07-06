@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Check, Smartphone, Globe } from "lucide-react";
+import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock } from "lucide-react";
 
 type Pkg = {
   id: string; name: string; description: string | null;
@@ -19,8 +20,13 @@ type Pkg = {
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
 };
-type Milestone = { id: string; name: string; default_order: number };
-type PkgMilestone = { milestone_id: string; step_order: number; price_usd: number };
+type Milestone = { id: string; name: string; slug: string; default_order: number };
+type PkgMilestone = {
+  milestone_id: string; step_order: number;
+  pricing_type: "flat" | "commission_pct";
+  price_usd: number | null;
+  commission_pct: number | null;
+};
 type WebsiteRow = { id: string; domain: string; is_verified: boolean };
 type WalletInfo = { balance: number; is_activated: boolean };
 
@@ -40,7 +46,7 @@ export default function Packages() {
   const [platform, setPlatform] = useState<"mobile" | "web">("mobile");
   const [duration, setDuration] = useState<number>(30);
   const [units, setUnits] = useState<number>(500);
-  const [targetMsId, setTargetMsId] = useState<string>("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [links, setLinks] = useState<string[]>([""]);
   const [payMethod, setPayMethod] = useState<"wallet" | "paystack">("wallet");
   const [buying, setBuying] = useState(false);
@@ -49,10 +55,9 @@ export default function Packages() {
     if (!user) return;
     setLoading(true);
     const [{ data: pkgs }, { data: w }, { data: ms }, { data: sites }] = await Promise.all([
-      // RLS already filters to advertiser's category, no client-side filter needed
       supabase.from("ad_packages" as any).select("*").eq("is_active", true).order("sort_order").order("created_at"),
       supabase.from("wallets").select("balance, is_activated").eq("advertiser_id", user.id).maybeSingle(),
-      supabase.from("milestones" as any).select("id,name,default_order").eq("is_active", true).order("default_order"),
+      supabase.from("milestones" as any).select("id,name,slug,default_order").eq("is_active", true).order("default_order"),
       supabase.from("advertiser_websites").select("id, domain, is_verified").eq("advertiser_id", user.id),
     ]);
     setPackages((pkgs as any) || []);
@@ -66,7 +71,10 @@ export default function Packages() {
       const byPkg: Record<string, PkgMilestone[]> = {};
       for (const r of (pm as any) || []) {
         (byPkg[r.package_id] ||= []).push({
-          milestone_id: r.milestone_id, step_order: r.step_order, price_usd: Number(r.price_usd),
+          milestone_id: r.milestone_id, step_order: r.step_order,
+          pricing_type: (r.pricing_type || "flat") as "flat" | "commission_pct",
+          price_usd: r.price_usd != null ? Number(r.price_usd) : null,
+          commission_pct: r.commission_pct != null ? Number(r.commission_pct) : null,
         });
       }
       for (const k of Object.keys(byPkg)) byPkg[k].sort((a, b) => a.step_order - b.step_order);
@@ -76,6 +84,40 @@ export default function Packages() {
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [user?.id]);
+
+  const appInstallId = useMemo(
+    () => milestones.find((m) => m.slug === "app_install")?.id || null,
+    [milestones],
+  );
+
+  const openBuy = (p: Pkg) => {
+    setSelected(p);
+    const platforms = p.platform_support || ["mobile"];
+    const initPlat = (platforms.includes("mobile") ? "mobile" : "web") as "mobile" | "web";
+    setPlatform(initPlat);
+    setDuration((p.duration_options && p.duration_options[0]) || 30);
+    setUnits(p.min_units);
+    const ms = pkgMs[p.id] || [];
+    // Preselect App Install for mobile if the package has it
+    const preselect: string[] = [];
+    if (initPlat === "mobile" && appInstallId && ms.find((r) => r.milestone_id === appInstallId)) {
+      preselect.push(appInstallId);
+    }
+    setSelectedIds(preselect);
+    setLinks(initPlat === "web" ? [websites[0]?.domain || ""] : [""]);
+    setPayMethod("wallet");
+  };
+
+  // When switching platform, re-enforce App Install rule
+  useEffect(() => {
+    if (!selected) return;
+    const ms = pkgMs[selected.id] || [];
+    setLinks(platform === "web" ? [websites[0]?.domain || ""] : [""]);
+    if (platform === "mobile" && appInstallId && ms.find((r) => r.milestone_id === appInstallId)) {
+      setSelectedIds((prev) => (prev.includes(appInstallId) ? prev : [...prev, appInstallId]));
+    }
+    // eslint-disable-next-line
+  }, [platform]);
 
   // Resume purchase after Paystack top-up
   useEffect(() => {
@@ -88,7 +130,7 @@ export default function Packages() {
         await new Promise((r) => setTimeout(r, 1500));
         const { error } = await supabase.rpc("purchase_package_v2" as any, {
           _package_id: p.package_id, _units: p.units, _duration_days: p.duration,
-          _target_milestone_id: p.target_milestone_id, _platform: p.platform, _links: p.links,
+          _selected_milestone_ids: p.selected_ids, _platform: p.platform, _links: p.links,
         });
         if (error) toast.error(`Payment received but purchase failed: ${error.message}`);
         else toast.success("Package purchased! Pending admin review.");
@@ -98,34 +140,38 @@ export default function Packages() {
     // eslint-disable-next-line
   }, [searchParams, user?.id]);
 
-  const openBuy = (p: Pkg) => {
-    setSelected(p);
-    const platforms = p.platform_support || ["mobile"];
-    const initPlat = (platforms.includes("mobile") ? "mobile" : "web") as "mobile" | "web";
-    setPlatform(initPlat);
-    setDuration((p.duration_options && p.duration_options[0]) || 30);
-    setUnits(p.min_units);
-    const ms = pkgMs[p.id] || [];
-    setTargetMsId(ms.length > 0 ? ms[0].milestone_id : "");
-    setLinks(initPlat === "web" ? [websites[0]?.domain || ""] : [""]);
-    setPayMethod("wallet");
+  const selectedMs = selected ? (pkgMs[selected.id] || []) : [];
+
+  const toggleMilestone = (id: string) => {
+    // Cannot uncheck App Install for mobile
+    if (platform === "mobile" && id === appInstallId) return;
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const selectedMs = selected ? (pkgMs[selected.id] || []) : [];
-  const targetRow = selectedMs.find((r) => r.milestone_id === targetMsId);
-  const cumulativePrice = useMemo(() => {
-    if (!targetRow) return 0;
-    return selectedMs.filter((r) => r.step_order <= targetRow.step_order)
-      .reduce((s, r) => s + r.price_usd, 0);
-  }, [selectedMs, targetRow]);
-  const total = Number((units * cumulativePrice).toFixed(2));
+  const flatTotal = useMemo(() => {
+    const perUser = selectedMs
+      .filter((r) => selectedIds.includes(r.milestone_id) && r.pricing_type === "flat")
+      .reduce((s, r) => s + (r.price_usd || 0), 0);
+    return Number((units * perUser).toFixed(2));
+  }, [selectedMs, selectedIds, units]);
+
+  const commissionRows = selectedMs.filter(
+    (r) => selectedIds.includes(r.milestone_id) && r.pricing_type === "commission_pct",
+  );
+  const hasFlatSelected = selectedMs.some(
+    (r) => selectedIds.includes(r.milestone_id) && r.pricing_type === "flat",
+  );
 
   const submit = async () => {
     if (!selected || !user) return;
     if (units < selected.min_units || units > selected.max_units) {
       return toast.error(`Users must be between ${selected.min_units} and ${selected.max_units}`);
     }
-    if (!targetMsId) return toast.error("Pick a goal milestone");
+    if (selectedIds.length === 0) return toast.error("Pick at least one milestone");
+    if (!hasFlatSelected) return toast.error("Pick at least one flat-priced milestone (commission-only orders can't be escrowed)");
+    if (platform === "mobile" && appInstallId && selectedMs.find((r) => r.milestone_id === appInstallId) && !selectedIds.includes(appInstallId)) {
+      return toast.error("App Install is required for mobile-app orders");
+    }
     const cleanLinks = links.map((l) => l.trim()).filter(Boolean);
     if (platform === "web") {
       if (cleanLinks.length !== 1) return toast.error("Add exactly 1 website link");
@@ -136,17 +182,17 @@ export default function Packages() {
       if (cleanLinks.length < 1 || cleanLinks.length > 2) return toast.error("Add 1 or 2 app links");
       for (const l of cleanLinks) { try { new URL(l); } catch { return toast.error(`Invalid URL: ${l}`); } }
     }
-    if (total <= 0) return toast.error("Package pricing is invalid");
+    if (flatTotal <= 0) return toast.error("Total must be greater than zero");
 
     setBuying(true);
     const args = {
       _package_id: selected.id, _units: units, _duration_days: duration,
-      _target_milestone_id: targetMsId, _platform: platform, _links: cleanLinks,
+      _selected_milestone_ids: selectedIds, _platform: platform, _links: cleanLinks,
     };
 
     if (payMethod === "wallet") {
       if (!wallet?.is_activated) { setBuying(false); return toast.error("Activate your wallet first"); }
-      if ((wallet?.balance || 0) < total) { setBuying(false); return toast.error("Insufficient wallet balance"); }
+      if ((wallet?.balance || 0) < flatTotal) { setBuying(false); return toast.error("Insufficient wallet balance"); }
       const { error } = await supabase.rpc("purchase_package_v2" as any, args);
       setBuying(false);
       if (error) return toast.error(error.message);
@@ -155,12 +201,11 @@ export default function Packages() {
       return;
     }
 
-    // Paystack: top-up wallet, then RPC on return
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({
-      package_id: selected.id, units, duration, target_milestone_id: targetMsId, platform, links: cleanLinks,
+      package_id: selected.id, units, duration, selected_ids: selectedIds, platform, links: cleanLinks,
     }));
     const { data, error } = await supabase.functions.invoke("paystack-wallet", {
-      body: { action: "initialize_funding", amount: total, callback_origin: window.location.origin },
+      body: { action: "initialize_funding", amount: flatTotal, callback_origin: window.location.origin },
     });
     setBuying(false);
     if (error || (data as any)?.error) {
@@ -179,7 +224,7 @@ export default function Packages() {
         <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Ad Packages</h1>
-            <p className="text-sm text-muted-foreground">Templates scoped to your category — pick a goal, we bundle the milestones.</p>
+            <p className="text-sm text-muted-foreground">Templates scoped to your category — pick exactly the milestones you want.</p>
           </div>
           <Link to="/packages/orders">
             <Button variant="outline" size="sm"><ClipboardList className="mr-2 h-4 w-4" /> My orders</Button>
@@ -197,8 +242,13 @@ export default function Packages() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {packages.map((p) => {
               const ms = pkgMs[p.id] || [];
-              const cheapest = ms[0];
-              const fullPrice = ms.reduce((s, r) => s + r.price_usd, 0);
+              const flatRows = ms.filter((r) => r.pricing_type === "flat");
+              const cheapest = flatRows.reduce<number | null>((min, r) => {
+                const v = r.price_usd || 0;
+                return min === null || v < min ? v : min;
+              }, null);
+              const fullPrice = flatRows.reduce((s, r) => s + (r.price_usd || 0), 0);
+              const hasCommission = ms.some((r) => r.pricing_type === "commission_pct");
               return (
                 <div key={p.id} className="rounded-xl border bg-card p-5 flex flex-col">
                   <h3 className="font-semibold">{p.name}</h3>
@@ -206,7 +256,7 @@ export default function Packages() {
                   <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                     <div className="rounded-md bg-muted/50 p-2">
                       <p className="text-muted-foreground">Starts from</p>
-                      <p className="font-medium text-sm">${cheapest?.price_usd?.toFixed(2) ?? "—"}<span className="text-muted-foreground">/user</span></p>
+                      <p className="font-medium text-sm">${cheapest != null ? cheapest.toFixed(2) : "—"}<span className="text-muted-foreground">/user</span></p>
                     </div>
                     <div className="rounded-md bg-muted/50 p-2">
                       <p className="text-muted-foreground">Full funnel</p>
@@ -220,6 +270,7 @@ export default function Packages() {
                   <div className="mt-3 flex flex-wrap gap-1">
                     {(p.platform_support || []).map((pl) => <Badge key={pl} variant="outline" className="capitalize text-[10px]">{pl}</Badge>)}
                     {(p.duration_options || []).map((d) => <Badge key={d} variant="secondary" className="text-[10px]">{d}d</Badge>)}
+                    {hasCommission && <Badge variant="outline" className="text-[10px]">+ sale commission</Badge>}
                   </div>
                   <Button className="mt-4" onClick={() => openBuy(p)} disabled={ms.length === 0}>
                     <ShoppingCart className="mr-2 h-4 w-4" /> {ms.length === 0 ? "Not configured" : "Buy package"}
@@ -242,11 +293,11 @@ export default function Packages() {
                     <div className="mt-1 grid grid-cols-2 gap-2">
                       {(selected.platform_support || []).map((pl) => (
                         <button key={pl} type="button"
-                          onClick={() => { setPlatform(pl as any); setLinks(pl === "web" ? [websites[0]?.domain || ""] : [""]); }}
+                          onClick={() => setPlatform(pl as any)}
                           className={`rounded-lg border p-3 text-left text-sm transition ${platform === pl ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
                           {pl === "mobile" ? <Smartphone className="h-4 w-4 mb-1" /> : <Globe className="h-4 w-4 mb-1" />}
                           <p className="font-medium capitalize">{pl} app</p>
-                          <p className="text-xs text-muted-foreground">{pl === "web" ? "1 verified website" : "Up to 2 app links"}</p>
+                          <p className="text-xs text-muted-foreground">{pl === "web" ? "1 verified website" : "Up to 2 app links · install required"}</p>
                         </button>
                       ))}
                     </div>
@@ -274,28 +325,38 @@ export default function Packages() {
                     <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()}</p>
                   </div>
 
-                  {/* Target milestone */}
+                  {/* Milestone selection */}
                   <div>
-                    <Label>What outcome are you buying?</Label>
+                    <Label>Pick the milestones you want to buy</Label>
                     <div className="mt-1 space-y-1.5">
                       {selectedMs.map((r) => {
                         const m = milestones.find((x) => x.id === r.milestone_id);
-                        const included = targetRow && r.step_order <= targetRow.step_order;
+                        const isChecked = selectedIds.includes(r.milestone_id);
+                        const isLocked = platform === "mobile" && r.milestone_id === appInstallId;
                         return (
-                          <button key={r.milestone_id} type="button" onClick={() => setTargetMsId(r.milestone_id)}
-                            className={`w-full flex items-center justify-between rounded-md border px-3 py-2 text-sm transition ${
-                              targetMsId === r.milestone_id ? "border-primary bg-primary/5" : "hover:bg-accent"
-                            }`}>
+                          <label key={r.milestone_id}
+                            className={`w-full flex items-center justify-between rounded-md border px-3 py-2 text-sm transition cursor-pointer ${
+                              isChecked ? "border-primary bg-primary/5" : "hover:bg-accent"
+                            } ${isLocked ? "opacity-90" : ""}`}>
                             <span className="flex items-center gap-2">
-                              {included && <Check className="h-3.5 w-3.5 text-primary" />}
-                              <span className={included ? "font-medium" : "text-muted-foreground"}>{m?.name || "?"}</span>
+                              <Checkbox checked={isChecked} disabled={isLocked} onCheckedChange={() => toggleMilestone(r.milestone_id)} />
+                              <span className="font-medium">{m?.name || "?"}</span>
+                              {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
                             </span>
-                            <span className="text-xs text-muted-foreground">+${r.price_usd.toFixed(2)}/user</span>
-                          </button>
+                            <span className="text-xs text-muted-foreground">
+                              {r.pricing_type === "commission_pct"
+                                ? `${r.commission_pct}% per sale`
+                                : `+$${(r.price_usd || 0).toFixed(2)}/user`}
+                            </span>
+                          </label>
                         );
                       })}
                     </div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">Selecting a goal includes every earlier milestone — you can't skip steps.</p>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      {platform === "mobile"
+                        ? "App Install is required on mobile-app orders. Skip anything else you don't need."
+                        : "Pick only the outcomes you actually want to pay for."}
+                    </p>
                   </div>
 
                   {/* Links */}
@@ -334,12 +395,17 @@ export default function Packages() {
                   {/* Total */}
                   <div className="rounded-lg border bg-muted/40 p-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Total</span>
-                      <span className="text-lg font-semibold">${total.toFixed(2)}</span>
+                      <span className="text-sm text-muted-foreground">Upfront total</span>
+                      <span className="text-lg font-semibold">${flatTotal.toFixed(2)}</span>
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {units.toLocaleString()} users × ${cumulativePrice.toFixed(2)} bundled milestones · delivered over {duration} days.
+                      {units.toLocaleString()} users × selected flat milestones · delivered over {duration} days.
                     </p>
+                    {commissionRows.length > 0 && (
+                      <p className="mt-1 text-[11px] text-amber-600">
+                        + {commissionRows.map((c) => `${c.commission_pct}% per sale`).join(", ")} — deducted from your wallet as each sale is confirmed.
+                      </p>
+                    )}
                   </div>
 
                   {/* Payment */}
@@ -360,8 +426,8 @@ export default function Packages() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setSelected(null)}>Cancel</Button>
-                  <Button onClick={submit} disabled={buying || total <= 0 || (platform === "web" && websites.length === 0)}>
-                    {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : `Pay $${total.toFixed(2)}`}
+                  <Button onClick={submit} disabled={buying || flatTotal <= 0 || (platform === "web" && websites.length === 0)}>
+                    {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : `Pay $${flatTotal.toFixed(2)}`}
                   </Button>
                 </DialogFooter>
               </>
