@@ -1232,6 +1232,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          is_commission_based: boolean
           name: string
           slug: string
           updated_at: string
@@ -1242,6 +1243,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_commission_based?: boolean
           name: string
           slug: string
           updated_at?: string
@@ -1252,6 +1254,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_commission_based?: boolean
           name?: string
           slug?: string
           updated_at?: string
@@ -1448,29 +1451,35 @@ export type Database = {
       }
       package_milestones: {
         Row: {
+          commission_pct: number | null
           created_at: string
           id: string
           milestone_id: string
           package_id: string
-          price_usd: number
+          price_usd: number | null
+          pricing_type: string
           step_order: number
           updated_at: string
         }
         Insert: {
+          commission_pct?: number | null
           created_at?: string
           id?: string
           milestone_id: string
           package_id: string
-          price_usd: number
+          price_usd?: number | null
+          pricing_type?: string
           step_order?: number
           updated_at?: string
         }
         Update: {
+          commission_pct?: number | null
           created_at?: string
           id?: string
           milestone_id?: string
           package_id?: string
-          price_usd?: number
+          price_usd?: number | null
+          pricing_type?: string
           step_order?: number
           updated_at?: string
         }
@@ -1508,6 +1517,7 @@ export type Database = {
           platform: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          selected_milestone_ids: string[] | null
           starts_at: string | null
           status: string
           target_milestone_id: string | null
@@ -1533,6 +1543,7 @@ export type Database = {
           platform?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selected_milestone_ids?: string[] | null
           starts_at?: string | null
           status?: string
           target_milestone_id?: string | null
@@ -1558,6 +1569,7 @@ export type Database = {
           platform?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selected_milestone_ids?: string[] | null
           starts_at?: string | null
           status?: string
           target_milestone_id?: string | null
@@ -2022,6 +2034,10 @@ export type Database = {
         Returns: boolean
       }
       auto_activate_pending_campaigns: { Args: never; Returns: undefined }
+      charge_sale_commission: {
+        Args: { _order_id: string; _sale_amount_usd: number }
+        Returns: Json
+      }
       complete_expired_package_orders: { Args: never; Returns: number }
       confirm_offline_order: {
         Args: { _notes: string; _order_id: string }
@@ -2044,7 +2060,7 @@ export type Database = {
           _links: string[]
           _package_id: string
           _platform: string
-          _target_milestone_id: string
+          _selected_milestone_ids: string[]
           _units: number
         }
         Returns: Json
