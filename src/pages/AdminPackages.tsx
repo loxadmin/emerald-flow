@@ -23,13 +23,18 @@ type Pkg = {
 };
 type Group = { id: string; name: string; slug: string };
 type Category = { id: string; name: string; group_id: string | null };
-type Milestone = { id: string; name: string; slug: string; default_order: number; is_active: boolean };
-type PkgMilestone = { id?: string; milestone_id: string; step_order: number; price_usd: number };
+type Milestone = { id: string; name: string; slug: string; default_order: number; is_active: boolean; is_commission_based: boolean };
+type PkgMilestone = {
+  id?: string; milestone_id: string; step_order: number;
+  pricing_type: "flat" | "commission_pct";
+  price_usd: number | null;
+  commission_pct: number | null;
+};
 type Order = {
   id: string; advertiser_id: string; package_name: string;
   units: number; total_amount_usd: number; duration_days: number;
   app_links: string[]; payment_method: string; status: string;
-  platform: string | null; target_milestone_id: string | null;
+  platform: string | null; selected_milestone_ids: string[] | null;
   milestone_breakdown: any; admin_notes: string | null; created_at: string;
 };
 
@@ -74,7 +79,10 @@ export default function AdminPackages() {
     const byPkg: Record<string, PkgMilestone[]> = {};
     for (const r of ((pm.data as any) || [])) {
       (byPkg[r.package_id] ||= []).push({
-        id: r.id, milestone_id: r.milestone_id, step_order: r.step_order, price_usd: Number(r.price_usd),
+        id: r.id, milestone_id: r.milestone_id, step_order: r.step_order,
+        pricing_type: (r.pricing_type || "flat") as "flat" | "commission_pct",
+        price_usd: r.price_usd != null ? Number(r.price_usd) : null,
+        commission_pct: r.commission_pct != null ? Number(r.commission_pct) : null,
       });
     }
     for (const k of Object.keys(byPkg)) byPkg[k].sort((a, b) => a.step_order - b.step_order);
@@ -106,6 +114,14 @@ export default function AdminPackages() {
     if (form.duration_options.length === 0) return toast.error("Pick at least one duration");
     if (form.platform_support.length === 0) return toast.error("Pick at least one platform");
     if (rows.length === 0) return toast.error("Add at least one milestone");
+    for (const r of rows) {
+      if (r.pricing_type === "flat" && (r.price_usd == null || r.price_usd < 0)) {
+        return toast.error("Flat milestones need a price ≥ 0");
+      }
+      if (r.pricing_type === "commission_pct" && (r.commission_pct == null || r.commission_pct < 0 || r.commission_pct > 100)) {
+        return toast.error("Commission % must be between 0 and 100");
+      }
+    }
     setSaving(true);
     const payload: any = {
       name: form.name.trim(),
@@ -128,12 +144,13 @@ export default function AdminPackages() {
       if (error) { setSaving(false); return toast.error(error.message); }
       pkgId = (data as any).id;
     }
-    // Replace milestones
     await supabase.from("package_milestones" as any).delete().eq("package_id", pkgId);
     if (rows.length > 0) {
       const insertRows = rows.map((r) => ({
-        package_id: pkgId, milestone_id: r.milestone_id,
-        step_order: r.step_order, price_usd: r.price_usd,
+        package_id: pkgId, milestone_id: r.milestone_id, step_order: r.step_order,
+        pricing_type: r.pricing_type,
+        price_usd: r.pricing_type === "flat" ? r.price_usd : null,
+        commission_pct: r.pricing_type === "commission_pct" ? r.commission_pct : null,
       }));
       const { error: mErr } = await supabase.from("package_milestones" as any).insert(insertRows);
       if (mErr) { setSaving(false); return toast.error(mErr.message); }
@@ -169,8 +186,17 @@ export default function AdminPackages() {
   );
   const addRow = (mid: string) => {
     const m = milestones.find((x) => x.id === mid); if (!m) return;
-    setRows([...rows, { milestone_id: mid, step_order: m.default_order, price_usd: 0 }]
-      .sort((a, b) => a.step_order - b.step_order));
+    const pricing_type: "flat" | "commission_pct" = m.is_commission_based ? "commission_pct" : "flat";
+    setRows([...rows, {
+      milestone_id: mid, step_order: m.default_order,
+      pricing_type,
+      price_usd: pricing_type === "flat" ? 0 : null,
+      commission_pct: pricing_type === "commission_pct" ? 5 : null,
+    }].sort((a, b) => a.step_order - b.step_order));
+  };
+
+  const updateRow = (i: number, patch: Partial<PkgMilestone>) => {
+    const next = [...rows]; next[i] = { ...next[i], ...patch }; setRows(next);
   };
 
   const togglePlatform = (v: string) => {
@@ -190,12 +216,17 @@ export default function AdminPackages() {
     });
   };
 
+  const rowLabel = (r: PkgMilestone) =>
+    r.pricing_type === "commission_pct"
+      ? `${r.commission_pct ?? 0}% / sale`
+      : `$${(r.price_usd ?? 0).toFixed(2)}`;
+
   return (
     <AdminLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Ad Packages</h1>
-          <p className="text-sm text-muted-foreground">Pre-priced templates with milestone-based cumulative pricing.</p>
+          <p className="text-sm text-muted-foreground">Templates with milestone-based pricing — advertisers pick which milestones to buy.</p>
         </div>
         <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" /> New package</Button>
       </div>
@@ -236,8 +267,8 @@ export default function AdminPackages() {
                         {ms.length === 0 ? "No milestones set" :
                           ms.map((r) => {
                             const m = milestones.find((x) => x.id === r.milestone_id);
-                            return `${m?.name || "?"}: $${r.price_usd}`;
-                          }).join(" → ")}
+                            return `${m?.name || "?"}: ${rowLabel(r)}`;
+                          }).join(" · ")}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -257,47 +288,47 @@ export default function AdminPackages() {
             <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No orders yet.</div>
           ) : (
             <div className="grid gap-3">
-              {orders.map((o) => {
-                const tgt = milestones.find((x) => x.id === o.target_milestone_id);
-                return (
-                  <div key={o.id} className="rounded-lg border bg-card p-4">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium">{o.package_name}</p>
-                          <Badge variant="outline">{o.status.replace(/_/g, " ")}</Badge>
-                          <Badge variant="secondary">{o.payment_method}</Badge>
-                          {o.platform && <Badge variant="outline" className="capitalize">{o.platform}</Badge>}
-                          {tgt && <Badge variant="outline">Goal: {tgt.name}</Badge>}
-                        </div>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {o.units.toLocaleString()} daily users · ${o.total_amount_usd} · {o.duration_days} days
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">Advertiser: {o.advertiser_id}</p>
-                        {Array.isArray(o.milestone_breakdown) && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {o.milestone_breakdown.map((b: any) => `${b.name} $${b.price_usd}`).join(" + ")}
-                          </p>
-                        )}
-                        {o.app_links?.length > 0 && (
-                          <ul className="mt-2 text-xs space-y-0.5">
-                            {o.app_links.map((l, i) => (
-                              <li key={i} className="truncate"><a className="text-primary underline" href={l} target="_blank" rel="noreferrer">{l}</a></li>
-                            ))}
-                          </ul>
-                        )}
-                        {o.admin_notes && <p className="mt-2 text-xs text-muted-foreground">Notes: {o.admin_notes}</p>}
+              {orders.map((o) => (
+                <div key={o.id} className="rounded-lg border bg-card p-4">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium">{o.package_name}</p>
+                        <Badge variant="outline">{o.status.replace(/_/g, " ")}</Badge>
+                        <Badge variant="secondary">{o.payment_method}</Badge>
+                        {o.platform && <Badge variant="outline" className="capitalize">{o.platform}</Badge>}
                       </div>
-                      {o.status === "pending_review" && (
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => reviewOrder(o.id, true)}>Approve</Button>
-                          <Button size="sm" variant="outline" onClick={() => reviewOrder(o.id, false)}>Reject</Button>
-                        </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {o.units.toLocaleString()} daily users · ${o.total_amount_usd} · {o.duration_days} days
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">Advertiser: {o.advertiser_id}</p>
+                      {Array.isArray(o.milestone_breakdown) && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {o.milestone_breakdown.map((b: any) =>
+                            b.pricing_type === "commission_pct"
+                              ? `${b.name} ${b.commission_pct}%/sale`
+                              : `${b.name} $${b.price_usd}`
+                          ).join(" · ")}
+                        </p>
                       )}
+                      {o.app_links?.length > 0 && (
+                        <ul className="mt-2 text-xs space-y-0.5">
+                          {o.app_links.map((l, i) => (
+                            <li key={i} className="truncate"><a className="text-primary underline" href={l} target="_blank" rel="noreferrer">{l}</a></li>
+                          ))}
+                        </ul>
+                      )}
+                      {o.admin_notes && <p className="mt-2 text-xs text-muted-foreground">Notes: {o.admin_notes}</p>}
                     </div>
+                    {o.status === "pending_review" && (
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => reviewOrder(o.id, true)}>Approve</Button>
+                        <Button size="sm" variant="outline" onClick={() => reviewOrder(o.id, false)}>Reject</Button>
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </TabsContent>
@@ -354,12 +385,12 @@ export default function AdminPackages() {
                   </label>
                 ))}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Web = 1 verified website link. Mobile = up to 2 app links.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Web = 1 verified website. Mobile = up to 2 app links, App Install always required.</p>
             </div>
 
             <div className="rounded-lg border p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Milestones & pricing (per user)</Label>
+                <Label>Milestones & pricing</Label>
                 {availableMs.length > 0 && (
                   <Select value="" onValueChange={addRow}>
                     <SelectTrigger className="w-52"><SelectValue placeholder="+ Add milestone" /></SelectTrigger>
@@ -368,7 +399,7 @@ export default function AdminPackages() {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Order matters — advertisers who pick a later milestone pay for all earlier ones too. Total = units × sum of prices up to their chosen milestone.
+                Advertisers pick which milestones to buy. Flat = $/user; Commission = % per confirmed sale (charged from wallet later).
               </p>
               {rows.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">No milestones added.</p>
@@ -377,16 +408,29 @@ export default function AdminPackages() {
                   {rows.sort((a, b) => a.step_order - b.step_order).map((r, i) => {
                     const m = milestones.find((x) => x.id === r.milestone_id);
                     return (
-                      <div key={r.milestone_id} className="grid grid-cols-[1fr_80px_100px_36px] gap-2 items-center">
-                        <div className="text-sm">{m?.name || r.milestone_id}</div>
+                      <div key={r.milestone_id} className="grid grid-cols-[1fr_70px_120px_110px_36px] gap-2 items-center">
+                        <div className="text-sm truncate">{m?.name || r.milestone_id}</div>
                         <Input type="number" value={r.step_order}
-                          onChange={(e) => {
-                            const next = [...rows]; next[i] = { ...r, step_order: Number(e.target.value) || 0 }; setRows(next);
-                          }} />
-                        <Input type="number" step="0.01" placeholder="Price USD" value={r.price_usd}
-                          onChange={(e) => {
-                            const next = [...rows]; next[i] = { ...r, price_usd: Number(e.target.value) || 0 }; setRows(next);
-                          }} />
+                          onChange={(e) => updateRow(i, { step_order: Number(e.target.value) || 0 })} />
+                        <Select value={r.pricing_type}
+                          onValueChange={(v: "flat" | "commission_pct") => updateRow(i, {
+                            pricing_type: v,
+                            price_usd: v === "flat" ? (r.price_usd ?? 0) : null,
+                            commission_pct: v === "commission_pct" ? (r.commission_pct ?? 5) : null,
+                          })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="flat">Flat $/user</SelectItem>
+                            <SelectItem value="commission_pct">% per sale</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {r.pricing_type === "flat" ? (
+                          <Input type="number" step="0.01" placeholder="$/user" value={r.price_usd ?? 0}
+                            onChange={(e) => updateRow(i, { price_usd: Number(e.target.value) || 0 })} />
+                        ) : (
+                          <Input type="number" step="0.1" placeholder="%" value={r.commission_pct ?? 0}
+                            onChange={(e) => updateRow(i, { commission_pct: Number(e.target.value) || 0 })} />
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => setRows(rows.filter((x) => x.milestone_id !== r.milestone_id))}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
