@@ -308,39 +308,30 @@ export default function Packages() {
                     <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()}</p>
                   </div>
 
-                  {/* Milestone selection */}
+                  {/* Milestones included in this package (read-only) */}
                   <div>
-                    <Label>Pick the milestones you want to buy</Label>
+                    <Label>What's included in this package</Label>
                     <div className="mt-1 space-y-1.5">
                       {selectedMs.map((r) => {
                         const m = milestones.find((x) => x.id === r.milestone_id);
-                        const isChecked = selectedIds.includes(r.milestone_id);
-                        const isLocked = platform === "mobile" && r.milestone_id === appInstallId;
                         return (
-                          <label key={r.milestone_id}
-                            className={`w-full flex items-center justify-between rounded-md border px-3 py-2 text-sm transition cursor-pointer ${
-                              isChecked ? "border-primary bg-primary/5" : "hover:bg-accent"
-                            } ${isLocked ? "opacity-90" : ""}`}>
-                            <span className="flex items-center gap-2">
-                              <Checkbox checked={isChecked} disabled={isLocked} onCheckedChange={() => toggleMilestone(r.milestone_id)} />
-                              <span className="font-medium">{m?.name || "?"}</span>
-                              {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
-                            </span>
+                          <div key={r.milestone_id}
+                            className="w-full flex items-center justify-between rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
+                            <span className="font-medium">{m?.name || "?"}</span>
                             <span className="text-xs text-muted-foreground">
                               {r.pricing_type === "commission_pct"
                                 ? `${r.commission_pct}% per sale`
                                 : `+$${(r.price_usd || 0).toFixed(2)}/user`}
                             </span>
-                          </label>
+                          </div>
                         );
                       })}
                     </div>
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                      {platform === "mobile"
-                        ? "App Install is required on mobile-app orders. Skip anything else you don't need."
-                        : "Pick only the outcomes you actually want to pay for."}
+                      Milestones are set by the package. Pick a different package if you want a different mix.
                     </p>
                   </div>
+
 
                   {/* Links */}
                   <div>
