@@ -97,19 +97,21 @@ export default function Packages() {
     setPlatform(initPlat);
     setDuration((p.duration_options && p.duration_options[0]) || 30);
     setUnits(p.min_units);
-    // Package milestones are fixed by the admin — advertiser buys the whole package.
     const ms = pkgMs[p.id] || [];
-    setSelectedIds(ms.map((r) => r.milestone_id));
+    const requiredAppInstall = initPlat === "mobile" && appInstallId && ms.some((r) => r.milestone_id === appInstallId);
+    setSelectedIds(requiredAppInstall ? [appInstallId] : []);
     setLinks(initPlat === "web" ? [websites[0]?.domain || ""] : [""]);
     setPayMethod("wallet");
   };
 
-  // When switching platform, just refresh links; milestones stay locked to the package config
   useEffect(() => {
     if (!selected) return;
     setLinks(platform === "web" ? [websites[0]?.domain || ""] : [""]);
+    if (platform === "mobile" && appInstallId && (pkgMs[selected.id] || []).some((r) => r.milestone_id === appInstallId)) {
+      setSelectedIds((ids) => ids.includes(appInstallId) ? ids : [appInstallId, ...ids]);
+    }
     // eslint-disable-next-line
-  }, [platform]);
+  }, [platform, selected?.id, appInstallId]);
 
   // Resume purchase after Paystack top-up
   useEffect(() => {
@@ -132,7 +134,8 @@ export default function Packages() {
     // eslint-disable-next-line
   }, [searchParams, user?.id]);
 
-  const selectedMs = selected ? (pkgMs[selected.id] || []) : [];
+  const packageMs = selected ? (pkgMs[selected.id] || []) : [];
+  const selectedMs = packageMs.filter((r) => selectedIds.includes(r.milestone_id));
 
   const flatTotal = useMemo(() => {
     const perUser = selectedMs
@@ -152,7 +155,7 @@ export default function Packages() {
     }
     if (selectedIds.length === 0) return toast.error("Pick at least one milestone");
     if (!hasFlatSelected) return toast.error("Pick at least one flat-priced milestone (commission-only orders can't be escrowed)");
-    if (platform === "mobile" && appInstallId && selectedMs.find((r) => r.milestone_id === appInstallId) && !selectedIds.includes(appInstallId)) {
+    if (platform === "mobile" && appInstallId && packageMs.find((r) => r.milestone_id === appInstallId) && !selectedIds.includes(appInstallId)) {
       return toast.error("App Install is required for mobile-app orders");
     }
     const cleanLinks = links.map((l) => l.trim()).filter(Boolean);
@@ -308,27 +311,42 @@ export default function Packages() {
                     <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()}</p>
                   </div>
 
-                  {/* Milestones included in this package (read-only) */}
+                  {/* Milestones */}
                   <div>
-                    <Label>What's included in this package</Label>
+                    <Label>Select milestones</Label>
                     <div className="mt-1 space-y-1.5">
-                      {selectedMs.map((r) => {
+                      {packageMs.map((r) => {
                         const m = milestones.find((x) => x.id === r.milestone_id);
+                        const checked = selectedIds.includes(r.milestone_id);
+                        const locked = platform === "mobile" && appInstallId === r.milestone_id;
                         return (
-                          <div key={r.milestone_id}
-                            className="w-full flex items-center justify-between rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
-                            <span className="font-medium">{m?.name || "?"}</span>
-                            <span className="text-xs text-muted-foreground">
+                          <label key={r.milestone_id}
+                            className={`w-full flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm transition ${checked ? "border-primary/40 bg-primary/5" : "hover:bg-accent"}`}>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Checkbox
+                                checked={checked}
+                                disabled={locked}
+                                onCheckedChange={(v) => {
+                                  const isChecked = v === true;
+                                  setSelectedIds((ids) => isChecked
+                                    ? Array.from(new Set([...ids, r.milestone_id]))
+                                    : ids.filter((id) => id !== r.milestone_id));
+                                }}
+                              />
+                              <span className="font-medium truncate">{m?.name || "?"}</span>
+                              {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                            </div>
+                            <span className="shrink-0 text-xs text-muted-foreground">
                               {r.pricing_type === "commission_pct"
                                 ? `${r.commission_pct}% per sale`
                                 : `+$${(r.price_usd || 0).toFixed(2)}/user`}
                             </span>
-                          </div>
+                          </label>
                         );
                       })}
                     </div>
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                      Milestones are set by the package. Pick a different package if you want a different mix.
+                      Choose only the actions you want. App Install is required for mobile app orders.
                     </p>
                   </div>
 
