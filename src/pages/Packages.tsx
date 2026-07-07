@@ -97,25 +97,17 @@ export default function Packages() {
     setPlatform(initPlat);
     setDuration((p.duration_options && p.duration_options[0]) || 30);
     setUnits(p.min_units);
+    // Package milestones are fixed by the admin — advertiser buys the whole package.
     const ms = pkgMs[p.id] || [];
-    // Preselect App Install for mobile if the package has it
-    const preselect: string[] = [];
-    if (initPlat === "mobile" && appInstallId && ms.find((r) => r.milestone_id === appInstallId)) {
-      preselect.push(appInstallId);
-    }
-    setSelectedIds(preselect);
+    setSelectedIds(ms.map((r) => r.milestone_id));
     setLinks(initPlat === "web" ? [websites[0]?.domain || ""] : [""]);
     setPayMethod("wallet");
   };
 
-  // When switching platform, re-enforce App Install rule
+  // When switching platform, just refresh links; milestones stay locked to the package config
   useEffect(() => {
     if (!selected) return;
-    const ms = pkgMs[selected.id] || [];
     setLinks(platform === "web" ? [websites[0]?.domain || ""] : [""]);
-    if (platform === "mobile" && appInstallId && ms.find((r) => r.milestone_id === appInstallId)) {
-      setSelectedIds((prev) => (prev.includes(appInstallId) ? prev : [...prev, appInstallId]));
-    }
     // eslint-disable-next-line
   }, [platform]);
 
@@ -142,25 +134,16 @@ export default function Packages() {
 
   const selectedMs = selected ? (pkgMs[selected.id] || []) : [];
 
-  const toggleMilestone = (id: string) => {
-    // Cannot uncheck App Install for mobile
-    if (platform === "mobile" && id === appInstallId) return;
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
-
   const flatTotal = useMemo(() => {
     const perUser = selectedMs
-      .filter((r) => selectedIds.includes(r.milestone_id) && r.pricing_type === "flat")
+      .filter((r) => r.pricing_type === "flat")
       .reduce((s, r) => s + (r.price_usd || 0), 0);
     return Number((units * perUser).toFixed(2));
-  }, [selectedMs, selectedIds, units]);
+  }, [selectedMs, units]);
 
-  const commissionRows = selectedMs.filter(
-    (r) => selectedIds.includes(r.milestone_id) && r.pricing_type === "commission_pct",
-  );
-  const hasFlatSelected = selectedMs.some(
-    (r) => selectedIds.includes(r.milestone_id) && r.pricing_type === "flat",
-  );
+  const commissionRows = selectedMs.filter((r) => r.pricing_type === "commission_pct");
+  const hasFlatSelected = selectedMs.some((r) => r.pricing_type === "flat");
+
 
   const submit = async () => {
     if (!selected || !user) return;
