@@ -407,12 +407,14 @@ export default function AdminPackages() {
                 <div className="grid gap-2">
                   {rows.sort((a, b) => a.step_order - b.step_order).map((r, i) => {
                     const m = milestones.find((x) => x.id === r.milestone_id);
+                    const commissionLocked = !!m?.is_commission_based;
                     return (
                       <div key={r.milestone_id} className="grid grid-cols-[1fr_70px_120px_110px_36px] gap-2 items-center">
                         <div className="text-sm truncate">{m?.name || r.milestone_id}</div>
                         <Input type="number" value={r.step_order}
                           onChange={(e) => updateRow(i, { step_order: Number(e.target.value) || 0 })} />
                         <Select value={r.pricing_type}
+                          disabled={commissionLocked}
                           onValueChange={(v: "flat" | "commission_pct") => updateRow(i, {
                             pricing_type: v,
                             price_usd: v === "flat" ? (r.price_usd ?? 0) : null,
@@ -420,7 +422,7 @@ export default function AdminPackages() {
                           })}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="flat">Flat $/user</SelectItem>
+                            {!commissionLocked && <SelectItem value="flat">Flat $/user</SelectItem>}
                             <SelectItem value="commission_pct">% per sale</SelectItem>
                           </SelectContent>
                         </Select>
@@ -437,6 +439,7 @@ export default function AdminPackages() {
                       </div>
                     );
                   })}
+
                 </div>
               )}
             </div>
