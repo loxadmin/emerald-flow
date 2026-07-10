@@ -31,7 +31,7 @@ type Msg = {
   navigateTo?: string;
   attachments?: Attachment[];
   goalOptions?: string[];
-  quickActions?: { label: string; to: string }[];
+  quickActions?: { label: string; to?: string; prompt?: string }[];
 };
 
 type CampaignFlow = {
@@ -245,10 +245,10 @@ export default function AiMode() {
         ? `${greet.text}\n\nWhat are you looking to get for your ${catName || "business"}? Pick one to get started.`
         : greet.text;
 
-      // Quick actions: always offer campaign creation; add packages if any live ones target this subtype.
-      const actions: { label: string; to: string }[] = [];
+      // Quick actions: always offer AI-driven campaign creation; add packages if any live ones target this subtype.
+      const actions: { label: string; to?: string; prompt?: string }[] = [];
       if (advertiserType !== "offline") {
-        actions.push({ label: "Create a campaign", to: "/campaigns/create" });
+        actions.push({ label: "Create a campaign with AI", prompt: "Create a campaign" });
         if (subtype) {
           const { data: pkgs } = await supabase
             .from("ad_packages")
@@ -547,8 +547,8 @@ export default function AiMode() {
                   <div className="max-w-[95%] w-full mt-3 flex flex-wrap gap-2">
                     {m.quickActions.map((a) => (
                       <button
-                        key={a.to}
-                        onClick={() => navigate(a.to)}
+                        key={a.label}
+                        onClick={() => (a.prompt ? sendMessage(a.prompt) : a.to && navigate(a.to))}
                         className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-[12.5px] font-medium hover:bg-primary/90 transition-colors"
                       >
                         {a.label}

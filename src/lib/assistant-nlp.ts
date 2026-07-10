@@ -239,7 +239,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       return {
         text: goal
           ? `Karbali helps you buy real ${goal}, not empty impressions. Fund your wallet, launch the right campaign, and only pay when the ${goal} actually happen.`
-          : "Karbali helps Nigerian advertisers buy real outcomes, not impressions. Fund your wallet, launch a campaign, and pay only for valid clicks, conversions, engagement, or sales.",
+          : "Karbali helps Nigerian advertisers buy real outcomes, not impressions or clicks. Fund your wallet, launch a campaign, and pay only for valid conversions, engagement, installs, or sales. We never charge for clicks.",
         suggestions: goalTailSuggestion(state, ["Types of campaigns", "How does billing work?", "How is tracking done?"]),
         stateUpdates: { topic: "what_is_karbali" },
       };
@@ -247,7 +247,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       return {
         text: goal
           ? `${prefix}${trackingDetailForGoal(state)} You pay only when Karbali confirms a valid ${singularize(goal)}.`
-          : "We use a deterministic click_id (UUID). Install the Karbali script or WordPress plugin, fire a conversion event, and we attribute the result to the right campaign.",
+          : "Karbali uses a deterministic click_id (UUID) for attribution only, never for billing. Install the Karbali script or WordPress plugin, fire the conversion event, and we attribute the result to the right campaign. Charges happen on the confirmed outcome, not the click.",
         suggestions: goalTailSuggestion(state, ["Open docs", "Verify my integration"]),
         navigateTo: "/docs",
         stateUpdates: { topic: "tracking" },
@@ -279,12 +279,12 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       };
     case "fraud":
       return {
-        text: `${prefix}Karbali filters bots, duplicate clicks, and suspicious patterns before billing. You only pay for clean events.`,
+        text: `${prefix}Karbali filters bots, duplicate events, and suspicious patterns before billing. You only pay for clean, verified conversions , never for raw clicks.`,
         stateUpdates: { topic: "fraud" },
       };
     case "cpa_vs_cpc":
       return {
-        text: "CPC = pay per click. CPA = pay only when a real action happens (signup, purchase, install). CPA costs more per event but carries lower risk.",
+        text: "CPC (pay per click) is the old web model. Karbali does not use CPC , we bill CPA only, meaning you pay only when a real action happens (signup, install, sale, engagement). Clicks are free.",
         stateUpdates: { topic: "cpa_vs_cpc" },
       };
     case "verify_website":
