@@ -31,6 +31,7 @@ type Msg = {
   navigateTo?: string;
   attachments?: Attachment[];
   goalOptions?: string[];
+  quickActions?: { label: string; to: string }[];
 };
 
 type CampaignFlow = {
@@ -243,7 +244,33 @@ export default function AiMode() {
       const intro = goals.length
         ? `${greet.text}\n\nWhat are you looking to get for your ${catName || "business"}? Pick one to get started.`
         : greet.text;
-      setMessages([{ role: "bot", text: intro, suggestions: goals.length ? undefined : greet.suggestions, goalOptions: goals.length ? goals : undefined }]);
+
+      // Quick actions: always offer campaign creation; add packages if any live ones target this subtype.
+      const actions: { label: string; to: string }[] = [];
+      if (advertiserType !== "offline") {
+        actions.push({ label: "Create a campaign", to: "/campaigns/create" });
+        if (subtype) {
+          const { data: pkgs } = await supabase
+            .from("ad_packages")
+            .select("id, advertiser_subtypes")
+            .eq("is_active", true)
+            .contains("advertiser_subtypes", [subtype])
+            .limit(1);
+          if (pkgs && pkgs.length > 0) {
+            actions.push({ label: "View ad packages", to: "/packages" });
+          }
+        }
+      } else {
+        actions.push({ label: "Submit an offer", to: "/offline/offers" });
+      }
+
+      setMessages([{
+        role: "bot",
+        text: intro,
+        suggestions: goals.length ? undefined : greet.suggestions,
+        goalOptions: goals.length ? goals : undefined,
+        quickActions: actions,
+      }]);
       setTimeout(() => taRef.current?.focus(), 100);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -513,6 +540,21 @@ export default function AiMode() {
                         </button>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {m.role === "bot" && m.quickActions && m.quickActions.length > 0 && (
+                  <div className="max-w-[95%] w-full mt-3 flex flex-wrap gap-2">
+                    {m.quickActions.map((a) => (
+                      <button
+                        key={a.to}
+                        onClick={() => navigate(a.to)}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-[12.5px] font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        {a.label}
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
