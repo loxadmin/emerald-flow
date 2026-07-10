@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import MotionWrapper from "@/components/MotionWrapper";
 
 export default function CampaignRouter() {
-  const { user } = useAuth();
+  const { user, businessVerified, walletActivated } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -46,6 +46,18 @@ export default function CampaignRouter() {
         else adType = "performance";
       }
 
+      if (adType === "offline") {
+        if (businessVerified !== true) {
+          navigate("/offline/verify", { replace: true });
+        } else if (walletActivated !== true) {
+          navigate("/wallet", { replace: true });
+        } else {
+          navigate("/offline/offers", { replace: true });
+        }
+        setLoading(false);
+        return;
+      }
+
       // If engagement type, always go to engagement flow (no API/SDK needed)
       if (adType === "engagement") {
         navigate(`/campaigns/create/engagement`, { replace: true });
@@ -82,7 +94,7 @@ export default function CampaignRouter() {
     };
     route();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, navigate, searchParams]);
+  }, [user?.id, navigate, searchParams, businessVerified, walletActivated]);
 
   if (loading) {
     return (

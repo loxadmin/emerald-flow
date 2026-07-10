@@ -34,6 +34,7 @@ export default function KarbaliAssistant() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [convoState, setConvoState] = useState<ConversationState>(initialState());
+  const convoStateRef = useRef<ConversationState>(convoState);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const ctx: AssistantContext = {
@@ -77,6 +78,10 @@ export default function KarbaliAssistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, typing]);
 
+  useEffect(() => {
+    convoStateRef.current = convoState;
+  }, [convoState]);
+
   if (!user) return null;
 
   const reply = (text: string) => {
@@ -92,8 +97,12 @@ export default function KarbaliAssistant() {
         return;
       }
       const goalMatch = userText.match(/^i\s+want(?:\s+to\s+get)?\s+(.+)$/i);
-      const r = goalMatch ? acknowledgeGoal(goalMatch[1], ctx) : detectIntent(userText, ctx, convoState);
-      if (r.stateUpdates) setConvoState((s) => ({ ...s, ...r.stateUpdates, turnCount: s.turnCount + 1 }));
+      const r = goalMatch ? acknowledgeGoal(goalMatch[1], ctx) : detectIntent(userText, ctx, convoStateRef.current);
+      if (r.stateUpdates) {
+        const nextState = { ...convoStateRef.current, ...r.stateUpdates, turnCount: convoStateRef.current.turnCount + 1 };
+        convoStateRef.current = nextState;
+        setConvoState(nextState);
+      }
       setMessages((m) => [...m, { role: "bot", text: r.text, suggestions: r.suggestions, navigateTo: r.navigateTo }]);
       setTyping(false);
       if (r.navigateTo && r.autoNavigate && r.navigateTo !== location.pathname) {

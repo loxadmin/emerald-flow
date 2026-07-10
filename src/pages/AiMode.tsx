@@ -210,6 +210,7 @@ export default function AiMode() {
   const [typing, setTyping] = useState(false);
   const [campaignFlow, setCampaignFlow] = useState<CampaignFlow | null>(null);
   const [convoState, setConvoState] = useState<ConversationState>(initialState());
+  const convoStateRef = useRef<ConversationState>(convoState);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -251,6 +252,10 @@ export default function AiMode() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, typing]);
+
+  useEffect(() => {
+    convoStateRef.current = convoState;
+  }, [convoState]);
 
   if (!user) {
     return (
@@ -300,8 +305,12 @@ export default function AiMode() {
           const userChangedContext = CAMPAIGN_VALUE_STEPS.has(campaignFlow.step) && isCampaignKnowledgeQuestion(text);
           const requestedType = pickCampaignType(text);
           if (userChangedContext) {
-            const detected = detectIntent(text, ctx, convoState);
-            if (detected.stateUpdates) setConvoState((s) => ({ ...s, ...detected.stateUpdates, turnCount: s.turnCount + 1 }));
+            const detected = detectIntent(text, ctx, convoStateRef.current);
+            if (detected.stateUpdates) {
+              const nextState = { ...convoStateRef.current, ...detected.stateUpdates, turnCount: convoStateRef.current.turnCount + 1 };
+              convoStateRef.current = nextState;
+              setConvoState(nextState);
+            }
             nextFlow = campaignFlow;
             reply = { role: "bot", text: detected.text, suggestions: [...(detected.suggestions || []), "Continue campaign setup"].slice(0, 4), navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };
           } else if (requestedType && campaignFlow.type && requestedType !== campaignFlow.type) {
@@ -322,8 +331,12 @@ export default function AiMode() {
         const goalMatch = text.match(/^i\s+want(?:\s+to\s+get)?\s+(.+)$/i);
         const detected = goalMatch
           ? acknowledgeGoal(goalMatch[1], ctx)
-          : detectIntent(text, ctx, convoState);
-        if (detected.stateUpdates) setConvoState((s) => ({ ...s, ...detected.stateUpdates, turnCount: s.turnCount + 1 }));
+          : detectIntent(text, ctx, convoStateRef.current);
+        if (detected.stateUpdates) {
+          const nextState = { ...convoStateRef.current, ...detected.stateUpdates, turnCount: convoStateRef.current.turnCount + 1 };
+          convoStateRef.current = nextState;
+          setConvoState(nextState);
+        }
         if (detected.action === "start_campaign_flow") {
           const startFlow: CampaignFlow = { type: detected.campaignType ?? null, data: detected.campaignType ? { type: detected.campaignType, createdAt: Date.now() } : {}, step: detected.campaignType ? "name" : "type" };
           nextFlow = startFlow;
