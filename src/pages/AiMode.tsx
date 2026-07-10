@@ -466,18 +466,18 @@ export default function AiMode() {
                 {m.role === "bot" && m.goalOptions && m.goalOptions.length > 0 && (
                   <div className="max-w-[95%] w-full mt-3">
                     <p className="text-[11px] font-semibold text-muted-foreground mb-3 uppercase tracking-[0.14em]">Pick a goal to start</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card overflow-hidden">
                       {m.goalOptions.map((g, i) => (
                         <button
                           key={g}
                           onClick={() => sendMessage(`I want to get ${g.toLowerCase()}`)}
-                          className="group relative flex items-center gap-3 rounded-lg bg-card border border-border px-3.5 py-3 text-left hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors"
+                          className="group flex items-center gap-4 px-4 py-3.5 text-left hover:bg-muted transition-colors"
                         >
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white text-[13px] font-bold">
+                          <span className="text-[11px] font-mono tabular-nums text-muted-foreground w-6">
                             {String(i + 1).padStart(2, "0")}
                           </span>
-                          <span className="flex-1 text-[13.5px] font-medium text-foreground">{g}</span>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+                          <span className="flex-1 text-[14px] font-medium text-foreground">{g}</span>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
                         </button>
                       ))}
                     </div>
