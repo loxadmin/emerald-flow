@@ -118,7 +118,7 @@ export default function KarbaliAssistant() {
         <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] h-[min(520px,calc(100vh-2rem))] flex flex-col rounded-2xl border border-border bg-background shadow-2xl overflow-hidden">
           <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-emerald-600 text-white">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-800">
                 <Bot className="h-4 w-4" />
               </div>
               <div className="leading-tight">
@@ -126,12 +126,12 @@ export default function KarbaliAssistant() {
                 <p className="text-[10px] opacity-80">Here to help you navigate</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} aria-label="Close" className="rounded-md p-1 hover:bg-white/15">
+            <button onClick={() => setOpen(false)} aria-label="Close" className="rounded-md p-1 hover:bg-emerald-800">
               <X className="h-4 w-4" />
             </button>
           </header>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-muted/30">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-muted">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[80%] space-y-1.5">
@@ -150,7 +150,7 @@ export default function KarbaliAssistant() {
                         <button
                           key={s}
                           onClick={() => reply(s)}
-                          className="text-[11px] px-2.5 py-1 rounded-full border border-emerald-600/30 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                          className="text-[11px] px-2.5 py-1 rounded-full border border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-800 transition-colors"
                         >
                           {s}
                         </button>
@@ -163,7 +163,7 @@ export default function KarbaliAssistant() {
                         <button
                           key={g}
                           onClick={() => reply(`I want to get ${g.toLowerCase()}`)}
-                          className="group flex items-center justify-between gap-2 rounded-lg border border-emerald-600/30 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/40 dark:to-emerald-950/10 px-3 py-2 text-left text-[12.5px] font-medium text-emerald-900 dark:text-emerald-100 hover:border-emerald-600 hover:shadow-sm transition-all"
+                          className="group flex items-center justify-between gap-2 rounded-lg border border-emerald-600 bg-emerald-50 dark:bg-emerald-900 px-3 py-2 text-left text-[12.5px] font-medium text-emerald-900 dark:text-emerald-100 hover:border-emerald-600 hover:shadow-sm transition-all"
                         >
                           <span>{g}</span>
                           <ChevronRight className="h-3.5 w-3.5 text-emerald-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
@@ -207,7 +207,7 @@ export default function KarbaliAssistant() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask Karbali Assistant anything..."
-              className="flex-1 px-3 py-2 text-[13px] rounded-lg bg-muted/50 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-600"
+              className="flex-1 px-3 py-2 text-[13px] rounded-lg bg-muted border border-border focus:outline-none focus:ring-1 focus:ring-emerald-600"
             />
             <button
               type="submit"

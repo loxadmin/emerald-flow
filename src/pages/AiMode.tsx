@@ -366,7 +366,7 @@ export default function AiMode() {
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
-      <header className="flex items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 lg:px-6 py-3">
+      <header className="flex items-center justify-between border-b border-border bg-background px-4 lg:px-6 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-600 text-white">
             <Logo size={14} />
@@ -374,7 +374,7 @@ export default function AiMode() {
           <div className="leading-tight">
             <p className="text-[13px] font-semibold flex items-center gap-1.5">
               Karbali Assistant
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 dark:bg-emerald-500 text-white px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider">
                 <Bot className="h-2.5 w-2.5" /> AI Mode
               </span>
             </p>
@@ -405,7 +405,7 @@ export default function AiMode() {
               <div className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ring-2 ${
                 m.role === "user"
                   ? "bg-foreground text-background ring-transparent"
-                  : "bg-gradient-to-br from-emerald-500 to-emerald-700 text-white ring-emerald-500/20"
+                  : "bg-gradient-to-br from-emerald-500 to-emerald-700 text-white ring-emerald-800"
               }`}>
                 {m.role === "user" ? initial : <Bot className="h-4 w-4" />}
               </div>
@@ -455,7 +455,7 @@ export default function AiMode() {
                       <button
                         key={s}
                         onClick={() => sendMessage(s)}
-                        className="text-[11.5px] px-2.5 py-1 rounded-full border border-emerald-600/30 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                        className="text-[11.5px] px-2.5 py-1 rounded-full border border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-800 transition-colors"
                       >
                         {s}
                       </button>
@@ -471,7 +471,7 @@ export default function AiMode() {
                         <button
                           key={g}
                           onClick={() => sendMessage(`I want to get ${g.toLowerCase()}`)}
-                          className="group flex items-center justify-between gap-2 rounded-xl border border-emerald-600/30 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/40 dark:to-emerald-950/10 px-3.5 py-3 text-left text-[13px] font-medium text-emerald-900 dark:text-emerald-100 hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-600/10 transition-all"
+                          className="group flex items-center justify-between gap-2 rounded-xl border border-emerald-600 bg-emerald-50 dark:bg-emerald-900 px-3.5 py-3 text-left text-[13px] font-medium text-emerald-900 dark:text-emerald-100 hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-600/40 transition-all"
                         >
                           <span>{g}</span>
                           <ChevronRight className="h-4 w-4 text-emerald-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
@@ -486,7 +486,7 @@ export default function AiMode() {
 
           {typing && (
             <div className="flex gap-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center ring-2 ring-emerald-500/20">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center ring-2 ring-emerald-800">
                 <Bot className="h-4 w-4" />
               </div>
               <div className="px-3.5 py-2.5 rounded-2xl bg-muted/60 rounded-tl-sm">
@@ -506,7 +506,7 @@ export default function AiMode() {
           {pending.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
               {pending.map((a) => (
-                <div key={a.id} className="rounded-lg border border-border bg-muted/40 p-1.5 flex items-center gap-2 max-w-[200px]">
+                <div key={a.id} className="rounded-lg border border-border bg-muted p-1.5 flex items-center gap-2 max-w-[200px]">
                   {a.dataUrl ? (
                     <img src={a.dataUrl} alt={a.name} className="h-8 w-8 rounded object-cover" />
                   ) : (
@@ -532,7 +532,7 @@ export default function AiMode() {
               e.preventDefault();
               sendMessage(input);
             }}
-            className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 focus-within:border-emerald-600/50 transition-colors"
+            className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 focus-within:border-emerald-600 transition-colors"
           >
             <button
               type="button"
