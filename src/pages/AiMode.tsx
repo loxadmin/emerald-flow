@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useAiMode } from "@/lib/ai-mode";
 import { useTheme } from "@/lib/theme";
@@ -23,6 +24,7 @@ type Msg = {
   suggestions?: string[];
   navigateTo?: string;
   attachments?: Attachment[];
+  goalOptions?: string[];
 };
 
 type CampaignFlow = {
