@@ -10,27 +10,33 @@ import { toast } from "sonner";
 import Logo from "@/components/Logo";
 import {
   CheckCircle, Loader2, Music, MonitorPlay, ShoppingBag, Globe, Smartphone,
-  Wrench, Home, ChevronDown, Truck, Fuel, Wifi, WifiOff,
+  Home, ChevronDown, Truck, Fuel, Wifi, WifiOff, Users, Landmark, Store,
+  UtensilsCrossed, Package, Radio,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-// =============================================================
-// Top-level taxonomy
-//   Ad Type:  online | offline
-//   Online splits into 3 Groups: engagement | performance | commerce
-//   Each group has a fixed list of subtypes (the enum stored on advertiser_categories.advertiser_subtype)
-//   AND an open list of DB sub-categories (rows in `categories` with that group_id)
-//   Offline is its own ad type with two subtypes.
-// =============================================================
+// ============================================================
+// New taxonomy
+// Online (3 groups):
+//   engagement  → musician, youtuber, social_media_creator
+//   commerce    → ecommerce, online_vendor, realtor
+//   performance → app, website, fintech
+// Offline (2 groups):
+//   daily_essentials → food_beverage, household_items
+//   mainstream       → telecom, oil_gas
+// ============================================================
 
 type AdMode = "online" | "offline";
-type GroupSlug = "engagement" | "performance" | "commerce";
+type OnlineGroupSlug = "engagement" | "performance" | "commerce";
+type OfflineGroupSlug = "daily_essentials" | "mainstream";
+type GroupSlug = OnlineGroupSlug | OfflineGroupSlug;
 type AdType = "engagement" | "performance" | "commerce" | "offline";
 type Subtype =
-  | "musician" | "youtuber"
-  | "app" | "website"
-  | "ecommerce" | "service" | "real_estate"
-  | "oil_gas" | "distributor";
+  | "musician" | "youtuber" | "social_media_creator"
+  | "app" | "website" | "fintech"
+  | "ecommerce" | "online_vendor" | "realtor"
+  | "food_beverage" | "household_items"
+  | "telecom" | "oil_gas";
 
 interface SubtypeOption {
   id: Subtype;
@@ -39,7 +45,7 @@ interface SubtypeOption {
   icon: React.ElementType;
 }
 
-interface OnlineGroup {
+interface GroupDef {
   slug: GroupSlug;
   advertiserType: AdType;
   label: string;
@@ -48,46 +54,68 @@ interface OnlineGroup {
   subtypes: SubtypeOption[];
 }
 
-const ONLINE_GROUPS: OnlineGroup[] = [
+const ONLINE_GROUPS: GroupDef[] = [
   {
     slug: "engagement",
     advertiserType: "engagement",
-    label: "Engagement",
-    description: "Reward-based attention for creators - musicians and YouTubers earn per listener/viewer.",
+    label: "Engagement Ads",
+    description: "Reward-based attention for creators — pay per listener, viewer, or engaged fan.",
     icon: Music,
     subtypes: [
       { id: "musician", label: "Musician", description: "Promote your music to listeners", icon: Music },
       { id: "youtuber", label: "YouTuber", description: "Promote your videos to viewers", icon: MonitorPlay },
-    ],
-  },
-  {
-    slug: "performance",
-    advertiserType: "performance",
-    label: "Performance",
-    description: "Trackable actions for apps and websites - downloads, signups, and purchases.",
-    icon: Globe,
-    subtypes: [
-      { id: "app", label: "App Owner", description: "Mobile or desktop application", icon: Smartphone },
-      { id: "website", label: "Website Owner", description: "Web-based platform or service", icon: Globe },
+      { id: "social_media_creator", label: "Social Media Creator", description: "Grow your social audience", icon: Users },
     ],
   },
   {
     slug: "commerce",
     advertiserType: "commerce",
-    label: "Commerce",
-    description: "Sales-driven verticals - e-commerce, services, real estate, fintech, vendors.",
+    label: "Commerce Ads",
+    description: "Sales-driven verticals — e-commerce, online vendors, real estate.",
     icon: ShoppingBag,
     subtypes: [
-      { id: "ecommerce", label: "E-commerce Vendor", description: "Online store selling products", icon: ShoppingBag },
-      { id: "service", label: "Service Provider", description: "Offer professional services", icon: Wrench },
-      { id: "real_estate", label: "Real Estate", description: "Property sales and rentals", icon: Home },
+      { id: "ecommerce", label: "E-commerce", description: "Online store selling products", icon: ShoppingBag },
+      { id: "online_vendor", label: "Online Vendor", description: "Independent digital seller", icon: Store },
+      { id: "realtor", label: "Realtor / Real Estate", description: "Property sales and rentals", icon: Home },
+    ],
+  },
+  {
+    slug: "performance",
+    advertiserType: "performance",
+    label: "Performance Ads",
+    description: "Trackable actions — installs, signups, KYC, transactions.",
+    icon: Globe,
+    subtypes: [
+      { id: "app", label: "Mobile App Owner", description: "Drive installs and in-app actions", icon: Smartphone },
+      { id: "website", label: "Website Owner", description: "Drive signups and web conversions", icon: Globe },
+      { id: "fintech", label: "Fintech", description: "Accounts, KYC, deposits, transactions", icon: Landmark },
     ],
   },
 ];
 
-const OFFLINE_SUBTYPES: SubtypeOption[] = [
-  { id: "oil_gas", label: "Oil & Gas", description: "Petroleum, lubricants, fuel sales", icon: Fuel },
-  { id: "distributor", label: "Distributor", description: "Bulk product distribution", icon: Truck },
+const OFFLINE_GROUPS: GroupDef[] = [
+  {
+    slug: "daily_essentials",
+    advertiserType: "offline",
+    label: "Daily Essentials",
+    description: "Everyday goods bought in bulk — food, beverages, household items.",
+    icon: UtensilsCrossed,
+    subtypes: [
+      { id: "food_beverage", label: "Food & Beverage Producer", description: "Manufacturers of food and drinks", icon: UtensilsCrossed },
+      { id: "household_items", label: "Household Items Manufacturer", description: "Home & personal care goods", icon: Package },
+    ],
+  },
+  {
+    slug: "mainstream",
+    advertiserType: "offline",
+    label: "Mainstream",
+    description: "Large-scale verticals — telecoms and oil & gas.",
+    icon: Radio,
+    subtypes: [
+      { id: "telecom", label: "Telecommunications", description: "Mobile networks, data, ISPs", icon: Radio },
+      { id: "oil_gas", label: "Oil & Gas", description: "Petroleum, lubricants, fuel", icon: Fuel },
+    ],
+  },
 ];
 
 interface CategoryRow {
@@ -106,6 +134,18 @@ interface GroupRow {
   name: string;
 }
 
+// Top-level catch-all row names per group
+const GROUP_CATCHALL: Record<GroupSlug, string> = {
+  engagement: "Engagement Ads",
+  performance: "Performance Ads",
+  commerce: "Commerce Ads",
+  daily_essentials: "Daily Essentials Ads",
+  mainstream: "Mainstream Ads",
+};
+
+const CREATOR_SUBTYPES: Subtype[] = ["musician", "youtuber", "social_media_creator"];
+const OFFLINE_SUBTYPES: Subtype[] = ["food_beverage", "household_items", "telecom", "oil_gas"];
+
 export default function CategorySelection() {
   const { user, refreshAccessState, hasCategory } = useAuth();
   const navigate = useNavigate();
@@ -113,25 +153,22 @@ export default function CategorySelection() {
   const [adMode, setAdMode] = useState<AdMode>("online");
   const [expandedGroup, setExpandedGroup] = useState<GroupSlug | null>(null);
 
+  const [selectedGroup, setSelectedGroup] = useState<GroupSlug | null>(null);
   const [selectedType, setSelectedType] = useState<AdType | null>(null);
   const [selectedSubtype, setSelectedSubtype] = useState<Subtype | null>(null);
-  // Optional sub-category row (e.g. Fintech, Product Vendors) - only required when a group exposes them
-  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Category change mode
   const [isChangeMode, setIsChangeMode] = useState(false);
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null);
   const [changeReason, setChangeReason] = useState("");
 
-  // Subtype chosen at signup
-  const signupSubtype = (user?.user_metadata as any)?.advertiser_subtype as string | undefined;
-  const isCreator = signupSubtype === "musician" || signupSubtype === "youtuber";
-  const isOfflineSignup = signupSubtype === "oil_gas" || signupSubtype === "distributor";
+  const signupSubtype = (user?.user_metadata as any)?.advertiser_subtype as Subtype | undefined;
+  const isCreatorSignup = signupSubtype ? CREATOR_SUBTYPES.includes(signupSubtype) : false;
+  const isOfflineSignup = signupSubtype ? OFFLINE_SUBTYPES.includes(signupSubtype) : false;
 
   useEffect(() => {
     const load = async () => {
@@ -140,7 +177,7 @@ export default function CategorySelection() {
         supabase.from("category_groups").select("id,slug,name").order("display_order"),
       ]);
       setCategories((catData as CategoryRow[]) || []);
-      setGroups((grpData as GroupRow[]) || []);
+      setGroups((grpData as any[])?.filter((g) => ["engagement","performance","commerce","daily_essentials","mainstream"].includes(g.slug)) as GroupRow[] || []);
 
       if (user && hasCategory) {
         const { data: existing } = await supabase
@@ -154,8 +191,7 @@ export default function CategorySelection() {
         }
       }
 
-      // Auto-route per signup hint
-      if (isCreator) {
+      if (isCreatorSignup) {
         setAdMode("online");
         setExpandedGroup("engagement");
       } else if (isOfflineSignup) {
@@ -168,50 +204,32 @@ export default function CategorySelection() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, hasCategory]);
 
-  // DB sub-categories per group (Fintech, Product Vendors etc.)
-  const subCategoriesByGroup = useMemo(() => {
-    const map: Record<GroupSlug, CategoryRow[]> = { engagement: [], performance: [], commerce: [] };
-    for (const g of groups) {
-      const slug = g.slug;
-      map[slug] = categories.filter(
-        (c) =>
-          c.group_id === g.id &&
-          // Hide the catch-all top-level row (e.g. "Engagement Ads") - it's the default landing row, not a sub-niche
-          !["Engagement Ads", "Performance Ads", "Commerce Ads", "Offline Ads"].includes(c.name) &&
-          !c.is_partnership,
-      );
-    }
+  const groupIdBySlug = useMemo(() => {
+    const map: Partial<Record<GroupSlug, string>> = {};
+    for (const g of groups) map[g.slug] = g.id;
     return map;
-  }, [groups, categories]);
+  }, [groups]);
 
-  const topLevelCategoryFor = (type: AdType): CategoryRow | undefined => {
-    const map: Record<AdType, string> = {
-      engagement: "Engagement Ads",
-      performance: "Performance Ads",
-      commerce: "Commerce Ads",
-      offline: "Offline Ads",
-    };
-    return categories.find((c) => c.name === map[type]);
+  const catchallCategoryFor = (slug: GroupSlug): CategoryRow | undefined =>
+    categories.find((c) => c.name === GROUP_CATCHALL[slug]);
+
+  const handleSelect = (group: GroupDef, sub: SubtypeOption) => {
+    setSelectedGroup(group.slug);
+    setSelectedType(group.advertiserType);
+    setSelectedSubtype(sub.id);
   };
 
-  const handleSelect = (type: AdType, subtype: Subtype) => {
-    setSelectedType(type);
-    setSelectedSubtype(subtype);
-    setSelectedSubCategoryId(null);
-  };
+  const isSelected = (group: GroupSlug, sub: Subtype) =>
+    selectedGroup === group && selectedSubtype === sub;
 
-  const canSubmit =
-    !!selectedType && !!selectedSubtype && (!isChangeMode || !!changeReason.trim());
+  const canSubmit = !!selectedGroup && !!selectedSubtype && (!isChangeMode || !!changeReason.trim());
 
   const handleSubmit = async () => {
-    if (!user || !selectedType || !selectedSubtype) return;
+    if (!user || !selectedGroup || !selectedSubtype || !selectedType) return;
     setSubmitting(true);
 
-    // Resolve target category_id: prefer chosen sub-category row, fallback to the top-level row for the ad type
-    const topCat = topLevelCategoryFor(selectedType);
-    const categoryId = selectedSubCategoryId || topCat?.id || null;
-
-    if (!categoryId) {
+    const cat = catchallCategoryFor(selectedGroup);
+    if (!cat) {
       toast.error("Category not found. Please try again.");
       setSubmitting(false);
       return;
@@ -221,7 +239,7 @@ export default function CategorySelection() {
       const { error } = await supabase.from("category_change_requests" as any).insert({
         advertiser_id: user.id,
         current_category_id: currentCategoryId,
-        requested_category_id: categoryId,
+        requested_category_id: cat.id,
         reason: changeReason.trim(),
         status: "pending",
       } as any);
@@ -232,11 +250,10 @@ export default function CategorySelection() {
       return;
     }
 
-    const category = categories.find((c) => c.id === categoryId);
-    const status = category?.is_active ? "active" : "waiting_list";
+    const status = cat.is_active ? "active" : "waiting_list";
     const { error } = await supabase.from("advertiser_categories").insert({
       advertiser_id: user.id,
-      category_id: categoryId,
+      category_id: cat.id,
       status,
       advertiser_type: selectedType,
       advertiser_subtype: selectedSubtype,
@@ -259,12 +276,10 @@ export default function CategorySelection() {
     setSubmitting(false);
   };
 
-  // Restrict mode tabs based on signup hint
   const showOnline = !isOfflineSignup;
-  const showOffline = !isCreator;
+  const showOffline = !isCreatorSignup;
 
-  const isSelected = (type: AdType, subtype: Subtype) =>
-    selectedType === type && selectedSubtype === subtype;
+  const activeGroups = adMode === "online" ? ONLINE_GROUPS : OFFLINE_GROUPS;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 bg-background">
@@ -275,14 +290,16 @@ export default function CategorySelection() {
           <h1 className="text-3xl font-bold">
             <span className="text-gradient">{isChangeMode ? "Change Advertiser Type" : "What type of advertiser are you?"}</span>
           </h1>
-          <p className="mt-2 text-muted-foreground">First pick how you advertise, then pick the group that fits.</p>
+          <p className="mt-2 text-muted-foreground">
+            Pick <strong>Online</strong> or <strong>Offline</strong>, then choose the group and subtype that fits.
+          </p>
         </div>
 
         <GlassCard variant="strong">
           <GlassCardHeader>
             <GlassCardTitle>Choose Your Category</GlassCardTitle>
             <GlassCardDescription>
-              Two ad types: <strong>Online</strong> (3 groups) or <strong>Offline</strong>.
+              Online has 3 groups: Engagement, Commerce, Performance. Offline has 2 groups: Daily Essentials and Mainstream.
             </GlassCardDescription>
           </GlassCardHeader>
           <GlassCardContent>
@@ -292,11 +309,10 @@ export default function CategorySelection() {
               </div>
             ) : (
               <div className="space-y-5">
-                {/* Mode tabs */}
                 {(showOnline && showOffline) && (
                   <div className="grid grid-cols-2 gap-2 rounded-xl border border-border/50 bg-muted/20 p-1">
                     <button
-                      onClick={() => { setAdMode("online"); setSelectedType(null); setSelectedSubtype(null); }}
+                      onClick={() => { setAdMode("online"); setSelectedGroup(null); setSelectedType(null); setSelectedSubtype(null); setExpandedGroup(null); }}
                       className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                         adMode === "online" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                       }`}
@@ -304,7 +320,7 @@ export default function CategorySelection() {
                       <Wifi className="h-4 w-4" /> Online Ads
                     </button>
                     <button
-                      onClick={() => { setAdMode("offline"); setSelectedType("offline"); setSelectedSubtype(null); setExpandedGroup(null); }}
+                      onClick={() => { setAdMode("offline"); setSelectedGroup(null); setSelectedType(null); setSelectedSubtype(null); setExpandedGroup(null); }}
                       className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                         adMode === "offline" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                       }`}
@@ -314,139 +330,63 @@ export default function CategorySelection() {
                   </div>
                 )}
 
-                {/* ONLINE: three group cards */}
-                {adMode === "online" && (
-                  <div className="space-y-3">
-                    {ONLINE_GROUPS.filter((g) => !isCreator || g.slug === "engagement").map((group) => {
-                      const subCats = subCategoriesByGroup[group.slug] || [];
-                      return (
-                        <Collapsible
-                          key={group.slug}
-                          open={expandedGroup === group.slug}
-                          onOpenChange={(open) => setExpandedGroup(open ? group.slug : null)}
-                        >
-                          <CollapsibleTrigger asChild>
-                            <button className={`w-full text-left rounded-xl border p-5 transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 ${
-                              expandedGroup === group.slug ? "border-primary/40 bg-primary/5" : "border-border/50"
-                            }`}>
-                              <div className="flex items-center gap-4">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                                  <group.icon className="h-5 w-5 text-primary" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-foreground uppercase tracking-wide">{group.label}</p>
-                                  <p className="mt-0.5 text-sm text-muted-foreground">{group.description}</p>
-                                </div>
-                                <ChevronDown className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 ${
-                                  expandedGroup === group.slug ? "rotate-180" : ""
-                                }`} />
+                <div className="space-y-3">
+                  {activeGroups
+                    .filter((g) => !isCreatorSignup || g.slug === "engagement")
+                    .map((group) => (
+                      <Collapsible
+                        key={group.slug}
+                        open={expandedGroup === group.slug}
+                        onOpenChange={(open) => setExpandedGroup(open ? group.slug : null)}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <button className={`w-full text-left rounded-xl border p-5 transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 ${
+                            expandedGroup === group.slug ? "border-primary/40 bg-primary/5" : "border-border/50"
+                          }`}>
+                            <div className="flex items-center gap-4">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                                <group.icon className="h-5 w-5 text-primary" />
                               </div>
-                            </button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="mt-2 ml-4 space-y-3 border-l-2 border-primary/20 pl-4">
-                              {/* Fixed subtypes */}
-                              <div className="space-y-2">
-                                {group.subtypes.map((sub) => (
-                                  <button
-                                    key={sub.id}
-                                    onClick={() => handleSelect(group.advertiserType, sub.id)}
-                                    className={`w-full text-left rounded-lg border p-3 transition-all duration-200 ${
-                                      isSelected(group.advertiserType, sub.id)
-                                        ? "border-primary/50 bg-primary/10 shadow-[0_0_15px_hsl(var(--primary)/0.1)]"
-                                        : "border-border/50 hover:border-primary/20 hover:bg-accent/5"
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <sub.icon className={`h-4 w-4 ${isSelected(group.advertiserType, sub.id) ? "text-primary" : "text-muted-foreground"}`} />
-                                      <div>
-                                        <p className="font-medium text-foreground text-sm">{sub.label}</p>
-                                        <p className="text-xs text-muted-foreground">{sub.description}</p>
-                                      </div>
-                                      {isSelected(group.advertiserType, sub.id) && (
-                                        <CheckCircle className="ml-auto h-4 w-4 text-primary shrink-0" />
-                                      )}
-                                    </div>
-                                  </button>
-                                ))}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-foreground uppercase tracking-wide">{group.label}</p>
+                                <p className="mt-0.5 text-sm text-muted-foreground">{group.description}</p>
                               </div>
-
-                              {/* Optional DB sub-categories (Fintech, Product Vendors, etc.) */}
-                              {subCats.length > 0 && selectedType === group.advertiserType && selectedSubtype && (
-                                <div className="rounded-xl border border-border/50 p-3">
-                                  <p className="text-xs font-medium text-muted-foreground mb-2">
-                                    Pick your specific niche (optional)
-                                  </p>
-                                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
-                                    {subCats.filter((c) => c.id !== currentCategoryId).map((cat) => (
-                                      <button
-                                        key={cat.id}
-                                        onClick={() => setSelectedSubCategoryId(
-                                          selectedSubCategoryId === cat.id ? null : cat.id
-                                        )}
-                                        className={`text-left rounded-lg border p-2.5 transition-all ${
-                                          selectedSubCategoryId === cat.id
-                                            ? "border-primary/50 bg-primary/10"
-                                            : "border-border/50 hover:border-border hover:bg-accent/5"
-                                        }`}
-                                      >
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div className="min-w-0">
-                                            <p className="text-xs font-medium text-foreground truncate">{cat.name}</p>
-                                            {cat.description && (
-                                              <p className="text-[11px] text-muted-foreground line-clamp-2">{cat.description}</p>
-                                            )}
-                                          </div>
-                                          <CheckCircle className={`h-4 w-4 shrink-0 ${selectedSubCategoryId === cat.id ? "text-primary" : "text-muted-foreground/30"}`} />
-                                        </div>
-                                      </button>
-                                    ))}
+                              <ChevronDown className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                                expandedGroup === group.slug ? "rotate-180" : ""
+                              }`} />
+                            </div>
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="mt-2 ml-4 space-y-2 border-l-2 border-primary/20 pl-4">
+                            {group.subtypes.map((sub) => (
+                              <button
+                                key={sub.id}
+                                onClick={() => handleSelect(group, sub)}
+                                className={`w-full text-left rounded-lg border p-3 transition-all duration-200 ${
+                                  isSelected(group.slug, sub.id)
+                                    ? "border-primary/50 bg-primary/10 shadow-[0_0_15px_hsl(var(--primary)/0.1)]"
+                                    : "border-border/50 hover:border-primary/20 hover:bg-accent/5"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <sub.icon className={`h-4 w-4 ${isSelected(group.slug, sub.id) ? "text-primary" : "text-muted-foreground"}`} />
+                                  <div>
+                                    <p className="font-medium text-foreground text-sm">{sub.label}</p>
+                                    <p className="text-xs text-muted-foreground">{sub.description}</p>
                                   </div>
+                                  {isSelected(group.slug, sub.id) && (
+                                    <CheckCircle className="ml-auto h-4 w-4 text-primary shrink-0" />
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* OFFLINE: direct subtype list */}
-                {adMode === "offline" && (
-                  <div className="rounded-xl border border-border/50 p-4 space-y-3">
-                    <div>
-                      <p className="font-semibold text-foreground uppercase tracking-wide">Offline Ads</p>
-                      <p className="text-sm text-muted-foreground">
-                        Submit product offers; the admin team relays orders from buyers and you fulfil offline.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      {OFFLINE_SUBTYPES.map((sub) => (
-                        <button
-                          key={sub.id}
-                          onClick={() => handleSelect("offline", sub.id)}
-                          className={`w-full text-left rounded-lg border p-3 transition-all duration-200 ${
-                            isSelected("offline", sub.id)
-                              ? "border-primary/50 bg-primary/10 shadow-[0_0_15px_hsl(var(--primary)/0.1)]"
-                              : "border-border/50 hover:border-primary/20 hover:bg-accent/5"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <sub.icon className={`h-4 w-4 ${isSelected("offline", sub.id) ? "text-primary" : "text-muted-foreground"}`} />
-                            <div>
-                              <p className="font-medium text-foreground text-sm">{sub.label}</p>
-                              <p className="text-xs text-muted-foreground">{sub.description}</p>
-                            </div>
-                            {isSelected("offline", sub.id) && <CheckCircle className="ml-auto h-4 w-4 text-primary shrink-0" />}
+                              </button>
+                            ))}
                           </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                </div>
 
-                {/* Change mode reason */}
                 {isChangeMode && canSubmit && (
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground">Reason for change *</label>
@@ -460,7 +400,6 @@ export default function CategorySelection() {
                   </div>
                 )}
 
-                {/* Submit */}
                 {canSubmit && (
                   <GlassButton
                     variant="glow"
