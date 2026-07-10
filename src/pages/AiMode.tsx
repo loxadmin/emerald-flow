@@ -31,6 +31,7 @@ type Msg = {
   navigateTo?: string;
   attachments?: Attachment[];
   goalOptions?: string[];
+  quickActions?: { label: string; to: string }[];
 };
 
 type CampaignFlow = {
@@ -243,7 +244,33 @@ export default function AiMode() {
       const intro = goals.length
         ? `${greet.text}\n\nWhat are you looking to get for your ${catName || "business"}? Pick one to get started.`
         : greet.text;
-      setMessages([{ role: "bot", text: intro, suggestions: goals.length ? undefined : greet.suggestions, goalOptions: goals.length ? goals : undefined }]);
+
+      // Quick actions: always offer campaign creation; add packages if any live ones target this subtype.
+      const actions: { label: string; to: string }[] = [];
+      if (advertiserType !== "offline") {
+        actions.push({ label: "Create a campaign", to: "/campaigns/create" });
+        if (subtype) {
+          const { data: pkgs } = await supabase
+            .from("ad_packages")
+            .select("id, advertiser_subtypes")
+            .eq("is_active", true)
+            .contains("advertiser_subtypes", [subtype])
+            .limit(1);
+          if (pkgs && pkgs.length > 0) {
+            actions.push({ label: "View ad packages", to: "/packages" });
+          }
+        }
+      } else {
+        actions.push({ label: "Submit an offer", to: "/offline/offers" });
+      }
+
+      setMessages([{
+        role: "bot",
+        text: intro,
+        suggestions: goals.length ? undefined : greet.suggestions,
+        goalOptions: goals.length ? goals : undefined,
+        quickActions: actions,
+      }]);
       setTimeout(() => taRef.current?.focus(), 100);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
