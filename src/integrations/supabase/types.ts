@@ -2172,6 +2172,13 @@ export type Database = {
         | "real_estate"
         | "oil_gas"
         | "distributor"
+        | "social_media_creator"
+        | "online_vendor"
+        | "realtor"
+        | "fintech"
+        | "food_beverage"
+        | "household_items"
+        | "telecom"
       advertiser_type: "engagement" | "performance" | "commerce" | "offline"
       app_role: "admin" | "user"
       campaign_status:
@@ -2328,6 +2335,13 @@ export const Constants = {
         "real_estate",
         "oil_gas",
         "distributor",
+        "social_media_creator",
+        "online_vendor",
+        "realtor",
+        "fintech",
+        "food_beverage",
+        "household_items",
+        "telecom",
       ],
       advertiser_type: ["engagement", "performance", "commerce", "offline"],
       app_role: ["admin", "user"],
