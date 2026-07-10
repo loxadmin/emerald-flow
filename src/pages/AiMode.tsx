@@ -460,6 +460,24 @@ export default function AiMode() {
                     ))}
                   </div>
                 )}
+
+                {m.role === "bot" && m.goalOptions && m.goalOptions.length > 0 && (
+                  <div className="max-w-[85%] w-full">
+                    <select
+                      defaultValue=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v) sendMessage(`I want to get ${v.toLowerCase()}`);
+                      }}
+                      className="w-full rounded-lg border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 text-[13px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600/40"
+                    >
+                      <option value="" disabled>Choose a goal…</option>
+                      {m.goalOptions.map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           ))}
