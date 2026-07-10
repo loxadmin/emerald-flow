@@ -1,8 +1,8 @@
 import type { AiCampaignType } from "@/lib/ai-campaign-prefill";
 
-// Inbuilt Karbali Assistant NLP. No external APIs.
-// Rule-based: tokenization, light stemming, synonym groups, weighted scoring,
-// plus a knowledge base so it can actually answer questions about the platform.
+// Karbali in-house NLP. No external APIs.
+// Adds real conversation state: the assistant remembers the last goal, topic,
+// campaign type, and turn count, then threads that context into every reply.
 
 export type AssistantContext = {
   walletActivated: boolean | null;
@@ -13,17 +13,50 @@ export type AssistantContext = {
   userName?: string;
 };
 
+// Conversation memory. Passed into detectIntent and updated after each turn.
+export type ConversationState = {
+  goal: string | null;              // e.g. "music streams", "app installs"
+  goalDomain: GoalDomain | null;    // classified domain of the goal
+  topic: string | null;             // last topic discussed (tracking, billing, etc.)
+  campaignType: AiCampaignType | null; // last inferred campaign type
+  lastIntent: string | null;
+  turnCount: number;
+};
+
+export const initialState = (): ConversationState => ({
+  goal: null,
+  goalDomain: null,
+  topic: null,
+  campaignType: null,
+  lastIntent: null,
+  turnCount: 0,
+});
+
+export type GoalDomain =
+  | "music"
+  | "video"
+  | "views"
+  | "quiz"
+  | "social"
+  | "brand"
+  | "installs"
+  | "signups"
+  | "leads"
+  | "subscriptions"
+  | "sales"
+  | "cart"
+  | "repeat";
+
 export type AssistantReply = {
   text: string;
   navigateTo?: string;
   action?: "start_campaign_flow";
   campaignType?: AiCampaignType | null;
-  // Only true when the assistant should auto-redirect (payment / account activation).
-  // Otherwise navigateTo is exposed as a clickable suggestion the user opts into.
   autoNavigate?: boolean;
   suggestions?: string[];
-  // Rendered as a clickable dropdown of goal choices (e.g. "App installs", "Signups").
   goalOptions?: string[];
+  // If set, calling code should merge into ConversationState.
+  stateUpdates?: Partial<ConversationState>;
 };
 
 export const CAMPAIGN_TYPE_LABELS: Record<AiCampaignType, string> = {
@@ -32,42 +65,32 @@ export const CAMPAIGN_TYPE_LABELS: Record<AiCampaignType, string> = {
   commerce: "Commerce Ads",
 };
 
-
-type Intent = {
-  id: string;
-  // Each inner array is a synonym group. Intent fires when every non-empty group has at least one hit.
-  keywords: string[][];
-  // Strong single-word triggers (any one of these alone bumps the score).
-  any?: string[];
-  handler: (ctx: AssistantContext, input: string, tokens: string[]) => AssistantReply;
-};
+// ---------------------------------------------------------------------------
+// Tokenization + normalization
+// ---------------------------------------------------------------------------
 
 const STOPWORDS = new Set([
-  "the","a","an","is","i","to","my","me","of","for","on","in","at","do",
+  "the","a","an","is","i","to","my","me","of","for","on","in","at","do","does",
   "can","you","please","and","or","with","this","that","be","am","are","it",
-  "there","here",
-  "should","would","will","have","has","had","was","were","into","from","by",
-  "if","so","as","but","then","also","too","not","no","yes","ok","okay",
+  "there","here","should","would","will","have","has","had","was","were","into",
+  "from","by","if","so","as","but","then","also","too","not","no","yes","ok",
+  "okay","just","really","very","now","get","got","gonna","want","wanna","need",
 ]);
 
 const TYPO_FIXES: Record<string, string> = {
-  camaign: "campaign",
-  camaigns: "campaign",
-  campain: "campaign",
-  campains: "campaign",
-  engagemnet: "engagement",
-  engagmnt: "engagement",
-  inteligent: "intelligent",
-  isnt: "is not",
-  advertis: "advertise",
-  advertiz: "advertise",
-  ecommerce: "commerce",
-  ecom: "commerce",
-  shopify: "commerce",
-  client: "customer",
-  customers: "customer",
-  costumer: "customer",
+  camaign: "campaign", camaigns: "campaign", campain: "campaign", campains: "campaign",
+  engagemnet: "engagement", engagmnt: "engagement", inteligent: "intelligent",
+  isnt: "is not", advertis: "advertise", advertiz: "advertise",
+  ecommerce: "commerce", ecom: "commerce", shopify: "commerce",
+  client: "customer", customers: "customer", costumer: "customer",
+  streaming: "stream", streams: "stream", listens: "listen", listener: "listen",
+  viewers: "viewer", views: "view", subscribers: "subscribe", subscriber: "subscribe",
+  installs: "install", signups: "signup", downloads: "download",
 };
+
+function stem(word: string): string {
+  return word.replace(/(ings|ing|ies|ied|es|ed|s)$/g, (m) => (m === "ies" || m === "ied" ? "y" : ""));
+}
 
 function normalize(text: string): string[] {
   return text
@@ -75,16 +98,82 @@ function normalize(text: string): string[] {
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter((w) => w && !STOPWORDS.has(w))
-    .map((w) => {
-      const stem = w.replace(/(ing|ed|s)$/g, "");
-      return TYPO_FIXES[stem] || TYPO_FIXES[w] || stem;
-    });
+    .map((w) => TYPO_FIXES[w] || TYPO_FIXES[stem(w)] || stem(w));
 }
 
-function inferCampaignType(tokens: string[]): AiCampaignType | null {
-  if (hasAny(tokens, ["commerce", "store", "shop", "sale", "purchase", "woocommerce", "product"])) return "commerce";
-  if (hasAny(tokens, ["engagement", "music", "video", "viewer", "views", "subscriber", "listener", "youtube"])) return "engagement";
-  if (hasAny(tokens, ["performance", "cpa", "cpc", "conversion", "signup", "download", "lead", "app"])) return "performance";
+function hasAny(tokens: string[], group: string[]): boolean {
+  const norm = group.map(stem);
+  return tokens.some((t) => norm.includes(t));
+}
+
+function includesPhrase(input: string, phrases: string[]): boolean {
+  const t = input.toLowerCase();
+  return phrases.some((p) => t.includes(p));
+}
+
+// ---------------------------------------------------------------------------
+// Goal classification (goal string -> domain -> campaign type)
+// ---------------------------------------------------------------------------
+
+const GOAL_DOMAIN_KEYWORDS: Record<GoalDomain, string[]> = {
+  music: ["music", "song", "stream", "listen", "audio", "spotify", "audiomack", "artist"],
+  video: ["video", "watch", "youtube", "reels", "tiktok", "shorts"],
+  views: ["view", "impression", "reach", "traffic"],
+  quiz: ["quiz", "answer", "poll", "survey"],
+  social: ["social", "follow", "like", "share", "engagement"],
+  brand: ["brand", "awareness", "visibility", "recognition"],
+  installs: ["install", "download", "app"],
+  signups: ["signup", "register", "account"],
+  leads: ["lead", "prospect", "inquiry", "form"],
+  subscriptions: ["subscription", "subscribe", "recurring", "plan"],
+  sales: ["sale", "purchase", "buy", "checkout", "order", "revenue"],
+  cart: ["cart", "abandonment", "conversion"],
+  repeat: ["repeat", "returning", "loyalty", "retention"],
+};
+
+export function classifyGoal(goal: string): { domain: GoalDomain | null; campaignType: AiCampaignType | null } {
+  const tokens = normalize(goal);
+  for (const [domain, kws] of Object.entries(GOAL_DOMAIN_KEYWORDS)) {
+    if (hasAny(tokens, kws)) {
+      const d = domain as GoalDomain;
+      const type =
+        d === "sales" || d === "cart" || d === "repeat" ? "commerce" :
+        d === "music" || d === "video" || d === "views" || d === "quiz" || d === "social" || d === "brand" ? "engagement" :
+        "performance";
+      return { domain: d, campaignType: type };
+    }
+  }
+  return { domain: null, campaignType: null };
+}
+
+// Human-friendly noun for a goal domain when composing sentences.
+function goalNoun(domain: GoalDomain | null, goal: string | null): string {
+  if (!domain) return goal || "your goal";
+  switch (domain) {
+    case "music": return "music streams";
+    case "video": return "video plays";
+    case "views": return "ad views";
+    case "quiz": return "quiz completions";
+    case "social": return "social engagement";
+    case "brand": return "brand awareness";
+    case "installs": return "app installs";
+    case "signups": return "signups";
+    case "leads": return "leads";
+    case "subscriptions": return "subscriptions";
+    case "sales": return "sales";
+    case "cart": return "cart conversions";
+    case "repeat": return "repeat purchases";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Campaign type helpers
+// ---------------------------------------------------------------------------
+
+export function inferCampaignType(tokens: string[]): AiCampaignType | null {
+  if (hasAny(tokens, ["commerce", "store", "shop", "sale", "purchase", "woocommerce", "product", "checkout", "cart"])) return "commerce";
+  if (hasAny(tokens, ["engagement", "music", "video", "viewer", "view", "subscribe", "listen", "youtube", "stream", "quiz", "brand", "reach"])) return "engagement";
+  if (hasAny(tokens, ["performance", "cpa", "cpc", "conversion", "signup", "download", "install", "lead", "app", "subscription"])) return "performance";
   return null;
 }
 
@@ -105,373 +194,234 @@ export function campaignTypeMismatchReply(type: AiCampaignType, ctx: AssistantCo
     return { text: `Good. Let's build your ${type} campaign here.`, action: "start_campaign_flow", campaignType: type };
   }
   return {
-    text: `Your account is set for ${CAMPAIGN_TYPE_LABELS[allowedType]}. I can only create that campaign type unless your advertiser type is changed.`,
+    text: `Your account is set for ${CAMPAIGN_TYPE_LABELS[allowedType]}. I can only create that campaign type unless your advertiser profile is changed.`,
     suggestions: [`Create ${CAMPAIGN_TYPE_LABELS[allowedType]}`, "Change advertiser type", "Why can't I create this?"],
     navigateTo: "/category",
   };
 }
 
-function hasAny(tokens: string[], group: string[]): boolean {
-  const norm = group.map((g) => g.replace(/(ing|ed|s)$/g, ""));
-  return tokens.some((t) => norm.includes(t));
+// ---------------------------------------------------------------------------
+// Goal-threaded knowledge composer
+//
+// Every knowledge answer is composed so it references the current goal when
+// one is set. That way if the user picked "music streams" and asks "how does
+// tracking work", the answer talks about tracking for music streams — not a
+// generic paragraph.
+// ---------------------------------------------------------------------------
+
+type Topic =
+  | "tracking" | "billing" | "wallet" | "minimum" | "fraud"
+  | "cpa_vs_cpc" | "verify_website" | "verify_business"
+  | "campaign_types" | "process" | "what_is_karbali";
+
+function goalPrefix(state: ConversationState): string {
+  if (!state.goal) return "";
+  return `For ${goalNoun(state.goalDomain, state.goal)}, `;
 }
 
-// Light naija seasoning, sparing and clean English otherwise.
-const spice = () => {
-  const opts = ["", "", "", "Sharp!", "Oya,", "Got you.", "Cool.", "Alright,"];
-  return opts[Math.floor(Math.random() * opts.length)];
-};
-const join = (...p: string[]) => p.filter(Boolean).join(" ").trim();
+function goalTailSuggestion(state: ConversationState, defaults: string[]): string[] {
+  if (!state.goal) return defaults;
+  const type = state.campaignType;
+  if (type === "engagement") return ["Create engagement campaign", ...defaults].slice(0, 4);
+  if (type === "commerce") return ["Create commerce campaign", ...defaults].slice(0, 4);
+  if (type === "performance") return ["Create performance campaign", ...defaults].slice(0, 4);
+  return defaults;
+}
 
-const campaignFlowReply = (ctx: AssistantContext, input: string, tokens: string[]): AssistantReply => {
-  const type = inferCampaignType(tokens);
-  if (ctx.walletActivated !== true) {
-    return {
-      text: "Activate your wallet first, then I can set up the campaign with you. Minimum is $10.",
-      navigateTo: "/wallet",
-      autoNavigate: true,
-      suggestions: ["Activate wallet", "How much do I need?"],
-    };
-  }
-  if (!type) {
-    const allowedType = getAllowedCampaignType(ctx);
-    if (allowedType) {
+function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantContext): AssistantReply {
+  const prefix = goalPrefix(state);
+  const goal = state.goal ? goalNoun(state.goalDomain, state.goal) : null;
+
+  switch (topic) {
+    case "what_is_karbali":
       return {
-        text: `Your profile is ${CAMPAIGN_TYPE_LABELS[allowedType]}, so I'll set up that campaign type for you. What should we call it?`,
-        action: "start_campaign_flow",
-        campaignType: allowedType,
+        text: goal
+          ? `Karbali helps you buy real ${goal}, not empty impressions. Fund your wallet, launch the right campaign, and only pay when the ${goal} actually happen.`
+          : "Karbali helps Nigerian advertisers buy real outcomes, not impressions. Fund your wallet, launch a campaign, and pay only for valid clicks, conversions, engagement, or sales.",
+        suggestions: goalTailSuggestion(state, ["Types of campaigns", "How does billing work?", "How is tracking done?"]),
+        stateUpdates: { topic: "what_is_karbali" },
       };
-    }
-    return {
-      text: "I can set it up in chat. Which campaign type do you want?",
-      action: "start_campaign_flow",
-      campaignType: null,
-      suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"],
-    };
+    case "tracking":
+      return {
+        text: goal
+          ? `${prefix}we track each event with a deterministic click_id. ${trackingDetailForGoal(state)} You pay only when we confirm a real ${singularize(goal)}.`
+          : "We use a deterministic click_id (UUID). Install the Karbali script or WordPress plugin, fire a conversion event, and we attribute the result to the right campaign.",
+        suggestions: goalTailSuggestion(state, ["Open docs", "Verify my integration"]),
+        navigateTo: "/docs",
+        stateUpdates: { topic: "tracking" },
+      };
+    case "billing":
+      return {
+        text: goal
+          ? `${prefix}Karbali holds the cost in escrow when you submit. As real ${goal} come in, funds release from your wallet — no results, no charge.`
+          : "Karbali uses escrow. When you submit a campaign, cost is held from your wallet first and released only as valid results happen.",
+        suggestions: goalTailSuggestion(state, ["Minimum funding", "Open wallet", "How is tracking done?"]),
+        stateUpdates: { topic: "billing" },
+      };
+    case "wallet":
+      return {
+        text: ctx.walletActivated
+          ? "Your wallet is already active. You can launch campaigns."
+          : "Activate your wallet first. Minimum is $10 and you can top up via Paystack or Flutterwave.",
+        navigateTo: "/wallet",
+        autoNavigate: !ctx.walletActivated,
+        stateUpdates: { topic: "wallet" },
+      };
+    case "minimum":
+      return {
+        text: state.campaignType === "commerce"
+          ? "Commerce campaigns need at least $200 wallet balance before launch, plus a flat fee and commission on each sale."
+          : "Wallet activation minimum is $10. Commerce campaigns need $200 balance. Partnership accounts need $50 fee + $200 minimum.",
+        suggestions: ["Activate my wallet", "Fund wallet"],
+        stateUpdates: { topic: "minimum" },
+      };
+    case "fraud":
+      return {
+        text: `${prefix}Karbali filters bots, duplicate clicks, and suspicious patterns before billing. You only pay for clean events.`,
+        stateUpdates: { topic: "fraud" },
+      };
+    case "cpa_vs_cpc":
+      return {
+        text: "CPC = pay per click. CPA = pay only when a real action happens (signup, purchase, install). CPA costs more per event but carries lower risk.",
+        stateUpdates: { topic: "cpa_vs_cpc" },
+      };
+    case "verify_website":
+      return {
+        text: "Add your website, then verify via OTP or DNS. Once verified the domain locks, so confirm the exact URL before submitting.",
+        navigateTo: "/websites",
+        stateUpdates: { topic: "verify_website" },
+      };
+    case "verify_business":
+      return {
+        text: "Business verification confirms your brand and unlocks higher limits. Upload your documents and we review within 24–48 hours.",
+        navigateTo: "/verification",
+        stateUpdates: { topic: "verify_business" },
+      };
+    case "campaign_types":
+      return {
+        text: "Two ad types: Online and Offline. Online splits into Engagement (creators, media), Performance (apps, websites, fintech), and Commerce (e-commerce, vendors, realtors). Offline is for oil & gas, telcos, and physical-goods brands.",
+        suggestions: ["What is Engagement?", "What is Performance?", "What is Commerce?"],
+        stateUpdates: { topic: "campaign_types" },
+      };
+    case "process":
+      return {
+        text: goal
+          ? `To buy ${goal}: activate wallet → add your website or app link → launch a ${state.campaignType || "matching"} campaign with ${goal} as the target → install tracking → submit for review.`
+          : "Activate wallet → add/verify website → choose campaign type → set goals → install tracking → submit for review.",
+        suggestions: goalTailSuggestion(state, ["Create a campaign", "Setup tracking", "Add website"]),
+        stateUpdates: { topic: "process" },
+      };
   }
-  if (!isCampaignTypeAllowed(type, ctx)) return campaignTypeMismatchReply(type, ctx);
-  return {
-    text: `Good. Let's build your ${type} campaign here.`,
-    action: "start_campaign_flow",
-    campaignType: type,
-  };
+}
+
+function trackingDetailForGoal(state: ConversationState): string {
+  switch (state.goalDomain) {
+    case "music": return "You paste your song links and lyrics, and we log a stream only after the listener plays for the required duration.";
+    case "video": return "You paste your video link and script, and we log a view only after watch-time thresholds are met.";
+    case "quiz": return "We record completions only when the user answers the quiz correctly.";
+    case "installs": return "The install SDK fires a conversion when the user opens the app for the first time.";
+    case "signups": return "Our JS snippet or WordPress plugin fires a conversion when the signup form is submitted successfully.";
+    case "sales":
+    case "cart":
+    case "repeat": return "Drop the JS snippet or WooCommerce plugin on your store, and we fire a conversion at checkout success — commission is billed only then.";
+    default: return "Install the Karbali script or WordPress plugin and fire the conversion event when the goal happens.";
+  }
+}
+
+function singularize(word: string): string {
+  if (word.endsWith("s") && !word.endsWith("ss")) return word.slice(0, -1);
+  return word;
+}
+
+// ---------------------------------------------------------------------------
+// Free-text intent detection with scoring
+// ---------------------------------------------------------------------------
+
+type IntentRule = {
+  id: string;
+  topic?: Topic;
+  // Weighted keyword groups. Every non-empty group must match at least once.
+  keywords: string[][];
+  // Phrases (raw substring) that force a match when present.
+  phrases?: string[];
 };
 
-const INTENTS: Intent[] = [
-  // ===== Platform knowledge =====
-  {
-    id: "what_is_karbali",
-    keywords: [["karbali","platform","system","app","product"], ["what","explain","about","tell","describe","mean"]],
-    any: ["karbali"],
-    handler: () => ({
-      text: "Karbali helps Nigerian advertisers buy real outcomes, not empty impressions. You fund your wallet, create the right campaign type, track results, and pay only for valid clicks, conversions, engagement, or sales.",
-      suggestions: ["Types of campaigns", "How does billing work?", "How is tracking done?"],
-    }),
-  },
-  {
-    id: "campaign_types",
-    keywords: [["type","kind","category","option","difference","which","choose"], ["campaign","ad","advert"]],
-    any: ["types", "options"],
-    handler: () => ({
-      text: "Karbali has two ad types: Online and Offline. Online has three groups: Engagement (creators), Performance (apps/websites), and Commerce (e-commerce, fintech, real estate, vendors). Offline is for oil and gas, distributors, and similar businesses that fulfil orders offline.",
-      suggestions: ["What is Engagement?", "What is Performance?", "What is Commerce?"],
-    }),
-  },
-  {
-    id: "engagement_ads",
-    keywords: [["engagement","quiz","point","reward","media"], []],
-    any: ["engagement","quiz","points","reward"],
-    handler: () => ({
-      text: "Engagement Ads are for creators and media campaigns. Users watch, listen, subscribe, answer quizzes, or complete approved actions, then earn points while you buy real attention.",
-      suggestions: ["Performance ads", "Commerce ads", "Create campaign"],
-    }),
-  },
-  {
-    id: "performance_ads",
-    keywords: [["performance","cpa","cpc","conversion","click"], []],
-    any: ["cpa","cpc","performance"],
-    handler: () => ({
-      text: "Performance Ads are for apps and websites. You pay for measurable actions like clicks, downloads, signups, or purchases, tracked with Karbali attribution.",
-      suggestions: ["What is CPA?", "What is CPC?", "Setup tracking"],
-    }),
-  },
-  {
-    id: "commerce_ads",
-    keywords: [["commerce","shopify","ecommerce","store","shop","sale"], []],
-    any: ["commerce","ecommerce","shopify"],
-    handler: () => ({
-      text: "Commerce Ads are for stores and vendors. You pay a flat fee plus commission when sales happen, with a $200 minimum wallet balance before launch.",
-      suggestions: ["How much is the minimum?", "How is tracking done?"],
-    }),
-  },
-  {
-    id: "cpa_vs_cpc",
-    keywords: [["cpa","cpc","difference"], []],
-    any: ["cpa","cpc"],
-    handler: () => ({
-      text: "CPC means Cost Per Click: you pay per click. CPA means Cost Per Action: you pay only when a signup, purchase, or other action happens. CPA costs more per event but carries lower risk.",
-    }),
-  },
-  {
-    id: "tracking_how",
+const INTENT_RULES: IntentRule[] = [
+  { id: "what_is_karbali", topic: "what_is_karbali",
+    keywords: [["karbali","platform","system","product"], ["what","explain","tell","describe","mean","about"]],
+    phrases: ["what is karbali","tell me about karbali","explain karbali"] },
+  { id: "campaign_types", topic: "campaign_types",
+    keywords: [["type","kind","category","difference","option"], ["campaign","ad","advert"]],
+    phrases: ["types of campaign","types of ads","which campaign"] },
+  { id: "tracking", topic: "tracking",
     keywords: [["track","attribution","conversion","pixel","sdk"], []],
-    any: ["tracking","attribution","pixel","sdk"],
-    handler: () => ({
-      text: "We use a deterministic click_id (UUID). Install the Karbali script or WordPress plugin on your site, fire a conversion event, and we attribute the sale back to the right campaign.",
-      suggestions: ["Open docs", "Verify my integration"],
-    }),
-  },
-  {
-    id: "ad_fraud",
+    phrases: ["how does tracking","how tracking works","attribution"] },
+  { id: "billing", topic: "billing",
+    keywords: [["billing","cost","charge","escrow","deduct","spend","fee"], []],
+    phrases: ["how does billing","how am i charged","how do you charge"] },
+  { id: "minimum", topic: "minimum",
+    keywords: [["minimum","least","start","how much"], ["wallet","balance","fund","amount","money","need"]],
+    phrases: ["how much do i need","minimum balance","minimum fund"] },
+  { id: "fraud", topic: "fraud",
     keywords: [["fraud","fake","bot","invalid"], []],
-    any: ["fraud"],
-    handler: () => ({
-      text: "Karbali filters bot traffic, duplicate clicks, and suspicious patterns before billing. You only pay for clean, attributable activity.",
-    }),
-  },
-  {
-    id: "minimum_funding",
-    keywords: [["minimum","least","start","fund","activation"], ["wallet","balance","fund","amount","money"]],
-    any: ["minimum"],
-    handler: () => ({
-      text: "Minimum wallet activation is $10. For Commerce campaigns you need at least $200 balance. Partnership accounts need a $50 fee and $200 minimum.",
-      suggestions: ["Activate my wallet", "Fund wallet"],
-    }),
-  },
-  {
-    id: "payment_methods",
-    keywords: [["pay","payment","fund","topup","deposit"], ["method","option","how","gateway"]],
-    any: ["paystack","flutterwave"],
-    handler: () => ({
-      text: "Fund through Paystack or Flutterwave using card, bank transfer, or your dedicated virtual account. Funds land in your wallet after confirmation.",
-      suggestions: ["Open wallet"],
-    }),
-  },
-  {
-    id: "billing_how",
-    keywords: [["billing","cost","charge","escrow","deduct","pay"], ["work","how","explain"]],
-    any: ["billing", "escrow", "deduct"],
-    handler: () => ({
-      text: "Karbali uses escrow. When you submit a campaign, the cost is held from your wallet first. Spend is released only as valid campaign results happen.",
-      suggestions: ["Minimum funding", "Create a campaign", "Open wallet"],
-    }),
-  },
-  {
-    id: "campaign_process",
-    keywords: [["process","steps","flow","how"], ["campaign","ad","launch","approve"]],
-    handler: () => ({
-      text: "Campaign flow is simple: activate wallet, add/verify website, choose campaign type, set goals, install tracking if needed, submit for review, then admin approval.",
-      suggestions: ["Create a campaign", "Setup tracking", "Add website"],
-    }),
-  },
-  {
-    id: "customer_acquisition",
-    keywords: [["get","bring","find","acquire","gain"], ["customer","client","buyer","sales","users","traffic"]],
-    handler: () => ({
-      text: "For ecommerce, start with Commerce ads if you want sales, or Performance ads if you want signups/leads first. Karbali tracks results so you avoid paying for empty exposure.",
-      suggestions: ["Create commerce campaign", "Create performance campaign", "CPA vs CPC"],
-    }),
-  },
-  {
-    id: "verify_business",
-    keywords: [["verify","verification","approve","kyc","business"], []],
-    any: ["verification","kyc"],
-    handler: () => ({
-      text: "Business verification confirms your brand details and unlocks higher limits. Submit your documents on the Verification page and we review within 24–48 hours.",
-      navigateTo: "/verification",
-    }),
-  },
-  {
-    id: "website_verify",
-    keywords: [["verify","add","connect"], ["website","domain","site"]],
-    handler: () => ({
-      text: "Add your website, then verify via OTP or DNS. Once verified the domain locks, so confirm it before submitting.",
-      navigateTo: "/websites",
-    }),
-  },
-
-  // ===== Navigation intents =====
-  {
-    id: "activate_wallet",
-    keywords: [["activate","enable","setup","start"], ["wallet","account"]],
-    any: ["activate"],
-    handler: (ctx) => ({
-      text: ctx.walletActivated
-        ? "Your wallet is already active. You can place campaigns now."
-        : join(spice(), "Taking you to the Wallet page to activate. Minimum is $10."),
-      navigateTo: ctx.walletActivated ? undefined : "/wallet",
-      autoNavigate: ctx.walletActivated ? false : true,
-    }),
-  },
-  {
-    id: "fund_wallet",
-    keywords: [["fund","topup","top","deposit","add"], ["wallet","balance","money","fund"]],
-    any: ["fund","topup","deposit"],
-    handler: () => ({
-      text: join(spice(), "Opening the wallet so you can fund via Paystack or Flutterwave."),
-      navigateTo: "/wallet",
-      autoNavigate: true,
-    }),
-  },
-
-  {
-    id: "create_campaign",
-    keywords: [["create","start","new","launch","place","run","make","setup","build"], ["campaign","ad","advert","promotion"]],
-    handler: campaignFlowReply,
-  },
-  {
-    id: "fill_campaign_form",
-    keywords: [["fill","help","guide","walk","complete","assist"], ["form","campaign","field","step"]],
-    handler: campaignFlowReply,
-  },
-  {
-    id: "wallet_view",
-    keywords: [["show","check","view","see","open","my"], ["wallet","balance","fund","money"]],
-    any: ["balance","wallet"],
-    handler: () => ({ text: "Opening your wallet.", navigateTo: "/wallet" }),
-  },
-  {
-    id: "campaigns_view",
-    keywords: [["my","show","view","see","list","check","open"], ["campaign","ad","advert"]],
-    handler: () => ({ text: "Here are your campaigns.", navigateTo: "/ads" }),
-  },
-  {
-    id: "category",
-    keywords: [["category","industry","niche"], []],
-    any: ["category","categories","niche"],
-    handler: (ctx) => ({
-      text: ctx.categoryStatus === "active"
-        ? "Your category is live and active."
-        : "Your category is still pending. We'll notify you once it's approved.",
-      navigateTo: "/category",
-    }),
-  },
-  {
-    id: "change_advertiser_type",
-    keywords: [["change","switch","update"], ["advertiser","profile","type","category"]],
-    handler: () => ({
-      text: "Your campaign type follows your approved advertiser profile. To switch, submit a category change request for admin review.",
-      navigateTo: "/category",
-      suggestions: ["Open category", "Why can't I create this?"],
-    }),
-  },
-  {
-    id: "profile_restriction",
-    keywords: [["why","can","cannot","cant"], ["create","use","choose"], ["campaign","type","this"]],
-    handler: (ctx) => {
-      const allowedType = getAllowedCampaignType(ctx);
-      return {
-        text: allowedType
-          ? `Because your approved advertiser profile is ${CAMPAIGN_TYPE_LABELS[allowedType]}. Karbali keeps campaign setup locked to that profile for billing, tracking, and approval accuracy.`
-          : "Campaign setup follows the advertiser profile selected during category approval.",
-        suggestions: allowedType ? [`Create ${CAMPAIGN_TYPE_LABELS[allowedType]}`, "Change advertiser type"] : ["Open category"],
-      };
-    },
-  },
-  {
-    id: "websites",
-    keywords: [["website","site","domain","url"], []],
-    any: ["website","websites","domain","domains"],
-    handler: () => ({ text: "Opening Websites.", navigateTo: "/websites" }),
-  },
-  {
-    id: "docs",
-    keywords: [["doc","documentation","guide","manual"], []],
-    any: ["docs","documentation"],
-    handler: () => ({ text: "Here's the documentation hub.", navigateTo: "/docs" }),
-  },
-  {
-    id: "integration",
-    keywords: [["install","integrate","script","plugin","wordpress","setup"], ["track","conversion","site"]],
-    any: ["integration"],
-    handler: () => ({
-      text: "Two options: drop our JS snippet on your site, or use the WordPress plugin. Both fire the conversion event automatically.",
-      navigateTo: "/docs",
-    }),
-  },
-
-  // ===== Conversational =====
-  {
-    id: "greet",
-    keywords: [["hi","hello","hey","yo","howdy","greeting","good","morning","evening","afternoon"], []],
-    any: ["hi","hello","hey","yo"],
-    handler: (ctx) => ({
-      text: `Hey${ctx.userName ? " " + ctx.userName.split(/[\s@]/)[0] : ""}! What can I help you with today?`,
-      suggestions: ["What is Karbali?", "Create a campaign", "Activate my wallet"],
-    }),
-  },
-  {
-    id: "thanks",
-    keywords: [["thank","appreciate","bless","grateful"], []],
-    any: ["thanks","thank"],
-    handler: () => ({ text: "Anytime. I'm right here whenever you need me." }),
-  },
-  {
-    id: "support",
-    keywords: [["talk","contact","support","human","agent"], []],
-    any: ["support","human"],
-    handler: () => ({
-      text: "Ask me anything first. I can usually help. If you still need a human, reach support@karbali.com.",
-    }),
-  },
+    phrases: ["ad fraud","bot traffic"] },
+  { id: "cpa_vs_cpc", topic: "cpa_vs_cpc",
+    keywords: [["cpa","cpc","difference"], []],
+    phrases: ["cpa vs cpc","cpc vs cpa"] },
+  { id: "verify_website", topic: "verify_website",
+    keywords: [["verify","add","connect"], ["website","domain","site","url"]],
+    phrases: ["add my website","verify my domain","add website"] },
+  { id: "verify_business", topic: "verify_business",
+    keywords: [["verify","verification","approve","kyc"], ["business","brand","account","company"]],
+    phrases: ["business verification","verify my business","kyc"] },
+  { id: "wallet", topic: "wallet",
+    keywords: [["wallet","balance","fund","money"], ["activate","open","show","check","see"]],
+    phrases: ["activate wallet","open my wallet","fund wallet","top up"] },
+  { id: "process", topic: "process",
+    keywords: [["process","step","flow","how"], ["campaign","ad","launch","start"]],
+    phrases: ["how do i start","how to launch","campaign flow"] },
 ];
 
-export function detectIntent(input: string, ctx: AssistantContext): AssistantReply {
-  const tokens = normalize(input);
-  if (!tokens.length) {
-    return {
-      text: "Ask me anything about Karbali: campaigns, wallet, tracking, fees.",
-      suggestions: ["What is Karbali?", "Create a campaign", "How does billing work?"],
-    };
-  }
+function scoreIntent(rule: IntentRule, tokens: string[], raw: string): number {
+  let score = 0;
+  if (rule.phrases && includesPhrase(raw, rule.phrases)) score += 10;
+  const nonEmpty = rule.keywords.filter((g) => g.length > 0);
+  let hits = 0;
+  for (const g of nonEmpty) if (hasAny(tokens, g)) hits++;
+  if (nonEmpty.length > 0 && hits === nonEmpty.length) score += 5;
+  else score += hits * 2;
+  return score;
+}
 
-  if (tokens.includes("karbali") && hasAny(tokens, ["what", "about", "explain", "mean", "platform", "system", "all"])) {
-    return INTENTS.find((intent) => intent.id === "what_is_karbali")!.handler(ctx, input, tokens);
-  }
+// ---------------------------------------------------------------------------
+// Public: goal selection, greeting, intent detection
+// ---------------------------------------------------------------------------
 
-  const requestedCampaignType = inferCampaignType(tokens);
-  if (hasAny(tokens, ["why"]) && hasAny(tokens, ["create", "use", "choose"])) {
-    const allowedType = getAllowedCampaignType(ctx);
-    if (allowedType) {
-      return {
-        text: `Because your approved advertiser profile is ${CAMPAIGN_TYPE_LABELS[allowedType]}. Karbali keeps campaign setup locked to that profile for billing, tracking, and approval accuracy.`,
-        suggestions: [`Create ${CAMPAIGN_TYPE_LABELS[allowedType]}`, "Change advertiser type"],
-      };
-    }
-  }
+// Called by the UI whenever the user picks or states a goal. Returns a
+// reply plus the state updates the caller should apply.
+export function acknowledgeGoal(goal: string, ctx: AssistantContext): AssistantReply {
+  const { domain, campaignType } = classifyGoal(goal);
+  const canonicalNoun = goalNoun(domain, goal);
+  const type = campaignType || getAllowedCampaignType(ctx);
 
-  if (requestedCampaignType && hasAny(tokens, ["create", "start", "new", "launch", "place", "run", "make", "setup", "build"])) {
-    return campaignTypeMismatchReply(requestedCampaignType, ctx);
-  }
+  const nextStep = !ctx.walletActivated
+    ? " Let's activate your wallet first — minimum is $10."
+    : type
+      ? ` The best fit is a ${CAMPAIGN_TYPE_LABELS[type]} campaign. I can walk you through setup step by step.`
+      : "";
 
-  let best: { score: number; intent: Intent | null } = { score: 0, intent: null };
-  for (const intent of INTENTS) {
-    let score = 0;
-    if (intent.any?.some((w) => tokens.includes(w.replace(/(ing|ed|s)$/g, "")))) score += 3;
-    let groupHits = 0;
-    const nonEmpty = intent.keywords.filter((g) => g.length > 0);
-    for (const group of nonEmpty) if (hasAny(tokens, group)) groupHits++;
-    if (nonEmpty.length > 0 && groupHits === nonEmpty.length) score += 5;
-    else if (groupHits > 0) score += groupHits;
-    if (score > best.score) best = { score, intent };
-  }
+  const nav = !ctx.walletActivated ? "/wallet" : undefined;
 
-  if (!best.intent || best.score < 2) {
-    if (hasAny(tokens, ["campaign", "ad", "advert", "form", "launch", "setup"])) {
-      return campaignFlowReply(ctx, input, tokens);
-    }
-    if (hasAny(tokens, ["wallet", "fund", "pay", "activate", "balance"])) {
-      return {
-        text: "Wallet first, campaign next. Activate with at least $10, then fund based on the campaign cost.",
-        suggestions: ["Activate wallet", "Fund wallet", "Minimum funding"],
-      };
-    }
-    return {
-      text: "I can help with Karbali campaigns, wallet, websites, tracking, billing, and approvals. Pick one and I will guide you.",
-      suggestions: ["What is Karbali?", "Types of campaigns", "How does tracking work?", "Activate wallet"],
-    };
-  }
-  return best.intent.handler(ctx, input, tokens);
+  return {
+    text: `Perfect — you want ${canonicalNoun}.${nextStep} Ask me anything about how it works, or say "start" when you're ready.`,
+    suggestions: !ctx.walletActivated
+      ? ["Activate wallet", "How does tracking work?", "How much does it cost?"]
+      : type
+        ? [`Start ${CAMPAIGN_TYPE_LABELS[type].toLowerCase()} setup`, "How does tracking work?", "How does billing work?"]
+        : ["How does tracking work?", "How does billing work?", "Types of campaigns"],
+    navigateTo: nav,
+    stateUpdates: { goal: canonicalNoun, goalDomain: domain, campaignType: type, lastIntent: "goal_selected" },
+  };
 }
 
 export function getProactiveGreeting(ctx: AssistantContext): AssistantReply {
@@ -491,12 +441,115 @@ export function getProactiveGreeting(ctx: AssistantContext): AssistantReply {
   const allowedType = getAllowedCampaignType(ctx);
   if (allowedType) {
     return {
-      text: `Welcome back${name}! Your profile is ${CAMPAIGN_TYPE_LABELS[allowedType]}. I can help you create that campaign or answer Karbali questions.`,
+      text: `Welcome back${name}! Your profile is ${CAMPAIGN_TYPE_LABELS[allowedType]}. Tell me what you want and I'll set it up.`,
       suggestions: [`Create ${CAMPAIGN_TYPE_LABELS[allowedType]}`, "What is Karbali?", "Open wallet"],
     };
   }
   return {
-    text: `Welcome back${name}! Ready to launch something today?`,
-    suggestions: ["Create a campaign", "View my campaigns", "Open wallet"],
+    text: `Welcome back${name}! What are you trying to achieve today?`,
+    suggestions: ["Get more customers", "Grow app installs", "Promote my music"],
+  };
+}
+
+// Main entry point. Uses conversation state to keep answers on-topic.
+export function detectIntent(
+  input: string,
+  ctx: AssistantContext,
+  state: ConversationState = initialState(),
+): AssistantReply {
+  const raw = input.trim();
+  const tokens = normalize(raw);
+
+  if (!tokens.length) {
+    return {
+      text: state.goal
+        ? `Ask me anything about getting ${state.goal} on Karbali.`
+        : "Ask me anything about Karbali: campaigns, wallet, tracking, fees.",
+      suggestions: state.goal
+        ? ["How does tracking work?", "How does billing work?", "Start setup"]
+        : ["What is Karbali?", "Create a campaign", "How does billing work?"],
+    };
+  }
+
+  // Meta-complaints — user says the AI ignored context.
+  if (includesPhrase(raw.toLowerCase(), ["you did not", "you didnt", "i said", "i asked", "not related", "not connected", "how is", "why did you"])) {
+    if (state.goal) {
+      return {
+        text: `Sorry — you're focused on ${state.goal}. Ask me anything specific about that: cost, tracking, setup, or launch, and I'll answer for ${state.goal} directly.`,
+        suggestions: [`How much for ${state.goal}?`, `How is ${state.goal} tracked?`, `Start ${state.goal} campaign`],
+      };
+    }
+  }
+
+  // User states a goal in free text ("I want more app installs").
+  if (includesPhrase(raw.toLowerCase(), ["i want", "i need", "help me get", "how do i get", "trying to get", "looking for"])) {
+    const { domain } = classifyGoal(raw);
+    if (domain) return acknowledgeGoal(raw, ctx);
+  }
+
+  // Explicit "start / launch / create" — start the campaign flow.
+  const wantsCreate = hasAny(tokens, ["create","start","launch","new","run","make","setup","build","begin"]);
+  const requestedType = inferCampaignType(tokens) || state.campaignType;
+  if (wantsCreate && (hasAny(tokens, ["campaign","ad","advert","setup"]) || state.goal)) {
+    if (!ctx.walletActivated) {
+      return {
+        text: "Activate your wallet first (minimum $10), then I'll set up the campaign with you.",
+        navigateTo: "/wallet",
+        autoNavigate: true,
+      };
+    }
+    const type = requestedType;
+    if (type && !isCampaignTypeAllowed(type, ctx)) return campaignTypeMismatchReply(type, ctx);
+    return {
+      text: state.goal
+        ? `Good. Let's build a campaign for ${state.goal}.`
+        : `Good. Let's set up your campaign.`,
+      action: "start_campaign_flow",
+      campaignType: type || getAllowedCampaignType(ctx) || null,
+      stateUpdates: { lastIntent: "start_campaign" },
+    };
+  }
+
+  // Score all knowledge intents.
+  let best: { score: number; rule: IntentRule | null } = { score: 0, rule: null };
+  for (const rule of INTENT_RULES) {
+    const s = scoreIntent(rule, tokens, raw.toLowerCase());
+    if (s > best.score) best = { score: s, rule };
+  }
+
+  if (best.rule && best.score >= 3 && best.rule.topic) {
+    const reply = answerTopic(best.rule.topic, state, ctx);
+    return { ...reply, stateUpdates: { ...reply.stateUpdates, lastIntent: best.rule.id } };
+  }
+
+  // Greeting / thanks fallbacks.
+  if (hasAny(tokens, ["hi","hello","hey","yo","howdy"])) {
+    return {
+      text: state.goal
+        ? `Hey! Still on ${state.goal}? Ask me anything or say "start" to launch.`
+        : `Hey${ctx.userName ? " " + ctx.userName.split(/[\s@]/)[0] : ""}! What are you trying to achieve today?`,
+      suggestions: state.goal
+        ? [`How is ${state.goal} tracked?`, `How much for ${state.goal}?`, "Start setup"]
+        : ["Get more customers", "Grow app installs", "Promote my music"],
+    };
+  }
+  if (hasAny(tokens, ["thank","thanks","appreciate"])) {
+    return { text: "Anytime. I'm here." };
+  }
+  if (hasAny(tokens, ["support","human","agent","contact"])) {
+    return { text: "Ask me first — I usually can help. If you still need a human, email support@karbali.com." };
+  }
+
+  // Context-aware fallback — never dump a generic menu when we know the goal.
+  if (state.goal) {
+    return {
+      text: `I want to keep this useful for ${state.goal}. Tell me what you want to know — cost, tracking, setup, minimum balance, or launch.`,
+      suggestions: [`How much for ${state.goal}?`, `How is ${state.goal} tracked?`, `Start ${state.goal} campaign`],
+    };
+  }
+
+  return {
+    text: "I can help with Karbali campaigns, wallet, websites, tracking, billing, and approvals. What are you trying to do?",
+    suggestions: ["What is Karbali?", "Types of campaigns", "How does tracking work?", "Activate wallet"],
   };
 }
