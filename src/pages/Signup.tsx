@@ -48,20 +48,38 @@ const DISPOSABLE_DOMAINS = [
 
 const FORBIDDEN_DOMAINS = [...PUBLIC_EMAIL_DOMAINS, ...DISPOSABLE_DOMAINS];
 
-type Subtype = "musician" | "youtuber" | "app" | "startup" | "business" | "oil_gas" | "distributor";
+type Subtype =
+  | "musician" | "youtuber" | "social_media_creator"
+  | "app" | "website" | "fintech"
+  | "ecommerce" | "online_vendor" | "realtor"
+  | "food_beverage" | "household_items"
+  | "telecom" | "oil_gas";
 
-const SUBTYPE_OPTIONS: { id: Subtype; label: string; group: "engagement" | "business" | "offline" }[] = [
+const SUBTYPE_OPTIONS: { id: Subtype; label: string; group: "engagement" | "performance" | "commerce" | "daily_essentials" | "mainstream" }[] = [
+  // Online — Engagement
   { id: "musician", label: "Musician / Music Artist", group: "engagement" },
   { id: "youtuber", label: "YouTuber / Video Creator", group: "engagement" },
-  { id: "app", label: "App Owner", group: "business" },
-  { id: "startup", label: "Startup Founder", group: "business" },
-  { id: "business", label: "Business Owner", group: "business" },
-  { id: "oil_gas", label: "Oil & Gas (Offline Sales)", group: "offline" },
-  { id: "distributor", label: "Distributor (Offline Sales)", group: "offline" },
+  { id: "social_media_creator", label: "Social Media Creator", group: "engagement" },
+  // Online — Performance
+  { id: "app", label: "Mobile App Owner", group: "performance" },
+  { id: "website", label: "Website Owner", group: "performance" },
+  { id: "fintech", label: "Fintech", group: "performance" },
+  // Online — Commerce
+  { id: "ecommerce", label: "E-commerce", group: "commerce" },
+  { id: "online_vendor", label: "Online Vendor", group: "commerce" },
+  { id: "realtor", label: "Realtor / Real Estate", group: "commerce" },
+  // Offline — Daily Essentials
+  { id: "food_beverage", label: "Food & Beverage Producer (Offline)", group: "daily_essentials" },
+  { id: "household_items", label: "Household Items Manufacturer (Offline)", group: "daily_essentials" },
+  // Offline — Mainstream
+  { id: "telecom", label: "Telecommunications (Offline)", group: "mainstream" },
+  { id: "oil_gas", label: "Oil & Gas (Offline)", group: "mainstream" },
 ];
 
-const isCreator = (s: Subtype | "") => s === "musician" || s === "youtuber";
-const isOffline = (s: Subtype | "") => s === "oil_gas" || s === "distributor";
+const CREATOR_SUBTYPES: Subtype[] = ["musician", "youtuber", "social_media_creator"];
+const OFFLINE_SUBTYPES: Subtype[] = ["food_beverage", "household_items", "telecom", "oil_gas"];
+const isCreator = (s: Subtype | "") => CREATOR_SUBTYPES.includes(s as Subtype);
+const isOffline = (s: Subtype | "") => OFFLINE_SUBTYPES.includes(s as Subtype);
 
 function extractDomain(url: string): string {
   try {
