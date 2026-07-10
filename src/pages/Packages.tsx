@@ -14,9 +14,11 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock } from "lucide-react";
 
+import { subtypeLabel, type AdvertiserSubtype } from "@/lib/advertiser-subtypes";
+
 type Pkg = {
   id: string; name: string; description: string | null;
-  category_group_id: string | null; category_id: string | null;
+  advertiser_subtypes: AdvertiserSubtype[] | null;
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
 };
@@ -41,8 +43,7 @@ export default function Packages() {
   const [pkgMs, setPkgMs] = useState<Record<string, PkgMilestone[]>>({});
   const [websites, setWebsites] = useState<WebsiteRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [myCategoryId, setMyCategoryId] = useState<string | null>(null);
-  const [myGroupId, setMyGroupId] = useState<string | null>(null);
+  const [mySubtype, setMySubtype] = useState<AdvertiserSubtype | null>(null);
 
   const [selected, setSelected] = useState<Pkg | null>(null);
   const [platform, setPlatform] = useState<"mobile" | "web">("mobile");
@@ -57,16 +58,14 @@ export default function Packages() {
     if (!user) return;
     setLoading(true);
 
-    // Get advertiser's approved category + group
+    // Get advertiser's approved subtype (strict subcategory filter)
     const { data: ac } = await supabase
       .from("advertiser_categories")
-      .select("category_id, categories:category_id(group_id)")
+      .select("advertiser_subtype")
       .eq("advertiser_id", user.id)
       .maybeSingle();
-    const catId = (ac as any)?.category_id || null;
-    const grpId = (ac as any)?.categories?.group_id || null;
-    setMyCategoryId(catId);
-    setMyGroupId(grpId);
+    const sub = ((ac as any)?.advertiser_subtype || null) as AdvertiserSubtype | null;
+    setMySubtype(sub);
 
     const [{ data: w }, { data: ms }, { data: sites }] = await Promise.all([
       supabase.from("wallets").select("balance, is_activated").eq("advertiser_id", user.id).maybeSingle(),
@@ -74,19 +73,17 @@ export default function Packages() {
       supabase.from("advertiser_websites").select("id, domain, is_verified").eq("advertiser_id", user.id),
     ]);
 
-    // Strictly filter packages to the advertiser's category/group
+    // Strictly filter packages to the advertiser's exact subcategory
     let pkgs: any[] = [];
-    if (catId) {
+    if (sub) {
       const { data: pAll } = await supabase
         .from("ad_packages" as any)
         .select("*")
         .eq("is_active", true)
+        .contains("advertiser_subtypes", [sub])
         .order("sort_order")
         .order("created_at");
-      pkgs = ((pAll as any) || []).filter((p: any) =>
-        (p.category_id && p.category_id === catId) ||
-        (!p.category_id && p.category_group_id && grpId && p.category_group_id === grpId)
-      );
+      pkgs = (pAll as any) || [];
     }
     setPackages(pkgs);
     setWallet((w as any) || null);
@@ -250,8 +247,15 @@ export default function Packages() {
       <MotionWrapper>
         <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Ad Packages</h1>
-            <p className="text-sm text-muted-foreground">Templates scoped to your category. Pick exactly the milestones you want.</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-semibold tracking-tight">Ad Packages</h1>
+              {mySubtype && (
+                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+                  {subtypeLabel(mySubtype)}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">Templates scoped strictly to your subcategory. Pick exactly the milestones you want.</p>
           </div>
           <Link to="/packages/orders">
             <Button variant="outline" size="sm"><ClipboardList className="mr-2 h-4 w-4" /> My orders</Button>
@@ -260,15 +264,15 @@ export default function Packages() {
 
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        ) : !myCategoryId ? (
+        ) : !mySubtype ? (
           <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
             <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            Pick your advertiser category first to see relevant packages.
+            Pick your advertiser subcategory first to see relevant packages.
           </div>
         ) : packages.length === 0 ? (
           <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
             <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            No packages available for your category yet.
+            No packages available for <strong>{subtypeLabel(mySubtype)}</strong> yet.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

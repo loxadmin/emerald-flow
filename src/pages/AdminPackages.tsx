@@ -14,9 +14,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, Package as PackageIcon } from "lucide-react";
 
+import { SUBTYPES, subtypesByGroup, GROUP_LABELS, subtypeLabel, type AdvertiserSubtype } from "@/lib/advertiser-subtypes";
+
 type Pkg = {
   id: string; name: string; description: string | null;
   category_group_id: string | null; category_id: string | null;
+  advertiser_subtypes: AdvertiserSubtype[] | null;
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
   is_active: boolean; sort_order: number;
@@ -39,13 +42,16 @@ type Order = {
 };
 
 const DURATION_PRESETS = [7, 14, 30, 60, 90, 180, 365];
+const SUBTYPE_GROUPS = subtypesByGroup();
 const emptyForm = {
-  name: "", description: "", category_group_id: "", category_id: "",
+  name: "", description: "",
+  advertiser_subtypes: [] as AdvertiserSubtype[],
   min_units: "500", max_units: "10000",
   duration_options: [30] as number[],
   platform_support: ["mobile", "web"] as string[],
   is_active: true, sort_order: "0",
 };
+
 
 export default function AdminPackages() {
   const [packages, setPackages] = useState<Pkg[]>([]);
@@ -98,7 +104,7 @@ export default function AdminPackages() {
     setEditing(p);
     setForm({
       name: p.name, description: p.description || "",
-      category_group_id: p.category_group_id || "", category_id: p.category_id || "",
+      advertiser_subtypes: (p.advertiser_subtypes || []) as AdvertiserSubtype[],
       min_units: String(p.min_units), max_units: String(p.max_units),
       duration_options: p.duration_options || [30],
       platform_support: p.platform_support || ["mobile", "web"],
@@ -110,7 +116,8 @@ export default function AdminPackages() {
 
   const save = async () => {
     if (!form.name.trim()) return toast.error("Name required");
-    if (!form.category_group_id) return toast.error("Ad group is required");
+    if (form.advertiser_subtypes.length === 0)
+      return toast.error("Select at least one advertiser subcategory");
     if (form.duration_options.length === 0) return toast.error("Pick at least one duration");
     if (form.platform_support.length === 0) return toast.error("Pick at least one platform");
     if (rows.length === 0) return toast.error("Add at least one milestone");
@@ -126,8 +133,9 @@ export default function AdminPackages() {
     const payload: any = {
       name: form.name.trim(),
       description: form.description.trim() || null,
-      category_group_id: form.category_group_id,
-      category_id: form.category_id || null,
+      advertiser_subtypes: form.advertiser_subtypes,
+      category_group_id: null,
+      category_id: null,
       min_units: Number(form.min_units),
       max_units: Number(form.max_units),
       duration_options: form.duration_options,
@@ -179,7 +187,14 @@ export default function AdminPackages() {
     load();
   };
 
-  const groupCats = categories.filter((c) => !form.category_group_id || c.group_id === form.category_group_id);
+  const toggleSubtype = (id: AdvertiserSubtype) => {
+    setForm({
+      ...form,
+      advertiser_subtypes: form.advertiser_subtypes.includes(id)
+        ? form.advertiser_subtypes.filter((x) => x !== id)
+        : [...form.advertiser_subtypes, id],
+    });
+  };
   const availableMs = useMemo(
     () => milestones.filter((m) => !rows.find((r) => r.milestone_id === m.id)),
     [milestones, rows],
@@ -247,16 +262,18 @@ export default function AdminPackages() {
           ) : (
             <div className="grid gap-3">
               {packages.map((p) => {
-                const group = groups.find((g) => g.id === p.category_group_id);
-                const cat = categories.find((c) => c.id === p.category_id);
+                const subs = (p.advertiser_subtypes || []) as AdvertiserSubtype[];
                 const ms = pkgMilestones[p.id] || [];
                 return (
                   <div key={p.id} className="rounded-lg border bg-card p-4 flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium">{p.name}</p>
-                        {group && <Badge variant="outline">{group.name}</Badge>}
-                        {cat && <Badge variant="secondary">{cat.name}</Badge>}
+                        {subs.length === 0 ? (
+                          <Badge variant="outline" className="text-destructive">No subcategory</Badge>
+                        ) : (
+                          subs.map((s) => <Badge key={s} variant="secondary">{subtypeLabel(s)}</Badge>)
+                        )}
                         {(p.platform_support || []).map((pl) => <Badge key={pl} variant="outline" className="capitalize">{pl}</Badge>)}
                         {!p.is_active && <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>}
                       </div>
@@ -345,21 +362,38 @@ export default function AdminPackages() {
             <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Fintech growth pack" /></div>
             <div><Label>Description</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Ad group *</Label>
-                <Select value={form.category_group_id} onValueChange={(v) => setForm({ ...form, category_group_id: v, category_id: "" })}>
-                  <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
-                  <SelectContent>{groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
-                </Select>
+            <div className="rounded-lg border p-3">
+              <Label>Target subcategories *</Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Pick every advertiser subcategory that should see this package. Only these subcategories can view or buy it — no cross-category leaking.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {(Object.keys(SUBTYPE_GROUPS) as (keyof typeof SUBTYPE_GROUPS)[]).map((g) => (
+                  <div key={g} className="rounded-md border p-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {GROUP_LABELS[g]}
+                    </p>
+                    <div className="mt-1 space-y-1">
+                      {SUBTYPE_GROUPS[g].map((s) => (
+                        <label key={s.id} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={form.advertiser_subtypes.includes(s.id)}
+                            onCheckedChange={() => toggleSubtype(s.id)}
+                          />
+                          {s.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div>
-                <Label>Subcategory (optional)</Label>
-                <Select value={form.category_id} onValueChange={(v) => setForm({ ...form, category_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Any in group" /></SelectTrigger>
-                  <SelectContent>{groupCats.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+              {form.advertiser_subtypes.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {form.advertiser_subtypes.map((s) => (
+                    <Badge key={s} variant="secondary" className="text-xs">{subtypeLabel(s)}</Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
