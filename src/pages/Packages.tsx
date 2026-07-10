@@ -14,7 +14,7 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock } from "lucide-react";
 
-import { subtypeLabel, type AdvertiserSubtype } from "@/lib/advertiser-subtypes";
+import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
 
 type Pkg = {
   id: string; name: string; description: string | null;
@@ -61,10 +61,11 @@ export default function Packages() {
     // Get advertiser's approved subtype (strict subcategory filter)
     const { data: ac } = await supabase
       .from("advertiser_categories")
-      .select("advertiser_subtype")
+      .select("advertiser_subtype, advertiser_type, category_id")
       .eq("advertiser_id", user.id)
       .maybeSingle();
     const sub = ((ac as any)?.advertiser_subtype || null) as AdvertiserSubtype | null;
+    const type = ((ac as any)?.advertiser_type || null) as string | null;
     setMySubtype(sub);
 
     const [{ data: w }, { data: ms }, { data: sites }] = await Promise.all([
@@ -73,17 +74,28 @@ export default function Packages() {
       supabase.from("advertiser_websites").select("id, domain, is_verified").eq("advertiser_id", user.id),
     ]);
 
-    // Strictly filter packages to the advertiser's exact subcategory
+    // Filter packages by advertiser's subcategory. If subtype is missing but
+    // advertiser_type is set, fall back to any subtype in that group so packages
+    // still appear for older accounts whose subcategory was never captured.
     let pkgs: any[] = [];
+    let query = supabase
+      .from("ad_packages" as any)
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order")
+      .order("created_at");
+
     if (sub) {
-      const { data: pAll } = await supabase
-        .from("ad_packages" as any)
-        .select("*")
-        .eq("is_active", true)
-        .contains("advertiser_subtypes", [sub])
-        .order("sort_order")
-        .order("created_at");
+      const { data: pAll } = await query.contains("advertiser_subtypes", [sub]);
       pkgs = (pAll as any) || [];
+    } else if (type) {
+      const groupSubtypes = SUBTYPES
+        .filter((s) => s.group === (type as SubtypeGroupSlug))
+        .map((s) => s.id);
+      if (groupSubtypes.length) {
+        const { data: pAll } = await query.overlaps("advertiser_subtypes", groupSubtypes);
+        pkgs = (pAll as any) || [];
+      }
     }
     setPackages(pkgs);
     setWallet((w as any) || null);
@@ -264,15 +276,17 @@ export default function Packages() {
 
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        ) : !mySubtype ? (
-          <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
-            <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            Pick your advertiser subcategory first to see relevant packages.
-          </div>
         ) : packages.length === 0 ? (
           <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
             <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            No packages available for <strong>{subtypeLabel(mySubtype)}</strong> yet.
+            {mySubtype ? (
+              <>No packages available for <strong>{subtypeLabel(mySubtype)}</strong> yet.</>
+            ) : (
+              <>
+                <p>No packages match your account yet.</p>
+                <Link to="/category-select" className="mt-3 inline-block text-primary underline">Set your subcategory</Link>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
