@@ -486,8 +486,8 @@ export default function AiMode() {
 
           {typing && (
             <div className="flex gap-3">
-              <div className="h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center">
-                <Sparkles className="h-3.5 w-3.5" />
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center ring-2 ring-emerald-500/20">
+                <Bot className="h-4 w-4" />
               </div>
               <div className="px-3.5 py-2.5 rounded-2xl bg-muted/60 rounded-tl-sm">
                 <div className="flex gap-1">
