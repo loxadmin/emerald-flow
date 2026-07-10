@@ -14,9 +14,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, Package as PackageIcon } from "lucide-react";
 
+import { SUBTYPES, subtypesByGroup, GROUP_LABELS, subtypeLabel, type AdvertiserSubtype } from "@/lib/advertiser-subtypes";
+
 type Pkg = {
   id: string; name: string; description: string | null;
   category_group_id: string | null; category_id: string | null;
+  advertiser_subtypes: AdvertiserSubtype[] | null;
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
   is_active: boolean; sort_order: number;
@@ -39,13 +42,16 @@ type Order = {
 };
 
 const DURATION_PRESETS = [7, 14, 30, 60, 90, 180, 365];
+const SUBTYPE_GROUPS = subtypesByGroup();
 const emptyForm = {
-  name: "", description: "", category_group_id: "", category_id: "",
+  name: "", description: "",
+  advertiser_subtypes: [] as AdvertiserSubtype[],
   min_units: "500", max_units: "10000",
   duration_options: [30] as number[],
   platform_support: ["mobile", "web"] as string[],
   is_active: true, sort_order: "0",
 };
+
 
 export default function AdminPackages() {
   const [packages, setPackages] = useState<Pkg[]>([]);
