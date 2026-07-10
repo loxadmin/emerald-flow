@@ -262,16 +262,18 @@ export default function AdminPackages() {
           ) : (
             <div className="grid gap-3">
               {packages.map((p) => {
-                const group = groups.find((g) => g.id === p.category_group_id);
-                const cat = categories.find((c) => c.id === p.category_id);
+                const subs = (p.advertiser_subtypes || []) as AdvertiserSubtype[];
                 const ms = pkgMilestones[p.id] || [];
                 return (
                   <div key={p.id} className="rounded-lg border bg-card p-4 flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium">{p.name}</p>
-                        {group && <Badge variant="outline">{group.name}</Badge>}
-                        {cat && <Badge variant="secondary">{cat.name}</Badge>}
+                        {subs.length === 0 ? (
+                          <Badge variant="outline" className="text-destructive">No subcategory</Badge>
+                        ) : (
+                          subs.map((s) => <Badge key={s} variant="secondary">{subtypeLabel(s)}</Badge>)
+                        )}
                         {(p.platform_support || []).map((pl) => <Badge key={pl} variant="outline" className="capitalize">{pl}</Badge>)}
                         {!p.is_active && <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>}
                       </div>
