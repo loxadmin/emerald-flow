@@ -279,12 +279,12 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       };
     case "fraud":
       return {
-        text: `${prefix}Karbali filters bots, duplicate clicks, and suspicious patterns before billing. You only pay for clean events.`,
+        text: `${prefix}Karbali filters bots, duplicate events, and suspicious patterns before billing. You only pay for clean, verified conversions — never for raw clicks.`,
         stateUpdates: { topic: "fraud" },
       };
     case "cpa_vs_cpc":
       return {
-        text: "CPC = pay per click. CPA = pay only when a real action happens (signup, purchase, install). CPA costs more per event but carries lower risk.",
+        text: "CPC (pay per click) is the old web model. Karbali does not use CPC — we bill CPA only, meaning you pay only when a real action happens (signup, install, sale, engagement). Clicks are free.",
         stateUpdates: { topic: "cpa_vs_cpc" },
       };
     case "verify_website":
