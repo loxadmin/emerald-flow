@@ -17,6 +17,8 @@ export default function AdminOffline() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [commissionRate, setCommissionRate] = useState(0.005);
+  const [minWalletBalance, setMinWalletBalance] = useState(300);
 
   // Create-order dialog
   const [orderOpen, setOrderOpen] = useState(false);
@@ -29,14 +31,19 @@ export default function AdminOffline() {
 
   const load = async () => {
     setLoading(true);
-    const [v, o, ord] = await Promise.all([
+    const [v, o, ord, settings] = await Promise.all([
       supabase.from("business_verifications" as any).select("*").order("created_at", { ascending: false }),
       supabase.from("offline_offers" as any).select("*").order("created_at", { ascending: false }),
       supabase.from("offline_orders" as any).select("*").order("created_at", { ascending: false }),
+      supabase.from("admin_settings").select("key,value").in("key", ["offline_commission_rate", "offline_min_wallet_balance"]),
     ]);
     setVerifications((v.data as any) || []);
     setOffers((o.data as any) || []);
     setOrders((ord.data as any) || []);
+    (settings.data || []).forEach((row) => {
+      if (row.key === "offline_commission_rate") setCommissionRate(Number(row.value));
+      if (row.key === "offline_min_wallet_balance") setMinWalletBalance(Number(row.value));
+    });
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -73,8 +80,8 @@ export default function AdminOffline() {
     const qty = Number(quantity);
     const price = Number(unitPrice);
     if (!buyerName || !qty || !price) return toast.error("Fill required fields");
+    if (qty < Number(orderOffer.moq_value)) return toast.error(`Quantity must meet the MOQ of ${orderOffer.moq_value} ${orderOffer.moq_unit}`);
     const total = qty * price;
-    const commissionRate = 0.005;
     const commission = +(total * commissionRate).toFixed(2);
     const { error } = await supabase.from("offline_orders" as any).insert({
       offer_id: orderOffer.id,
@@ -106,7 +113,7 @@ export default function AdminOffline() {
     <AdminLayout>
       <div className="max-w-6xl">
         <h1 className="text-xl font-semibold mb-1">Offline Ads</h1>
-        <p className="text-sm text-muted-foreground mb-6">Manage business verifications, offline offers, and relay sales orders.</p>
+        <p className="text-sm text-muted-foreground mb-6">Manage business verifications, offline offers, and relay sales orders. Commission is {(commissionRate * 100).toFixed(2)}%; advertisers need ${minWalletBalance} minimum wallet balance to accept orders.</p>
 
         <Tabs defaultValue="verifications">
           <TabsList>
@@ -198,7 +205,7 @@ export default function AdminOffline() {
             <Input type="number" placeholder="Unit price (USD) *" value={unitPrice} onChange={e=>setUnitPrice(e.target.value)} />
             {quantity && unitPrice && (
               <p className="text-xs text-muted-foreground">
-                Total ${(Number(quantity)*Number(unitPrice)).toFixed(2)} · Commission ${(Number(quantity)*Number(unitPrice)*0.005).toFixed(2)}
+                Total ${(Number(quantity)*Number(unitPrice)).toFixed(2)} · Commission ${(Number(quantity)*Number(unitPrice)*commissionRate).toFixed(2)}
               </p>
             )}
           </div>

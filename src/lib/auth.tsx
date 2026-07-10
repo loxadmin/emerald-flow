@@ -16,6 +16,7 @@ interface AuthContextType {
   walletActivated: boolean | null;
   maintenanceMode: boolean;
   advertiserType: string | null;
+  advertiserSubtype: string | null;
   businessVerified: boolean | null;
   refreshAccessState: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextType>({
   walletActivated: null,
   maintenanceMode: false,
   advertiserType: null,
+  advertiserSubtype: null,
   businessVerified: null,
   refreshAccessState: async () => {},
   signOut: async () => {},
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [walletActivated, setWalletActivated] = useState<boolean | null>(null);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [advertiserType, setAdvertiserType] = useState<string | null>(null);
+  const [advertiserSubtype, setAdvertiserSubtype] = useState<string | null>(null);
   const [businessVerified, setBusinessVerified] = useState<boolean | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -59,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCategoryStatus(null);
     setWalletActivated(null);
     setAdvertiserType(null);
+    setAdvertiserSubtype(null);
     setBusinessVerified(null);
   }, []);
 
@@ -110,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const [{ data: categoryData }, { data: walletData }, { data: maintenanceData }, { data: profileData }, { data: verificationData }] = await Promise.all([
         supabase
           .from("advertiser_categories")
-          .select("status, advertiser_type, category_id")
+          .select("status, advertiser_type, advertiser_subtype, category_id")
           .eq("advertiser_id", activeUser.id)
           .maybeSingle(),
         supabase
@@ -167,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setHasCategory(!!categoryData);
       setCategoryStatus(categoryData?.status || null);
       setAdvertiserType(derivedType);
+      setAdvertiserSubtype((categoryData as any)?.advertiser_subtype || null);
       setWalletActivated(walletData?.is_activated ?? false);
       setMaintenanceMode(maintenanceData?.value === "true");
       setBusinessVerified(((verificationData as any)?.status === "approved"));
@@ -289,6 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         walletActivated,
         maintenanceMode,
         advertiserType,
+        advertiserSubtype,
         businessVerified,
         refreshAccessState,
         signOut,

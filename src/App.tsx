@@ -75,12 +75,12 @@ function RequireCampaignType({ allow, children }: { allow: "performance" | "enga
   const { advertiserType, isLoading } = useAuth() as any;
   useEffect(() => {
     if (!isLoading && advertiserType && advertiserType !== allow) {
-      toast.error(`This campaign type isn't available for your ${advertiserType} account.`);
+      toast.error(advertiserType === "offline" ? "Offline advertisers create offers, not online campaigns." : `This campaign type isn't available for your ${advertiserType} account.`);
     }
   }, [isLoading, advertiserType, allow]);
   if (isLoading) return null;
   if (advertiserType && advertiserType !== allow) {
-    return <Navigate to="/campaigns/create" replace />;
+    return <Navigate to={advertiserType === "offline" ? "/offline/verify" : "/campaigns/create"} replace />;
   }
   return <>{children}</>;
 }

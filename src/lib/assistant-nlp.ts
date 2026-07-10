@@ -8,6 +8,7 @@ export type AssistantContext = {
   walletActivated: boolean | null;
   categoryStatus: string | null;
   advertiserType: string | null;
+  advertiserSubtype?: string | null;
   businessVerified?: boolean | null;
   pathname: string;
   userName?: string;
@@ -80,6 +81,7 @@ const STOPWORDS = new Set([
 const TYPO_FIXES: Record<string, string> = {
   camaign: "campaign", camaigns: "campaign", campain: "campaign", campains: "campaign",
   engagemnet: "engagement", engagmnt: "engagement", inteligent: "intelligent",
+  straming: "stream", stremaing: "stream", stram: "stream", streamng: "stream",
   isnt: "is not", advertis: "advertise", advertiz: "advertise",
   ecommerce: "commerce", ecom: "commerce", shopify: "commerce",
   client: "customer", customers: "customer", costumer: "customer",
@@ -205,7 +207,7 @@ export function campaignTypeMismatchReply(type: AiCampaignType, ctx: AssistantCo
 //
 // Every knowledge answer is composed so it references the current goal when
 // one is set. That way if the user picked "music streams" and asks "how does
-// tracking work", the answer talks about tracking for music streams — not a
+// tracking work", the answer talks about tracking for music streams, not a
 // generic paragraph.
 // ---------------------------------------------------------------------------
 
@@ -244,7 +246,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
     case "tracking":
       return {
         text: goal
-          ? `${prefix}we track each event with a deterministic click_id. ${trackingDetailForGoal(state)} You pay only when we confirm a real ${singularize(goal)}.`
+          ? `${prefix}${trackingDetailForGoal(state)} You pay only when Karbali confirms a valid ${singularize(goal)}.`
           : "We use a deterministic click_id (UUID). Install the Karbali script or WordPress plugin, fire a conversion event, and we attribute the result to the right campaign.",
         suggestions: goalTailSuggestion(state, ["Open docs", "Verify my integration"]),
         navigateTo: "/docs",
@@ -253,7 +255,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
     case "billing":
       return {
         text: goal
-          ? `${prefix}Karbali holds the cost in escrow when you submit. As real ${goal} come in, funds release from your wallet — no results, no charge.`
+          ? `${prefix}Karbali holds the cost in escrow when you submit. As real ${goal} come in, funds release from your wallet. No results, no charge.`
           : "Karbali uses escrow. When you submit a campaign, cost is held from your wallet first and released only as valid results happen.",
         suggestions: goalTailSuggestion(state, ["Minimum funding", "Open wallet", "How is tracking done?"]),
         stateUpdates: { topic: "billing" },
@@ -299,7 +301,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       };
     case "campaign_types":
       return {
-        text: "Two ad types: Online and Offline. Online splits into Engagement (creators, media), Performance (apps, websites, fintech), and Commerce (e-commerce, vendors, realtors). Offline is for oil & gas, telcos, and physical-goods brands.",
+        text: "Two ad types: Online and Offline. Online has Engagement (musicians, YouTubers, creators), Performance (apps, websites, fintech), and Commerce (e-commerce, vendors, realtors). Offline has Daily Essentials and Mainstream brands.",
         suggestions: ["What is Engagement?", "What is Performance?", "What is Commerce?"],
         stateUpdates: { topic: "campaign_types" },
       };
@@ -316,14 +318,14 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
 
 function trackingDetailForGoal(state: ConversationState): string {
   switch (state.goalDomain) {
-    case "music": return "You paste your song links and lyrics, and we log a stream only after the listener plays for the required duration.";
-    case "video": return "You paste your video link and script, and we log a view only after watch-time thresholds are met.";
+    case "music": return "Music is handled inside the engagement offerwall: you paste up to 3 song links and the lyrics, Karbali sends users to listen, then validates the session with listen-time plus a simple lyric/attention quiz. We do not claim Spotify or Apple Music server-side stream counts unless those platforms provide verified data.";
+    case "video": return "Video is handled inside the engagement flow: you paste the video link and script, then Karbali validates watch-time and quiz/attention checks before counting a play.";
     case "quiz": return "We record completions only when the user answers the quiz correctly.";
     case "installs": return "The install SDK fires a conversion when the user opens the app for the first time.";
     case "signups": return "Our JS snippet or WordPress plugin fires a conversion when the signup form is submitted successfully.";
     case "sales":
     case "cart":
-    case "repeat": return "Drop the JS snippet or WooCommerce plugin on your store, and we fire a conversion at checkout success — commission is billed only then.";
+    case "repeat": return "Drop the JS snippet or WooCommerce plugin on your store, and we fire a conversion at checkout success. Commission is billed only then.";
     default: return "Install the Karbali script or WordPress plugin and fire the conversion event when the goal happens.";
   }
 }
@@ -405,7 +407,7 @@ export function acknowledgeGoal(goal: string, ctx: AssistantContext): AssistantR
   const type = campaignType || getAllowedCampaignType(ctx);
 
   const nextStep = !ctx.walletActivated
-    ? " Let's activate your wallet first — minimum is $10."
+    ? " Let's activate your wallet first. Minimum is $10."
     : type
       ? ` The best fit is a ${CAMPAIGN_TYPE_LABELS[type]} campaign. I can walk you through setup step by step.`
       : "";
@@ -413,7 +415,7 @@ export function acknowledgeGoal(goal: string, ctx: AssistantContext): AssistantR
   const nav = !ctx.walletActivated ? "/wallet" : undefined;
 
   return {
-    text: `Perfect — you want ${canonicalNoun}.${nextStep} Ask me anything about how it works, or say "start" when you're ready.`,
+    text: `Perfect. You want ${canonicalNoun}.${nextStep} Ask me anything about how it works, or say "start" when you're ready.`,
     suggestions: !ctx.walletActivated
       ? ["Activate wallet", "How does tracking work?", "How much does it cost?"]
       : type
@@ -471,11 +473,11 @@ export function detectIntent(
     };
   }
 
-  // Meta-complaints — user says the AI ignored context.
+  // Meta-complaints: user says the AI ignored context.
   if (includesPhrase(raw.toLowerCase(), ["you did not", "you didnt", "i said", "i asked", "not related", "not connected", "how is", "why did you"])) {
     if (state.goal) {
       return {
-        text: `Sorry — you're focused on ${state.goal}. Ask me anything specific about that: cost, tracking, setup, or launch, and I'll answer for ${state.goal} directly.`,
+        text: `Sorry. You're focused on ${state.goal}. Ask me anything specific about that: cost, tracking, setup, or launch, and I'll answer for ${state.goal} directly.`,
         suggestions: [`How much for ${state.goal}?`, `How is ${state.goal} tracked?`, `Start ${state.goal} campaign`],
       };
     }
@@ -487,7 +489,7 @@ export function detectIntent(
     if (domain) return acknowledgeGoal(raw, ctx);
   }
 
-  // Explicit "start / launch / create" — start the campaign flow.
+  // Explicit "start / launch / create": start the campaign flow.
   const wantsCreate = hasAny(tokens, ["create","start","launch","new","run","make","setup","build","begin"]);
   const requestedType = inferCampaignType(tokens) || state.campaignType;
   if (wantsCreate && (hasAny(tokens, ["campaign","ad","advert","setup"]) || state.goal)) {
@@ -537,13 +539,13 @@ export function detectIntent(
     return { text: "Anytime. I'm here." };
   }
   if (hasAny(tokens, ["support","human","agent","contact"])) {
-    return { text: "Ask me first — I usually can help. If you still need a human, email support@karbali.com." };
+    return { text: "Ask me first. I usually can help. If you still need a human, email support@karbali.com." };
   }
 
-  // Context-aware fallback — never dump a generic menu when we know the goal.
+  // Context-aware fallback: never dump a generic menu when we know the goal.
   if (state.goal) {
     return {
-      text: `I want to keep this useful for ${state.goal}. Tell me what you want to know — cost, tracking, setup, minimum balance, or launch.`,
+      text: `I want to keep this useful for ${state.goal}. Tell me what you want to know: cost, tracking, setup, minimum balance, or launch.`,
       suggestions: [`How much for ${state.goal}?`, `How is ${state.goal} tracked?`, `Start ${state.goal} campaign`],
     };
   }

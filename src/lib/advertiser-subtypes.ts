@@ -48,8 +48,32 @@ export const GROUP_LABELS: Record<SubtypeGroupSlug, string> = {
   mainstream: "Mainstream",
 };
 
+export const SUBTYPE_GOAL_OPTIONS: Record<AdvertiserSubtype, string[]> = {
+  musician: ["Music streams", "Lyric quiz completions", "Brand awareness", "Social engagement"],
+  youtuber: ["Video plays", "Watch-time completions", "Subscribers", "Brand awareness"],
+  social_media_creator: ["Social engagement", "Ad views", "Video plays", "Brand awareness"],
+  app: ["App installs", "Signups", "In-app engagement", "Subscriptions"],
+  website: ["Signups", "Leads", "CPA conversions", "Page engagement"],
+  fintech: ["App installs", "Signups", "KYC completions", "First deposits", "Transactions"],
+  ecommerce: ["Sales", "Cart conversions", "Repeat purchases"],
+  online_vendor: ["Sales", "Cart conversions", "Repeat purchases", "Lead orders"],
+  realtor: ["Property leads", "Inspection bookings", "Property sales"],
+  food_beverage: ["MOQ orders", "Distribution reach", "Store visits", "Repeat orders"],
+  household_items: ["MOQ orders", "Distribution reach", "Store visits", "Repeat orders"],
+  telecom: ["Brand awareness", "Store visits", "Agent activations", "Distribution reach"],
+  oil_gas: ["Brand awareness", "Distributor orders", "Station visits", "Repeat orders"],
+};
+
 export const subtypeLabel = (id: string | null | undefined): string =>
   SUBTYPES.find((s) => s.id === id)?.label ?? (id ?? "");
+
+export const subtypeMeta = (id: string | null | undefined): SubtypeMeta | undefined =>
+  SUBTYPES.find((s) => s.id === id);
+
+export const getSubtypeGoalOptions = (id: string | null | undefined): string[] => {
+  const subtype = id as AdvertiserSubtype | null | undefined;
+  return subtype && SUBTYPE_GOAL_OPTIONS[subtype] ? SUBTYPE_GOAL_OPTIONS[subtype] : [];
+};
 
 export const subtypesByGroup = (): Record<SubtypeGroupSlug, SubtypeMeta[]> => {
   const map = {
