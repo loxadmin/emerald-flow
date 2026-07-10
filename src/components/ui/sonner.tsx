@@ -41,7 +41,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast pointer-events-auto flex items-center gap-3 rounded-xl border border-border/60 bg-card/95 px-4 py-3 text-foreground shadow-xl backdrop-blur-md ring-1 ring-black/5",
+            "group toast pointer-events-auto flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-card-foreground shadow-2xl ring-1 ring-black/5",
           title: "text-sm font-medium leading-tight",
           description: "text-xs text-muted-foreground leading-tight",
           actionButton:
@@ -49,13 +49,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             "rounded-md bg-muted px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/80",
           success:
-            "group-[.toaster]:!border-primary/30 group-[.toaster]:!bg-primary/10 group-[.toaster]:!text-foreground",
+            "group-[.toaster]:!border-emerald-600 group-[.toaster]:!bg-emerald-600 group-[.toaster]:!text-white",
           error:
-            "group-[.toaster]:!border-destructive/30 group-[.toaster]:!bg-destructive/10 group-[.toaster]:!text-foreground",
+            "group-[.toaster]:!border-destructive group-[.toaster]:!bg-destructive group-[.toaster]:!text-destructive-foreground",
           warning:
-            "group-[.toaster]:!border-amber-500/30 group-[.toaster]:!bg-amber-500/10 group-[.toaster]:!text-foreground",
+            "group-[.toaster]:!border-amber-500 group-[.toaster]:!bg-amber-500 group-[.toaster]:!text-white",
           info:
-            "group-[.toaster]:!border-sky-500/30 group-[.toaster]:!bg-sky-500/10 group-[.toaster]:!text-foreground",
+            "group-[.toaster]:!border-sky-600 group-[.toaster]:!bg-sky-600 group-[.toaster]:!text-white",
         },
       }}
       {...props}
