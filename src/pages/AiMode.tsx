@@ -15,7 +15,7 @@ import {
 } from "@/lib/assistant-nlp";
 import { saveAiCampaignPrefill, type AiCampaignPrefill, type AiCampaignType } from "@/lib/ai-campaign-prefill";
 import Logo from "@/components/Logo";
-import { Send, Paperclip, X, ArrowUpRight, Sparkles, Sun, Moon, LogOut, ToggleRight, FileText } from "lucide-react";
+import { Send, Paperclip, X, ArrowUpRight, Bot, Sun, Moon, LogOut, ToggleRight, FileText, ChevronRight } from "lucide-react";
 
 type Attachment = { id: string; name: string; type: string; size: number; dataUrl?: string };
 type Msg = {
@@ -375,7 +375,7 @@ export default function AiMode() {
             <p className="text-[13px] font-semibold flex items-center gap-1.5">
               Karbali Assistant
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider">
-                <Sparkles className="h-2.5 w-2.5" /> AI Mode
+                <Bot className="h-2.5 w-2.5" /> AI Mode
               </span>
             </p>
             <p className="text-[10.5px] text-muted-foreground">Chat to run your workspace</p>
@@ -402,10 +402,12 @@ export default function AiMode() {
         <div className="mx-auto max-w-2xl px-4 lg:px-6 py-6 space-y-5">
           {messages.map((m, i) => (
             <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-              <div className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ${
-                m.role === "user" ? "bg-foreground text-background" : "bg-emerald-600 text-white"
+              <div className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ring-2 ${
+                m.role === "user"
+                  ? "bg-foreground text-background ring-transparent"
+                  : "bg-gradient-to-br from-emerald-500 to-emerald-700 text-white ring-emerald-500/20"
               }`}>
-                {m.role === "user" ? initial : <Sparkles className="h-3.5 w-3.5" />}
+                {m.role === "user" ? initial : <Bot className="h-4 w-4" />}
               </div>
               <div className={`flex-1 space-y-2 ${m.role === "user" ? "items-end flex flex-col" : ""}`}>
                 {m.text && (
@@ -462,20 +464,20 @@ export default function AiMode() {
                 )}
 
                 {m.role === "bot" && m.goalOptions && m.goalOptions.length > 0 && (
-                  <div className="max-w-[85%] w-full">
-                    <select
-                      defaultValue=""
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (v) sendMessage(`I want to get ${v.toLowerCase()}`);
-                      }}
-                      className="w-full rounded-lg border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 text-[13px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600/40"
-                    >
-                      <option value="" disabled>Choose a goal…</option>
+                  <div className="max-w-[85%] w-full mt-1">
+                    <p className="text-[11px] font-medium text-muted-foreground mb-2 uppercase tracking-wider">Pick a goal</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {m.goalOptions.map((g) => (
-                        <option key={g} value={g}>{g}</option>
+                        <button
+                          key={g}
+                          onClick={() => sendMessage(`I want to get ${g.toLowerCase()}`)}
+                          className="group flex items-center justify-between gap-2 rounded-xl border border-emerald-600/30 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/40 dark:to-emerald-950/10 px-3.5 py-3 text-left text-[13px] font-medium text-emerald-900 dark:text-emerald-100 hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-600/10 transition-all"
+                        >
+                          <span>{g}</span>
+                          <ChevronRight className="h-4 w-4 text-emerald-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   </div>
                 )}
               </div>
@@ -484,8 +486,8 @@ export default function AiMode() {
 
           {typing && (
             <div className="flex gap-3">
-              <div className="h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center">
-                <Sparkles className="h-3.5 w-3.5" />
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center ring-2 ring-emerald-500/20">
+                <Bot className="h-4 w-4" />
               </div>
               <div className="px-3.5 py-2.5 rounded-2xl bg-muted/60 rounded-tl-sm">
                 <div className="flex gap-1">
