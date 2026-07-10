@@ -11,11 +11,15 @@ import {
   getAllowedCampaignType,
   getProactiveGreeting,
   isCampaignTypeAllowed,
+  acknowledgeGoal,
+  initialState,
   type AssistantContext,
+  type ConversationState,
 } from "@/lib/assistant-nlp";
 import { saveAiCampaignPrefill, type AiCampaignPrefill, type AiCampaignType } from "@/lib/ai-campaign-prefill";
 import Logo from "@/components/Logo";
 import { Send, Paperclip, X, ArrowUpRight, Bot, Sun, Moon, LogOut, ToggleRight, FileText, ChevronRight } from "lucide-react";
+
 
 type Attachment = { id: string; name: string; type: string; size: number; dataUrl?: string };
 type Msg = {
@@ -203,6 +207,8 @@ export default function AiMode() {
   const [pending, setPending] = useState<Attachment[]>([]);
   const [typing, setTyping] = useState(false);
   const [campaignFlow, setCampaignFlow] = useState<CampaignFlow | null>(null);
+  const [convoState, setConvoState] = useState<ConversationState>(initialState());
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -289,7 +295,8 @@ export default function AiMode() {
           const userChangedContext = CAMPAIGN_VALUE_STEPS.has(campaignFlow.step) && isCampaignKnowledgeQuestion(text);
           const requestedType = pickCampaignType(text);
           if (userChangedContext) {
-            const detected = detectIntent(text, ctx);
+            const detected = detectIntent(text, ctx, convoState);
+            if (detected.stateUpdates) setConvoState((s) => ({ ...s, ...detected.stateUpdates, turnCount: s.turnCount + 1 }));
             nextFlow = campaignFlow;
             reply = { role: "bot", text: detected.text, suggestions: [...(detected.suggestions || []), "Continue campaign setup"].slice(0, 4), navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };
           } else if (requestedType && campaignFlow.type && requestedType !== campaignFlow.type) {
@@ -305,7 +312,13 @@ export default function AiMode() {
           }
         }
       } else {
-        const detected = detectIntent(text, ctx);
+        // Detect goal-selection phrasing ("I want to get music streams") so the
+        // assistant threads the chosen goal into every follow-up answer.
+        const goalMatch = text.match(/^i\s+want(?:\s+to\s+get)?\s+(.+)$/i);
+        const detected = goalMatch
+          ? acknowledgeGoal(goalMatch[1], ctx)
+          : detectIntent(text, ctx, convoState);
+        if (detected.stateUpdates) setConvoState((s) => ({ ...s, ...detected.stateUpdates, turnCount: s.turnCount + 1 }));
         if (detected.action === "start_campaign_flow") {
           const startFlow: CampaignFlow = { type: detected.campaignType ?? null, data: detected.campaignType ? { type: detected.campaignType, createdAt: Date.now() } : {}, step: detected.campaignType ? "name" : "type" };
           nextFlow = startFlow;
@@ -316,6 +329,7 @@ export default function AiMode() {
           reply = { role: "bot", text: detected.text, suggestions: detected.suggestions, navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };
         }
       }
+
       setCampaignFlow(nextFlow);
       setMessages((m) => [
         ...m,

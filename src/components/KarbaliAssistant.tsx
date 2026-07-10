@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { MessageCircle, X, Send, Bot, ChevronRight } from "lucide-react";
-import { detectIntent, getProactiveGreeting, type AssistantContext } from "@/lib/assistant-nlp";
+import { detectIntent, getProactiveGreeting, acknowledgeGoal, initialState, type AssistantContext, type ConversationState } from "@/lib/assistant-nlp";
 
 type Msg = { role: "user" | "bot"; text: string; suggestions?: string[]; navigateTo?: string; goalOptions?: string[] };
 
@@ -31,6 +31,7 @@ export default function KarbaliAssistant() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [convoState, setConvoState] = useState<ConversationState>(initialState());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const ctx: AssistantContext = {
@@ -85,13 +86,16 @@ export default function KarbaliAssistant() {
         setTyping(false);
         return;
       }
-      const r = detectIntent(userText, ctx);
+      const goalMatch = userText.match(/^i\s+want(?:\s+to\s+get)?\s+(.+)$/i);
+      const r = goalMatch ? acknowledgeGoal(goalMatch[1], ctx) : detectIntent(userText, ctx, convoState);
+      if (r.stateUpdates) setConvoState((s) => ({ ...s, ...r.stateUpdates, turnCount: s.turnCount + 1 }));
       setMessages((m) => [...m, { role: "bot", text: r.text, suggestions: r.suggestions, navigateTo: r.navigateTo }]);
       setTyping(false);
       if (r.navigateTo && r.autoNavigate && r.navigateTo !== location.pathname) {
         setTimeout(() => navigate(r.navigateTo!), 600);
       }
     }, 450 + Math.random() * 300);
+
   };
 
   return (
