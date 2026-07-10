@@ -58,16 +58,14 @@ export default function Packages() {
     if (!user) return;
     setLoading(true);
 
-    // Get advertiser's approved category + group
+    // Get advertiser's approved subtype (strict subcategory filter)
     const { data: ac } = await supabase
       .from("advertiser_categories")
-      .select("category_id, categories:category_id(group_id)")
+      .select("advertiser_subtype")
       .eq("advertiser_id", user.id)
       .maybeSingle();
-    const catId = (ac as any)?.category_id || null;
-    const grpId = (ac as any)?.categories?.group_id || null;
-    setMyCategoryId(catId);
-    setMyGroupId(grpId);
+    const sub = ((ac as any)?.advertiser_subtype || null) as AdvertiserSubtype | null;
+    setMySubtype(sub);
 
     const [{ data: w }, { data: ms }, { data: sites }] = await Promise.all([
       supabase.from("wallets").select("balance, is_activated").eq("advertiser_id", user.id).maybeSingle(),
@@ -75,19 +73,17 @@ export default function Packages() {
       supabase.from("advertiser_websites").select("id, domain, is_verified").eq("advertiser_id", user.id),
     ]);
 
-    // Strictly filter packages to the advertiser's category/group
+    // Strictly filter packages to the advertiser's exact subcategory
     let pkgs: any[] = [];
-    if (catId) {
+    if (sub) {
       const { data: pAll } = await supabase
         .from("ad_packages" as any)
         .select("*")
         .eq("is_active", true)
+        .contains("advertiser_subtypes", [sub])
         .order("sort_order")
         .order("created_at");
-      pkgs = ((pAll as any) || []).filter((p: any) =>
-        (p.category_id && p.category_id === catId) ||
-        (!p.category_id && p.category_group_id && grpId && p.category_group_id === grpId)
-      );
+      pkgs = (pAll as any) || [];
     }
     setPackages(pkgs);
     setWallet((w as any) || null);
