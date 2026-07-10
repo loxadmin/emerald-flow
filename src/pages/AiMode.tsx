@@ -207,6 +207,8 @@ export default function AiMode() {
   const [pending, setPending] = useState<Attachment[]>([]);
   const [typing, setTyping] = useState(false);
   const [campaignFlow, setCampaignFlow] = useState<CampaignFlow | null>(null);
+  const [convoState, setConvoState] = useState<ConversationState>(initialState());
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
