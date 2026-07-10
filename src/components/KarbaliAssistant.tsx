@@ -158,15 +158,19 @@ export default function KarbaliAssistant() {
                     </div>
                   )}
                   {m.role === "bot" && m.goalOptions && m.goalOptions.length > 0 && (
-                    <div className="flex flex-col gap-1.5 pt-0.5">
-                      {m.goalOptions.map((g) => (
+                    <div className="flex flex-col gap-1.5 pt-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] px-0.5">Pick a goal</p>
+                      {m.goalOptions.map((g, i) => (
                         <button
                           key={g}
                           onClick={() => reply(`I want to get ${g.toLowerCase()}`)}
-                          className="group flex items-center justify-between gap-2 rounded-lg border border-emerald-600 bg-emerald-50 dark:bg-emerald-900 px-3 py-2 text-left text-[12.5px] font-medium text-emerald-900 dark:text-emerald-100 hover:border-emerald-600 hover:shadow-sm transition-all"
+                          className="group flex items-center gap-2.5 rounded-lg border border-border bg-card px-2.5 py-2 text-left hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors"
                         >
-                          <span>{g}</span>
-                          <ChevronRight className="h-3.5 w-3.5 text-emerald-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-emerald-600 text-white text-[10px] font-bold">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <span className="flex-1 text-[12.5px] font-medium text-foreground">{g}</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
                         </button>
                       ))}
                     </div>
