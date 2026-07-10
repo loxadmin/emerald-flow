@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { MessageCircle, X, Send, Bot, ChevronRight } from "lucide-react";
-import { detectIntent, getProactiveGreeting, type AssistantContext } from "@/lib/assistant-nlp";
+import { detectIntent, getProactiveGreeting, acknowledgeGoal, initialState, type AssistantContext, type ConversationState } from "@/lib/assistant-nlp";
 
 type Msg = { role: "user" | "bot"; text: string; suggestions?: string[]; navigateTo?: string; goalOptions?: string[] };
 
