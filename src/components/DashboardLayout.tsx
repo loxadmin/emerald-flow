@@ -8,11 +8,12 @@ import { useAiMode } from "@/lib/ai-mode";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
   Menu, X, Lock, AlertCircle, Megaphone, Globe, ChevronRight,
-  Sparkles, ShieldCheck, Package, ClipboardList,
+  ShieldCheck, Package, ClipboardList,
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
 import KarbaliAssistant from "@/components/KarbaliAssistant";
+import KarbaliPersonaIcon from "@/components/KarbaliPersonaIcon";
 
 type NavLink = {
   to: string;
@@ -226,7 +227,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Mobile header */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex lg:hidden h-14 items-center justify-between px-4 bg-background/85 backdrop-blur-md border-b border-border">
+      <div className="fixed top-0 left-0 right-0 z-40 flex lg:hidden h-14 items-center justify-between px-4 bg-background border-b border-border">
         <Link to="/dashboard" className="flex items-center gap-2">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-foreground text-background">
             <Logo size={12} />
@@ -236,11 +237,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-1">
           <button
             onClick={enableAiMode}
-            className="rounded-md p-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+            className="rounded-md p-2 text-primary hover:bg-accent transition-colors"
             aria-label="AI mode"
             title="AI mode"
           >
-            <Sparkles className="h-4 w-4" />
+            <KarbaliPersonaIcon className="h-4 w-4" />
           </button>
           <Link
             to="/wallet"
@@ -264,7 +265,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {mobileMenuOpen && (
         <>
           <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden animate-fade-in"
+            className="fixed inset-0 z-50 bg-black/70 lg:hidden animate-fade-in"
             onClick={() => setMobileMenuOpen(false)}
           />
           <aside className="fixed left-0 top-0 z-50 flex h-screen w-[280px] flex-col bg-sidebar border-r border-sidebar-border lg:hidden animate-rise">
@@ -276,13 +277,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* Main */}
       <div className="flex-1 lg:ml-[244px] min-w-0 flex flex-col">
         {/* Desktop topbar */}
-        <header className="hidden lg:flex sticky top-0 z-30 h-14 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-8">
+        <header className="hidden lg:flex sticky top-0 z-30 h-14 items-center justify-between border-b border-border bg-background px-8">
           <nav
             className="flex items-center gap-2 text-[13px] text-muted-foreground"
             aria-label="Breadcrumb"
           >
             <span>Workspace</span>
-            <ChevronRight className="h-3.5 w-3.5 opacity-60" />
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-foreground font-medium">
               {currentLink?.label || "Overview"}
             </span>
@@ -290,17 +291,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             <button
               onClick={enableAiMode}
-              className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-1.5 text-xs font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-primary bg-primary text-primary-foreground px-2.5 py-1.5 text-xs font-medium hover:bg-primary/90 transition-colors"
               title="Switch to AI chat mode"
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <KarbaliPersonaIcon className="h-3.5 w-3.5" />
               AI mode
             </button>
             <Link
               to="/campaigns/create"
               className="hidden xl:inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
             >
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <Plus className="h-3.5 w-3.5 text-primary" />
               Launch a campaign
             </Link>
           </div>

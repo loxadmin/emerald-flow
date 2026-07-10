@@ -163,7 +163,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       {/* Main */}
       <div className="flex-1 lg:ml-60 min-w-0 flex flex-col">
-        <header className="hidden lg:flex sticky top-0 z-30 h-12 items-center gap-2 border-b border-border bg-background/80 backdrop-blur px-6">
+        <header className="hidden lg:flex sticky top-0 z-30 h-12 items-center gap-2 border-b border-border bg-background px-6">
           <nav className="flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
             <span>Admin</span>
             <ChevronRight className="h-3 w-3" />
