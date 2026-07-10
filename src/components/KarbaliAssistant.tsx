@@ -157,6 +157,21 @@ export default function KarbaliAssistant() {
                       ))}
                     </div>
                   )}
+                  {m.role === "bot" && m.goalOptions && m.goalOptions.length > 0 && (
+                    <select
+                      defaultValue=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v) reply(`I want to get ${v.toLowerCase()}`);
+                      }}
+                      className="w-full rounded-md border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 text-[12px] px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-600/40"
+                    >
+                      <option value="" disabled>Choose a goal…</option>
+                      {m.goalOptions.map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  )}
                   {m.role === "bot" && m.navigateTo && (
                     <button
                       onClick={() => navigate(m.navigateTo!)}
