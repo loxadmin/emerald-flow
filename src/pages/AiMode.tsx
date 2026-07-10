@@ -11,11 +11,15 @@ import {
   getAllowedCampaignType,
   getProactiveGreeting,
   isCampaignTypeAllowed,
+  acknowledgeGoal,
+  initialState,
   type AssistantContext,
+  type ConversationState,
 } from "@/lib/assistant-nlp";
 import { saveAiCampaignPrefill, type AiCampaignPrefill, type AiCampaignType } from "@/lib/ai-campaign-prefill";
 import Logo from "@/components/Logo";
 import { Send, Paperclip, X, ArrowUpRight, Bot, Sun, Moon, LogOut, ToggleRight, FileText, ChevronRight } from "lucide-react";
+
 
 type Attachment = { id: string; name: string; type: string; size: number; dataUrl?: string };
 type Msg = {
