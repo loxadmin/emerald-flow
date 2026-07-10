@@ -245,10 +245,10 @@ export default function AiMode() {
         ? `${greet.text}\n\nWhat are you looking to get for your ${catName || "business"}? Pick one to get started.`
         : greet.text;
 
-      // Quick actions: always offer campaign creation; add packages if any live ones target this subtype.
-      const actions: { label: string; to: string }[] = [];
+      // Quick actions: always offer AI-driven campaign creation; add packages if any live ones target this subtype.
+      const actions: { label: string; to?: string; prompt?: string }[] = [];
       if (advertiserType !== "offline") {
-        actions.push({ label: "Create a campaign", to: "/campaigns/create" });
+        actions.push({ label: "Create a campaign with AI", prompt: "Create a campaign" });
         if (subtype) {
           const { data: pkgs } = await supabase
             .from("ad_packages")
