@@ -15,7 +15,7 @@ import {
 } from "@/lib/assistant-nlp";
 import { saveAiCampaignPrefill, type AiCampaignPrefill, type AiCampaignType } from "@/lib/ai-campaign-prefill";
 import Logo from "@/components/Logo";
-import { Send, Paperclip, X, ArrowUpRight, Sparkles, Sun, Moon, LogOut, ToggleRight, FileText } from "lucide-react";
+import { Send, Paperclip, X, ArrowUpRight, Bot, Sun, Moon, LogOut, ToggleRight, FileText, ChevronRight } from "lucide-react";
 
 type Attachment = { id: string; name: string; type: string; size: number; dataUrl?: string };
 type Msg = {
@@ -375,7 +375,7 @@ export default function AiMode() {
             <p className="text-[13px] font-semibold flex items-center gap-1.5">
               Karbali Assistant
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider">
-                <Sparkles className="h-2.5 w-2.5" /> AI Mode
+                <Bot className="h-2.5 w-2.5" /> AI Mode
               </span>
             </p>
             <p className="text-[10.5px] text-muted-foreground">Chat to run your workspace</p>
@@ -402,10 +402,12 @@ export default function AiMode() {
         <div className="mx-auto max-w-2xl px-4 lg:px-6 py-6 space-y-5">
           {messages.map((m, i) => (
             <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-              <div className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ${
-                m.role === "user" ? "bg-foreground text-background" : "bg-emerald-600 text-white"
+              <div className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ring-2 ${
+                m.role === "user"
+                  ? "bg-foreground text-background ring-transparent"
+                  : "bg-gradient-to-br from-emerald-500 to-emerald-700 text-white ring-emerald-500/20"
               }`}>
-                {m.role === "user" ? initial : <Sparkles className="h-3.5 w-3.5" />}
+                {m.role === "user" ? initial : <Bot className="h-4 w-4" />}
               </div>
               <div className={`flex-1 space-y-2 ${m.role === "user" ? "items-end flex flex-col" : ""}`}>
                 {m.text && (
