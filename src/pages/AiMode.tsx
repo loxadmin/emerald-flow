@@ -218,9 +218,22 @@ export default function AiMode() {
 
   useEffect(() => {
     if (!user) return;
-    const greet = getProactiveGreeting(ctx);
-    setMessages([{ role: "bot", text: greet.text, suggestions: greet.suggestions }]);
-    setTimeout(() => taRef.current?.focus(), 100);
+    (async () => {
+      const greet = getProactiveGreeting(ctx);
+      // Fetch subcategory-driven goal options for this advertiser.
+      const { data: ac } = await supabase
+        .from("advertiser_categories")
+        .select("categories:category_id(name, goal_options)")
+        .eq("advertiser_id", user.id)
+        .maybeSingle();
+      const goals: string[] = ((ac as any)?.categories?.goal_options as string[]) || [];
+      const catName: string = (ac as any)?.categories?.name || "";
+      const intro = goals.length
+        ? `${greet.text}\n\nWhat are you looking to get for your ${catName || "business"}? Pick one to get started.`
+        : greet.text;
+      setMessages([{ role: "bot", text: intro, suggestions: goals.length ? undefined : greet.suggestions, goalOptions: goals.length ? goals : undefined }]);
+      setTimeout(() => taRef.current?.focus(), 100);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
