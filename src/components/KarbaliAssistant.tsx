@@ -31,6 +31,7 @@ export default function KarbaliAssistant() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [convoState, setConvoState] = useState<ConversationState>(initialState());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const ctx: AssistantContext = {
