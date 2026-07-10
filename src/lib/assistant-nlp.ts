@@ -8,6 +8,7 @@ export type AssistantContext = {
   walletActivated: boolean | null;
   categoryStatus: string | null;
   advertiserType: string | null;
+  advertiserSubtype?: string | null;
   businessVerified?: boolean | null;
   pathname: string;
   userName?: string;
@@ -80,6 +81,7 @@ const STOPWORDS = new Set([
 const TYPO_FIXES: Record<string, string> = {
   camaign: "campaign", camaigns: "campaign", campain: "campaign", campains: "campaign",
   engagemnet: "engagement", engagmnt: "engagement", inteligent: "intelligent",
+  straming: "stream", stremaing: "stream", stram: "stream", streamng: "stream",
   isnt: "is not", advertis: "advertise", advertiz: "advertise",
   ecommerce: "commerce", ecom: "commerce", shopify: "commerce",
   client: "customer", customers: "customer", costumer: "customer",
@@ -244,7 +246,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
     case "tracking":
       return {
         text: goal
-          ? `${prefix}we track each event with a deterministic click_id. ${trackingDetailForGoal(state)} You pay only when we confirm a real ${singularize(goal)}.`
+          ? `${prefix}${trackingDetailForGoal(state)} You pay only when Karbali confirms a valid ${singularize(goal)}.`
           : "We use a deterministic click_id (UUID). Install the Karbali script or WordPress plugin, fire a conversion event, and we attribute the result to the right campaign.",
         suggestions: goalTailSuggestion(state, ["Open docs", "Verify my integration"]),
         navigateTo: "/docs",
@@ -299,7 +301,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       };
     case "campaign_types":
       return {
-        text: "Two ad types: Online and Offline. Online splits into Engagement (creators, media), Performance (apps, websites, fintech), and Commerce (e-commerce, vendors, realtors). Offline is for oil & gas, telcos, and physical-goods brands.",
+        text: "Two ad types: Online and Offline. Online has Engagement (musicians, YouTubers, creators), Performance (apps, websites, fintech), and Commerce (e-commerce, vendors, realtors). Offline has Daily Essentials and Mainstream brands.",
         suggestions: ["What is Engagement?", "What is Performance?", "What is Commerce?"],
         stateUpdates: { topic: "campaign_types" },
       };
@@ -316,14 +318,14 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
 
 function trackingDetailForGoal(state: ConversationState): string {
   switch (state.goalDomain) {
-    case "music": return "You paste your song links and lyrics, and we log a stream only after the listener plays for the required duration.";
-    case "video": return "You paste your video link and script, and we log a view only after watch-time thresholds are met.";
+    case "music": return "Music is handled inside the engagement offerwall: you paste up to 3 song links and the lyrics, Karbali sends users to listen, then validates the session with listen-time plus a simple lyric/attention quiz. We do not claim Spotify or Apple Music server-side stream counts unless those platforms provide verified data.";
+    case "video": return "Video is handled inside the engagement flow: you paste the video link and script, then Karbali validates watch-time and quiz/attention checks before counting a play.";
     case "quiz": return "We record completions only when the user answers the quiz correctly.";
     case "installs": return "The install SDK fires a conversion when the user opens the app for the first time.";
     case "signups": return "Our JS snippet or WordPress plugin fires a conversion when the signup form is submitted successfully.";
     case "sales":
     case "cart":
-    case "repeat": return "Drop the JS snippet or WooCommerce plugin on your store, and we fire a conversion at checkout success — commission is billed only then.";
+    case "repeat": return "Drop the JS snippet or WooCommerce plugin on your store, and we fire a conversion at checkout success. Commission is billed only then.";
     default: return "Install the Karbali script or WordPress plugin and fire the conversion event when the goal happens.";
   }
 }

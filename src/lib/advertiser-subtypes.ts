@@ -49,8 +49,8 @@ export const GROUP_LABELS: Record<SubtypeGroupSlug, string> = {
 };
 
 export const SUBTYPE_GOAL_OPTIONS: Record<AdvertiserSubtype, string[]> = {
-  musician: ["Music streams", "Brand awareness", "Social engagement"],
-  youtuber: ["Video plays", "Ad views", "Subscribers", "Brand awareness"],
+  musician: ["Music streams", "Lyric quiz completions", "Brand awareness", "Social engagement"],
+  youtuber: ["Video plays", "Watch-time completions", "Subscribers", "Brand awareness"],
   social_media_creator: ["Social engagement", "Ad views", "Video plays", "Brand awareness"],
   app: ["App installs", "Signups", "In-app engagement", "Subscriptions"],
   website: ["Signups", "Leads", "CPA conversions", "Page engagement"],

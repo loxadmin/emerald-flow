@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { MessageCircle, X, Send, Bot, ChevronRight } from "lucide-react";
+import { MessageCircle, X, Send, ChevronRight } from "lucide-react";
 import { detectIntent, getProactiveGreeting, acknowledgeGoal, initialState, type AssistantContext, type ConversationState } from "@/lib/assistant-nlp";
+import KarbaliPersonaIcon from "@/components/KarbaliPersonaIcon";
+import { getSubtypeGoalOptions, subtypeLabel } from "@/lib/advertiser-subtypes";
 
 type Msg = { role: "user" | "bot"; text: string; suggestions?: string[]; navigateTo?: string; goalOptions?: string[] };
 
@@ -24,7 +26,7 @@ const PAGE_LABELS: Record<string, string> = {
 const STORAGE_KEY = "karbali_assistant_greeted";
 
 export default function KarbaliAssistant() {
-  const { user, walletActivated, categoryStatus, advertiserType, businessVerified, isLoading } = useAuth();
+  const { user, walletActivated, categoryStatus, advertiserType, advertiserSubtype, businessVerified, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -38,6 +40,7 @@ export default function KarbaliAssistant() {
     walletActivated,
     categoryStatus,
     advertiserType,
+    advertiserSubtype,
     businessVerified,
     pathname: location.pathname,
     userName: user?.email ?? undefined,
@@ -52,11 +55,13 @@ export default function KarbaliAssistant() {
       const greet = getProactiveGreeting(ctx);
       const { data: ac } = await supabase
         .from("advertiser_categories")
-        .select("categories:category_id(name, goal_options)")
+        .select("advertiser_subtype, categories:category_id(name, goal_options)")
         .eq("advertiser_id", user.id)
         .maybeSingle();
-      const goals: string[] = ((ac as any)?.categories?.goal_options as string[]) || [];
-      const catName: string = (ac as any)?.categories?.name || "";
+      const subtype = (ac as any)?.advertiser_subtype || advertiserSubtype;
+      const subtypeGoals = getSubtypeGoalOptions(subtype);
+      const goals: string[] = subtypeGoals.length ? subtypeGoals : (((ac as any)?.categories?.goal_options as string[]) || []);
+      const catName: string = subtype ? subtypeLabel(subtype) : ((ac as any)?.categories?.name || "");
       const intro = goals.length
         ? `${greet.text} What are you looking to get for your ${catName || "business"}?`
         : greet.text;
@@ -110,7 +115,7 @@ export default function KarbaliAssistant() {
               setMessages([{ role: "bot", text: greet.text, suggestions: greet.suggestions }]);
             }
           }}
-          className="fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition-all hover:scale-105"
+          className="fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary transition-all hover:scale-105"
           aria-label="Open assistant"
         >
           <MessageCircle className="h-5 w-5" />
@@ -120,17 +125,17 @@ export default function KarbaliAssistant() {
       {/* Panel */}
       {open && (
         <div className="fixed bottom-5 right-5 z-50 w-[min(360px,calc(100vw-2rem))] h-[min(520px,calc(100vh-2rem))] flex flex-col rounded-2xl border border-border bg-background shadow-2xl overflow-hidden">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-emerald-600 text-white">
+          <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-primary text-primary-foreground">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-800">
-                <Bot className="h-4 w-4" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-foreground text-primary">
+                <KarbaliPersonaIcon className="h-4 w-4" />
               </div>
               <div className="leading-tight">
                 <p className="text-[13px] font-semibold">Karbali Assistant</p>
-                <p className="text-[10px] opacity-80">Here to help you navigate</p>
+                <p className="text-[10px]">Here to help you navigate</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} aria-label="Close" className="rounded-md p-1 hover:bg-emerald-800">
+            <button onClick={() => setOpen(false)} aria-label="Close" className="rounded-md p-1 hover:bg-primary">
               <X className="h-4 w-4" />
             </button>
           </header>
@@ -142,7 +147,7 @@ export default function KarbaliAssistant() {
                   <div
                     className={`px-3 py-2 rounded-2xl text-[13px] leading-snug ${
                       m.role === "user"
-                        ? "bg-emerald-600 text-white rounded-br-sm"
+                        ? "bg-primary text-primary-foreground rounded-br-sm"
                         : "bg-background border border-border text-foreground rounded-bl-sm"
                     }`}
                   >
@@ -154,7 +159,7 @@ export default function KarbaliAssistant() {
                         <button
                           key={s}
                           onClick={() => reply(s)}
-                          className="text-[11px] px-2.5 py-1 rounded-full border border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-800 transition-colors"
+                          className="text-[11px] px-2.5 py-1 rounded-full border border-border text-foreground bg-card hover:bg-accent transition-colors"
                         >
                           {s}
                         </button>
@@ -168,13 +173,13 @@ export default function KarbaliAssistant() {
                         <button
                           key={g}
                           onClick={() => reply(`I want to get ${g.toLowerCase()}`)}
-                          className="group flex items-center gap-2.5 rounded-lg border border-border bg-card px-2.5 py-2 text-left hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors"
+                          className="group flex items-center gap-2.5 rounded-lg border border-border bg-card px-2.5 py-2 text-left hover:border-primary hover:bg-accent transition-colors"
                         >
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-emerald-600 text-white text-[10px] font-bold">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary text-primary-foreground text-[10px] font-bold">
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <span className="flex-1 text-[12.5px] font-medium text-foreground">{g}</span>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                         </button>
                       ))}
                     </div>
@@ -182,7 +187,7 @@ export default function KarbaliAssistant() {
                   {m.role === "bot" && m.navigateTo && (
                     <button
                       onClick={() => navigate(m.navigateTo!)}
-                      className="text-[11px] px-2.5 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                      className="text-[11px] px-2.5 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary transition-colors"
                     >
                       Open {PAGE_LABELS[m.navigateTo] || m.navigateTo}
                     </button>
@@ -215,12 +220,12 @@ export default function KarbaliAssistant() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask Karbali Assistant anything..."
-              className="flex-1 px-3 py-2 text-[13px] rounded-lg bg-muted border border-border focus:outline-none focus:ring-1 focus:ring-emerald-600"
+              className="flex-1 px-3 py-2 text-[13px] rounded-lg bg-muted border border-border focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <button
               type="submit"
               disabled={!input.trim()}
-              className="flex items-center justify-center h-9 w-9 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40"
+              className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary text-primary-foreground hover:bg-primary disabled:bg-muted disabled:text-muted-foreground"
               aria-label="Send"
             >
               <Send className="h-4 w-4" />

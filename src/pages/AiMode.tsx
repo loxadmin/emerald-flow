@@ -18,7 +18,9 @@ import {
 } from "@/lib/assistant-nlp";
 import { saveAiCampaignPrefill, type AiCampaignPrefill, type AiCampaignType } from "@/lib/ai-campaign-prefill";
 import Logo from "@/components/Logo";
-import { Send, Paperclip, X, ArrowUpRight, Bot, Sun, Moon, LogOut, ToggleRight, FileText, ChevronRight } from "lucide-react";
+import KarbaliPersonaIcon from "@/components/KarbaliPersonaIcon";
+import { getSubtypeGoalOptions, subtypeLabel } from "@/lib/advertiser-subtypes";
+import { Send, Paperclip, X, ArrowUpRight, Sun, Moon, LogOut, ToggleRight, FileText, ChevronRight } from "lucide-react";
 
 
 type Attachment = { id: string; name: string; type: string; size: number; dataUrl?: string };
@@ -197,7 +199,7 @@ function nextCampaignPrompt(flow: CampaignFlow, text: string, ctx: AssistantCont
 }
 
 export default function AiMode() {
-  const { user, signOut, walletActivated, categoryStatus, advertiserType, businessVerified, isLoading } = useAuth();
+  const { user, signOut, walletActivated, categoryStatus, advertiserType, advertiserSubtype, businessVerified, isLoading } = useAuth();
   const { setAiMode } = useAiMode();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -217,6 +219,7 @@ export default function AiMode() {
     walletActivated,
     categoryStatus,
     advertiserType,
+    advertiserSubtype,
     businessVerified,
     pathname: location.pathname,
     userName: user?.email ?? undefined,
@@ -229,11 +232,13 @@ export default function AiMode() {
       // Fetch subcategory-driven goal options for this advertiser.
       const { data: ac } = await supabase
         .from("advertiser_categories")
-        .select("categories:category_id(name, goal_options)")
+        .select("advertiser_subtype, categories:category_id(name, goal_options)")
         .eq("advertiser_id", user.id)
         .maybeSingle();
-      const goals: string[] = ((ac as any)?.categories?.goal_options as string[]) || [];
-      const catName: string = (ac as any)?.categories?.name || "";
+      const subtype = (ac as any)?.advertiser_subtype || advertiserSubtype;
+      const subtypeGoals = getSubtypeGoalOptions(subtype);
+      const goals: string[] = subtypeGoals.length ? subtypeGoals : (((ac as any)?.categories?.goal_options as string[]) || []);
+      const catName: string = subtype ? subtypeLabel(subtype) : ((ac as any)?.categories?.name || "");
       const intro = goals.length
         ? `${greet.text}\n\nWhat are you looking to get for your ${catName || "business"}? Pick one to get started.`
         : greet.text;
@@ -382,14 +387,14 @@ export default function AiMode() {
     <div className="flex h-screen flex-col bg-background text-foreground">
       <header className="flex items-center justify-between border-b border-border bg-background px-4 lg:px-6 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-600 text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Logo size={14} />
           </div>
           <div className="leading-tight">
             <p className="text-[13px] font-semibold flex items-center gap-1.5">
               Karbali Assistant
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 dark:bg-emerald-500 text-white px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider">
-                <Bot className="h-2.5 w-2.5" /> AI Mode
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider">
+                <KarbaliPersonaIcon className="h-2.5 w-2.5" /> AI Mode
               </span>
             </p>
             <p className="text-[10.5px] text-muted-foreground">Chat to run your workspace</p>
@@ -419,16 +424,16 @@ export default function AiMode() {
               <div className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ring-2 ${
                 m.role === "user"
                   ? "bg-foreground text-background ring-transparent"
-                  : "bg-gradient-to-br from-emerald-500 to-emerald-700 text-white ring-emerald-800"
+                  : "bg-primary text-primary-foreground ring-primary"
               }`}>
-                {m.role === "user" ? initial : <Bot className="h-4 w-4" />}
+                {m.role === "user" ? initial : <KarbaliPersonaIcon className="h-4 w-4" />}
               </div>
               <div className={`flex-1 space-y-2 ${m.role === "user" ? "items-end flex flex-col" : ""}`}>
                 {m.text && (
                   <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13.5px] leading-relaxed ${
                     m.role === "user"
-                      ? "bg-emerald-600 text-white rounded-tr-sm"
-                      : "bg-muted/60 text-foreground rounded-tl-sm"
+                      ? "bg-primary text-primary-foreground rounded-tr-sm"
+                      : "bg-card border border-border text-foreground rounded-tl-sm"
                   }`}>
                     {m.text}
                   </div>
@@ -457,7 +462,7 @@ export default function AiMode() {
                 {m.role === "bot" && m.navigateTo && (
                   <button
                     onClick={() => navigate(m.navigateTo!)}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-[12px] font-medium hover:bg-emerald-700 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-[12px] font-medium hover:bg-primary transition-colors"
                   >
                     Open {PAGE_LABELS[m.navigateTo] || m.navigateTo} <ArrowUpRight className="h-3 w-3" />
                   </button>
@@ -469,7 +474,7 @@ export default function AiMode() {
                       <button
                         key={s}
                         onClick={() => sendMessage(s)}
-                        className="text-[11.5px] px-2.5 py-1 rounded-full border border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-800 transition-colors"
+                        className="text-[11.5px] px-2.5 py-1 rounded-full border border-border text-foreground bg-card hover:bg-accent transition-colors"
                       >
                         {s}
                       </button>
@@ -485,13 +490,13 @@ export default function AiMode() {
                         <button
                           key={g}
                           onClick={() => sendMessage(`I want to get ${g.toLowerCase()}`)}
-                          className="group relative flex items-center gap-3 rounded-lg bg-card border border-border px-3.5 py-3 text-left hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors"
+                          className="group relative flex items-center gap-3 rounded-lg bg-card border border-border px-3.5 py-3 text-left hover:border-primary hover:bg-accent transition-colors"
                         >
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white text-[13px] font-bold">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground text-[13px] font-bold">
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <span className="flex-1 text-[13.5px] font-medium text-foreground">{g}</span>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                         </button>
                       ))}
                     </div>
@@ -503,10 +508,10 @@ export default function AiMode() {
 
           {typing && (
             <div className="flex gap-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center ring-2 ring-emerald-800">
-                <Bot className="h-4 w-4" />
+              <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center ring-2 ring-primary">
+                <KarbaliPersonaIcon className="h-4 w-4" />
               </div>
-              <div className="px-3.5 py-2.5 rounded-2xl bg-muted/60 rounded-tl-sm">
+              <div className="px-3.5 py-2.5 rounded-2xl bg-card border border-border rounded-tl-sm">
                 <div className="flex gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
                   <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "120ms" }} />
@@ -549,7 +554,7 @@ export default function AiMode() {
               e.preventDefault();
               sendMessage(input);
             }}
-            className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 focus-within:border-emerald-600 transition-colors"
+            className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 focus-within:border-primary transition-colors"
           >
             <button
               type="button"
@@ -586,7 +591,7 @@ export default function AiMode() {
             <button
               type="submit"
               disabled={!input.trim() && pending.length === 0}
-              className="rounded-lg bg-emerald-600 text-white p-2 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              className="rounded-lg bg-primary text-primary-foreground p-2 hover:bg-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed shrink-0"
               aria-label="Send"
             >
               <Send className="h-4 w-4" />
