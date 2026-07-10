@@ -14,7 +14,7 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock } from "lucide-react";
 
-import { subtypeLabel, type AdvertiserSubtype } from "@/lib/advertiser-subtypes";
+import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
 
 type Pkg = {
   id: string; name: string; description: string | null;
