@@ -31,7 +31,7 @@ type Msg = {
   navigateTo?: string;
   attachments?: Attachment[];
   goalOptions?: string[];
-  quickActions?: { label: string; to: string }[];
+  quickActions?: { label: string; to?: string; prompt?: string }[];
 };
 
 type CampaignFlow = {
