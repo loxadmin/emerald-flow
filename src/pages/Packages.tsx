@@ -247,8 +247,15 @@ export default function Packages() {
       <MotionWrapper>
         <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Ad Packages</h1>
-            <p className="text-sm text-muted-foreground">Templates scoped to your category. Pick exactly the milestones you want.</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-semibold tracking-tight">Ad Packages</h1>
+              {mySubtype && (
+                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+                  {subtypeLabel(mySubtype)}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">Templates scoped strictly to your subcategory. Pick exactly the milestones you want.</p>
           </div>
           <Link to="/packages/orders">
             <Button variant="outline" size="sm"><ClipboardList className="mr-2 h-4 w-4" /> My orders</Button>
