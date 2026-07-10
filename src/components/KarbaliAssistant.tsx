@@ -86,13 +86,16 @@ export default function KarbaliAssistant() {
         setTyping(false);
         return;
       }
-      const r = detectIntent(userText, ctx);
+      const goalMatch = userText.match(/^i\s+want(?:\s+to\s+get)?\s+(.+)$/i);
+      const r = goalMatch ? acknowledgeGoal(goalMatch[1], ctx) : detectIntent(userText, ctx, convoState);
+      if (r.stateUpdates) setConvoState((s) => ({ ...s, ...r.stateUpdates, turnCount: s.turnCount + 1 }));
       setMessages((m) => [...m, { role: "bot", text: r.text, suggestions: r.suggestions, navigateTo: r.navigateTo }]);
       setTyping(false);
       if (r.navigateTo && r.autoNavigate && r.navigateTo !== location.pathname) {
         setTimeout(() => navigate(r.navigateTo!), 600);
       }
     }, 450 + Math.random() * 300);
+
   };
 
   return (
