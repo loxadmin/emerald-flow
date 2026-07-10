@@ -61,10 +61,11 @@ export default function Packages() {
     // Get advertiser's approved subtype (strict subcategory filter)
     const { data: ac } = await supabase
       .from("advertiser_categories")
-      .select("advertiser_subtype")
+      .select("advertiser_subtype, advertiser_type, category_id")
       .eq("advertiser_id", user.id)
       .maybeSingle();
     const sub = ((ac as any)?.advertiser_subtype || null) as AdvertiserSubtype | null;
+    const type = ((ac as any)?.advertiser_type || null) as string | null;
     setMySubtype(sub);
 
     const [{ data: w }, { data: ms }, { data: sites }] = await Promise.all([
@@ -73,17 +74,28 @@ export default function Packages() {
       supabase.from("advertiser_websites").select("id, domain, is_verified").eq("advertiser_id", user.id),
     ]);
 
-    // Strictly filter packages to the advertiser's exact subcategory
+    // Filter packages by advertiser's subcategory. If subtype is missing but
+    // advertiser_type is set, fall back to any subtype in that group so packages
+    // still appear for older accounts whose subcategory was never captured.
     let pkgs: any[] = [];
+    let query = supabase
+      .from("ad_packages" as any)
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order")
+      .order("created_at");
+
     if (sub) {
-      const { data: pAll } = await supabase
-        .from("ad_packages" as any)
-        .select("*")
-        .eq("is_active", true)
-        .contains("advertiser_subtypes", [sub])
-        .order("sort_order")
-        .order("created_at");
+      const { data: pAll } = await query.contains("advertiser_subtypes", [sub]);
       pkgs = (pAll as any) || [];
+    } else if (type) {
+      const groupSubtypes = SUBTYPES
+        .filter((s) => s.group === (type as SubtypeGroupSlug))
+        .map((s) => s.id);
+      if (groupSubtypes.length) {
+        const { data: pAll } = await query.overlaps("advertiser_subtypes", groupSubtypes);
+        pkgs = (pAll as any) || [];
+      }
     }
     setPackages(pkgs);
     setWallet((w as any) || null);
