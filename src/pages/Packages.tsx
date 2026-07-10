@@ -14,9 +14,11 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock } from "lucide-react";
 
+import { subtypeLabel, type AdvertiserSubtype } from "@/lib/advertiser-subtypes";
+
 type Pkg = {
   id: string; name: string; description: string | null;
-  category_group_id: string | null; category_id: string | null;
+  advertiser_subtypes: AdvertiserSubtype[] | null;
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
 };
