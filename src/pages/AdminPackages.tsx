@@ -362,21 +362,38 @@ export default function AdminPackages() {
             <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Fintech growth pack" /></div>
             <div><Label>Description</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Ad group *</Label>
-                <Select value={form.category_group_id} onValueChange={(v) => setForm({ ...form, category_group_id: v, category_id: "" })}>
-                  <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
-                  <SelectContent>{groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
-                </Select>
+            <div className="rounded-lg border p-3">
+              <Label>Target subcategories *</Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Pick every advertiser subcategory that should see this package. Only these subcategories can view or buy it — no cross-category leaking.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {(Object.keys(SUBTYPE_GROUPS) as (keyof typeof SUBTYPE_GROUPS)[]).map((g) => (
+                  <div key={g} className="rounded-md border p-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {GROUP_LABELS[g]}
+                    </p>
+                    <div className="mt-1 space-y-1">
+                      {SUBTYPE_GROUPS[g].map((s) => (
+                        <label key={s.id} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={form.advertiser_subtypes.includes(s.id)}
+                            onCheckedChange={() => toggleSubtype(s.id)}
+                          />
+                          {s.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div>
-                <Label>Subcategory (optional)</Label>
-                <Select value={form.category_id} onValueChange={(v) => setForm({ ...form, category_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Any in group" /></SelectTrigger>
-                  <SelectContent>{groupCats.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+              {form.advertiser_subtypes.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {form.advertiser_subtypes.map((s) => (
+                    <Badge key={s} variant="secondary" className="text-xs">{subtypeLabel(s)}</Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
