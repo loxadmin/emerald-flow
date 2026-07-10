@@ -207,7 +207,7 @@ export function campaignTypeMismatchReply(type: AiCampaignType, ctx: AssistantCo
 //
 // Every knowledge answer is composed so it references the current goal when
 // one is set. That way if the user picked "music streams" and asks "how does
-// tracking work", the answer talks about tracking for music streams — not a
+// tracking work", the answer talks about tracking for music streams, not a
 // generic paragraph.
 // ---------------------------------------------------------------------------
 
@@ -255,7 +255,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
     case "billing":
       return {
         text: goal
-          ? `${prefix}Karbali holds the cost in escrow when you submit. As real ${goal} come in, funds release from your wallet — no results, no charge.`
+          ? `${prefix}Karbali holds the cost in escrow when you submit. As real ${goal} come in, funds release from your wallet. No results, no charge.`
           : "Karbali uses escrow. When you submit a campaign, cost is held from your wallet first and released only as valid results happen.",
         suggestions: goalTailSuggestion(state, ["Minimum funding", "Open wallet", "How is tracking done?"]),
         stateUpdates: { topic: "billing" },
@@ -407,7 +407,7 @@ export function acknowledgeGoal(goal: string, ctx: AssistantContext): AssistantR
   const type = campaignType || getAllowedCampaignType(ctx);
 
   const nextStep = !ctx.walletActivated
-    ? " Let's activate your wallet first — minimum is $10."
+    ? " Let's activate your wallet first. Minimum is $10."
     : type
       ? ` The best fit is a ${CAMPAIGN_TYPE_LABELS[type]} campaign. I can walk you through setup step by step.`
       : "";
@@ -415,7 +415,7 @@ export function acknowledgeGoal(goal: string, ctx: AssistantContext): AssistantR
   const nav = !ctx.walletActivated ? "/wallet" : undefined;
 
   return {
-    text: `Perfect — you want ${canonicalNoun}.${nextStep} Ask me anything about how it works, or say "start" when you're ready.`,
+    text: `Perfect. You want ${canonicalNoun}.${nextStep} Ask me anything about how it works, or say "start" when you're ready.`,
     suggestions: !ctx.walletActivated
       ? ["Activate wallet", "How does tracking work?", "How much does it cost?"]
       : type
@@ -473,11 +473,11 @@ export function detectIntent(
     };
   }
 
-  // Meta-complaints — user says the AI ignored context.
+  // Meta-complaints: user says the AI ignored context.
   if (includesPhrase(raw.toLowerCase(), ["you did not", "you didnt", "i said", "i asked", "not related", "not connected", "how is", "why did you"])) {
     if (state.goal) {
       return {
-        text: `Sorry — you're focused on ${state.goal}. Ask me anything specific about that: cost, tracking, setup, or launch, and I'll answer for ${state.goal} directly.`,
+        text: `Sorry. You're focused on ${state.goal}. Ask me anything specific about that: cost, tracking, setup, or launch, and I'll answer for ${state.goal} directly.`,
         suggestions: [`How much for ${state.goal}?`, `How is ${state.goal} tracked?`, `Start ${state.goal} campaign`],
       };
     }
@@ -489,7 +489,7 @@ export function detectIntent(
     if (domain) return acknowledgeGoal(raw, ctx);
   }
 
-  // Explicit "start / launch / create" — start the campaign flow.
+  // Explicit "start / launch / create": start the campaign flow.
   const wantsCreate = hasAny(tokens, ["create","start","launch","new","run","make","setup","build","begin"]);
   const requestedType = inferCampaignType(tokens) || state.campaignType;
   if (wantsCreate && (hasAny(tokens, ["campaign","ad","advert","setup"]) || state.goal)) {
@@ -539,13 +539,13 @@ export function detectIntent(
     return { text: "Anytime. I'm here." };
   }
   if (hasAny(tokens, ["support","human","agent","contact"])) {
-    return { text: "Ask me first — I usually can help. If you still need a human, email support@karbali.com." };
+    return { text: "Ask me first. I usually can help. If you still need a human, email support@karbali.com." };
   }
 
-  // Context-aware fallback — never dump a generic menu when we know the goal.
+  // Context-aware fallback: never dump a generic menu when we know the goal.
   if (state.goal) {
     return {
-      text: `I want to keep this useful for ${state.goal}. Tell me what you want to know — cost, tracking, setup, minimum balance, or launch.`,
+      text: `I want to keep this useful for ${state.goal}. Tell me what you want to know: cost, tracking, setup, minimum balance, or launch.`,
       suggestions: [`How much for ${state.goal}?`, `How is ${state.goal} tracked?`, `Start ${state.goal} campaign`],
     };
   }
