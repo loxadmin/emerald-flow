@@ -104,7 +104,7 @@ export default function AdminPackages() {
     setEditing(p);
     setForm({
       name: p.name, description: p.description || "",
-      category_group_id: p.category_group_id || "", category_id: p.category_id || "",
+      advertiser_subtypes: (p.advertiser_subtypes || []) as AdvertiserSubtype[],
       min_units: String(p.min_units), max_units: String(p.max_units),
       duration_options: p.duration_options || [30],
       platform_support: p.platform_support || ["mobile", "web"],
@@ -116,7 +116,8 @@ export default function AdminPackages() {
 
   const save = async () => {
     if (!form.name.trim()) return toast.error("Name required");
-    if (!form.category_group_id) return toast.error("Ad group is required");
+    if (form.advertiser_subtypes.length === 0)
+      return toast.error("Select at least one advertiser subcategory");
     if (form.duration_options.length === 0) return toast.error("Pick at least one duration");
     if (form.platform_support.length === 0) return toast.error("Pick at least one platform");
     if (rows.length === 0) return toast.error("Add at least one milestone");
@@ -132,8 +133,9 @@ export default function AdminPackages() {
     const payload: any = {
       name: form.name.trim(),
       description: form.description.trim() || null,
-      category_group_id: form.category_group_id,
-      category_id: form.category_id || null,
+      advertiser_subtypes: form.advertiser_subtypes,
+      category_group_id: null,
+      category_id: null,
       min_units: Number(form.min_units),
       max_units: Number(form.max_units),
       duration_options: form.duration_options,
