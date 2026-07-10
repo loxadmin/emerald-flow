@@ -276,15 +276,17 @@ export default function Packages() {
 
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        ) : !mySubtype ? (
-          <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
-            <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            Pick your advertiser subcategory first to see relevant packages.
-          </div>
         ) : packages.length === 0 ? (
           <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
             <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            No packages available for <strong>{subtypeLabel(mySubtype)}</strong> yet.
+            {mySubtype ? (
+              <>No packages available for <strong>{subtypeLabel(mySubtype)}</strong> yet.</>
+            ) : (
+              <>
+                <p>No packages match your account yet.</p>
+                <Link to="/category-select" className="mt-3 inline-block text-primary underline">Set your subcategory</Link>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
