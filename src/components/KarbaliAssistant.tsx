@@ -119,7 +119,7 @@ export default function KarbaliAssistant() {
           <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-emerald-600 text-white">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
-                <Sparkles className="h-3.5 w-3.5" />
+                <Bot className="h-4 w-4" />
               </div>
               <div className="leading-tight">
                 <p className="text-[13px] font-semibold">Karbali Assistant</p>
@@ -158,19 +158,18 @@ export default function KarbaliAssistant() {
                     </div>
                   )}
                   {m.role === "bot" && m.goalOptions && m.goalOptions.length > 0 && (
-                    <select
-                      defaultValue=""
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (v) reply(`I want to get ${v.toLowerCase()}`);
-                      }}
-                      className="w-full rounded-md border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 text-[12px] px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-600/40"
-                    >
-                      <option value="" disabled>Choose a goal…</option>
+                    <div className="flex flex-col gap-1.5 pt-0.5">
                       {m.goalOptions.map((g) => (
-                        <option key={g} value={g}>{g}</option>
+                        <button
+                          key={g}
+                          onClick={() => reply(`I want to get ${g.toLowerCase()}`)}
+                          className="group flex items-center justify-between gap-2 rounded-lg border border-emerald-600/30 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/40 dark:to-emerald-950/10 px-3 py-2 text-left text-[12.5px] font-medium text-emerald-900 dark:text-emerald-100 hover:border-emerald-600 hover:shadow-sm transition-all"
+                        >
+                          <span>{g}</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-emerald-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   )}
                   {m.role === "bot" && m.navigateTo && (
                     <button
