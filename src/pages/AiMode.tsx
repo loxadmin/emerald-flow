@@ -542,6 +542,21 @@ export default function AiMode() {
                     </div>
                   </div>
                 )}
+
+                {m.role === "bot" && m.quickActions && m.quickActions.length > 0 && (
+                  <div className="max-w-[95%] w-full mt-3 flex flex-wrap gap-2">
+                    {m.quickActions.map((a) => (
+                      <button
+                        key={a.to}
+                        onClick={() => navigate(a.to)}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-[12.5px] font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        {a.label}
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
