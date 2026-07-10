@@ -20,7 +20,7 @@ type Pkg = {
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
 };
-type Milestone = { id: string; name: string; slug: string; default_order: number };
+type Milestone = { id: string; name: string; slug: string; default_order: number; requires_duration: boolean };
 type PkgMilestone = {
   milestone_id: string; step_order: number;
   pricing_type: "flat" | "commission_pct";
@@ -41,6 +41,8 @@ export default function Packages() {
   const [pkgMs, setPkgMs] = useState<Record<string, PkgMilestone[]>>({});
   const [websites, setWebsites] = useState<WebsiteRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [myCategoryId, setMyCategoryId] = useState<string | null>(null);
+  const [myGroupId, setMyGroupId] = useState<string | null>(null);
 
   const [selected, setSelected] = useState<Pkg | null>(null);
   const [platform, setPlatform] = useState<"mobile" | "web">("mobile");
@@ -54,19 +56,45 @@ export default function Packages() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const [{ data: pkgs }, { data: w }, { data: ms }, { data: sites }] = await Promise.all([
-      supabase.from("ad_packages" as any).select("*").eq("is_active", true).order("sort_order").order("created_at"),
+
+    // Get advertiser's approved category + group
+    const { data: ac } = await supabase
+      .from("advertiser_categories")
+      .select("category_id, categories:category_id(group_id)")
+      .eq("advertiser_id", user.id)
+      .maybeSingle();
+    const catId = (ac as any)?.category_id || null;
+    const grpId = (ac as any)?.categories?.group_id || null;
+    setMyCategoryId(catId);
+    setMyGroupId(grpId);
+
+    const [{ data: w }, { data: ms }, { data: sites }] = await Promise.all([
       supabase.from("wallets").select("balance, is_activated").eq("advertiser_id", user.id).maybeSingle(),
-      supabase.from("milestones" as any).select("id,name,slug,default_order").eq("is_active", true).order("default_order"),
+      supabase.from("milestones" as any).select("id,name,slug,default_order,requires_duration").eq("is_active", true).order("default_order"),
       supabase.from("advertiser_websites").select("id, domain, is_verified").eq("advertiser_id", user.id),
     ]);
-    setPackages((pkgs as any) || []);
+
+    // Strictly filter packages to the advertiser's category/group
+    let pkgs: any[] = [];
+    if (catId) {
+      const { data: pAll } = await supabase
+        .from("ad_packages" as any)
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order")
+        .order("created_at");
+      pkgs = ((pAll as any) || []).filter((p: any) =>
+        (p.category_id && p.category_id === catId) ||
+        (!p.category_id && p.category_group_id && grpId && p.category_group_id === grpId)
+      );
+    }
+    setPackages(pkgs);
     setWallet((w as any) || null);
     setMilestones((ms as any) || []);
     setWebsites(((sites as any) || []).filter((s: WebsiteRow) => s.is_verified));
 
-    if ((pkgs as any)?.length) {
-      const ids = (pkgs as any).map((p: any) => p.id);
+    if (pkgs.length) {
+      const ids = pkgs.map((p) => p.id);
       const { data: pm } = await supabase.from("package_milestones" as any).select("*").in("package_id", ids);
       const byPkg: Record<string, PkgMilestone[]> = {};
       for (const r of (pm as any) || []) {
@@ -137,12 +165,21 @@ export default function Packages() {
   const packageMs = selected ? (pkgMs[selected.id] || []) : [];
   const selectedMs = packageMs.filter((r) => selectedIds.includes(r.milestone_id));
 
+  // Any selected milestone needs duration?
+  const needsDuration = useMemo(() => {
+    return selectedMs.some((r) => {
+      const m = milestones.find((x) => x.id === r.milestone_id);
+      return m?.requires_duration === true;
+    });
+  }, [selectedMs, milestones]);
+
   const flatTotal = useMemo(() => {
     const perUser = selectedMs
       .filter((r) => r.pricing_type === "flat")
       .reduce((s, r) => s + (r.price_usd || 0), 0);
-    return Number((units * perUser).toFixed(2));
-  }, [selectedMs, units]);
+    const base = units * perUser;
+    return Number((needsDuration ? base * duration : base).toFixed(2));
+  }, [selectedMs, units, needsDuration, duration]);
 
   const commissionRows = selectedMs.filter((r) => r.pricing_type === "commission_pct");
   const hasFlatSelected = selectedMs.some((r) => r.pricing_type === "flat");
@@ -172,7 +209,8 @@ export default function Packages() {
 
     setBuying(true);
     const args = {
-      _package_id: selected.id, _units: units, _duration_days: duration,
+      _package_id: selected.id, _units: units,
+      _duration_days: needsDuration ? duration : null,
       _selected_milestone_ids: selectedIds, _platform: platform, _links: cleanLinks,
     };
 
@@ -188,7 +226,8 @@ export default function Packages() {
     }
 
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({
-      package_id: selected.id, units, duration, selected_ids: selectedIds, platform, links: cleanLinks,
+      package_id: selected.id, units, duration: needsDuration ? duration : null,
+      selected_ids: selectedIds, platform, links: cleanLinks,
     }));
     const { data, error } = await supabase.functions.invoke("paystack-wallet", {
       body: { action: "initialize_funding", amount: flatTotal, callback_origin: window.location.origin },
@@ -204,13 +243,15 @@ export default function Packages() {
     window.location.href = url;
   };
 
+  const unitsLabel = needsDuration ? "Daily users" : "Users (total)";
+
   return (
     <DashboardLayout>
       <MotionWrapper>
         <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Ad Packages</h1>
-            <p className="text-sm text-muted-foreground">Templates scoped to your category — pick exactly the milestones you want.</p>
+            <p className="text-sm text-muted-foreground">Templates scoped to your category. Pick exactly the milestones you want.</p>
           </div>
           <Link to="/packages/orders">
             <Button variant="outline" size="sm"><ClipboardList className="mr-2 h-4 w-4" /> My orders</Button>
@@ -219,6 +260,11 @@ export default function Packages() {
 
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : !myCategoryId ? (
+          <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
+            <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
+            Pick your advertiser category first to see relevant packages.
+          </div>
         ) : packages.length === 0 ? (
           <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
             <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
@@ -235,6 +281,10 @@ export default function Packages() {
               }, null);
               const fullPrice = flatRows.reduce((s, r) => s + (r.price_usd || 0), 0);
               const hasCommission = ms.some((r) => r.pricing_type === "commission_pct");
+              const anyDurational = ms.some((r) => {
+                const mm = milestones.find((x) => x.id === r.milestone_id);
+                return mm?.requires_duration;
+              });
               return (
                 <div key={p.id} className="rounded-xl border bg-card p-5 flex flex-col">
                   <h3 className="font-semibold">{p.name}</h3>
@@ -249,13 +299,13 @@ export default function Packages() {
                       <p className="font-medium text-sm">${fullPrice.toFixed(2)}<span className="text-muted-foreground">/user</span></p>
                     </div>
                     <div className="rounded-md bg-muted/50 p-2 col-span-2">
-                      <p className="text-muted-foreground">Daily users</p>
-                      <p className="font-medium text-sm">{p.min_units.toLocaleString()} – {p.max_units.toLocaleString()}</p>
+                      <p className="text-muted-foreground">{anyDurational ? "Daily users" : "Users"}</p>
+                      <p className="font-medium text-sm">{p.min_units.toLocaleString()} to {p.max_units.toLocaleString()}</p>
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">
                     {(p.platform_support || []).map((pl) => <Badge key={pl} variant="outline" className="capitalize text-[10px]">{pl}</Badge>)}
-                    {(p.duration_options || []).map((d) => <Badge key={d} variant="secondary" className="text-[10px]">{d}d</Badge>)}
+                    {anyDurational && (p.duration_options || []).map((d) => <Badge key={d} variant="secondary" className="text-[10px]">{d}d</Badge>)}
                     {hasCommission && <Badge variant="outline" className="text-[10px]">+ sale commission</Badge>}
                   </div>
                   <Button className="mt-4" onClick={() => openBuy(p)} disabled={ms.length === 0}>
@@ -273,7 +323,6 @@ export default function Packages() {
               <>
                 <DialogHeader><DialogTitle>{selected.name}</DialogTitle></DialogHeader>
                 <div className="space-y-4">
-                  {/* Platform */}
                   <div>
                     <Label>Platform</Label>
                     <div className="mt-1 grid grid-cols-2 gap-2">
@@ -283,32 +332,10 @@ export default function Packages() {
                           className={`rounded-lg border p-3 text-left text-sm transition ${platform === pl ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
                           {pl === "mobile" ? <Smartphone className="h-4 w-4 mb-1" /> : <Globe className="h-4 w-4 mb-1" />}
                           <p className="font-medium capitalize">{pl} app</p>
-                          <p className="text-xs text-muted-foreground">{pl === "web" ? "1 verified website" : "Up to 2 app links · install required"}</p>
+                          <p className="text-xs text-muted-foreground">{pl === "web" ? "1 verified website" : "Up to 2 app links, install required"}</p>
                         </button>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Duration */}
-                  <div>
-                    <Label>Delivery duration</Label>
-                    <Select value={String(duration)} onValueChange={(v) => setDuration(Number(v))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(selected.duration_options || []).map((d) => (
-                          <SelectItem key={d} value={String(d)}>{d} days ({d < 30 ? "short" : d >= 365 ? "yearly" : `${Math.round(d/30)} month${d>=60?"s":""}`})</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-1 text-xs text-muted-foreground">{units.toLocaleString()} users delivered daily for {duration} days.</p>
-                  </div>
-
-                  {/* Units */}
-                  <div>
-                    <Label>Daily users</Label>
-                    <Input type="number" min={selected.min_units} max={selected.max_units} value={units}
-                      onChange={(e) => setUnits(Math.max(selected.min_units, Math.min(selected.max_units, Number(e.target.value) || 0)))} />
-                    <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()}</p>
                   </div>
 
                   {/* Milestones */}
@@ -334,22 +361,46 @@ export default function Packages() {
                                 }}
                               />
                               <span className="font-medium truncate">{m?.name || "?"}</span>
+                              {m?.requires_duration && <Badge variant="outline" className="text-[9px]">daily</Badge>}
                               {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
                             </div>
                             <span className="shrink-0 text-xs text-muted-foreground">
                               {r.pricing_type === "commission_pct"
                                 ? `${r.commission_pct}% per sale`
-                                : `+$${(r.price_usd || 0).toFixed(2)}/user`}
+                                : `+$${(r.price_usd || 0).toFixed(2)}/${m?.requires_duration ? "user/day" : "user"}`}
                             </span>
                           </label>
                         );
                       })}
                     </div>
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                      Choose only the actions you want. App Install is required for mobile app orders.
+                      One-off milestones (install, signup, KYC, deposit) deliver a total number of users. Engagement and Transaction deliver users per day over a duration.
                     </p>
                   </div>
 
+                  {/* Duration (only if needed) */}
+                  {needsDuration && (
+                    <div>
+                      <Label>Delivery duration</Label>
+                      <Select value={String(duration)} onValueChange={(v) => setDuration(Number(v))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {(selected.duration_options || []).map((d) => (
+                            <SelectItem key={d} value={String(d)}>{d} days</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-1 text-xs text-muted-foreground">{units.toLocaleString()} users daily × {duration} days.</p>
+                    </div>
+                  )}
+
+                  {/* Units */}
+                  <div>
+                    <Label>{unitsLabel}</Label>
+                    <Input type="number" min={selected.min_units} max={selected.max_units} value={units}
+                      onChange={(e) => setUnits(Math.max(selected.min_units, Math.min(selected.max_units, Number(e.target.value) || 0)))} />
+                    <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()}</p>
+                  </div>
 
                   {/* Links */}
                   <div>
@@ -370,7 +421,7 @@ export default function Packages() {
                       <div className="space-y-2">
                         {links.map((l, i) => (
                           <div key={i} className="flex gap-2">
-                            <Input value={l} placeholder="https://play.google.com/…"
+                            <Input value={l} placeholder="https://play.google.com/..."
                               onChange={(e) => setLinks(links.map((x, j) => j === i ? e.target.value : x))} />
                             {links.length > 1 && (
                               <Button variant="outline" size="icon" onClick={() => setLinks(links.filter((_, j) => j !== i))}>✕</Button>
@@ -391,7 +442,9 @@ export default function Packages() {
                       <span className="text-lg font-semibold">${flatTotal.toFixed(2)}</span>
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {units.toLocaleString()} users × selected flat milestones · delivered over {duration} days.
+                      {needsDuration
+                        ? `${units.toLocaleString()} users × ${duration} days × selected flat milestones.`
+                        : `${units.toLocaleString()} users × selected flat milestones.`}
                     </p>
                     {commissionRows.length > 0 && (
                       <p className="mt-1 text-[11px] text-amber-600">

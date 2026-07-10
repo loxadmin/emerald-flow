@@ -3,15 +3,23 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 const STORAGE_KEY = "karbali_ai_mode";
 
 type Ctx = { aiMode: boolean; setAiMode: (v: boolean) => void; toggle: () => void };
-const AiModeContext = createContext<Ctx>({ aiMode: false, setAiMode: () => {}, toggle: () => {} });
+const AiModeContext = createContext<Ctx>({ aiMode: true, setAiMode: () => {}, toggle: () => {} });
 
 export const useAiMode = () => useContext(AiModeContext);
 
+// Default AI Mode ON. Only false when the user explicitly turned it off.
+function initialAiMode(): boolean {
+  if (typeof window === "undefined") return true;
+  const v = localStorage.getItem(STORAGE_KEY);
+  if (v === null) {
+    localStorage.setItem(STORAGE_KEY, "1");
+    return true;
+  }
+  return v === "1";
+}
+
 export function AiModeProvider({ children }: { children: ReactNode }) {
-  const [aiMode, setMode] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(STORAGE_KEY) === "1";
-  });
+  const [aiMode, setMode] = useState<boolean>(initialAiMode);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, aiMode ? "1" : "0");

@@ -687,6 +687,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          goal_options: string[]
           group_id: string | null
           id: string
           is_active: boolean
@@ -698,6 +699,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          goal_options?: string[]
           group_id?: string | null
           id?: string
           is_active?: boolean
@@ -709,6 +711,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          goal_options?: string[]
           group_id?: string | null
           id?: string
           is_active?: boolean
@@ -1234,6 +1237,7 @@ export type Database = {
           is_active: boolean
           is_commission_based: boolean
           name: string
+          requires_duration: boolean
           slug: string
           updated_at: string
         }
@@ -1245,6 +1249,7 @@ export type Database = {
           is_active?: boolean
           is_commission_based?: boolean
           name: string
+          requires_duration?: boolean
           slug: string
           updated_at?: string
         }
@@ -1256,6 +1261,7 @@ export type Database = {
           is_active?: boolean
           is_commission_based?: boolean
           name?: string
+          requires_duration?: boolean
           slug?: string
           updated_at?: string
         }
@@ -1496,6 +1502,63 @@ export type Database = {
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "ad_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_order_deliveries: {
+        Row: {
+          created_at: string
+          delivered_by: string | null
+          delivery_date: string
+          id: string
+          milestone_id: string
+          notes: string | null
+          order_id: string
+          total_txn_amount: number | null
+          txn_rows: Json | null
+          updated_at: string
+          users_delivered: number
+        }
+        Insert: {
+          created_at?: string
+          delivered_by?: string | null
+          delivery_date?: string
+          id?: string
+          milestone_id: string
+          notes?: string | null
+          order_id: string
+          total_txn_amount?: number | null
+          txn_rows?: Json | null
+          updated_at?: string
+          users_delivered?: number
+        }
+        Update: {
+          created_at?: string
+          delivered_by?: string | null
+          delivery_date?: string
+          id?: string
+          milestone_id?: string
+          notes?: string | null
+          order_id?: string
+          total_txn_amount?: number | null
+          txn_rows?: Json | null
+          updated_at?: string
+          users_delivered?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_order_deliveries_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_order_deliveries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "package_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -2067,6 +2130,17 @@ export type Database = {
       }
       purchase_package_with_wallet: {
         Args: { _links: string[]; _package_id: string; _units: number }
+        Returns: Json
+      }
+      record_package_delivery: {
+        Args: {
+          _delivery_date: string
+          _milestone_id: string
+          _notes: string
+          _order_id: string
+          _txn_rows: Json
+          _users_delivered: number
+        }
         Returns: Json
       }
       refund_campaign_escrow: {
