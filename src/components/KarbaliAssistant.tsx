@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { MessageCircle, X, Send, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Bot, ChevronRight } from "lucide-react";
 import { detectIntent, getProactiveGreeting, type AssistantContext } from "@/lib/assistant-nlp";
 
 type Msg = { role: "user" | "bot"; text: string; suggestions?: string[]; navigateTo?: string; goalOptions?: string[] };
