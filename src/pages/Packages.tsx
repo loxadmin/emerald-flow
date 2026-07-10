@@ -43,8 +43,7 @@ export default function Packages() {
   const [pkgMs, setPkgMs] = useState<Record<string, PkgMilestone[]>>({});
   const [websites, setWebsites] = useState<WebsiteRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [myCategoryId, setMyCategoryId] = useState<string | null>(null);
-  const [myGroupId, setMyGroupId] = useState<string | null>(null);
+  const [mySubtype, setMySubtype] = useState<AdvertiserSubtype | null>(null);
 
   const [selected, setSelected] = useState<Pkg | null>(null);
   const [platform, setPlatform] = useState<"mobile" | "web">("mobile");
