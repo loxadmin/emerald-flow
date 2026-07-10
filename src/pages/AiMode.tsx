@@ -464,20 +464,20 @@ export default function AiMode() {
                 )}
 
                 {m.role === "bot" && m.goalOptions && m.goalOptions.length > 0 && (
-                  <div className="max-w-[85%] w-full">
-                    <select
-                      defaultValue=""
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (v) sendMessage(`I want to get ${v.toLowerCase()}`);
-                      }}
-                      className="w-full rounded-lg border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 text-[13px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600/40"
-                    >
-                      <option value="" disabled>Choose a goal…</option>
+                  <div className="max-w-[85%] w-full mt-1">
+                    <p className="text-[11px] font-medium text-muted-foreground mb-2 uppercase tracking-wider">Pick a goal</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {m.goalOptions.map((g) => (
-                        <option key={g} value={g}>{g}</option>
+                        <button
+                          key={g}
+                          onClick={() => sendMessage(`I want to get ${g.toLowerCase()}`)}
+                          className="group flex items-center justify-between gap-2 rounded-xl border border-emerald-600/30 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/40 dark:to-emerald-950/10 px-3.5 py-3 text-left text-[13px] font-medium text-emerald-900 dark:text-emerald-100 hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-600/10 transition-all"
+                        >
+                          <span>{g}</span>
+                          <ChevronRight className="h-4 w-4 text-emerald-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   </div>
                 )}
               </div>
