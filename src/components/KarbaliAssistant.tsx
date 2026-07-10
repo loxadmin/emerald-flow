@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { MessageCircle, X, Send, Sparkles } from "lucide-react";
 import { detectIntent, getProactiveGreeting, type AssistantContext } from "@/lib/assistant-nlp";
 
-type Msg = { role: "user" | "bot"; text: string; suggestions?: string[]; navigateTo?: string };
+type Msg = { role: "user" | "bot"; text: string; suggestions?: string[]; navigateTo?: string; goalOptions?: string[] };
 
 const PAGE_LABELS: Record<string, string> = {
   "/wallet": "Wallet",
@@ -46,9 +47,19 @@ export default function KarbaliAssistant() {
     if (!user) return;
     const greeted = sessionStorage.getItem(STORAGE_KEY);
     if (greeted) return;
-    const t = setTimeout(() => {
+    const t = setTimeout(async () => {
       const greet = getProactiveGreeting(ctx);
-      setMessages([{ role: "bot", text: greet.text, suggestions: greet.suggestions }]);
+      const { data: ac } = await supabase
+        .from("advertiser_categories")
+        .select("categories:category_id(name, goal_options)")
+        .eq("advertiser_id", user.id)
+        .maybeSingle();
+      const goals: string[] = ((ac as any)?.categories?.goal_options as string[]) || [];
+      const catName: string = (ac as any)?.categories?.name || "";
+      const intro = goals.length
+        ? `${greet.text} What are you looking to get for your ${catName || "business"}?`
+        : greet.text;
+      setMessages([{ role: "bot", text: intro, suggestions: goals.length ? undefined : greet.suggestions, goalOptions: goals.length ? goals : undefined }]);
       setOpen(true);
       sessionStorage.setItem(STORAGE_KEY, "1");
     }, 1200);
@@ -145,6 +156,21 @@ export default function KarbaliAssistant() {
                         </button>
                       ))}
                     </div>
+                  )}
+                  {m.role === "bot" && m.goalOptions && m.goalOptions.length > 0 && (
+                    <select
+                      defaultValue=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v) reply(`I want to get ${v.toLowerCase()}`);
+                      }}
+                      className="w-full rounded-md border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 text-[12px] px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-600/40"
+                    >
+                      <option value="" disabled>Choose a goal…</option>
+                      {m.goalOptions.map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
                   )}
                   {m.role === "bot" && m.navigateTo && (
                     <button

@@ -320,12 +320,16 @@ export default function AdminPackages() {
                       )}
                       {o.admin_notes && <p className="mt-2 text-xs text-muted-foreground">Notes: {o.admin_notes}</p>}
                     </div>
-                    {o.status === "pending_review" && (
+                    {o.status === "pending_review" ? (
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => reviewOrder(o.id, true)}>Approve</Button>
                         <Button size="sm" variant="outline" onClick={() => reviewOrder(o.id, false)}>Reject</Button>
                       </div>
-                    )}
+                    ) : (o.status === "active" || o.status === "completed") ? (
+                      <a href={`/admin/packages/orders/${o.id}/deliver`}>
+                        <Button size="sm" variant="outline">Deliver / update</Button>
+                      </a>
+                    ) : null}
                   </div>
                 </div>
               ))}

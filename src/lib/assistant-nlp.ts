@@ -22,6 +22,8 @@ export type AssistantReply = {
   // Otherwise navigateTo is exposed as a clickable suggestion the user opts into.
   autoNavigate?: boolean;
   suggestions?: string[];
+  // Rendered as a clickable dropdown of goal choices (e.g. "App installs", "Signups").
+  goalOptions?: string[];
 };
 
 export const CAMPAIGN_TYPE_LABELS: Record<AiCampaignType, string> = {

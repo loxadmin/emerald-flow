@@ -45,6 +45,7 @@ import AdminExtension from "./pages/AdminExtension";
 import AdminOfferwall from "./pages/AdminOfferwall";
 import AdminOffline from "./pages/AdminOffline";
 import AdminPackages from "./pages/AdminPackages";
+import AdminPackageDelivery from "./pages/AdminPackageDelivery";
 import AdminMilestones from "./pages/AdminMilestones";
 
 import Packages from "./pages/Packages";
@@ -160,6 +161,7 @@ const App = () => (
               <Route path="/admin/offerwall" element={<RequireAuth><RequireAdmin><AdminOfferwall /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/offline" element={<RequireAuth><RequireAdmin><AdminOffline /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/packages" element={<RequireAuth><RequireAdmin><AdminPackages /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/packages/orders/:orderId/deliver" element={<RequireAuth><RequireAdmin><AdminPackageDelivery /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/milestones" element={<RequireAuth><RequireAdmin><AdminMilestones /></RequireAdmin></RequireAuth>} />
 
 

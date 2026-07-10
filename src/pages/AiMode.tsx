@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useAiMode } from "@/lib/ai-mode";
 import { useTheme } from "@/lib/theme";
@@ -23,6 +24,7 @@ type Msg = {
   suggestions?: string[];
   navigateTo?: string;
   attachments?: Attachment[];
+  goalOptions?: string[];
 };
 
 type CampaignFlow = {
@@ -216,9 +218,22 @@ export default function AiMode() {
 
   useEffect(() => {
     if (!user) return;
-    const greet = getProactiveGreeting(ctx);
-    setMessages([{ role: "bot", text: greet.text, suggestions: greet.suggestions }]);
-    setTimeout(() => taRef.current?.focus(), 100);
+    (async () => {
+      const greet = getProactiveGreeting(ctx);
+      // Fetch subcategory-driven goal options for this advertiser.
+      const { data: ac } = await supabase
+        .from("advertiser_categories")
+        .select("categories:category_id(name, goal_options)")
+        .eq("advertiser_id", user.id)
+        .maybeSingle();
+      const goals: string[] = ((ac as any)?.categories?.goal_options as string[]) || [];
+      const catName: string = (ac as any)?.categories?.name || "";
+      const intro = goals.length
+        ? `${greet.text}\n\nWhat are you looking to get for your ${catName || "business"}? Pick one to get started.`
+        : greet.text;
+      setMessages([{ role: "bot", text: intro, suggestions: goals.length ? undefined : greet.suggestions, goalOptions: goals.length ? goals : undefined }]);
+      setTimeout(() => taRef.current?.focus(), 100);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -443,6 +458,24 @@ export default function AiMode() {
                         {s}
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {m.role === "bot" && m.goalOptions && m.goalOptions.length > 0 && (
+                  <div className="max-w-[85%] w-full">
+                    <select
+                      defaultValue=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v) sendMessage(`I want to get ${v.toLowerCase()}`);
+                      }}
+                      className="w-full rounded-lg border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200 text-[13px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600/40"
+                    >
+                      <option value="" disabled>Choose a goal…</option>
+                      {m.goalOptions.map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </div>
