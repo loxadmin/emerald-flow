@@ -49,6 +49,7 @@ export type Database = {
       }
       ad_packages: {
         Row: {
+          advertiser_subtypes: Database["public"]["Enums"]["advertiser_subtype"][]
           category_group_id: string | null
           category_id: string | null
           created_at: string
@@ -71,6 +72,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          advertiser_subtypes?: Database["public"]["Enums"]["advertiser_subtype"][]
           category_group_id?: string | null
           category_id?: string | null
           created_at?: string
@@ -93,6 +95,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          advertiser_subtypes?: Database["public"]["Enums"]["advertiser_subtype"][]
           category_group_id?: string | null
           category_id?: string | null
           created_at?: string
