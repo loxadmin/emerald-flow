@@ -187,7 +187,14 @@ export default function AdminPackages() {
     load();
   };
 
-  const groupCats = categories.filter((c) => !form.category_group_id || c.group_id === form.category_group_id);
+  const toggleSubtype = (id: AdvertiserSubtype) => {
+    setForm({
+      ...form,
+      advertiser_subtypes: form.advertiser_subtypes.includes(id)
+        ? form.advertiser_subtypes.filter((x) => x !== id)
+        : [...form.advertiser_subtypes, id],
+    });
+  };
   const availableMs = useMemo(
     () => milestones.filter((m) => !rows.find((r) => r.milestone_id === m.id)),
     [milestones, rows],
