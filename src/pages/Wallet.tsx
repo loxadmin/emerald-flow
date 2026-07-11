@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import {
   Wallet as WalletIcon,
   CreditCard,
@@ -25,7 +26,9 @@ import {
   XCircle,
   Ban,
   RotateCcw,
+  Send,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface WalletData {
   id: string; balance: number; currency: string; is_activated: boolean;
@@ -91,6 +94,35 @@ export default function WalletPage() {
   const [activationAmount, setActivationAmount] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | StatusKey>("all");
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawStep, setWithdrawStep] = useState<"suggest" | "form">("suggest");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawMethod, setWithdrawMethod] = useState("bank_transfer");
+  const [withdrawBank, setWithdrawBank] = useState("");
+  const [withdrawAccount, setWithdrawAccount] = useState("");
+  const [withdrawName, setWithdrawName] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  const openWithdraw = () => { setWithdrawStep("suggest"); setWithdrawAmount(""); setWithdrawOpen(true); };
+
+  const submitWithdrawal = async () => {
+    const amt = Number(withdrawAmount);
+    const available = Number(wallet?.balance || 0);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > available) { toast.error(`You can only withdraw up to $${available.toFixed(2)} (escrow funds are locked)`); return; }
+    if (!withdrawBank.trim() || !withdrawAccount.trim() || !withdrawName.trim()) { toast.error("Bank name, account number and account name are required"); return; }
+    setWithdrawing(true);
+    const destination = { bank: withdrawBank.trim(), account_number: withdrawAccount.trim(), account_name: withdrawName.trim() };
+    const { data, error } = await supabase.rpc("request_withdrawal" as never, { _amount: amt, _method: withdrawMethod, _destination: destination } as never);
+    setWithdrawing(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Withdrawal request submitted. Our team will process it shortly.");
+    const reqId = (data as { id?: string })?.id;
+    if (reqId) supabase.functions.invoke("notify", { body: { event: "withdrawal_requested", payload: { request_id: reqId } } }).catch(() => {});
+    setWithdrawOpen(false);
+    fetchData();
+  };
+
 
   const fetchData = async () => {
     if (!user) return;
@@ -106,21 +138,12 @@ export default function WalletPage() {
       const { data: txData } = await supabase.from("wallet_transactions").select("*").eq("wallet_id", walletData.id).order("created_at", { ascending: false }).limit(50);
       setTransactions((txData as WalletTx[]) || []);
     }
-    const { data: advCat } = await supabase
-      .from("advertiser_categories").select("category_id").eq("advertiser_id", user.id).maybeSingle();
-    const categoryFeeKey = advCat?.category_id ? `category_activation_fee:${advCat.category_id}` : null;
-    const keys = ["activation_fee_usd", "usd_to_ngn_rate", ...(categoryFeeKey ? [categoryFeeKey] : [])];
-    const { data: settings } = await supabase.from("admin_settings").select("key, value").in("key", keys);
+    const { data: settings } = await supabase.from("admin_settings").select("key, value").in("key", ["activation_fee_usd", "usd_to_ngn_rate"]);
     if (settings) {
-      let globalFee: number | null = null;
-      let categoryFee: number | null = null;
       settings.forEach((s: { key: string; value: string }) => {
-        if (s.key === "activation_fee_usd") globalFee = Number(s.value);
+        if (s.key === "activation_fee_usd") { const v = Number(s.value); setActivationFee(v); setActivationAmount(String(v)); }
         else if (s.key === "usd_to_ngn_rate") setExchangeRate(Number(s.value));
-        else if (categoryFeeKey && s.key === categoryFeeKey) categoryFee = Number(s.value);
       });
-      const finalFee = categoryFee !== null ? categoryFee : globalFee;
-      if (finalFee !== null) { setActivationFee(finalFee); setActivationAmount(String(finalFee)); }
     }
     setLoading(false);
   };
@@ -344,6 +367,9 @@ export default function WalletPage() {
                       <Button onClick={handleFund} disabled={funding} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
                         {funding ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ArrowUpCircle className="mr-2 h-4 w-4" /> Fund Wallet</>}
                       </Button>
+                      <Button onClick={openWithdraw} variant="outline" className="w-full">
+                        <Send className="mr-2 h-4 w-4" /> Request withdrawal
+                      </Button>
                     </div>
                   </div>
                 </MotionWrapper>
@@ -472,6 +498,71 @@ export default function WalletPage() {
           </>
         )}
       </div>
+
+      <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+        <DialogContent className="max-w-md">
+          {withdrawStep === "suggest" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Before you withdraw</DialogTitle>
+                <DialogDescription>
+                  Your funds work harder inside Karbali. Would you like to use them for a campaign or ad package instead?
+                </DialogDescription>
+              </DialogHeader>
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+                Available for withdrawal: <span className="font-semibold text-foreground">${Number(wallet?.balance || 0).toFixed(2)}</span>. Funds locked in escrow for active campaigns cannot be withdrawn.
+              </div>
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button asChild variant="default" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <Link to="/packages">Use for a campaign</Link>
+                </Button>
+                <Button variant="outline" onClick={() => setWithdrawStep("form")}>No, withdraw funds</Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Request withdrawal</DialogTitle>
+                <DialogDescription>
+                  You can withdraw up to <strong>${Number(wallet?.balance || 0).toFixed(2)}</strong>. Escrow funds are not withdrawable.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Amount (USD)</Label>
+                  <Input type="number" min="1" max={Number(wallet?.balance || 0)} step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="e.g. 50" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Payout method</Label>
+                  <select value={withdrawMethod} onChange={(e) => setWithdrawMethod(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <option value="bank_transfer">Bank transfer (NGN)</option>
+                    <option value="paystack">Paystack</option>
+                    <option value="flutterwave">Flutterwave</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Bank name</Label>
+                  <Input value={withdrawBank} onChange={(e) => setWithdrawBank(e.target.value)} placeholder="e.g. GTBank" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Account number</Label>
+                  <Input value={withdrawAccount} onChange={(e) => setWithdrawAccount(e.target.value)} placeholder="10-digit account number" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Account name</Label>
+                  <Input value={withdrawName} onChange={(e) => setWithdrawName(e.target.value)} placeholder="Account holder name" />
+                </div>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button variant="outline" onClick={() => setWithdrawStep("suggest")}>Back</Button>
+                <Button onClick={submitWithdrawal} disabled={withdrawing} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  {withdrawing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit request"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

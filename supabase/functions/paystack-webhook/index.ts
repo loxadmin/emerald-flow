@@ -83,12 +83,23 @@ Deno.serve(async (req) => {
     const newBalance = Number(wallet.balance) + Number(tx.amount);
     const updates: Record<string, unknown> = { balance: newBalance, updated_at: new Date().toISOString() };
 
-    if (metadataType === "activation" || tx.type === "activation") {
+    const wasActivation = metadataType === "activation" || tx.type === "activation";
+    if (wasActivation) {
       updates.is_activated = true;
       await supabase.from("advertiser_categories").update({ status: "active" }).eq("advertiser_id", wallet.advertiser_id).eq("status", "waiting_list");
     }
 
     await supabase.from("wallets").update(updates).eq("id", wallet.id);
+
+    // Fire-and-forget notifications
+    try {
+      if (wasActivation) {
+        await supabase.functions.invoke("notify", { body: { event: "wallet_activated", payload: { wallet_id: wallet.id } } });
+      } else {
+        await supabase.functions.invoke("notify", { body: { event: "wallet_funded", payload: { tx_id: tx.id } } });
+      }
+    } catch (e) { console.warn("notify failed", (e as Error).message); }
+
     return new Response("OK", { status: 200 });
   } catch (err: unknown) {
     console.error("Webhook error:", (err as Error).message);
