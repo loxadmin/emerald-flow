@@ -192,6 +192,9 @@ export default function AdminCampaignDetail() {
       supabase.functions.invoke("send-campaign-notification", { body: { action: "approval", campaign_id: id } })
         .catch((e) => console.warn("approval email failed", e));
     }
+    if (status === "rejected") {
+      supabase.functions.invoke("notify", { body: { event: "campaign_rejected", payload: { campaign_id: id } } }).catch(() => {});
+    }
     fetchData();
   };
 
