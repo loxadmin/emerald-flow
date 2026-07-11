@@ -18,9 +18,6 @@ interface SiteContent {
   is_visible: boolean;
 }
 
-import DisplayCards from "@/components/ui/display-cards";
-import { Link2, CheckCircle, Terminal, Cpu, ShieldCheck } from "lucide-react";
-
 interface Props {
   content: Record<string, SiteContent>;
   metrics: { advertisers: number; campaigns: number; events: number };
@@ -30,79 +27,12 @@ interface Props {
   contactEmail: string; setContactEmail: (v: string) => void;
   contactMessage: string; setContactMessage: (v: string) => void;
   contactSending: boolean;
-  manual: boolean | null;
 }
 
-export default function LandingVariant3({ content, onContactSubmit, contactName, setContactName, contactEmail, setContactEmail, contactMessage, setContactMessage, contactSending, manual }: Props) {
+export default function LandingVariant3({ content, onContactSubmit, contactName, setContactName, contactEmail, setContactEmail, contactMessage, setContactMessage, contactSending }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [index, setIndex] = useState(0);
   const words = ["Brand", "Business", "App", "Shop"];
-
-  const simpleCards = [
-    {
-      icon: <Link2 className="size-4 text-emerald-600 dark:text-emerald-300" />,
-      title: "1. Paste Link",
-      description: "No code or SDK setup needed",
-      date: "Instant promotion",
-      iconClassName: "text-emerald-500",
-      titleClassName: "text-emerald-600 dark:text-emerald-400",
-      className: "[grid-area:stack] opacity-75 grayscale hover:-translate-y-10 hover:opacity-100 hover:grayscale-0",
-      solid: true,
-    },
-    {
-      icon: <CheckCircle className="size-4 text-emerald-600 dark:text-emerald-300" />,
-      title: "2. Fast Approval",
-      description: "Approved manually in under 12h",
-      date: "Reviewed by admins",
-      iconClassName: "text-emerald-500",
-      titleClassName: "text-emerald-600 dark:text-emerald-400",
-      className: "[grid-area:stack] translate-x-12 translate-y-10 opacity-85 grayscale hover:-translate-y-1 hover:opacity-100 hover:grayscale-0",
-      solid: true,
-    },
-    {
-      icon: <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-300" />,
-      title: "3. Pay for Results",
-      description: "Escrow released on action only",
-      date: "Zero risk protection",
-      iconClassName: "text-emerald-500",
-      titleClassName: "text-emerald-600 dark:text-emerald-400",
-      className: "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10",
-      solid: true,
-    },
-  ];
-
-  const advancedCards = [
-    {
-      icon: <Terminal className="size-4 text-emerald-600 dark:text-emerald-300" />,
-      title: "1. Drop Snippet",
-      description: "Add loader script in 5 mins",
-      date: "Quick integration",
-      iconClassName: "text-emerald-500",
-      titleClassName: "text-emerald-600 dark:text-emerald-400",
-      className: "[grid-area:stack] opacity-75 grayscale hover:-translate-y-10 hover:opacity-100 hover:grayscale-0",
-      solid: true,
-    },
-    {
-      icon: <Cpu className="size-4 text-emerald-600 dark:text-emerald-300" />,
-      title: "2. Domain Scan",
-      description: "System verifies and auto-activates",
-      date: "Deterministic check",
-      iconClassName: "text-emerald-500",
-      titleClassName: "text-emerald-600 dark:text-emerald-400",
-      className: "[grid-area:stack] translate-x-12 translate-y-10 opacity-85 grayscale hover:-translate-y-1 hover:opacity-100 hover:grayscale-0",
-      solid: true,
-    },
-    {
-      icon: <Zap className="size-4 text-emerald-600 dark:text-emerald-300" />,
-      title: "3. Auto Go-Live",
-      description: "Conversion events fire instantly",
-      date: "Near real-time tracking",
-      iconClassName: "text-emerald-500",
-      titleClassName: "text-emerald-600 dark:text-emerald-400",
-      className: "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10",
-      solid: true,
-    },
-  ];
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});
@@ -111,38 +41,14 @@ export default function LandingVariant3({ content, onContactSubmit, contactName,
   }, []);
 
   const s = (key: string) => content[key];
+  const steps = (s("how_it_works")?.content || "").split(/\r?\n|\\n/).filter(Boolean);
 
-  const defaultFeatures = [
+  const features = [
     { icon: BarChart3, title: "Real-Time Analytics", desc: "Track every event as it happens" },
     { icon: DollarSign, title: "Milestone Billing", desc: "Pay only for real results" },
     { icon: Shield, title: "Fraud Detection", desc: "Built-in IP rate limiting" },
     { icon: Zap, title: "Simple API", desc: "Integrate in minutes" },
   ];
-
-  const simpleFeatures = [
-    { icon: BarChart3, title: "Verified Analytics", desc: "Manual checks against your store consoles daily" },
-    { icon: DollarSign, title: "Milestone Billing", desc: "Pay only for real results" },
-    { icon: Shield, title: "Escrow Protection", desc: "Funds held in secure escrow" },
-    { icon: Zap, title: "Handled For You", desc: "Submit link. No code needed" },
-  ];
-
-  const features = manual === true ? simpleFeatures : defaultFeatures;
-
-  const defaultSteps = [
-    "1. Create a Campaign: Set your budget and define what you will pay for.",
-    "2. Integrate Our API: Add a simple tracking snippet to your app.",
-    "3. Get Approved: Our admin team verifies your integration and activates your campaign.",
-    "4. Track and Pay for Results: Monitor real-time analytics and only pay when users take action."
-  ];
-
-  const simpleSteps = [
-    "1. Create a Campaign: Paste your app, website, song or video link and set your budget.",
-    "2. Submit for Approval: A Karbali official reviews your destination and approves your campaign.",
-    "3. We Track Progress: The review team tracks outcomes daily against your source-of-truth dashboard.",
-    "4. Pay Only for Results: Escrow is released only as validated outcomes are confirmed."
-  ];
-
-  const steps = manual === true ? simpleSteps : ((s("how_it_works")?.content || "").split(/\r?\n|\\n/).filter(Boolean).length > 0 ? (s("how_it_works")?.content || "").split(/\r?\n|\\n/).filter(Boolean) : defaultSteps);
 
   return (
     <>
@@ -156,10 +62,16 @@ export default function LandingVariant3({ content, onContactSubmit, contactName,
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1.2, delay: 0.2 }}
-              className="relative mx-auto mb-14 overflow-hidden py-10 flex items-center justify-center"
-              style={{ width: "min(90vw, 640px)" }}
+              className="relative mx-auto mb-14 overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_80px_rgba(34,197,94,0.15)]"
+              style={{ width: "min(90vw, 640px)", aspectRatio: "16/9" }}
             >
-              <DisplayCards cards={manual === true ? simpleCards : advancedCards} />
+              <video src="/hero-animation.mp4" autoPlay loop muted playsInline preload="auto" className="h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <motion.div whileHover={{ scale: 1.1 }} className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15 backdrop-blur-md border border-white/20 cursor-pointer">
+                  <Play className="h-6 w-6 text-white ml-0.5" fill="white" />
+                </motion.div>
+              </div>
             </motion.div>
 
             <h1 className="text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
