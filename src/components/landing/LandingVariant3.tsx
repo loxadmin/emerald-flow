@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, Shield, Zap, DollarSign, Send, Play } from "lucide-react";
+import { ArrowRight, BarChart3, Shield, Zap, DollarSign, Send, Play, TrendingUp, CheckCircle2 } from "lucide-react";
 import { GlassButton } from "@/components/ui/glass-button";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import MotionWrapper from "@/components/MotionWrapper";
@@ -9,6 +9,8 @@ import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import featureAnalytics from "@/assets/feature-analytics.jpg";
+import featureBilling from "@/assets/feature-billing.jpg";
 
 interface SiteContent {
   section_key: string;
@@ -101,27 +103,86 @@ export default function LandingVariant3({ content, onContactSubmit, contactName,
         </div>
       </section>
 
-      {/* FEATURES — Horizontal divider layout */}
+      {/* FEATURES — Editorial collage with image + overlapping stat card */}
       {s("features")?.is_visible !== false && (
-        <section className="relative z-10 py-32 px-6 sm:px-10 lg:px-16">
-          <div className="mx-auto max-w-6xl">
-            <MotionWrapper className="text-center mb-24">
-              <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight">{s("features")?.title}</h2>
+        <section className="relative z-10 py-24 md:py-32 px-6 sm:px-10 lg:px-16">
+          <div className="mx-auto max-w-5xl">
+            <MotionWrapper className="mb-16 md:mb-20 max-w-2xl">
+              <p className="text-primary font-bold text-xs uppercase tracking-[0.2em] mb-3">Performance First</p>
+              <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-[1.05]">
+                {s("features")?.title || "Better data, smarter growth"}
+              </h2>
             </MotionWrapper>
 
-            <div className="divide-y divide-border/50">
-              {features.map((f, i) => (
-                <MotionWrapper key={f.title} delay={i * 0.1}>
-                  <motion.div whileHover={{ x: 12 }} transition={{ duration: 0.3 }} className="group flex items-center gap-8 py-10 cursor-default">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500">
-                      <f.icon className="h-8 w-8" />
+            {/* Two large image collages */}
+            <div className="space-y-24 md:space-y-32 mb-20">
+              {/* Feature 1 — Real-Time Analytics */}
+              <MotionWrapper>
+                <div className="relative">
+                  <div className="w-[82%] md:w-[70%] aspect-[3/4] md:aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-border">
+                    <img src={featureAnalytics} alt="Real-time analytics dashboard" width={800} height={1067} loading="lazy" className="w-full h-full object-cover" />
+                  </div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                    className="absolute -bottom-8 right-0 md:right-4 w-64 md:w-72 bg-card p-6 rounded-3xl shadow-2xl border border-border"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground">
+                        <TrendingUp className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">Real-Time</span>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold text-foreground mb-1">{f.title}</h3>
-                      <p className="text-muted-foreground">{f.desc}</p>
-                    </div>
-                    <ArrowRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-2 transition-all duration-300" />
+                    <h3 className="text-lg font-bold text-foreground">Real-Time Analytics</h3>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Every click and conversion synced to your dashboard instantly.</p>
                   </motion.div>
+                </div>
+              </MotionWrapper>
+
+              {/* Feature 2 — Milestone Billing */}
+              <MotionWrapper>
+                <div className="relative flex justify-end pt-8">
+                  <div className="w-[82%] md:w-[70%] aspect-[3/4] md:aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-border">
+                    <img src={featureBilling} alt="Milestone billing visual" width={800} height={1067} loading="lazy" className="w-full h-full object-cover" />
+                  </div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                    className="absolute -bottom-8 left-0 md:left-4 w-64 md:w-72 bg-card p-6 rounded-3xl shadow-2xl border border-border"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                        <DollarSign className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">Verified</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground">Milestone Billing</h3>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Zero upfront waste. You only pay when pre-defined goals are met.</p>
+                  </motion.div>
+                </div>
+              </MotionWrapper>
+            </div>
+
+            {/* Compact feature row for Fraud + API */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { icon: Shield, title: "Fraud Detection", desc: "Built-in IP rate limiting and zero double-counting." },
+                { icon: Zap, title: "Simple API", desc: "Integrate our lightweight tracking snippet in minutes." },
+              ].map((f, i) => (
+                <MotionWrapper key={f.title} delay={i * 0.1}>
+                  <div className="bg-card border border-border p-6 rounded-3xl flex items-center gap-5 h-full">
+                    <div className="w-14 h-14 shrink-0 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary">
+                      <f.icon className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground mb-0.5">{f.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-snug">{f.desc}</p>
+                    </div>
+                  </div>
                 </MotionWrapper>
               ))}
             </div>
@@ -129,37 +190,43 @@ export default function LandingVariant3({ content, onContactSubmit, contactName,
         </section>
       )}
 
-      {/* HOW IT WORKS — Minimal numbered with connecting line */}
+      {/* HOW IT WORKS — Dark band with staircase step cards */}
       {s("how_it_works")?.is_visible !== false && (
-        <section className="relative z-10 py-32 px-6 sm:px-10 lg:px-16 bg-muted/20">
+        <section className="relative z-10 py-24 md:py-32 px-6 sm:px-10 lg:px-16 bg-black text-white">
           <div className="mx-auto max-w-4xl">
-            <MotionWrapper className="text-center mb-20">
-              <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight">{s("how_it_works")?.title}</h2>
-              <p className="mt-6 text-muted-foreground text-lg max-w-2xl mx-auto">{s("how_it_works")?.subtitle}</p>
+            <MotionWrapper className="text-center mb-12 md:mb-16">
+              <h2 className="text-4xl md:text-6xl font-black tracking-tight">{s("how_it_works")?.title}</h2>
+              <p className="mt-4 text-white/60 text-base md:text-lg max-w-2xl mx-auto">{s("how_it_works")?.subtitle}</p>
             </MotionWrapper>
 
-            <div className="relative ml-8 md:ml-12">
-              <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-primary via-primary/30 to-transparent" />
-
+            <div className="space-y-4 md:space-y-5 max-w-2xl mx-auto">
               {steps.map((step, i) => {
                 const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                 const stepTitle = parts[0];
                 const desc = parts.slice(1).join(": ");
-
+                const isLast = i === steps.length - 1;
                 return (
-                  <MotionWrapper key={i} delay={i * 0.15}>
-                    <div className="relative pl-12 pb-16 last:pb-0">
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        whileInView={{ scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.15 + 0.3 }}
-                        className="absolute -left-3 top-1 h-6 w-6 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30"
-                      >
-                        <span className="text-[10px] font-bold text-primary-foreground">{i + 1}</span>
-                      </motion.div>
-                      <h3 className="text-xl font-bold text-foreground mb-2">{stepTitle}</h3>
-                      <p className="text-muted-foreground leading-relaxed">{desc}</p>
+                  <MotionWrapper key={i} delay={i * 0.1}>
+                    <div
+                      className={`relative overflow-hidden p-7 md:p-8 rounded-[2rem] border ${
+                        isLast
+                          ? "bg-primary border-primary shadow-2xl shadow-primary/30"
+                          : "bg-white/[0.04] border-white/10"
+                      }`}
+                    >
+                      <span className={`absolute -top-6 -right-2 text-7xl md:text-8xl font-black italic pointer-events-none select-none ${isLast ? "text-white/20" : "text-white/[0.06]"}`}>
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <div className="relative z-10">
+                        <h4 className={`text-xl md:text-2xl font-bold mb-2 ${isLast ? "text-primary-foreground" : "text-white"}`}>{stepTitle}</h4>
+                        <p className={`text-sm md:text-base leading-relaxed pr-8 ${isLast ? "text-primary-foreground/85" : "text-white/60"}`}>{desc}</p>
+                        {isLast && (
+                          <div className="mt-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Start scaling
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </MotionWrapper>
                 );
@@ -168,6 +235,7 @@ export default function LandingVariant3({ content, onContactSubmit, contactName,
           </div>
         </section>
       )}
+
 
       {/* CTA */}
       <section className="relative z-10 py-32 px-6">
