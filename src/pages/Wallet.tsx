@@ -94,6 +94,35 @@ export default function WalletPage() {
   const [activationAmount, setActivationAmount] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | StatusKey>("all");
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawStep, setWithdrawStep] = useState<"suggest" | "form">("suggest");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawMethod, setWithdrawMethod] = useState("bank_transfer");
+  const [withdrawBank, setWithdrawBank] = useState("");
+  const [withdrawAccount, setWithdrawAccount] = useState("");
+  const [withdrawName, setWithdrawName] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  const openWithdraw = () => { setWithdrawStep("suggest"); setWithdrawAmount(""); setWithdrawOpen(true); };
+
+  const submitWithdrawal = async () => {
+    const amt = Number(withdrawAmount);
+    const available = Number(wallet?.balance || 0);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > available) { toast.error(`You can only withdraw up to $${available.toFixed(2)} (escrow funds are locked)`); return; }
+    if (!withdrawBank.trim() || !withdrawAccount.trim() || !withdrawName.trim()) { toast.error("Bank name, account number and account name are required"); return; }
+    setWithdrawing(true);
+    const destination = { bank: withdrawBank.trim(), account_number: withdrawAccount.trim(), account_name: withdrawName.trim() };
+    const { data, error } = await supabase.rpc("request_withdrawal" as never, { _amount: amt, _method: withdrawMethod, _destination: destination } as never);
+    setWithdrawing(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Withdrawal request submitted. Our team will process it shortly.");
+    const reqId = (data as { id?: string })?.id;
+    if (reqId) supabase.functions.invoke("notify", { body: { event: "withdrawal_requested", payload: { request_id: reqId } } }).catch(() => {});
+    setWithdrawOpen(false);
+    fetchData();
+  };
+
 
   const fetchData = async () => {
     if (!user) return;
