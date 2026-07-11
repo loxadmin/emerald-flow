@@ -2123,6 +2123,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      karbali_normalize_subtype: {
+        Args: { _subtype: string }
+        Returns: Database["public"]["Enums"]["advertiser_subtype"]
+      }
+      karbali_subtype_to_group_slug: {
+        Args: { _subtype: string }
+        Returns: string
+      }
+      karbali_subtype_to_type: {
+        Args: { _subtype: string }
+        Returns: Database["public"]["Enums"]["advertiser_type"]
+      }
       purchase_package_v2: {
         Args: {
           _duration_days: number
