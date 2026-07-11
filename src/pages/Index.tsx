@@ -313,97 +313,118 @@ export default function Index() {
             </div>
           </section>
 
-          {/* FEATURES — Editorial high-contrast blocks */}
-          <section className="relative z-10 py-24 md:py-32 px-6 sm:px-10 lg:px-16 border-b-2 border-foreground">
-            <div className="mx-auto max-w-4xl">
-              <MotionWrapper className="mb-12 md:mb-16 max-w-2xl">
-                <p className="text-primary font-bold text-xs uppercase tracking-[0.25em] mb-4">Features</p>
-                <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-[1.05]">
-                  Better data,<br className="hidden sm:block" /> smarter growth
+          {/* FEATURES — Minimalist with interactive stacked cards */}
+          <section className="relative z-10 py-28 md:py-40 px-6 sm:px-10 lg:px-16 border-b border-border">
+            <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+              <MotionWrapper>
+                <p className="text-primary font-semibold text-xs uppercase tracking-[0.3em] mb-6">Features</p>
+                <h2 className="text-5xl md:text-7xl font-semibold text-foreground tracking-tight leading-[0.95]">
+                  Better data.<br />
+                  <span className="text-muted-foreground">Smarter growth.</span>
                 </h2>
+                <p className="mt-8 text-lg text-muted-foreground max-w-md leading-relaxed">
+                  Every campaign, every conversion, every naira — measured in real time. Only pay when it actually works.
+                </p>
+                <div className="mt-10 space-y-4">
+                  {[
+                    { icon: Shield, label: "Fraud-filtered conversions" },
+                    { icon: Wallet, label: "Milestone-based billing" },
+                    { icon: Code2, label: "Two-line API integration" },
+                  ].map((f) => (
+                    <div key={f.label} className="flex items-center gap-4">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                        <f.icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{f.label}</span>
+                    </div>
+                  ))}
+                </div>
               </MotionWrapper>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                {[
-                  { title: "Real-Time Analytics", desc: "Instant visibility into campaign performance metrics as they happen.", variant: "dark", tag: "01 / Data" },
-                  { title: "Milestone Billing", desc: "Only pay when specific growth targets are reached and verified.", variant: "paper", tag: "02 / Billing" },
-                  { title: "Fraud Detection", desc: "Advanced filtering to ensure every conversion comes from a real user.", variant: "emerald", tag: "03 / Trust" },
-                  { title: "Simple API", desc: "Integrate with two lines of code and start tracking immediately.", variant: "paper", tag: "04 / Build" },
-                ].map((f, i) => (
-                  <MotionWrapper key={f.title} delay={i * 0.08}>
-                    {f.variant === "dark" ? (
-                      <div className="bg-black text-white p-8 border-l-8 border-primary h-full min-h-[200px] flex flex-col justify-between">
-                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{f.tag}</span>
-                        <div>
-                          <h3 className="text-xl font-bold mb-2">{f.title}</h3>
-                          <p className="text-sm text-white/70 leading-relaxed">{f.desc}</p>
-                        </div>
-                      </div>
-                    ) : f.variant === "emerald" ? (
-                      <div className="bg-primary text-primary-foreground p-8 border-2 border-foreground h-full min-h-[200px] flex flex-col justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">{f.tag}</span>
-                        <div>
-                          <h3 className="text-xl font-bold mb-2">{f.title}</h3>
-                          <p className="text-sm leading-relaxed opacity-90">{f.desc}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-card text-foreground p-8 border-2 border-foreground h-full min-h-[200px] flex flex-col justify-between">
-                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{f.tag}</span>
-                        <div>
-                          <h3 className="text-xl font-bold mb-2">{f.title}</h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-                        </div>
-                      </div>
-                    )}
-                  </MotionWrapper>
-                ))}
-              </div>
+              <MotionWrapper delay={0.15}>
+                <div className="flex min-h-[420px] w-full items-center justify-center">
+                  <DisplayCards
+                    cards={[
+                      {
+                        icon: <BarChart3 className="size-4 text-primary" />,
+                        title: "Real-Time Analytics",
+                        description: "Live campaign metrics",
+                        date: "Live now",
+                        className:
+                          "[grid-area:stack] hover:-translate-y-10 before:absolute before:w-full before:h-full before:rounded-xl before:bg-background/60 before:content-[''] grayscale hover:grayscale-0 hover:before:opacity-0 before:transition-opacity before:duration-700",
+                      },
+                      {
+                        icon: <Shield className="size-4 text-primary" />,
+                        title: "Fraud Detection",
+                        description: "Every conversion verified",
+                        date: "24/7",
+                        className:
+                          "[grid-area:stack] translate-x-12 translate-y-10 hover:-translate-y-1 before:absolute before:w-full before:h-full before:rounded-xl before:bg-background/60 before:content-[''] grayscale hover:grayscale-0 hover:before:opacity-0 before:transition-opacity before:duration-700",
+                      },
+                      {
+                        icon: <Wallet className="size-4 text-primary" />,
+                        title: "Milestone Billing",
+                        description: "Pay only for results",
+                        date: "Today",
+                        className: "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10",
+                      },
+                    ]}
+                  />
+                </div>
+              </MotionWrapper>
             </div>
           </section>
 
-          {/* HOW IT WORKS — Dark editorial with numbered rail */}
+          {/* HOW IT WORKS — Minimalist numbered rows */}
           {s("how_it_works").is_visible && (
-            <section id="how-it-works" className="relative z-10 py-24 md:py-32 px-6 sm:px-10 lg:px-16 bg-black text-white">
-              <div className="mx-auto max-w-3xl">
-                <MotionWrapper className="mb-14 md:mb-20">
-                  <p className="text-primary font-bold text-xs uppercase tracking-[0.25em] mb-4">Process</p>
-                  <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.05]">{s("how_it_works").title}</h2>
-                  <p className="mt-5 text-white/60 text-base md:text-lg max-w-xl">{s("how_it_works").subtitle}</p>
+            <section id="how-it-works" className="relative z-10 py-28 md:py-40 px-6 sm:px-10 lg:px-16 border-b border-border">
+              <div className="mx-auto max-w-5xl">
+                <MotionWrapper className="mb-16 md:mb-24 max-w-2xl">
+                  <p className="text-primary font-semibold text-xs uppercase tracking-[0.3em] mb-6">Process</p>
+                  <h2 className="text-5xl md:text-7xl font-semibold text-foreground tracking-tight leading-[0.95]">{s("how_it_works").title}</h2>
+                  <p className="mt-6 text-lg text-muted-foreground">{s("how_it_works").subtitle}</p>
                 </MotionWrapper>
 
-                <div className="relative space-y-10 md:space-y-12">
-                  <div aria-hidden className="absolute left-6 top-6 bottom-6 w-[2px] bg-primary/25" />
+                <div className="divide-y divide-border border-y border-border">
                   {steps.map((step, i) => {
                     const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                     const stepTitle = parts[0] || step;
                     const desc = parts.slice(1).join(": ") || "";
                     const num = String(i + 1).padStart(2, "0");
-                    const alt = i % 2 === 1;
                     return (
-                      <MotionWrapper key={i} delay={i * 0.08}>
-                        <div className="relative pl-20">
-                          <div className={`absolute left-0 top-0 w-12 h-12 flex items-center justify-center font-bold text-base border-2 ${alt ? "bg-white text-black border-primary" : "bg-primary text-primary-foreground border-white"}`}>
-                            {num}
+                      <MotionWrapper key={i} delay={i * 0.06}>
+                        <div className="group grid grid-cols-12 gap-6 py-8 md:py-10 transition-colors hover:bg-muted/40 px-2 md:px-4 -mx-2 md:-mx-4">
+                          <div className="col-span-2 md:col-span-1">
+                            <span className="text-sm font-mono text-primary tracking-widest">{num}</span>
                           </div>
-                          <h4 className="text-xl md:text-2xl font-bold mb-2">{stepTitle}</h4>
-                          <p className="text-sm md:text-base text-white/60 leading-relaxed">{desc}</p>
+                          <div className="col-span-10 md:col-span-5">
+                            <h4 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight">{stepTitle}</h4>
+                          </div>
+                          <div className="col-span-12 md:col-span-6">
+                            <p className="text-base text-muted-foreground leading-relaxed">{desc}</p>
+                          </div>
                         </div>
                       </MotionWrapper>
                     );
                   })}
                 </div>
 
-                <MotionWrapper delay={0.4}>
-                  <Link to="/signup" className="block">
-                    <button className="w-full mt-16 bg-primary text-primary-foreground font-bold py-5 px-6 text-sm uppercase tracking-[0.2em] border-2 border-primary hover:bg-white hover:text-black hover:border-white transition-colors">
-                      Get started now
-                    </button>
-                  </Link>
+                <MotionWrapper delay={0.3}>
+                  <div className="mt-14 flex items-center gap-4">
+                    <Link to="/signup">
+                      <Button size="lg" className="h-12 rounded-full px-7 text-sm font-semibold">
+                        Get started <ArrowRight className="ml-1.5 h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link to="/docs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                      Read the docs →
+                    </Link>
+                  </div>
                 </MotionWrapper>
               </div>
             </section>
           )}
+
 
 
           {/* CTA — ink panel for fintech contrast */}
