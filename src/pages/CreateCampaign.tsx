@@ -361,7 +361,8 @@ export default function CreateCampaign() {
     }
 
     setLoading(false);
-    toast.success("Campaign submitted! Funds held in escrow until ads run.");
+    toast.success("Campaign submitted! Approval takes 3–7 business days.");
+    supabase.functions.invoke("notify", { body: { event: "campaign_submitted", payload: { campaign_id: cId } } }).catch(() => {});
     navigate(`/campaigns/${cId}`);
   };
 
