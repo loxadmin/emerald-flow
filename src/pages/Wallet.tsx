@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import {
   Wallet as WalletIcon,
   CreditCard,
@@ -25,7 +26,9 @@ import {
   XCircle,
   Ban,
   RotateCcw,
+  Send,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface WalletData {
   id: string; balance: number; currency: string; is_activated: boolean;
