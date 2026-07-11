@@ -2092,6 +2092,48 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_requests: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          amount_usd: number
+          created_at: string
+          destination: Json
+          id: string
+          method: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          amount_usd: number
+          created_at?: string
+          destination?: Json
+          id?: string
+          method: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          amount_usd?: number
+          created_at?: string
+          destination?: Json
+          id?: string
+          method?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2164,6 +2206,10 @@ export type Database = {
       refund_campaign_escrow: {
         Args: { _campaign_id: string }
         Returns: number
+      }
+      request_withdrawal: {
+        Args: { _amount: number; _destination: Json; _method: string }
+        Returns: Json
       }
       review_offline_offer: {
         Args: { _approve: boolean; _notes: string; _offer_id: string }
