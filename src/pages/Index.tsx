@@ -94,10 +94,14 @@ export default function Index() {
       toast.error("Please fill in all fields"); return;
     }
     setContactSending(true);
-    const { error } = await supabase.from("contact_messages" as never).insert({ name: contactName.trim(), email: contactEmail.trim(), message: contactMessage.trim() } as never);
+    const { data: inserted, error } = await supabase.from("contact_messages" as never).insert({ name: contactName.trim(), email: contactEmail.trim(), message: contactMessage.trim() } as never).select("id").single();
     setContactSending(false);
     if (error) { toast.error("Failed to send message. Please try again."); }
-    else { toast.success("Message sent! We'll get back to you soon."); setContactName(""); setContactEmail(""); setContactMessage(""); }
+    else {
+      toast.success("Message sent! We'll get back to you soon.");
+      setContactName(""); setContactEmail(""); setContactMessage("");
+      supabase.functions.invoke("notify", { body: { event: "support_message", payload: { message_id: (inserted as { id: string })?.id } } }).catch(() => {});
+    }
   };
 
   const s = (key: string) => content[key] || defaultContent[key];
