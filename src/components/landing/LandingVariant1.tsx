@@ -18,6 +18,9 @@ interface SiteContent {
   is_visible: boolean;
 }
 
+import DisplayCards from "@/components/ui/display-cards";
+import { Link2, CheckCircle, Terminal, Cpu, ShieldCheck } from "lucide-react";
+
 interface Props {
   content: Record<string, SiteContent>;
   metrics: { advertisers: number; campaigns: number; events: number };
@@ -27,13 +30,80 @@ interface Props {
   contactEmail: string; setContactEmail: (v: string) => void;
   contactMessage: string; setContactMessage: (v: string) => void;
   contactSending: boolean;
+  manual: boolean | null;
 }
 
-export default function LandingVariant1({ content, onContactSubmit, contactName, setContactName, contactEmail, setContactEmail, contactMessage, setContactMessage, contactSending }: Props) {
+export default function LandingVariant1({ content, onContactSubmit, contactName, setContactName, contactEmail, setContactEmail, contactMessage, setContactMessage, contactSending, manual }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const words = ["Brand", "Business", "App", "Shop"];
+
+  const simpleCards = [
+    {
+      icon: <Link2 className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "1. Paste Link",
+      description: "No code or SDK setup needed",
+      date: "Instant promotion",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] opacity-75 grayscale hover:-translate-y-10 hover:opacity-100 hover:grayscale-0",
+      solid: true,
+    },
+    {
+      icon: <CheckCircle className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "2. Fast Approval",
+      description: "Approved manually in under 12h",
+      date: "Reviewed by admins",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] translate-x-12 translate-y-10 opacity-85 grayscale hover:-translate-y-1 hover:opacity-100 hover:grayscale-0",
+      solid: true,
+    },
+    {
+      icon: <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "3. Pay for Results",
+      description: "Escrow released on action only",
+      date: "Zero risk protection",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10",
+      solid: true,
+    },
+  ];
+
+  const advancedCards = [
+    {
+      icon: <Terminal className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "1. Drop Snippet",
+      description: "Add loader script in 5 mins",
+      date: "Quick integration",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] opacity-75 grayscale hover:-translate-y-10 hover:opacity-100 hover:grayscale-0",
+      solid: true,
+    },
+    {
+      icon: <Cpu className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "2. Domain Scan",
+      description: "System verifies and auto-activates",
+      date: "Deterministic check",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] translate-x-12 translate-y-10 opacity-85 grayscale hover:-translate-y-1 hover:opacity-100 hover:grayscale-0",
+      solid: true,
+    },
+    {
+      icon: <Zap className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "3. Auto Go-Live",
+      description: "Conversion events fire instantly",
+      date: "Near real-time tracking",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10",
+      solid: true,
+    },
+  ];
 
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
@@ -47,14 +117,38 @@ export default function LandingVariant1({ content, onContactSubmit, contactName,
   }, []);
 
   const s = (key: string) => content[key];
-  const steps = (s("how_it_works")?.content || "").split(/\r?\n|\\n/).filter(Boolean);
 
-  const features = [
+  const defaultFeatures = [
     { icon: BarChart3, title: "Real-Time Analytics", desc: "Track every event as it happens across web and mobile platforms" },
     { icon: DollarSign, title: "Milestone Billing", desc: "Charge per download, signup, or purchase with no double counting" },
     { icon: Shield, title: "Fraud Detection", desc: "IP-based rate limiting and pattern detection built in from day one" },
     { icon: Zap, title: "Simple API", desc: "One endpoint, three event types. Integrate in minutes, not days" },
   ];
+
+  const simpleFeatures = [
+    { icon: BarChart3, title: "Verified Analytics", desc: "Manual checks against your store consoles and source dashboards daily" },
+    { icon: DollarSign, title: "Milestone Billing", desc: "Charge per download, signup, or purchase with no double counting" },
+    { icon: Shield, title: "Escrow Protection", desc: "Funds held in secure escrow and released only for confirmed outcomes" },
+    { icon: Zap, title: "Handled For You", desc: "Submit your link. No SDK, no code, no engineering team needed" },
+  ];
+
+  const features = manual === true ? simpleFeatures : defaultFeatures;
+
+  const defaultSteps = [
+    "1. Create a Campaign: Set your budget and define what you will pay for.",
+    "2. Integrate Our API: Add a simple tracking snippet to your app.",
+    "3. Get Approved: Our admin team verifies your integration and activates your campaign.",
+    "4. Track and Pay for Results: Monitor real-time analytics and only pay when users take action."
+  ];
+
+  const simpleSteps = [
+    "1. Create a Campaign: Paste your app, website, song or video link and set your budget.",
+    "2. Submit for Approval: A Karbali official reviews your destination and approves your campaign.",
+    "3. We Track Progress: The review team tracks outcomes daily against your source-of-truth dashboard.",
+    "4. Pay Only for Results: Escrow is released only as validated outcomes are confirmed."
+  ];
+
+  const steps = manual === true ? simpleSteps : ((s("how_it_works")?.content || "").split(/\r?\n|\\n/).filter(Boolean).length > 0 ? (s("how_it_works")?.content || "").split(/\r?\n|\\n/).filter(Boolean) : defaultSteps);
 
   return (
     <>
@@ -102,22 +196,8 @@ export default function LandingVariant1({ content, onContactSubmit, contactName,
               </motion.div>
             </div>
             <div className="lg:col-span-5 hidden lg:block">
-              <motion.div initial={{ opacity: 0, x: 80 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, delay: 0.5 }} className="relative">
-                <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/20 via-transparent to-primary/10 blur-xl" />
-                <div className="relative grid grid-cols-2 gap-3">
-                  {[
-                    { value: "99.9%", label: "Uptime" },
-                    { value: "10M+", label: "Events" },
-                    { value: "<5min", label: "Integration" },
-                    { value: "0%", label: "Fraud Rate" },
-                  ].map((stat, i) => (
-                    <motion.div key={stat.label} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8 + i * 0.1 }}
-                      className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 text-center">
-                      <p className="text-2xl font-black text-white">{stat.value}</p>
-                      <p className="text-xs text-white/40 uppercase tracking-wider mt-1">{stat.label}</p>
-                    </motion.div>
-                  ))}
-                </div>
+              <motion.div initial={{ opacity: 0, x: 80 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, delay: 0.5 }} className="relative flex items-center justify-center min-h-[400px]">
+                <DisplayCards cards={manual === true ? simpleCards : advancedCards} />
               </motion.div>
             </div>
           </div>

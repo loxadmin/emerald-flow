@@ -17,6 +17,7 @@ import LandingVariant3 from "@/components/landing/LandingVariant3";
 import LandingVariant4 from "@/components/landing/LandingVariant4";
 import LandingVariant5 from "@/components/landing/LandingVariant5";
 import ModeBanner from "@/components/ModeBanner";
+import { useManualMode } from "@/lib/use-manual-mode";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -47,6 +48,7 @@ export default function Index() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [heroDesign, setHeroDesign] = useState<string>("default");
   const { theme, toggleTheme } = useTheme();
+  const manual = useManualMode();
 
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -115,6 +117,7 @@ export default function Index() {
     contactEmail, setContactEmail,
     contactMessage, setContactMessage,
     contactSending,
+    manual,
   };
 
   const jsonLd = {
@@ -195,14 +198,37 @@ export default function Index() {
     ]
   };
 
-  const features = [
+  const defaultFeatures = [
     { icon: BarChart3, title: "Real-Time Analytics", desc: "Track every event as it happens across web and mobile platforms" },
     { icon: DollarSign, title: "Milestone Billing", desc: "Charge per download, signup, or purchase with no double counting" },
     { icon: Shield, title: "Fraud Detection", desc: "IP-based rate limiting and pattern detection built in from day one" },
     { icon: Zap, title: "Simple API", desc: "One endpoint, three event types. Integrate in minutes, not days" },
   ];
 
-  const steps = (s("how_it_works").content || "").split(/\r?\n|\\n/).filter(Boolean);
+  const simpleFeatures = [
+    { icon: BarChart3, title: "Verified Analytics", desc: "Manual checks against your store consoles and source dashboards daily" },
+    { icon: DollarSign, title: "Milestone Billing", desc: "Charge per download, signup, or purchase with no double counting" },
+    { icon: Shield, title: "Escrow Protection", desc: "Funds held in secure escrow and released only for confirmed outcomes" },
+    { icon: Zap, title: "Handled For You", desc: "Submit your link. No SDK, no code, no engineering team needed" },
+  ];
+
+  const features = manual === true ? simpleFeatures : defaultFeatures;
+
+  const defaultSteps = [
+    "1. Create a Campaign: Set your budget and define what you will pay for.",
+    "2. Integrate Our API: Add a simple tracking snippet to your app.",
+    "3. Get Approved: Our admin team verifies your integration and activates your campaign.",
+    "4. Track and Pay for Results: Monitor real-time analytics and only pay when users take action."
+  ];
+
+  const simpleSteps = [
+    "1. Create a Campaign: Paste your app, website, song or video link and set your budget.",
+    "2. Submit for Approval: A Karbali official reviews your destination and approves your campaign.",
+    "3. We Track Progress: The review team tracks outcomes daily against your source-of-truth dashboard.",
+    "4. Pay Only for Results: Escrow is released only as validated outcomes are confirmed."
+  ];
+
+  const steps = manual === true ? simpleSteps : ((s("how_it_works").content || "").split(/\r?\n|\\n/).filter(Boolean).length > 0 ? (s("how_it_works").content || "").split(/\r?\n|\\n/).filter(Boolean) : defaultSteps);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -294,7 +320,7 @@ export default function Index() {
         <>
           {/* Default layout */}
           {s("hero").is_visible && (
-            <LandingHero title={s("hero").title} subtitle={s("hero").subtitle} metrics={metrics} metricsLoading={metricsLoading} />
+            <LandingHero title={s("hero").title} subtitle={s("hero").subtitle} metrics={metrics} metricsLoading={metricsLoading} manual={manual} />
           )}
 
           {/* Live mode banner — reflects Simple vs Advance across the platform */}
