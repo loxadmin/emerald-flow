@@ -7,6 +7,8 @@ export type AiCampaignPrefill = {
   targetUsers?: string;
   milestones?: string[];
   integrationType?: "custom" | "wordpress";
+  platformType?: "website" | "mobile_app";
+  appLink?: string;
   mediaType?: "music" | "video";
   eventTypes?: string[];
   mediaLink?: string;

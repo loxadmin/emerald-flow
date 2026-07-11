@@ -40,11 +40,14 @@ type CampaignFlow = {
   step: string;
 };
 
+const AI_AUTOSTART_KEY = "karbali_ai_autostart";
+
 const CAMPAIGN_VALUE_STEPS = new Set([
   "type",
   "name",
   "milestones",
   "targetUsers",
+  "appLink",
   "integration",
   "mediaType",
   "events",
@@ -105,6 +108,42 @@ function parseMilestones(text: string) {
   return milestones.length ? milestones : ["signup"];
 }
 
+function isStartOnly(text: string) {
+  return /^(start|start setup|setup|set up|continue|ok|okay|yes|go ahead|proceed)$/i.test(text.trim());
+}
+
+function platformForContext(ctx: AssistantContext): "website" | "mobile_app" | undefined {
+  return ctx.advertiserSubtype === "app" ? "mobile_app" : ctx.advertiserType === "performance" ? "website" : undefined;
+}
+
+function seedDataFromConversation(type: AiCampaignType | null, state: ConversationState, ctx: AssistantContext): Partial<AiCampaignPrefill> {
+  const data: Partial<AiCampaignPrefill> = { ...(type ? { type } : {}), createdAt: Date.now() };
+  if (type === "engagement") {
+    if (state.goalDomain === "music") {
+      data.mediaType = "music";
+      data.eventTypes = ["viewer"];
+    }
+    if (state.goalDomain === "video" || state.goalDomain === "views" || state.goalDomain === "social" || state.goalDomain === "brand") {
+      data.mediaType = "video";
+      data.eventTypes = state.goalDomain === "social" ? ["subscriber"] : ["viewer"];
+    }
+  }
+  if (type === "performance") {
+    data.platformType = platformForContext(ctx);
+    if (state.goalDomain === "installs") data.milestones = ["download"];
+    if (state.goalDomain === "signups" || state.goalDomain === "leads") data.milestones = ["signup"];
+    if (state.goalDomain === "subscriptions") data.milestones = ["signup", "purchase"];
+  }
+  if (type === "commerce") {
+    data.milestones = ["purchase"];
+  }
+  return data;
+}
+
+function createInitialCampaignFlow(type: AiCampaignType | null, state: ConversationState, ctx: AssistantContext): CampaignFlow {
+  return { type, data: seedDataFromConversation(type, state, ctx), step: type ? "name" : "type" };
+}
+
 function isCampaignKnowledgeQuestion(text: string) {
   const t = norm(text);
   const hasQuestionCue = /\?|\b(what|explain|tell|about|meaning|mean|difference|why|how|did not|didn t|i asked|i said)\b/.test(t);
@@ -115,15 +154,16 @@ function isCampaignKnowledgeQuestion(text: string) {
 function currentCampaignQuestion(flow: CampaignFlow): Msg {
   const prompts: Record<string, Msg> = {
     type: { role: "bot", text: "Which campaign type should I set up?", suggestions: ["Performance campaign", "Engagement campaign", "Commerce campaign"] },
-    name: { role: "bot", text: `What should we call this ${flow.type || "campaign"}?` },
-    milestones: { role: "bot", text: "What result should Karbali track?", suggestions: ["Signups", "Purchases", "Downloads and signups"] },
+    name: { role: "bot", text: `What should we call this ${flow.type ? CAMPAIGN_TYPE_LABELS[flow.type] : "campaign"}?` },
+    milestones: { role: "bot", text: "Which result should Karbali bill on?", suggestions: ["App installs", "Signups", "Installs and signups", "Subscriptions"] },
     targetUsers: { role: "bot", text: "How many users should we target? Minimum is 100." },
+    appLink: { role: "bot", text: "Paste your Play Store, App Store, or TestFlight link." },
     integration: { role: "bot", text: "Is your site WordPress or custom code?", suggestions: ["WordPress", "Custom code"] },
     mediaType: { role: "bot", text: "Is this for music or video?", suggestions: ["Music", "Video"] },
     events: { role: "bot", text: "Which video event should we track?", suggestions: ["Viewers", "Subscribers", "Both"] },
     mediaLink: { role: "bot", text: flow.data.mediaType === "music" ? "Paste up to 3 music links." : "Paste the video link." },
     transcription: { role: "bot", text: flow.data.mediaType === "music" ? "Paste the song lyrics." : "Paste the video script." },
-    engagementTargets: { role: "bot", text: "How many interactions should we target? Minimum is 200." },
+    engagementTargets: { role: "bot", text: flow.data.mediaType === "music" ? "How many verified listeners should Karbali target? Minimum is 200." : "How many verified interactions should Karbali target? Minimum is 200." },
     sales: { role: "bot", text: "How many sales should we target? Minimum is 100." },
     commerceIntegration: { role: "bot", text: "Is your store WordPress/WooCommerce or custom code?", suggestions: ["WooCommerce", "Custom code"] },
   };
@@ -146,21 +186,30 @@ function nextCampaignPrompt(flow: CampaignFlow, text: string, ctx: AssistantCont
   }
 
   if (next.step === "name") {
+    if (isStartOnly(input) || /^(create|campaign|ad)$/i.test(input)) {
+      return { flow: next, reply: { role: "bot", text: "Give me the campaign name. Example: July Music Push or App Signup Drive." } };
+    }
     next.data.campaignName = input;
-    if (next.type === "performance") next.step = "milestones";
-    if (next.type === "engagement") next.step = "mediaType";
+    if (next.type === "performance") next.step = next.data.milestones?.length ? "targetUsers" : "milestones";
+    if (next.type === "engagement") next.step = next.data.mediaType ? (next.data.mediaType === "video" ? "events" : "mediaLink") : "mediaType";
     if (next.type === "commerce") next.step = "sales";
   } else if (next.step === "milestones") {
     next.data.milestones = parseMilestones(input);
     next.step = "targetUsers";
   } else if (next.step === "targetUsers") {
     next.data.targetUsers = extractNumber(input, "100");
-    next.step = "integration";
+    next.step = next.data.platformType === "mobile_app" && next.data.milestones?.includes("download") ? "appLink" : "integration";
+  } else if (next.step === "appLink") {
+    next.data.appLink = input;
+    next.data.integrationType = "custom";
+    const prefill = { ...next.data, type: next.type, createdAt: Date.now() } as AiCampaignPrefill;
+    saveAiCampaignPrefill(prefill);
+    return { flow: null, reply: { role: "bot", text: "I prepared the app campaign details. Open review to generate the tracking key, verify events, and submit.", navigateTo: CAMPAIGN_ROUTES[next.type!] } };
   } else if (next.step === "integration") {
     next.data.integrationType = pickIntegration(input);
     const prefill = { ...next.data, type: next.type, createdAt: Date.now() } as AiCampaignPrefill;
     saveAiCampaignPrefill(prefill);
-    return { flow: null, reply: { role: "bot", text: "Done. I filled the campaign details I can. Open the form to generate the API key, verify tracking, then submit.", navigateTo: CAMPAIGN_ROUTES[next.type] } };
+    return { flow: null, reply: { role: "bot", text: "I prepared the campaign details. Open review to generate the tracking key, verify the outcome event, and submit.", navigateTo: CAMPAIGN_ROUTES[next.type] } };
   } else if (next.step === "mediaType") {
     next.data.mediaType = /music|song|audio|artist/.test(norm(input)) ? "music" : "video";
     next.step = next.data.mediaType === "video" ? "events" : "mediaLink";
@@ -185,7 +234,7 @@ function nextCampaignPrompt(flow: CampaignFlow, text: string, ctx: AssistantCont
     if (next.data.eventTypes?.includes("subscriber")) next.data.targetSubscribers = extractNumber(input, "200");
     const prefill = { ...next.data, type: "engagement", createdAt: Date.now() } as AiCampaignPrefill;
     saveAiCampaignPrefill(prefill);
-    return { flow: null, reply: { role: "bot", text: "Done. I filled your engagement campaign draft. Open it to review cost and submit.", navigateTo: CAMPAIGN_ROUTES.engagement } };
+    return { flow: null, reply: { role: "bot", text: "I prepared your engagement campaign. Open review to check cost and submit for approval.", navigateTo: CAMPAIGN_ROUTES.engagement } };
   } else if (next.step === "sales") {
     next.data.targetSales = extractNumber(input, "100");
     next.step = "commerceIntegration";
@@ -193,7 +242,7 @@ function nextCampaignPrompt(flow: CampaignFlow, text: string, ctx: AssistantCont
     next.data.integrationType = pickIntegration(input);
     const prefill = { ...next.data, type: "commerce", createdAt: Date.now() } as AiCampaignPrefill;
     saveAiCampaignPrefill(prefill);
-    return { flow: null, reply: { role: "bot", text: "Done. I filled your commerce campaign draft. Open it to generate tracking and submit.", navigateTo: CAMPAIGN_ROUTES.commerce } };
+    return { flow: null, reply: { role: "bot", text: "I prepared your commerce campaign. Open review to generate sales tracking and submit.", navigateTo: CAMPAIGN_ROUTES.commerce } };
   }
 
   return { flow: next, reply: currentCampaignQuestion(next) };
@@ -264,13 +313,36 @@ export default function AiMode() {
         actions.push({ label: "Submit an offer", to: "/offline/offers" });
       }
 
-      setMessages([{
+      let startingMessages: Msg[] = [{
         role: "bot",
         text: intro,
         suggestions: goals.length ? undefined : greet.suggestions,
         goalOptions: goals.length ? goals : undefined,
         quickActions: actions,
-      }]);
+      }];
+
+      const autostartRaw = localStorage.getItem(AI_AUTOSTART_KEY);
+      if (autostartRaw) {
+        localStorage.removeItem(AI_AUTOSTART_KEY);
+        try {
+          const autostart = JSON.parse(autostartRaw) as { text?: string; campaignType?: AiCampaignType | null; stateUpdates?: Partial<ConversationState> };
+          const nextState = { ...convoStateRef.current, ...autostart.stateUpdates, lastIntent: "start_campaign" };
+          const type = autostart.campaignType || nextState.campaignType || getAllowedCampaignType(ctx);
+          const flow = createInitialCampaignFlow(type || null, nextState, ctx);
+          convoStateRef.current = nextState;
+          setConvoState(nextState);
+          setCampaignFlow(flow);
+          startingMessages = [
+            ...startingMessages,
+            { role: "user", text: autostart.text || "Create a campaign" },
+            currentCampaignQuestion(flow),
+          ];
+        } catch {
+          localStorage.removeItem(AI_AUTOSTART_KEY);
+        }
+      }
+
+      setMessages(startingMessages);
       setTimeout(() => taRef.current?.focus(), 100);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -365,10 +437,11 @@ export default function AiMode() {
           setConvoState(nextState);
         }
         if (detected.action === "start_campaign_flow") {
-          const startFlow: CampaignFlow = { type: detected.campaignType ?? null, data: detected.campaignType ? { type: detected.campaignType, createdAt: Date.now() } : {}, step: detected.campaignType ? "name" : "type" };
+          const stateForFlow = { ...convoStateRef.current, ...detected.stateUpdates };
+          const startFlow = createInitialCampaignFlow(detected.campaignType ?? stateForFlow.campaignType ?? getAllowedCampaignType(ctx), stateForFlow, ctx);
           nextFlow = startFlow;
-          reply = detected.campaignType
-            ? { role: "bot", text: `Good. What should we call this ${detected.campaignType} campaign?` }
+          reply = startFlow.type
+            ? currentCampaignQuestion(startFlow)
             : { role: "bot", text: detected.text, suggestions: detected.suggestions };
         } else {
           reply = { role: "bot", text: detected.text, suggestions: detected.suggestions, navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };

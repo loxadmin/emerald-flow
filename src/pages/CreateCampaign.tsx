@@ -190,6 +190,8 @@ export default function CreateCampaign() {
     if (prefill.targetUsers) setTargetUsers(prefill.targetUsers);
     if (prefill.milestones?.length) setMilestones(prefill.milestones.filter((m) => allowedEvents.includes(m)));
     if (prefill.integrationType) setIntegrationType(prefill.integrationType);
+    if (prefill.platformType) setPlatformType(prefill.platformType);
+    if (prefill.appLink) setAppLink(prefill.appLink);
     clearAiCampaignPrefill();
     setAiPrefillApplied(true);
     toast.success("AI campaign details applied");
