@@ -56,6 +56,7 @@ import OfflineOrders from "./pages/OfflineOrders";
 import Admin2FA from "./pages/Admin2FA";
 import About from "./pages/About";
 import Docs from "./pages/Docs";
+import Terms from "./pages/Terms";
 import BlogList from "./pages/BlogList";
 import BlogPost from "./pages/BlogPost";
 import WhatIsKarbali from "./pages/WhatIsKarbali";
@@ -126,6 +127,7 @@ const App = () => (
 
               <Route path="/campaigns/:id" element={<RequireAuth><CampaignDetail /></RequireAuth>} />
               <Route path="/docs" element={<Docs />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/about" element={<About />} />
               <Route path="/blog" element={<BlogList />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
