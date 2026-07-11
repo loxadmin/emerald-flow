@@ -5,10 +5,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Button } from "@/components/ui/button";
 import FluidCanvas from "@/components/FluidCanvas";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
-import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe, Menu, X, TrendingUp, Code2, Wallet } from "lucide-react";
-import DisplayCards from "@/components/ui/display-cards";
-import featureAnalytics from "@/assets/feature-analytics.jpg";
-import featureBilling from "@/assets/feature-billing.jpg";
+import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Terminal, CheckCircle2, Mail, MapPin, Globe, Menu, X } from "lucide-react";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
 import { useTheme } from "@/lib/theme";
@@ -313,119 +310,65 @@ export default function Index() {
             </div>
           </section>
 
-          {/* FEATURES — Minimalist with interactive stacked cards */}
-          <section className="relative z-10 py-28 md:py-40 px-6 sm:px-10 lg:px-16 border-b border-border">
-            <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-              <MotionWrapper>
-                <p className="text-primary font-semibold text-xs uppercase tracking-[0.3em] mb-6">Features</p>
-                <h2 className="text-5xl md:text-7xl font-semibold text-foreground tracking-tight leading-[0.95]">
-                  Better data.<br />
-                  <span className="text-muted-foreground">Smarter growth.</span>
-                </h2>
-                <p className="mt-8 text-lg text-muted-foreground max-w-md leading-relaxed">
-                  Every campaign, every conversion, every naira — measured in real time. Only pay when it actually works.
-                </p>
-                <div className="mt-10 space-y-4">
-                  {[
-                    { icon: Shield, label: "Fraud-filtered conversions" },
-                    { icon: Wallet, label: "Milestone-based billing" },
-                    { icon: Code2, label: "Two-line API integration" },
-                  ].map((f) => (
-                    <div key={f.label} className="flex items-center gap-4">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                        <f.icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">{f.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </MotionWrapper>
+          {/* Feature grid — Stripe-flat */}
+          <section className="relative z-10 py-24 px-6 sm:px-10 lg:px-16">
+            <div className="mx-auto max-w-7xl">
+              <div className="max-w-2xl">
+                <span className="eyebrow">Platform</span>
+                <h2 className="display-lg mt-3">Everything you need to acquire customers, profitably.</h2>
+                <p className="lede mt-5">A calm, transparent ad platform built for teams that measure what matters. No vanity, no surprises.</p>
+              </div>
 
-              <MotionWrapper delay={0.15}>
-                <div className="flex min-h-[420px] w-full items-center justify-center">
-                  <DisplayCards
-                    cards={[
-                      {
-                        icon: <BarChart3 className="size-4 text-primary" />,
-                        title: "Real-Time Analytics",
-                        description: "Live campaign metrics",
-                        date: "Live now",
-                        className:
-                          "[grid-area:stack] hover:-translate-y-10 before:absolute before:w-full before:h-full before:rounded-xl before:bg-background/60 before:content-[''] grayscale hover:grayscale-0 hover:before:opacity-0 before:transition-opacity before:duration-700",
-                      },
-                      {
-                        icon: <Shield className="size-4 text-primary" />,
-                        title: "Fraud Detection",
-                        description: "Every conversion verified",
-                        date: "24/7",
-                        className:
-                          "[grid-area:stack] translate-x-12 translate-y-10 hover:-translate-y-1 before:absolute before:w-full before:h-full before:rounded-xl before:bg-background/60 before:content-[''] grayscale hover:grayscale-0 hover:before:opacity-0 before:transition-opacity before:duration-700",
-                      },
-                      {
-                        icon: <Wallet className="size-4 text-primary" />,
-                        title: "Milestone Billing",
-                        description: "Pay only for results",
-                        date: "Today",
-                        className: "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10",
-                      },
-                    ]}
-                  />
-                </div>
-              </MotionWrapper>
+              <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {features.map((f) => (
+                  <div key={f.title} className="card-flat p-6">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <f.icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mt-5 text-base font-semibold tracking-tight">{f.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 
-          {/* HOW IT WORKS — Minimalist numbered rows */}
+          {/* How it works — pastel mint band */}
           {s("how_it_works").is_visible && (
-            <section id="how-it-works" className="relative z-10 py-28 md:py-40 px-6 sm:px-10 lg:px-16 border-b border-border">
-              <div className="mx-auto max-w-5xl">
-                <MotionWrapper className="mb-16 md:mb-24 max-w-2xl">
-                  <p className="text-primary font-semibold text-xs uppercase tracking-[0.3em] mb-6">Process</p>
-                  <h2 className="text-5xl md:text-7xl font-semibold text-foreground tracking-tight leading-[0.95]">{s("how_it_works").title}</h2>
-                  <p className="mt-6 text-lg text-muted-foreground">{s("how_it_works").subtitle}</p>
-                </MotionWrapper>
+            <section id="how-it-works" className="relative z-10 section-mint border-y border-border py-28 px-6 sm:px-10 lg:px-16">
+              <div className="mx-auto max-w-7xl">
+                <div className="grid gap-10 lg:grid-cols-12 lg:items-end">
+                  <div className="lg:col-span-7">
+                    <span className="eyebrow">How it works</span>
+                    <h2 className="display-lg mt-3 text-foreground">{s("how_it_works").title}</h2>
+                  </div>
+                  <p className="lede lg:col-span-5">{s("how_it_works").subtitle}</p>
+                </div>
 
-                <div className="divide-y divide-border border-y border-border">
+                <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-2 lg:grid-cols-4">
                   {steps.map((step, i) => {
                     const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                     const stepTitle = parts[0] || step;
                     const desc = parts.slice(1).join(": ") || "";
-                    const num = String(i + 1).padStart(2, "0");
+                    const icons = [Zap, Terminal, CheckCircle2, BarChart3];
+                    const Icon = icons[i] || Zap;
                     return (
-                      <MotionWrapper key={i} delay={i * 0.06}>
-                        <div className="group grid grid-cols-12 gap-6 py-8 md:py-10 transition-colors hover:bg-muted/40 px-2 md:px-4 -mx-2 md:-mx-4">
-                          <div className="col-span-2 md:col-span-1">
-                            <span className="text-sm font-mono text-primary tracking-widest">{num}</span>
+                      <div key={i} className="group relative flex flex-col bg-card p-8 transition-colors hover:bg-secondary/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <Icon className="h-5 w-5" />
                           </div>
-                          <div className="col-span-10 md:col-span-5">
-                            <h4 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight">{stepTitle}</h4>
-                          </div>
-                          <div className="col-span-12 md:col-span-6">
-                            <p className="text-base text-muted-foreground leading-relaxed">{desc}</p>
-                          </div>
+                          <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
                         </div>
-                      </MotionWrapper>
+                        <h3 className="mt-8 text-lg font-semibold tracking-tight">{stepTitle}</h3>
+                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{desc}</p>
+                      </div>
                     );
                   })}
                 </div>
-
-                <MotionWrapper delay={0.3}>
-                  <div className="mt-14 flex items-center gap-4">
-                    <Link to="/signup">
-                      <Button size="lg" className="h-12 rounded-full px-7 text-sm font-semibold">
-                        Get started <ArrowRight className="ml-1.5 h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link to="/docs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                      Read the docs →
-                    </Link>
-                  </div>
-                </MotionWrapper>
               </div>
             </section>
           )}
-
-
 
           {/* CTA — ink panel for fintech contrast */}
           <section className="relative z-10 py-24 px-6 sm:px-10 lg:px-16">
