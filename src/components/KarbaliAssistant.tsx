@@ -24,6 +24,7 @@ const PAGE_LABELS: Record<string, string> = {
 };
 
 const STORAGE_KEY = "karbali_assistant_greeted";
+const AI_AUTOSTART_KEY = "karbali_ai_autostart";
 
 export default function KarbaliAssistant() {
   const { user, walletActivated, categoryStatus, advertiserType, advertiserSubtype, businessVerified, isLoading } = useAuth();
@@ -102,6 +103,17 @@ export default function KarbaliAssistant() {
         const nextState = { ...convoStateRef.current, ...r.stateUpdates, turnCount: convoStateRef.current.turnCount + 1 };
         convoStateRef.current = nextState;
         setConvoState(nextState);
+      }
+      if (r.action === "start_campaign_flow") {
+        try {
+          localStorage.setItem(AI_AUTOSTART_KEY, JSON.stringify({ text: userText, campaignType: r.campaignType ?? null, stateUpdates: r.stateUpdates ?? {} }));
+        } catch {
+          // Ignore localStorage errors.
+        }
+        setMessages((m) => [...m, { role: "bot", text: "Opening AI Mode so I can ask the setup questions and prepare the campaign with you." }]);
+        setTyping(false);
+        setTimeout(() => navigate("/ai"), 500);
+        return;
       }
       setMessages((m) => [...m, { role: "bot", text: r.text, suggestions: r.suggestions, navigateTo: r.navigateTo }]);
       setTyping(false);

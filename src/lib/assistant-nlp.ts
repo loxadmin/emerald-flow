@@ -193,7 +193,7 @@ export function isCampaignTypeAllowed(type: AiCampaignType, ctx: AssistantContex
 export function campaignTypeMismatchReply(type: AiCampaignType, ctx: AssistantContext): AssistantReply {
   const allowedType = getAllowedCampaignType(ctx);
   if (!allowedType || allowedType === type) {
-    return { text: `Good. Let's build your ${type} campaign here.`, action: "start_campaign_flow", campaignType: type };
+    return { text: `I can build your ${CAMPAIGN_TYPE_LABELS[type]} campaign here.`, action: "start_campaign_flow", campaignType: type };
   }
   return {
     text: `Your account is set for ${CAMPAIGN_TYPE_LABELS[allowedType]}. I can only create that campaign type unless your advertiser profile is changed.`,
@@ -239,7 +239,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       return {
         text: goal
           ? `Karbali helps you buy real ${goal}, not empty impressions. Fund your wallet, launch the right campaign, and only pay when the ${goal} actually happen.`
-          : "Karbali helps Nigerian advertisers buy real outcomes, not impressions or clicks. Fund your wallet, launch a campaign, and pay only for valid conversions, engagement, installs, or sales. We never charge for clicks.",
+          : "Karbali helps Nigerian advertisers buy real outcomes, not impressions. Fund your wallet, launch a campaign, and pay only for valid conversions, engagement, installs, or sales.",
         suggestions: goalTailSuggestion(state, ["Types of campaigns", "How does billing work?", "How is tracking done?"]),
         stateUpdates: { topic: "what_is_karbali" },
       };
@@ -247,7 +247,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       return {
         text: goal
           ? `${prefix}${trackingDetailForGoal(state)} You pay only when Karbali confirms a valid ${singularize(goal)}.`
-          : "Karbali uses a deterministic click_id (UUID) for attribution only, never for billing. Install the Karbali script or WordPress plugin, fire the conversion event, and we attribute the result to the right campaign. Charges happen on the confirmed outcome, not the click.",
+          : "Karbali uses a deterministic tracking ID for attribution only, never for billing. Install the Karbali script or WordPress plugin, fire the conversion event, and we attribute the result to the right campaign. Charges happen only on the confirmed outcome.",
         suggestions: goalTailSuggestion(state, ["Open docs", "Verify my integration"]),
         navigateTo: "/docs",
         stateUpdates: { topic: "tracking" },
@@ -279,7 +279,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       };
     case "fraud":
       return {
-        text: `${prefix}Karbali filters bots, duplicate events, and suspicious patterns before billing. You only pay for clean, verified conversions , never for raw clicks.`,
+        text: `${prefix}Karbali filters bots, duplicate events, and suspicious patterns before billing. You only pay for clean, verified outcomes, never for raw traffic.`,
         stateUpdates: { topic: "fraud" },
       };
     case "cpa_vs_cpc":
@@ -402,8 +402,20 @@ function scoreIntent(rule: IntentRule, tokens: string[], raw: string): number {
 // Called by the UI whenever the user picks or states a goal. Returns a
 // reply plus the state updates the caller should apply.
 export function acknowledgeGoal(goal: string, ctx: AssistantContext): AssistantReply {
-  const { domain, campaignType } = classifyGoal(goal);
-  const canonicalNoun = goalNoun(domain, goal);
+  const goalText = goal.trim();
+  const normalizedGoal = goalText.toLowerCase();
+  if (/\b(create|start|launch|run|setup|set up|build|place)\b/.test(normalizedGoal) && /\b(campaign|ad|advert)\b/.test(normalizedGoal)) {
+    const type = inferCampaignType(normalize(goalText)) || getAllowedCampaignType(ctx);
+    if (type && !isCampaignTypeAllowed(type, ctx)) return campaignTypeMismatchReply(type, ctx);
+    return {
+      text: "I can create it with you here. I will ask the details, prepare the campaign, then send you to review and submit.",
+      action: "start_campaign_flow",
+      campaignType: type || null,
+      stateUpdates: { lastIntent: "start_campaign" },
+    };
+  }
+  const { domain, campaignType } = classifyGoal(goalText);
+  const canonicalNoun = goalNoun(domain, goalText);
   const type = campaignType || getAllowedCampaignType(ctx);
 
   const nextStep = !ctx.walletActivated
@@ -415,7 +427,7 @@ export function acknowledgeGoal(goal: string, ctx: AssistantContext): AssistantR
   const nav = !ctx.walletActivated ? "/wallet" : undefined;
 
   return {
-    text: `Perfect. You want ${canonicalNoun}.${nextStep} Ask me anything about how it works, or say "start" when you're ready.`,
+    text: `Perfect. You want ${canonicalNoun}.${nextStep} Ask me how it works, or say "start" and I will build it with you.`,
     suggestions: !ctx.walletActivated
       ? ["Activate wallet", "How does tracking work?", "How much does it cost?"]
       : type
@@ -502,10 +514,10 @@ export function detectIntent(
     }
     const type = requestedType;
     if (type && !isCampaignTypeAllowed(type, ctx)) return campaignTypeMismatchReply(type, ctx);
-    return {
-      text: state.goal
-        ? `Good. Let's build a campaign for ${state.goal}.`
-        : `Good. Let's set up your campaign.`,
+      return {
+        text: state.goal
+          ? `I can build the campaign for ${state.goal}.`
+          : `I can set up your campaign here.`,
       action: "start_campaign_flow",
       campaignType: type || getAllowedCampaignType(ctx) || null,
       stateUpdates: { lastIntent: "start_campaign" },
