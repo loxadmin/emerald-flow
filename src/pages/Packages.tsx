@@ -206,7 +206,7 @@ export default function Packages() {
       return toast.error(`Users must be between ${selected.min_units} and ${selected.max_units}`);
     }
     if (selectedIds.length === 0) return toast.error("Pick at least one milestone");
-    if (!hasFlatSelected) return toast.error("Pick at least one flat-priced milestone (commission-only orders can't be escrowed)");
+    if (!hasFlatSelected && commissionRows.length === 0) return toast.error("Pick at least one milestone");
     if (platform === "mobile" && appInstallId && packageMs.find((r) => r.milestone_id === appInstallId) && !selectedIds.includes(appInstallId)) {
       return toast.error("App Install is required for mobile-app orders");
     }
