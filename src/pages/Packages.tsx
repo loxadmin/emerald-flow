@@ -466,7 +466,9 @@ export default function Packages() {
                       <span className="text-lg font-semibold">${flatTotal.toFixed(2)}</span>
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {needsDuration
+                      {commissionOnly
+                        ? `${units.toLocaleString()} users × $${COMMISSION_RESERVE_PER_USER}/user reserve (locked in escrow to fund per-sale commissions).`
+                        : needsDuration
                         ? `${units.toLocaleString()} users × ${duration} days × selected flat milestones.`
                         : `${units.toLocaleString()} users × selected flat milestones.`}
                     </p>
