@@ -1,109 +1,57 @@
-# Ad Packages v2.2 + Category Enforcement + AI Mode Default
+# Scope: 5 workstreams
 
-Four independent workstreams. All can ship in one pass.
+## 1. Karbali AI — real intelligence, in-browser (no external APIs)
 
----
+You asked for machine learning, NLP, context awareness — built from scratch, no external AI API. Here's what that realistically means in a Vite/React app with zero backend AI, and I want to confirm before I build it:
 
-## 1. Duration & daily-user rules per milestone type
+**What I will build:**
+- **Tokenizer + intent classifier** — a small in-browser ML classifier (bag-of-words + TF-IDF vectors + a logistic-regression / naive-Bayes model trained on ~200 hand-labeled Karbali intents: create campaign, pricing, milestones, tracking, wallet, refunds, subcategory help, etc). Ships as a JSON weights file (~30–80KB), runs in-browser with plain JS math — no external calls.
+- **Entity extractor** — regex + fuzzy matching over the live Karbali taxonomy (subtypes, milestones, categories, currencies, platforms) so it pulls "musician + 5,000 streams + ₦200k budget" out of free text.
+- **Context memory** — a `ConversationState` object that persists across turns: current advertiser subtype (auto-loaded from their profile — no re-asking), collected slots, last intent, disambiguation stack. Stored in `sessionStorage` so a refresh doesn't lose the thread.
+- **Response engine** — templated, Karbali-accurate answers with Nigerian tone, driven by a `KnowledgeBase` object that mirrors your real pricing, milestones, and flows (single source of truth — no hallucinated numbers).
+- **Action layer** — when intent = `create_campaign` and required slots are filled, it writes a draft to Supabase and hands off to the review page. No more "redirect to normal form".
 
-**Rule:** duration and "per-day" pacing only apply to milestones that are ongoing/recurring. One-time acquisition milestones just deliver `N users` total, no timeline.
+**Honest limit:** this is real ML for classification/NER, but it's not a generative LLM. It will not invent novel prose the way ChatGPT does — every answer is composed from Karbali's own knowledge base. That's actually what you want (no hallucinated pricing), but confirm you're good with that framing before I ship the weights file.
 
-| Milestone | Duration applies? | Delivery unit |
-| --- | --- | --- |
-| App Install | No | total users |
-| Sign Up | No | total users |
-| KYC | No | total users |
-| Deposit | No | total users |
-| **Engagement** | **Yes** | users / day |
-| **Transaction (Sale)** | **Yes** | users / day + txn amount + txn id |
+Files: rewrite `src/lib/assistant-nlp.ts`, add `src/lib/ai/{tokenizer,classifier,entities,knowledge,state}.ts` + `src/lib/ai/model-weights.json`, rewire `AiMode.tsx` and `KarbaliAssistant.tsx`.
 
-Add `requires_duration boolean` to `milestones` (seed: true only for `engagement`, `transaction`, `sale`).
+## 2. Skip subcategory re-pick
 
-**Advertiser buy dialog (`Packages.tsx`):**
-- Compute `needsDuration = selectedMs.some(m => m.requires_duration)`.
-- Only render the Duration selector and "daily users" hint when `needsDuration` is true.
-- For non-duration orders, label the units field "Users" (total). For duration orders, keep "Users / day".
-- Order total = `units × price` (non-duration) OR `units × duration_days × price` (duration).
+`AiMode.tsx` currently shows a "pick your goal" card that re-asks the subtype. I'll load the advertiser's `subtype` from `advertiser_categories` on mount and skip straight to goals/actions scoped to that subtype. Same fix on `Packages.tsx` (already partially there — I'll finish it) and `CategorySelection.tsx` (only prompt when subtype is actually null).
 
-**`purchase_package_v2` RPC:** accept `_duration_days` as nullable. If any selected milestone `requires_duration`, require it; otherwise ignore/set NULL. Recompute escrow accordingly.
+## 3. Rename modes: Simple / Advance
 
----
+- DB `admin_settings.manual_mode_enabled` stays as the key (no migration needed), but every UI label changes:
+  - "Manual mode" → **Simple mode**
+  - "API tracking mode" → **Advance mode**
+- Files: `AdminSettings.tsx`, `CreateManualCampaign.tsx`, `CampaignRouter.tsx`, `Docs.tsx`, `Index.tsx`, any admin toggles.
+- When Simple mode is ON (current state), the homepage hero + a banner on Docs display: *"Simple mode is live — you only need your app / website / song / video link to launch. Every campaign is manually approved by a Karbali official."*
+- Homepage: add a mode-aware strip under the hero that reads live from `admin_settings`.
 
-## 2. Manual delivery pipeline for package orders
+## 4. Docs redesign — classy, minimalist
 
-Mirrors the existing manual campaign events flow.
+Full rewrite of `src/pages/Docs.tsx`:
+- Sidebar TOC + wide reading column, generous whitespace, serif display headings + clean sans body, thin dividers, no gradients, no busy cards.
+- Sections: *Overview*, *Simple mode (Manual)*, *Advance mode (API/SDK)*, *Metrics & Attribution*, *Milestones*, *Billing & Escrow*, *Wallet & Fees*, *Approval flow*, *FAQ*.
+- Simple vs Advance table comparing: setup effort, tracking method, approval, latency, metrics available, fraud protection, best-for.
+- Deep metric definitions: click, valid click, install, signup, KYC, deposit, transaction, sale, stream, view — how each is measured in each mode.
+- Karbali.com branding untouched.
 
-**New table `package_order_deliveries`:**
-```
-id, order_id, milestone_id, delivery_date (date),
-users_delivered int default 0,
-csv_url text null,                -- for transaction uploads
-txn_rows jsonb null,              -- [{user_ref, txn_id, amount_usd}]
-total_txn_amount numeric null,
-delivered_by uuid, created_at
-```
-Admin RPC `record_package_delivery(_order_id, _milestone_id, _date, _users, _txn_rows jsonb)` — validates admin, upserts by (order, milestone, date). For non-duration milestones, `date = order.starts_at::date` and only one row is allowed per milestone (cumulative users). For duration milestones, one row per (milestone, day).
+## 5. Terms & Conditions
 
-**Admin UI:** new `AdminPackageDelivery.tsx` page (linked from `PackageOrders`/AdminPackages order row). Shows per-milestone entry:
-- Engagement/App Install/Signup/KYC/Deposit → number input "users delivered".
-- Transaction → CSV upload (`user_ref, txn_id, amount_usd`), parsed client-side, previewed, submitted as jsonb.
+- New page `src/pages/Terms.tsx` at `/terms` — structured sections: Eligibility, Acceptable Use, **Prohibited Content (scam sites, fraud offers, illegal goods, adult, gambling without license → immediate ban + wallet forfeiture)**, Billing & Refunds, IP, Data & Privacy, Suspension & Termination, Dispute Resolution, Contact.
+- `Signup.tsx`: mandatory checkbox — *"I agree to the [Terms & Conditions](/terms)"* — signup button disabled until ticked. Store `terms_accepted_at` on the profile (add column via migration).
+- Footer link to `/terms`.
 
-**Advertiser UI (`PackageOrders.tsx`):** for each order add "Delivery" section:
-- Non-duration milestones: `X / target users delivered`.
-- Duration milestones: daily table (date, users delivered) + running total.
-- Transaction milestone: table of (user, txn id, amount) + total amount.
+## Order of execution
 
----
+1. Terms page + signup checkbox + migration (quick, unblocks legal).
+2. Rename modes + homepage/docs mode banner.
+3. Docs redesign.
+4. Skip-subcategory fix in AiMode + Packages + CategorySelection.
+5. AI rebuild (biggest lift — done last so the rest ships fast).
 
-## 3. Strict category enforcement on ad packages
+## Confirm before I start
 
-**Bug:** `advertiser_can_use_package` currently accepts `p.category_id IS NULL AND p.category_group_id IS NULL` implicitly nowhere — but the UI in `Packages.tsx` likely lists all `is_active` packages without filtering, or the RPC allows fallthrough. Also, packages tied to a `category_group_id` leak across sibling categories.
-
-**Fixes:**
-- `Packages.tsx` list query: filter `.eq('category_id', advertiserCategoryId)` OR `.eq('category_group_id', advertiserGroupId)` — never show unmatched packages.
-- Tighten `advertiser_can_use_package`: require the advertiser to have an approved `advertiser_categories` row AND either an exact category match OR (group match AND package has no `category_id`). Reject if advertiser has no category.
-- Admin package creator (`AdminPackages.tsx`): require exactly one of category OR category group (already true — enforce with a check constraint on `ad_packages`).
-- Also gate the buy RPC by re-checking `advertiser_can_use_package` (already there) and add a UI toast when the advertiser opens a package URL they don't qualify for.
-
-Note: allowing multiple milestones per package already works — no change needed beyond confirming the AdminPackages editor lets admin add/remove any subset of milestones (it does).
-
----
-
-## 4. AI mode as default + smarter first question
-
-**`ai-mode.tsx`:** change the initial state — if `localStorage[STORAGE_KEY]` is unset for a newly signed-in advertiser, default to `true` and persist. Existing users who explicitly turned it off keep their choice.
-
-**Sign-in/sign-up flow:** in `auth.tsx` (or wherever post-auth redirect lives), set `ai_mode = "1"` on first successful auth if the key was never set.
-
-**AI first-question copy (`KarbaliAssistant.tsx` / `assistant-nlp.ts` / `AiMode.tsx`):**
-Instead of "Do you want Performance / Engagement / Commerce?", the assistant fetches the advertiser's category → looks up that category's **subcategories** (e.g. Mobile Gaming → "App installs", "In-app signups", "First deposits"; Streaming → "Subscribers", "Watch-time engagement"; Website → "Signups", "Newsletter opt-ins") and asks:
-
-> "What are you trying to get? Pick one:"
-
-rendered as a **clickable dropdown / select** of subcategory-driven goals, not a paragraph of buttons. Selecting an option routes to the matching campaign flow with the goal prefilled.
-
-Goals are derived from `categories.name` + a new `categories.goal_options text[]` column (seeded per existing category). If empty, fall back to the three ad types.
-
----
-
-## Technical summary
-
-**DB migration (single):**
-- `ALTER TABLE milestones ADD COLUMN requires_duration boolean DEFAULT false;` + seed engagement/sale/transaction = true.
-- `ALTER TABLE categories ADD COLUMN goal_options text[] DEFAULT '{}';` + seed common goals.
-- `CREATE TABLE package_order_deliveries(...)` + GRANTs + RLS (advertiser reads own, admin all).
-- Replace `advertiser_can_use_package` with stricter version.
-- Replace `purchase_package_v2` to make `_duration_days` optional.
-- New `record_package_delivery` RPC (admin only).
-
-**Frontend:**
-- `src/pages/Packages.tsx` — conditional duration UI, category-filtered list, updated total calc.
-- `src/pages/AdminPackages.tsx` — no functional change beyond confirming milestone multi-select works.
-- `src/pages/PackageOrders.tsx` — delivery section.
-- `src/pages/AdminPackageDelivery.tsx` — NEW.
-- `src/lib/ai-mode.tsx` — default true for new users.
-- `src/components/KarbaliAssistant.tsx` + `src/lib/assistant-nlp.ts` — subcategory-driven goal dropdown as first question.
-
-**Out of scope:** wiring real conversion pipelines to auto-fill deliveries; that stays manual admin entry per your spec.
-
-Approve and I'll ship the migration + all four UI workstreams in one pass.
+- **AI framing** in section 1 — real in-browser ML classifier + entity extractor + templated responses from a Karbali knowledge base, no generative LLM. Good?
+- **Terms content** — I'll draft it Karbali-appropriate; you can edit copy after. OK to proceed without you reviewing every clause first?
