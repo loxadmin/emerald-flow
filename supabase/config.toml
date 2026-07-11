@@ -33,3 +33,7 @@ verify_jwt = false
 
 [functions.send-activation-reminders]
 verify_jwt = false
+
+[functions.notify]
+verify_jwt = false
+
