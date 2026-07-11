@@ -63,8 +63,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const isWalletNotActivated = walletActivated !== true;
   const isCategoryInactive = categoryStatus === "waiting_list";
-  const isCategoryActive = categoryStatus === "active";
-
   const isPageLocked = (path: string) => {
     if (path === "/wallet" || path === "/docs" || path === "/websites") return false;
     if (path === "/offline/verify") return false;
@@ -115,28 +113,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="px-4">
         <div className="section-divider" />
       </div>
-
-      {/* Status pill */}
-      {categoryStatus && (
-        <div className="px-4 pt-4">
-          <div
-            className={`flex items-center gap-2 rounded-md border px-2.5 py-2 text-[11px] ${
-              isCategoryActive
-                ? "border-primary/25 bg-primary/[0.06] text-primary"
-                : "border-amber-500/25 bg-amber-500/[0.06] text-amber-600 dark:text-amber-400"
-            }`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                isCategoryActive ? "bg-primary" : "bg-amber-500"
-              } animate-pulse`}
-            />
-            <span className="font-medium">
-              {isCategoryActive ? "Workspace active" : "Workspace pending"}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
