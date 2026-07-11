@@ -236,10 +236,12 @@ export default function Packages() {
     if (payMethod === "wallet") {
       if (!wallet?.is_activated) { setBuying(false); return toast.error("Activate your wallet first"); }
       if ((wallet?.balance || 0) < flatTotal) { setBuying(false); return toast.error("Insufficient wallet balance"); }
-      const { error } = await supabase.rpc("purchase_package_v2" as any, args);
+      const { data, error } = await supabase.rpc("purchase_package_v2" as any, args);
       setBuying(false);
       if (error) return toast.error(error.message);
-      toast.success("Package purchased! Pending admin review.");
+      toast.success("Package purchased! Approval takes 3–7 business days.");
+      const orderId = (data as { order_id?: string })?.order_id;
+      if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
       setSelected(null); load();
       return;
     }
