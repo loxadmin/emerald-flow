@@ -59,7 +59,7 @@ export default function AdminSettings() {
     const newVal = isManualModeOn ? "false" : "true";
     setEditValues({ ...editValues, manual_mode_enabled: newVal });
     const { error } = await supabase.from("admin_settings").update({ value: newVal, updated_at: new Date().toISOString() }).eq("key", "manual_mode_enabled");
-    if (error) toast.error(error.message); else toast.success(`Manual campaign mode ${newVal === "true" ? "enabled" : "disabled"}`);
+    if (error) toast.error(error.message); else toast.success(newVal === "true" ? "Switched to Simple mode" : "Switched to Advance mode");
   };
 
   const paystackSettings = settings.filter(s => s.key.includes("paystack"));
@@ -110,14 +110,16 @@ export default function AdminSettings() {
               </div>
             </div>
 
-            {/* Manual Campaign Mode */}
+            {/* Simple vs Advance Mode */}
             <div className="rounded-xl border border-border bg-card p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <ToggleRight className="h-5 w-5 text-primary" />
                   <div>
-                    <h3 className="text-sm font-medium text-foreground">Manual Campaign Mode</h3>
-                    <p className="text-xs text-muted-foreground">When enabled, advertisers create campaigns without API keys and admins record conversion events manually.</p>
+                    <h3 className="text-sm font-medium text-foreground">Simple mode {isManualModeOn ? "(ON)" : "(OFF — Advance mode is live)"}</h3>
+                    <p className="text-xs text-muted-foreground max-w-md">
+                      When ON, advertisers launch campaigns with just an app / website / song / video link — no SDK, no API keys. Every campaign is reviewed and approved manually by a Karbali official. Turn OFF to run Advance mode (full API tracking + auto-approval).
+                    </p>
                   </div>
                 </div>
                 <Switch checked={isManualModeOn} onCheckedChange={toggleManualMode} />

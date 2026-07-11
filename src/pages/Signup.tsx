@@ -99,6 +99,7 @@ export default function Signup() {
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const creator = isCreator(subtype);
@@ -109,6 +110,11 @@ export default function Signup() {
 
     if (!subtype) {
       toast.error("Please select what best describes you");
+      return;
+    }
+
+    if (!acceptedTerms) {
+      toast.error("Please accept the Terms & Conditions to continue");
       return;
     }
 
@@ -171,6 +177,7 @@ export default function Signup() {
             company_name: companyName.trim(),
             website: websiteValue,
             advertiser_subtype: subtype,
+            terms_accepted_at: new Date().toISOString(),
           },
           emailRedirectTo: window.location.origin,
         },
@@ -179,6 +186,14 @@ export default function Signup() {
       if (error) {
         toast.error(error.message);
       } else {
+        // Best-effort: stamp terms_accepted_at on the profile after the trigger creates it.
+        try {
+          const { data: sess } = await supabase.auth.getSession();
+          const uid = sess?.session?.user?.id;
+          if (uid) {
+            await supabase.from("profiles").update({ terms_accepted_at: new Date().toISOString() }).eq("id", uid);
+          }
+        } catch { /* profile trigger may not have fired yet — non-fatal */ }
         try {
           const w = window as any;
           if (w.Karbali && w.Karbali.trackSignup) {
@@ -301,7 +316,21 @@ export default function Signup() {
           <p className="text-[10px] leading-none text-muted-foreground">Minimum 8 characters</p>
         </div>
 
-        <GlassButton type="submit" className="mt-2 h-11 w-full rounded-lg" variant="glow" disabled={loading || !!isForbiddenDomain}>
+        <label className="mt-1 flex items-start gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+          />
+          <span className="text-xs leading-snug text-muted-foreground">
+            I agree to the Karbali Ads{" "}
+            <Link to="/terms" target="_blank" className="font-medium text-primary hover:underline">Terms & Conditions</Link>
+            {" "}and understand that promoting scam, fraud, or prohibited content results in a permanent ban and forfeiture of my wallet balance.
+          </span>
+        </label>
+
+        <GlassButton type="submit" className="mt-2 h-11 w-full rounded-lg" variant="glow" disabled={loading || !!isForbiddenDomain || !acceptedTerms}>
           {loading ? "Creating account..." : "Create Account"}
         </GlassButton>
       </form>
