@@ -182,16 +182,22 @@ export default function Packages() {
     });
   }, [selectedMs, milestones]);
 
+  const COMMISSION_RESERVE_PER_USER = 1; // $1/user escrow lock when only commission milestones are chosen
+
+  const commissionRows = selectedMs.filter((r) => r.pricing_type === "commission_pct");
+  const hasFlatSelected = selectedMs.some((r) => r.pricing_type === "flat");
+  const commissionOnly = !hasFlatSelected && commissionRows.length > 0;
+
   const flatTotal = useMemo(() => {
+    if (commissionOnly) {
+      return Number((units * COMMISSION_RESERVE_PER_USER).toFixed(2));
+    }
     const perUser = selectedMs
       .filter((r) => r.pricing_type === "flat")
       .reduce((s, r) => s + (r.price_usd || 0), 0);
     const base = units * perUser;
     return Number((needsDuration ? base * duration : base).toFixed(2));
-  }, [selectedMs, units, needsDuration, duration]);
-
-  const commissionRows = selectedMs.filter((r) => r.pricing_type === "commission_pct");
-  const hasFlatSelected = selectedMs.some((r) => r.pricing_type === "flat");
+  }, [selectedMs, units, needsDuration, duration, commissionOnly]);
 
 
   const submit = async () => {
