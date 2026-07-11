@@ -106,21 +106,12 @@ export default function WalletPage() {
       const { data: txData } = await supabase.from("wallet_transactions").select("*").eq("wallet_id", walletData.id).order("created_at", { ascending: false }).limit(50);
       setTransactions((txData as WalletTx[]) || []);
     }
-    const { data: advCat } = await supabase
-      .from("advertiser_categories").select("category_id").eq("advertiser_id", user.id).maybeSingle();
-    const categoryFeeKey = advCat?.category_id ? `category_activation_fee:${advCat.category_id}` : null;
-    const keys = ["activation_fee_usd", "usd_to_ngn_rate", ...(categoryFeeKey ? [categoryFeeKey] : [])];
-    const { data: settings } = await supabase.from("admin_settings").select("key, value").in("key", keys);
+    const { data: settings } = await supabase.from("admin_settings").select("key, value").in("key", ["activation_fee_usd", "usd_to_ngn_rate"]);
     if (settings) {
-      let globalFee: number | null = null;
-      let categoryFee: number | null = null;
       settings.forEach((s: { key: string; value: string }) => {
-        if (s.key === "activation_fee_usd") globalFee = Number(s.value);
+        if (s.key === "activation_fee_usd") { const v = Number(s.value); setActivationFee(v); setActivationAmount(String(v)); }
         else if (s.key === "usd_to_ngn_rate") setExchangeRate(Number(s.value));
-        else if (categoryFeeKey && s.key === categoryFeeKey) categoryFee = Number(s.value);
       });
-      const finalFee = categoryFee !== null ? categoryFee : globalFee;
-      if (finalFee !== null) { setActivationFee(finalFee); setActivationAmount(String(finalFee)); }
     }
     setLoading(false);
   };
