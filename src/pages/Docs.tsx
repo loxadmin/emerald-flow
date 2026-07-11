@@ -209,10 +209,12 @@ window.Karbali.trackPurchase({ user_id: "user_123", amount: 49.99 });`}</pre>
           <section id="wallet">
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">Wallet & fees</h2>
             <ul className="mt-4 space-y-2 text-sm leading-relaxed text-foreground/75 pl-5 list-disc marker:text-muted-foreground">
-              <li>Wallet activation minimum: <strong className="text-foreground">$10</strong>.</li>
+              <li>Wallet activation: a one-time <strong className="text-foreground">$25</strong> applies to all categories. This amount is credited to your balance.</li>
               <li>Commerce campaigns: minimum <strong className="text-foreground">$200</strong> wallet + a flat fee and a commission on each sale.</li>
               <li>Offline offers: <strong className="text-foreground">$100</strong> submission escrow, <strong className="text-foreground">$300</strong> minimum wallet, 0.5% commission per order.</li>
               <li>Top-up via Paystack or Flutterwave. Gateway fees are not refundable.</li>
+              <li>Campaign approval: every campaign or ad package is manually reviewed by a Karbali official and typically approved within <strong className="text-foreground">3–7 business days</strong>.</li>
+              <li>Withdrawals: request payout of your available balance any time from the Wallet page. Funds locked in escrow for active campaigns cannot be withdrawn.</li>
             </ul>
           </section>
 
