@@ -312,117 +312,94 @@ export default function Index() {
             </div>
           </section>
 
-          {/* FEATURES — Editorial collage with image + overlapping stat card */}
-          <section className="relative z-10 py-24 md:py-32 px-6 sm:px-10 lg:px-16">
-            <div className="mx-auto max-w-5xl">
-              <MotionWrapper className="mb-16 md:mb-20 max-w-2xl">
-                <p className="text-primary font-bold text-xs uppercase tracking-[0.2em] mb-3">Performance First</p>
+          {/* FEATURES — Editorial high-contrast blocks */}
+          <section className="relative z-10 py-24 md:py-32 px-6 sm:px-10 lg:px-16 border-b-2 border-foreground">
+            <div className="mx-auto max-w-4xl">
+              <MotionWrapper className="mb-12 md:mb-16 max-w-2xl">
+                <p className="text-primary font-bold text-xs uppercase tracking-[0.25em] mb-4">Features</p>
                 <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-[1.05]">
-                  Better data, smarter growth
+                  Better data,<br className="hidden sm:block" /> smarter growth
                 </h2>
               </MotionWrapper>
 
-              <div className="space-y-24 md:space-y-32 mb-20">
-                <MotionWrapper>
-                  <div className="relative">
-                    <div className="w-[82%] md:w-[70%] aspect-[3/4] md:aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-border">
-                      <img src={featureAnalytics} alt="Real-time analytics dashboard" width={800} height={1067} loading="lazy" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="absolute -bottom-8 right-0 md:right-4 w-64 md:w-72 bg-card p-6 rounded-3xl shadow-2xl border border-border">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground">
-                          <TrendingUp className="w-4 h-4" />
-                        </div>
-                        <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">Real-Time</span>
-                      </div>
-                      <h3 className="text-lg font-bold text-foreground">Real-Time Analytics</h3>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Every click and conversion synced to your dashboard instantly.</p>
-                    </div>
-                  </div>
-                </MotionWrapper>
-
-                <MotionWrapper>
-                  <div className="relative flex justify-end pt-8">
-                    <div className="w-[82%] md:w-[70%] aspect-[3/4] md:aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-border">
-                      <img src={featureBilling} alt="Milestone billing visual" width={800} height={1067} loading="lazy" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="absolute -bottom-8 left-0 md:left-4 w-64 md:w-72 bg-card p-6 rounded-3xl shadow-2xl border border-border">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                          <DollarSign className="w-4 h-4" />
-                        </div>
-                        <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">Verified</span>
-                      </div>
-                      <h3 className="text-lg font-bold text-foreground">Milestone Billing</h3>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Zero upfront waste. You only pay when pre-defined goals are met.</p>
-                    </div>
-                  </div>
-                </MotionWrapper>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                 {[
-                  { icon: Shield, title: "Fraud Detection", desc: "Built-in IP rate limiting and zero double-counting." },
-                  { icon: Zap, title: "Simple API", desc: "Integrate our lightweight tracking snippet in minutes." },
+                  { title: "Real-Time Analytics", desc: "Instant visibility into campaign performance metrics as they happen.", variant: "dark", tag: "01 / Data" },
+                  { title: "Milestone Billing", desc: "Only pay when specific growth targets are reached and verified.", variant: "paper", tag: "02 / Billing" },
+                  { title: "Fraud Detection", desc: "Advanced filtering to ensure every conversion comes from a real user.", variant: "emerald", tag: "03 / Trust" },
+                  { title: "Simple API", desc: "Integrate with two lines of code and start tracking immediately.", variant: "paper", tag: "04 / Build" },
                 ].map((f, i) => (
-                  <MotionWrapper key={f.title} delay={i * 0.1}>
-                    <div className="bg-card border border-border p-6 rounded-3xl flex items-center gap-5 h-full">
-                      <div className="w-14 h-14 shrink-0 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary">
-                        <f.icon className="w-7 h-7" />
+                  <MotionWrapper key={f.title} delay={i * 0.08}>
+                    {f.variant === "dark" ? (
+                      <div className="bg-black text-white p-8 border-l-8 border-primary h-full min-h-[200px] flex flex-col justify-between">
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{f.tag}</span>
+                        <div>
+                          <h3 className="text-xl font-bold mb-2">{f.title}</h3>
+                          <p className="text-sm text-white/70 leading-relaxed">{f.desc}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-foreground mb-0.5">{f.title}</h3>
-                        <p className="text-sm text-muted-foreground leading-snug">{f.desc}</p>
+                    ) : f.variant === "emerald" ? (
+                      <div className="bg-primary text-primary-foreground p-8 border-2 border-foreground h-full min-h-[200px] flex flex-col justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">{f.tag}</span>
+                        <div>
+                          <h3 className="text-xl font-bold mb-2">{f.title}</h3>
+                          <p className="text-sm leading-relaxed opacity-90">{f.desc}</p>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="bg-card text-foreground p-8 border-2 border-foreground h-full min-h-[200px] flex flex-col justify-between">
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{f.tag}</span>
+                        <div>
+                          <h3 className="text-xl font-bold mb-2">{f.title}</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                        </div>
+                      </div>
+                    )}
                   </MotionWrapper>
                 ))}
               </div>
             </div>
           </section>
 
-          {/* HOW IT WORKS — Dark staircase */}
+          {/* HOW IT WORKS — Dark editorial with numbered rail */}
           {s("how_it_works").is_visible && (
             <section id="how-it-works" className="relative z-10 py-24 md:py-32 px-6 sm:px-10 lg:px-16 bg-black text-white">
-              <div className="mx-auto max-w-4xl">
-                <MotionWrapper className="text-center mb-12 md:mb-16">
-                  <h2 className="text-4xl md:text-6xl font-black tracking-tight">{s("how_it_works").title}</h2>
-                  <p className="mt-4 text-white/60 text-base md:text-lg max-w-2xl mx-auto">{s("how_it_works").subtitle}</p>
+              <div className="mx-auto max-w-3xl">
+                <MotionWrapper className="mb-14 md:mb-20">
+                  <p className="text-primary font-bold text-xs uppercase tracking-[0.25em] mb-4">Process</p>
+                  <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.05]">{s("how_it_works").title}</h2>
+                  <p className="mt-5 text-white/60 text-base md:text-lg max-w-xl">{s("how_it_works").subtitle}</p>
                 </MotionWrapper>
 
-                <div className="space-y-4 md:space-y-5 max-w-2xl mx-auto">
+                <div className="relative space-y-10 md:space-y-12">
+                  <div aria-hidden className="absolute left-6 top-6 bottom-6 w-[2px] bg-primary/25" />
                   {steps.map((step, i) => {
                     const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                     const stepTitle = parts[0] || step;
                     const desc = parts.slice(1).join(": ") || "";
-                    const isLast = i === steps.length - 1;
+                    const num = String(i + 1).padStart(2, "0");
+                    const alt = i % 2 === 1;
                     return (
-                      <MotionWrapper key={i} delay={i * 0.1}>
-                        <div
-                          className={`relative overflow-hidden p-7 md:p-8 rounded-[2rem] border ${
-                            isLast
-                              ? "bg-primary border-primary shadow-2xl shadow-primary/30"
-                              : "bg-white/[0.04] border-white/10"
-                          }`}
-                        >
-                          <span className={`absolute -top-6 -right-2 text-7xl md:text-8xl font-black italic pointer-events-none select-none ${isLast ? "text-white/20" : "text-white/[0.06]"}`}>
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          <div className="relative z-10">
-                            <h4 className={`text-xl md:text-2xl font-bold mb-2 ${isLast ? "text-primary-foreground" : "text-white"}`}>{stepTitle}</h4>
-                            <p className={`text-sm md:text-base leading-relaxed pr-8 ${isLast ? "text-primary-foreground/85" : "text-white/60"}`}>{desc}</p>
-                            {isLast && (
-                              <div className="mt-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground">
-                                <CheckCircle2 className="w-4 h-4" />
-                                Start scaling
-                              </div>
-                            )}
+                      <MotionWrapper key={i} delay={i * 0.08}>
+                        <div className="relative pl-20">
+                          <div className={`absolute left-0 top-0 w-12 h-12 flex items-center justify-center font-bold text-base border-2 ${alt ? "bg-white text-black border-primary" : "bg-primary text-primary-foreground border-white"}`}>
+                            {num}
                           </div>
+                          <h4 className="text-xl md:text-2xl font-bold mb-2">{stepTitle}</h4>
+                          <p className="text-sm md:text-base text-white/60 leading-relaxed">{desc}</p>
                         </div>
                       </MotionWrapper>
                     );
                   })}
                 </div>
+
+                <MotionWrapper delay={0.4}>
+                  <Link to="/signup" className="block">
+                    <button className="w-full mt-16 bg-primary text-primary-foreground font-bold py-5 px-6 text-sm uppercase tracking-[0.2em] border-2 border-primary hover:bg-white hover:text-black hover:border-white transition-colors">
+                      Get started now
+                    </button>
+                  </Link>
+                </MotionWrapper>
               </div>
             </section>
           )}
