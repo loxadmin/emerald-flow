@@ -312,65 +312,121 @@ export default function Index() {
             </div>
           </section>
 
-          {/* Feature grid — Stripe-flat */}
-          <section className="relative z-10 py-24 px-6 sm:px-10 lg:px-16">
-            <div className="mx-auto max-w-7xl">
-              <div className="max-w-2xl">
-                <span className="eyebrow">Platform</span>
-                <h2 className="display-lg mt-3">Everything you need to acquire customers, profitably.</h2>
-                <p className="lede mt-5">A calm, transparent ad platform built for teams that measure what matters. No vanity, no surprises.</p>
+          {/* FEATURES — Editorial collage with image + overlapping stat card */}
+          <section className="relative z-10 py-24 md:py-32 px-6 sm:px-10 lg:px-16">
+            <div className="mx-auto max-w-5xl">
+              <MotionWrapper className="mb-16 md:mb-20 max-w-2xl">
+                <p className="text-primary font-bold text-xs uppercase tracking-[0.2em] mb-3">Performance First</p>
+                <h2 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-[1.05]">
+                  Better data, smarter growth
+                </h2>
+              </MotionWrapper>
+
+              <div className="space-y-24 md:space-y-32 mb-20">
+                <MotionWrapper>
+                  <div className="relative">
+                    <div className="w-[82%] md:w-[70%] aspect-[3/4] md:aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-border">
+                      <img src={featureAnalytics} alt="Real-time analytics dashboard" width={800} height={1067} loading="lazy" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="absolute -bottom-8 right-0 md:right-4 w-64 md:w-72 bg-card p-6 rounded-3xl shadow-2xl border border-border">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground">
+                          <TrendingUp className="w-4 h-4" />
+                        </div>
+                        <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">Real-Time</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-foreground">Real-Time Analytics</h3>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Every click and conversion synced to your dashboard instantly.</p>
+                    </div>
+                  </div>
+                </MotionWrapper>
+
+                <MotionWrapper>
+                  <div className="relative flex justify-end pt-8">
+                    <div className="w-[82%] md:w-[70%] aspect-[3/4] md:aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-border">
+                      <img src={featureBilling} alt="Milestone billing visual" width={800} height={1067} loading="lazy" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="absolute -bottom-8 left-0 md:left-4 w-64 md:w-72 bg-card p-6 rounded-3xl shadow-2xl border border-border">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                          <DollarSign className="w-4 h-4" />
+                        </div>
+                        <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">Verified</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-foreground">Milestone Billing</h3>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Zero upfront waste. You only pay when pre-defined goals are met.</p>
+                    </div>
+                  </div>
+                </MotionWrapper>
               </div>
 
-              <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {features.map((f) => (
-                  <div key={f.title} className="card-flat p-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <f.icon className="h-5 w-5" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { icon: Shield, title: "Fraud Detection", desc: "Built-in IP rate limiting and zero double-counting." },
+                  { icon: Zap, title: "Simple API", desc: "Integrate our lightweight tracking snippet in minutes." },
+                ].map((f, i) => (
+                  <MotionWrapper key={f.title} delay={i * 0.1}>
+                    <div className="bg-card border border-border p-6 rounded-3xl flex items-center gap-5 h-full">
+                      <div className="w-14 h-14 shrink-0 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary">
+                        <f.icon className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-foreground mb-0.5">{f.title}</h3>
+                        <p className="text-sm text-muted-foreground leading-snug">{f.desc}</p>
+                      </div>
                     </div>
-                    <h3 className="mt-5 text-base font-semibold tracking-tight">{f.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
-                  </div>
+                  </MotionWrapper>
                 ))}
               </div>
             </div>
           </section>
 
-          {/* How it works — pastel mint band */}
+          {/* HOW IT WORKS — Dark staircase */}
           {s("how_it_works").is_visible && (
-            <section id="how-it-works" className="relative z-10 section-mint border-y border-border py-28 px-6 sm:px-10 lg:px-16">
-              <div className="mx-auto max-w-7xl">
-                <div className="grid gap-10 lg:grid-cols-12 lg:items-end">
-                  <div className="lg:col-span-7">
-                    <span className="eyebrow">How it works</span>
-                    <h2 className="display-lg mt-3 text-foreground">{s("how_it_works").title}</h2>
-                  </div>
-                  <p className="lede lg:col-span-5">{s("how_it_works").subtitle}</p>
-                </div>
+            <section id="how-it-works" className="relative z-10 py-24 md:py-32 px-6 sm:px-10 lg:px-16 bg-black text-white">
+              <div className="mx-auto max-w-4xl">
+                <MotionWrapper className="text-center mb-12 md:mb-16">
+                  <h2 className="text-4xl md:text-6xl font-black tracking-tight">{s("how_it_works").title}</h2>
+                  <p className="mt-4 text-white/60 text-base md:text-lg max-w-2xl mx-auto">{s("how_it_works").subtitle}</p>
+                </MotionWrapper>
 
-                <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-4 md:space-y-5 max-w-2xl mx-auto">
                   {steps.map((step, i) => {
                     const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                     const stepTitle = parts[0] || step;
                     const desc = parts.slice(1).join(": ") || "";
-                    const icons = [Zap, Terminal, CheckCircle2, BarChart3];
-                    const Icon = icons[i] || Zap;
+                    const isLast = i === steps.length - 1;
                     return (
-                      <div key={i} className="group relative flex flex-col bg-card p-8 transition-colors hover:bg-secondary/50">
-                        <div className="flex items-center justify-between">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                            <Icon className="h-5 w-5" />
+                      <MotionWrapper key={i} delay={i * 0.1}>
+                        <div
+                          className={`relative overflow-hidden p-7 md:p-8 rounded-[2rem] border ${
+                            isLast
+                              ? "bg-primary border-primary shadow-2xl shadow-primary/30"
+                              : "bg-white/[0.04] border-white/10"
+                          }`}
+                        >
+                          <span className={`absolute -top-6 -right-2 text-7xl md:text-8xl font-black italic pointer-events-none select-none ${isLast ? "text-white/20" : "text-white/[0.06]"}`}>
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <div className="relative z-10">
+                            <h4 className={`text-xl md:text-2xl font-bold mb-2 ${isLast ? "text-primary-foreground" : "text-white"}`}>{stepTitle}</h4>
+                            <p className={`text-sm md:text-base leading-relaxed pr-8 ${isLast ? "text-primary-foreground/85" : "text-white/60"}`}>{desc}</p>
+                            {isLast && (
+                              <div className="mt-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground">
+                                <CheckCircle2 className="w-4 h-4" />
+                                Start scaling
+                              </div>
+                            )}
                           </div>
-                          <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
                         </div>
-                        <h3 className="mt-8 text-lg font-semibold tracking-tight">{stepTitle}</h3>
-                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{desc}</p>
-                      </div>
+                      </MotionWrapper>
                     );
                   })}
                 </div>
               </div>
             </section>
           )}
+
 
           {/* CTA — ink panel for fintech contrast */}
           <section className="relative z-10 py-24 px-6 sm:px-10 lg:px-16">
