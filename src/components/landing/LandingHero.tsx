@@ -4,6 +4,9 @@ import { ArrowRight, ShieldCheck, Zap, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
+import DisplayCards from "@/components/ui/display-cards";
+import { Link2, CheckCircle, Terminal, Cpu } from "lucide-react";
+
 interface LandingHeroProps {
   title: string | null;
   subtitle: string | null;
@@ -13,18 +16,83 @@ interface LandingHeroProps {
     campaigns: number;
     events: number;
   };
+  manual: boolean | null;
 }
 
-export default function LandingHero({ title, subtitle }: LandingHeroProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+export default function LandingHero({ title, subtitle, manual }: LandingHeroProps) {
   const [index, setIndex] = useState(0);
   const words = ["Brand", "Business", "App", "Shop"];
 
   useEffect(() => {
-    videoRef.current?.play().catch(() => {});
     const id = setInterval(() => setIndex((p) => (p + 1) % words.length), 2800);
     return () => clearInterval(id);
   }, []);
+
+  const simpleCards = [
+    {
+      icon: <Link2 className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "1. Paste Link",
+      description: "No code or SDK setup needed",
+      date: "Instant promotion",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] opacity-75 grayscale hover:-translate-y-10 hover:opacity-100 hover:grayscale-0",
+      solid: true,
+    },
+    {
+      icon: <CheckCircle className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "2. Fast Approval",
+      description: "Approved manually in under 12h",
+      date: "Reviewed by admins",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] translate-x-12 translate-y-10 opacity-85 grayscale hover:-translate-y-1 hover:opacity-100 hover:grayscale-0",
+      solid: true,
+    },
+    {
+      icon: <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "3. Pay for Results",
+      description: "Escrow released on action only",
+      date: "Zero risk protection",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10",
+      solid: true,
+    },
+  ];
+
+  const advancedCards = [
+    {
+      icon: <Terminal className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "1. Drop Snippet",
+      description: "Add loader script in 5 mins",
+      date: "Quick integration",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] opacity-75 grayscale hover:-translate-y-10 hover:opacity-100 hover:grayscale-0",
+      solid: true,
+    },
+    {
+      icon: <Cpu className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "2. Domain Scan",
+      description: "System verifies and auto-activates",
+      date: "Deterministic check",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] translate-x-12 translate-y-10 opacity-85 grayscale hover:-translate-y-1 hover:opacity-100 hover:grayscale-0",
+      solid: true,
+    },
+    {
+      icon: <Zap className="size-4 text-emerald-600 dark:text-emerald-300" />,
+      title: "3. Auto Go-Live",
+      description: "Conversion events fire instantly",
+      date: "Near real-time tracking",
+      iconClassName: "text-emerald-500",
+      titleClassName: "text-emerald-600 dark:text-emerald-400",
+      className: "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10",
+      solid: true,
+    },
+  ];
 
   const renderTitle = () => {
     if (title?.includes("Your Brand")) {
@@ -110,140 +178,15 @@ export default function LandingHero({ title, subtitle }: LandingHeroProps) {
             </ul>
           </motion.div>
 
-          {/* Hero video — futuristic blended composition */}
+          {/* Hero display redesign with DisplayCards */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.1, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="relative hidden lg:col-span-6 lg:block"
+            className="relative hidden lg:col-span-6 lg:block animate-in fade-in zoom-in-95 duration-1000"
           >
-            <div aria-hidden className="pointer-events-none absolute -inset-16"
-                 style={{
-                   background:
-                     "radial-gradient(50% 50% at 50% 50%, hsl(var(--primary)/0.28), transparent 65%), radial-gradient(40% 40% at 80% 20%, hsl(var(--pastel-sky)/0.6), transparent 70%)",
-                   filter: "blur(40px)",
-                 }} />
-            <div aria-hidden className="pointer-events-none absolute inset-0 -m-6 rounded-[3rem] opacity-60"
-                 style={{
-                   background:
-                     "conic-gradient(from 140deg at 50% 50%, transparent 0deg, hsl(var(--primary)/0.35) 60deg, transparent 140deg, hsl(var(--pastel-lavender)/0.5) 220deg, transparent 320deg)",
-                   filter: "blur(28px)",
-                 }} />
-
-            <div className="relative mx-auto aspect-[5/4] w-full max-w-[620px]">
-              {/* Soft outer aura that bleeds into hero bg */}
-              <div aria-hidden className="pointer-events-none absolute inset-[-22%] rounded-[3rem]"
-                   style={{
-                     background:
-                       "radial-gradient(closest-side, hsl(var(--primary)/0.35), hsl(var(--pastel-sky)/0.3) 45%, transparent 75%)",
-                     filter: "blur(48px)",
-                   }} />
-
-              {/* Pulsating ringing rings — spectrum effect */}
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  aria-hidden
-                  className="pointer-events-none absolute inset-[-4%] rounded-[2.25rem] border border-primary/30"
-                  style={{
-                    animation: `ringPulse 3.2s cubic-bezier(0.22,1,0.36,1) ${i * 1.05}s infinite`,
-                  }}
-                />
-              ))}
-
-              {/* Video frame with strong gradient feather to blend into hero */}
-              <div
-                className="absolute inset-0 overflow-hidden rounded-[2rem]"
-                style={{
-                  WebkitMaskImage:
-                    "radial-gradient(120% 110% at 50% 50%, black 35%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0.35) 82%, transparent 100%)",
-                  maskImage:
-                    "radial-gradient(120% 110% at 50% 50%, black 35%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0.35) 82%, transparent 100%)",
-                }}
-              >
-                <video
-                  ref={videoRef}
-                  src="/hero-animation.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="auto"
-                  className="h-full w-full object-cover"
-                />
-
-                {/* Dark overlay for cinematic depth */}
-                <div aria-hidden className="absolute inset-0"
-                     style={{
-                       background:
-                         "linear-gradient(180deg, hsl(220 25% 6% / 0.55) 0%, hsl(220 25% 6% / 0.25) 35%, hsl(220 25% 6% / 0.35) 65%, hsl(220 25% 6% / 0.7) 100%)",
-                     }} />
-
-                {/* Color grade tint */}
-                <div aria-hidden className="absolute inset-0 mix-blend-soft-light"
-                     style={{
-                       background:
-                         "radial-gradient(circle at 30% 30%, hsl(var(--primary)/0.4), transparent 55%), radial-gradient(circle at 70% 75%, hsl(var(--pastel-lavender)/0.4), transparent 60%)",
-                     }} />
-
-                {/* Edge feather toward hero bg color */}
-                <div aria-hidden className="absolute inset-0"
-                     style={{
-                       background:
-                         "radial-gradient(130% 110% at 50% 50%, transparent 55%, hsl(var(--background)/0.55) 82%, hsl(var(--background)) 100%)",
-                     }} />
-
-                {/* Spectrum scan shimmer */}
-                <div aria-hidden className="absolute inset-0 opacity-[0.12]"
-                     style={{
-                       backgroundImage:
-                         "repeating-linear-gradient(180deg, hsl(var(--foreground)) 0 1px, transparent 1px 3px)",
-                     }} />
-              </div>
-
-              {/* Inner accent rings */}
-              <div aria-hidden className="pointer-events-none absolute inset-[6%] rounded-[1.5rem] border border-primary/15" />
-              <div aria-hidden className="pointer-events-none absolute inset-[12%] rounded-[1.25rem] border border-foreground/5" />
-
-              <style>{`
-                @keyframes ringPulse {
-                  0% { transform: scale(0.92); opacity: 0; border-color: hsl(var(--primary) / 0.55); }
-                  20% { opacity: 0.9; }
-                  100% { transform: scale(1.18); opacity: 0; border-color: hsl(var(--pastel-sky) / 0.2); }
-                }
-              `}</style>
-
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
-                className="absolute -left-2 top-10 hidden rounded-2xl border border-border/60 bg-card/80 px-3.5 py-2.5 shadow-xl backdrop-blur-xl sm:block"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                  </span>
-                  <div>
-                    <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Attribution</div>
-                    <div className="text-xs font-semibold text-foreground">Live · realtime</div>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8, duration: 0.6 }}
-                className="absolute -right-2 bottom-10 hidden rounded-2xl border border-border/60 bg-card/80 px-3.5 py-2.5 shadow-xl backdrop-blur-xl sm:block"
-              >
-                <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">ROAS today</div>
-                <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <span className="text-base font-semibold text-foreground">4.82×</span>
-                  <span className="text-[10px] font-medium text-emerald-500">+12.4%</span>
-                </div>
-              </motion.div>
+            <div className="relative mx-auto w-full max-w-[620px] flex items-center justify-center min-h-[420px] py-10">
+              <DisplayCards cards={manual === true ? simpleCards : advancedCards} />
             </div>
           </motion.div>
         </div>

@@ -10,12 +10,23 @@ export function useManualMode() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("admin_settings")
-        .select("value")
-        .eq("key", "manual_mode_enabled")
-        .maybeSingle();
-      if (!cancelled) setEnabled(data?.value === "true");
+      try {
+        const { data, error } = await supabase
+          .from("admin_settings")
+          .select("value")
+          .eq("key", "manual_mode_enabled")
+          .maybeSingle();
+        if (!cancelled) {
+          if (error || !data) {
+            // Default to Simple Mode (true) if fetch fails, is unauthorized (e.g. public user), or missing
+            setEnabled(true);
+          } else {
+            setEnabled(data.value === "true");
+          }
+        }
+      } catch (err) {
+        if (!cancelled) setEnabled(true);
+      }
     })();
     return () => { cancelled = true; };
   }, []);
