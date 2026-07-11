@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, Shield, Zap, DollarSign, Send, Play } from "lucide-react";
+import { ArrowRight, BarChart3, Shield, Zap, DollarSign, Send, Play, TrendingUp, CheckCircle2 } from "lucide-react";
 import { GlassButton } from "@/components/ui/glass-button";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import MotionWrapper from "@/components/MotionWrapper";
@@ -9,6 +9,8 @@ import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import featureAnalytics from "@/assets/feature-analytics.jpg";
+import featureBilling from "@/assets/feature-billing.jpg";
 
 interface SiteContent {
   section_key: string;
