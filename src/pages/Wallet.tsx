@@ -367,6 +367,9 @@ export default function WalletPage() {
                       <Button onClick={handleFund} disabled={funding} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
                         {funding ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ArrowUpCircle className="mr-2 h-4 w-4" /> Fund Wallet</>}
                       </Button>
+                      <Button onClick={openWithdraw} variant="outline" className="w-full">
+                        <Send className="mr-2 h-4 w-4" /> Request withdrawal
+                      </Button>
                     </div>
                   </div>
                 </MotionWrapper>
