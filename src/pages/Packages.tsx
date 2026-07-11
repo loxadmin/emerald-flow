@@ -182,16 +182,22 @@ export default function Packages() {
     });
   }, [selectedMs, milestones]);
 
+  const COMMISSION_RESERVE_PER_USER = 1; // $1/user escrow lock when only commission milestones are chosen
+
+  const commissionRows = selectedMs.filter((r) => r.pricing_type === "commission_pct");
+  const hasFlatSelected = selectedMs.some((r) => r.pricing_type === "flat");
+  const commissionOnly = !hasFlatSelected && commissionRows.length > 0;
+
   const flatTotal = useMemo(() => {
+    if (commissionOnly) {
+      return Number((units * COMMISSION_RESERVE_PER_USER).toFixed(2));
+    }
     const perUser = selectedMs
       .filter((r) => r.pricing_type === "flat")
       .reduce((s, r) => s + (r.price_usd || 0), 0);
     const base = units * perUser;
     return Number((needsDuration ? base * duration : base).toFixed(2));
-  }, [selectedMs, units, needsDuration, duration]);
-
-  const commissionRows = selectedMs.filter((r) => r.pricing_type === "commission_pct");
-  const hasFlatSelected = selectedMs.some((r) => r.pricing_type === "flat");
+  }, [selectedMs, units, needsDuration, duration, commissionOnly]);
 
 
   const submit = async () => {
@@ -200,7 +206,7 @@ export default function Packages() {
       return toast.error(`Users must be between ${selected.min_units} and ${selected.max_units}`);
     }
     if (selectedIds.length === 0) return toast.error("Pick at least one milestone");
-    if (!hasFlatSelected) return toast.error("Pick at least one flat-priced milestone (commission-only orders can't be escrowed)");
+    if (!hasFlatSelected && commissionRows.length === 0) return toast.error("Pick at least one milestone");
     if (platform === "mobile" && appInstallId && packageMs.find((r) => r.milestone_id === appInstallId) && !selectedIds.includes(appInstallId)) {
       return toast.error("App Install is required for mobile-app orders");
     }
@@ -460,7 +466,9 @@ export default function Packages() {
                       <span className="text-lg font-semibold">${flatTotal.toFixed(2)}</span>
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {needsDuration
+                      {commissionOnly
+                        ? `${units.toLocaleString()} users × $${COMMISSION_RESERVE_PER_USER}/user reserve (locked in escrow to fund per-sale commissions).`
+                        : needsDuration
                         ? `${units.toLocaleString()} users × ${duration} days × selected flat milestones.`
                         : `${units.toLocaleString()} users × selected flat milestones.`}
                     </p>
