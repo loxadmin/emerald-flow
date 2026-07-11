@@ -498,6 +498,71 @@ export default function WalletPage() {
           </>
         )}
       </div>
+
+      <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+        <DialogContent className="max-w-md">
+          {withdrawStep === "suggest" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Before you withdraw</DialogTitle>
+                <DialogDescription>
+                  Your funds work harder inside Karbali. Would you like to use them for a campaign or ad package instead?
+                </DialogDescription>
+              </DialogHeader>
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+                Available for withdrawal: <span className="font-semibold text-foreground">${Number(wallet?.balance || 0).toFixed(2)}</span>. Funds locked in escrow for active campaigns cannot be withdrawn.
+              </div>
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button asChild variant="default" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <Link to="/packages">Use for a campaign</Link>
+                </Button>
+                <Button variant="outline" onClick={() => setWithdrawStep("form")}>No, withdraw funds</Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Request withdrawal</DialogTitle>
+                <DialogDescription>
+                  You can withdraw up to <strong>${Number(wallet?.balance || 0).toFixed(2)}</strong>. Escrow funds are not withdrawable.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Amount (USD)</Label>
+                  <Input type="number" min="1" max={Number(wallet?.balance || 0)} step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="e.g. 50" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Payout method</Label>
+                  <select value={withdrawMethod} onChange={(e) => setWithdrawMethod(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <option value="bank_transfer">Bank transfer (NGN)</option>
+                    <option value="paystack">Paystack</option>
+                    <option value="flutterwave">Flutterwave</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Bank name</Label>
+                  <Input value={withdrawBank} onChange={(e) => setWithdrawBank(e.target.value)} placeholder="e.g. GTBank" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Account number</Label>
+                  <Input value={withdrawAccount} onChange={(e) => setWithdrawAccount(e.target.value)} placeholder="10-digit account number" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Account name</Label>
+                  <Input value={withdrawName} onChange={(e) => setWithdrawName(e.target.value)} placeholder="Account holder name" />
+                </div>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button variant="outline" onClick={() => setWithdrawStep("suggest")}>Back</Button>
+                <Button onClick={submitWithdrawal} disabled={withdrawing} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  {withdrawing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit request"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
