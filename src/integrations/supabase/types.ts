@@ -1671,6 +1671,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_blocked: boolean
+          terms_accepted_at: string | null
           website: string | null
           whatsapp_otp_code: string | null
           whatsapp_otp_expires_at: string | null
@@ -1685,6 +1686,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_blocked?: boolean
+          terms_accepted_at?: string | null
           website?: string | null
           whatsapp_otp_code?: string | null
           whatsapp_otp_expires_at?: string | null
@@ -1699,6 +1701,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_blocked?: boolean
+          terms_accepted_at?: string | null
           website?: string | null
           whatsapp_otp_code?: string | null
           whatsapp_otp_expires_at?: string | null

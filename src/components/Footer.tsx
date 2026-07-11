@@ -23,7 +23,8 @@ export default function Footer({ content }: FooterProps) {
           <Link to="/learn" className="hover:text-primary transition-colors">Learn</Link>
           <Link to="/use-cases" className="hover:text-primary transition-colors">Use Cases</Link>
           <Link to="/what-is-karbali" className="hover:text-primary transition-colors">What is Karbali?</Link>
-          <Link to="/docs" className="hover:text-primary transition-colors">API Docs</Link>
+          <Link to="/docs" className="hover:text-primary transition-colors">Docs</Link>
+          <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
         </div>
         <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
       </div>
