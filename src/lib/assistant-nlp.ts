@@ -489,6 +489,19 @@ export function detectIntent(
   if (includesPhrase(raw.toLowerCase(), ["you did not", "you didnt", "i said", "i asked", "not related", "not connected", "how is", "why did you"])) {
     if (state.goal) {
       return {
+  // Score all knowledge intents first if it looks like a question or explanation request.
+  const isQuestion = includesPhrase(raw.toLowerCase(), ["what", "how", "why", "explain", "tell", "difference", "meaning", "?"]);
+  let best: { score: number; rule: IntentRule | null } = { score: 0, rule: null };
+  for (const rule of INTENT_RULES) {
+    const s = scoreIntent(rule, tokens, raw.toLowerCase());
+    if (s > best.score) best = { score: s, rule };
+  }
+
+  if (isQuestion && best.rule && best.score >= 3 && best.rule.topic) {
+    const reply = answerTopic(best.rule.topic, state, ctx);
+    return { ...reply, stateUpdates: { ...reply.stateUpdates, lastIntent: best.rule.id } };
+  }
+
         text: `Sorry. You're focused on ${state.goal}. Ask me anything specific about that: cost, tracking, setup, or launch, and I'll answer for ${state.goal} directly.`,
         suggestions: [`How much for ${state.goal}?`, `How is ${state.goal} tracked?`, `Start ${state.goal} campaign`],
       };
