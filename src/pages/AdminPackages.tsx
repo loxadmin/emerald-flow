@@ -165,6 +165,9 @@ export default function AdminPackages() {
     }
     setSaving(false);
     toast.success(editing ? "Package updated" : "Package created");
+    if (!editing && pkgId) {
+      supabase.functions.invoke("notify", { body: { event: "package_created", payload: { package_id: pkgId } } }).catch(() => {});
+    }
     setOpen(false); load();
   };
 
