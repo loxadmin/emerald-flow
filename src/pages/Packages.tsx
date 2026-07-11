@@ -159,12 +159,16 @@ export default function Packages() {
       sessionStorage.removeItem(PENDING_KEY);
       (async () => {
         await new Promise((r) => setTimeout(r, 1500));
-        const { error } = await supabase.rpc("purchase_package_v2" as any, {
+        const { data, error } = await supabase.rpc("purchase_package_v2" as any, {
           _package_id: p.package_id, _units: p.units, _duration_days: p.duration,
           _selected_milestone_ids: p.selected_ids, _platform: p.platform, _links: p.links,
         });
         if (error) toast.error(`Payment received but purchase failed: ${error.message}`);
-        else toast.success("Package purchased! Pending admin review.");
+        else {
+          toast.success("Package purchased! Approval takes 3–7 business days.");
+          const orderId = (data as { order_id?: string })?.order_id;
+          if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
+        }
         load();
       })();
     }
