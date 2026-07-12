@@ -30,7 +30,7 @@ type PkgMilestone = {
   commission_pct: number | null;
 };
 type WebsiteRow = { id: string; domain: string; is_verified: boolean };
-type WalletInfo = { balance: number; is_activated: boolean };
+type WalletInfo = { id?: string; balance: number; is_activated: boolean };
 
 const PENDING_KEY = "karbali_pending_package_purchase";
 
@@ -69,7 +69,7 @@ export default function Packages() {
     setMySubtype(sub);
 
     const [{ data: w }, { data: ms }, { data: sites }] = await Promise.all([
-      supabase.from("wallets").select("balance, is_activated").eq("advertiser_id", user.id).maybeSingle(),
+      supabase.from("wallets").select("id, balance, is_activated").eq("advertiser_id", user.id).maybeSingle(),
       supabase.from("milestones" as any).select("id,name,slug,default_order,requires_duration").eq("is_active", true).order("default_order"),
       supabase.from("advertiser_websites").select("id, domain, is_verified").eq("advertiser_id", user.id),
     ]);
@@ -196,12 +196,17 @@ export default function Packages() {
     if (commissionOnly) {
       return Number((units * COMMISSION_RESERVE_PER_USER).toFixed(2));
     }
-    const perUser = selectedMs
+    // Per-milestone: duration-based milestones bill per user per day, flat one-time milestones bill per user.
+    const total = selectedMs
       .filter((r) => r.pricing_type === "flat")
-      .reduce((s, r) => s + (r.price_usd || 0), 0);
-    const base = units * perUser;
-    return Number((needsDuration ? base * duration : base).toFixed(2));
-  }, [selectedMs, units, needsDuration, duration, commissionOnly]);
+      .reduce((s, r) => {
+        const m = milestones.find((x) => x.id === r.milestone_id);
+        const perUser = r.price_usd || 0;
+        const days = m?.requires_duration ? duration : 1;
+        return s + perUser * units * days;
+      }, 0);
+    return Number(total.toFixed(2));
+  }, [selectedMs, units, duration, commissionOnly, milestones]);
 
 
   const submit = async () => {
@@ -244,6 +249,15 @@ export default function Packages() {
       if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
       setSelected(null); load();
       return;
+    }
+
+    // Ensure wallet exists before initializing a Paystack top-up
+    if (!wallet?.id) {
+      const { data: created, error: cErr } = await supabase.functions.invoke("paystack-wallet", { body: { action: "create_wallet" } });
+      if (cErr || (created as any)?.error) {
+        setBuying(false);
+        return toast.error((created as any)?.error || cErr?.message || "Could not prepare wallet");
+      }
     }
 
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({

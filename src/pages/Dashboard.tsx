@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import {
   Plus, BarChart3, DollarSign, MousePointerClick, Tag, ArrowUpRight,
-  Activity, RefreshCw, Sparkles,
+  Activity, RefreshCw, Sparkles, Gift,
+
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -35,16 +36,28 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
+  const [hasPackages, setHasPackages] = useState(false);
+
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
       const { data: catData } = await supabase
         .from("advertiser_categories")
-        .select("category_id, categories(name)")
+        .select("category_id, advertiser_subtype, categories(name)")
         .eq("advertiser_id", user.id)
         .maybeSingle();
       if (catData) setCategoryName((catData as { categories?: { name?: string } | null })?.categories?.name || null);
+      const subtype = (catData as { advertiser_subtype?: string } | null)?.advertiser_subtype;
+      if (subtype) {
+        const { data: pkgs } = await supabase
+          .from("ad_packages")
+          .select("id")
+          .eq("is_active", true)
+          .contains("advertiser_subtypes", [subtype])
+          .limit(1);
+        setHasPackages(!!(pkgs && pkgs.length > 0));
+      }
 
       const { data: campaignsData } = await supabase
         .from("campaigns").select("*").eq("advertiser_id", user.id)
@@ -125,6 +138,25 @@ export default function Dashboard() {
             </Link>
           </div>
         </MotionWrapper>
+
+        {hasPackages && (
+          <MotionWrapper delay={0.05}>
+            <Link to="/packages" className="block group">
+              <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent p-5 flex items-center gap-4 hover:border-emerald-500/50 transition-colors">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+                  <Gift className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">Place ads on a discounted package 🎁</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">We've prepared a ready-to-run ad package for your category — grab it before it's gone.</p>
+                </div>
+                <ArrowUpRight className="h-4 w-4 text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </div>
+            </Link>
+          </MotionWrapper>
+        )}
+
+
 
         {/* Stats */}
         <MotionStagger className="grid gap-3 grid-cols-2 lg:grid-cols-4">
