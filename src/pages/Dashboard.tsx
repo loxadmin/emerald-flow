@@ -36,6 +36,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
+  const [hasPackages, setHasPackages] = useState(false);
+
 
   useEffect(() => {
     if (!user) return;
