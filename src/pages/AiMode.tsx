@@ -290,25 +290,30 @@ export default function AiMode() {
       const subtypeGoals = getSubtypeGoalOptions(subtype);
       const goals: string[] = subtypeGoals.length ? subtypeGoals : (((ac as any)?.categories?.goal_options as string[]) || []);
       const catName: string = subtype ? subtypeLabel(subtype) : ((ac as any)?.categories?.name || "");
-      const intro = goals.length
-        ? `${greet.text}\n\nWhat are you looking to get for your ${catName || "business"}? Pick one to get started.`
-        : greet.text;
 
-      // Quick actions: always offer AI-driven campaign creation; add packages if any live ones target this subtype.
+      // Check for live ad packages targeting this advertiser's subtype
+      let hasPackages = false;
+      if (advertiserType !== "offline" && subtype) {
+        const { data: pkgs } = await supabase
+          .from("ad_packages")
+          .select("id, advertiser_subtypes")
+          .eq("is_active", true)
+          .contains("advertiser_subtypes", [subtype])
+          .limit(1);
+        hasPackages = !!(pkgs && pkgs.length > 0);
+      }
+
+      const packageLine = hasPackages
+        ? `\n\n🎁 Good news — we have a discounted ad package ready for ${catName || "your account"}. Tap "View ad packages" below to grab it.`
+        : "";
+      const intro = goals.length
+        ? `${greet.text}${packageLine}\n\nWhat are you looking to get for your ${catName || "business"}? Pick one to get started.`
+        : `${greet.text}${packageLine}`;
+
       const actions: { label: string; to?: string; prompt?: string }[] = [];
       if (advertiserType !== "offline") {
+        if (hasPackages) actions.push({ label: "View ad packages", to: "/packages" });
         actions.push({ label: "Create a campaign with AI", prompt: "Create a campaign" });
-        if (subtype) {
-          const { data: pkgs } = await supabase
-            .from("ad_packages")
-            .select("id, advertiser_subtypes")
-            .eq("is_active", true)
-            .contains("advertiser_subtypes", [subtype])
-            .limit(1);
-          if (pkgs && pkgs.length > 0) {
-            actions.push({ label: "View ad packages", to: "/packages" });
-          }
-        }
       } else {
         actions.push({ label: "Submit an offer", to: "/offline/offers" });
       }
