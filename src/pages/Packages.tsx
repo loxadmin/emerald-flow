@@ -69,7 +69,7 @@ export default function Packages() {
     setMySubtype(sub);
 
     const [{ data: w }, { data: ms }, { data: sites }] = await Promise.all([
-      supabase.from("wallets").select("balance, is_activated").eq("advertiser_id", user.id).maybeSingle(),
+      supabase.from("wallets").select("id, balance, is_activated").eq("advertiser_id", user.id).maybeSingle(),
       supabase.from("milestones" as any).select("id,name,slug,default_order,requires_duration").eq("is_active", true).order("default_order"),
       supabase.from("advertiser_websites").select("id, domain, is_verified").eq("advertiser_id", user.id),
     ]);
