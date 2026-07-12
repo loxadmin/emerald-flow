@@ -325,12 +325,12 @@ export default function Index() {
           </section>
 
           {/* Redesigned Feature Section with Animated Cards Stack */}
-          <section className="relative z-10 py-24 px-6 sm:px-10 lg:px-16 overflow-hidden">
+          <section className="relative z-10 py-12 md:py-16 px-6 sm:px-10 lg:px-16 overflow-hidden">
             <div className="mx-auto max-w-7xl">
-              <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16 items-start">
+              <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16 items-center">
 
                 {/* Left Side: Sticky Headers */}
-                <div className="lg:col-span-5 lg:sticky lg:top-28 lg:py-12">
+                <div className="lg:col-span-5 lg:py-6">
                   <span className="eyebrow">Platform</span>
                   <h2 className="display-lg mt-3 text-foreground font-semibold">
                     Everything you need to acquire customers, profitably.
@@ -341,10 +341,10 @@ export default function Index() {
                 </div>
 
                 {/* Right Side: Animated Cards Stack */}
-                <div className="lg:col-span-7 w-full flex justify-center">
-                  <ContainerScroll className="h-[220vh] w-full max-w-[440px]">
-                    <div className="sticky top-28 h-svh w-full py-12 flex items-start justify-center">
-                      <CardsContainer className="relative w-full h-[320px] sm:h-[280px]">
+                <div className="lg:col-span-7 w-full flex justify-center py-6">
+                  <ContainerScroll className="w-full max-w-[440px]">
+                    <div className="w-full flex items-start justify-center">
+                      <CardsContainer className="relative w-full h-[340px] sm:h-[300px]">
                         {features.map((f, index) => (
                           <CardTransformed
                             arrayLength={features.length}
@@ -379,7 +379,7 @@ export default function Index() {
 
           {/* How it works — pastel mint band */}
           {s("how_it_works").is_visible && (
-            <section id="how-it-works" className="relative z-10 section-mint border-y border-border py-28 px-6 sm:px-10 lg:px-16">
+            <section id="how-it-works" className="relative z-10 section-mint border-y border-border py-12 md:py-16 px-6 sm:px-10 lg:px-16">
               <div className="mx-auto max-w-7xl">
                 <div className="grid grid-cols-1 gap-16 lg:grid-cols-12 items-center">
 
@@ -481,7 +481,7 @@ export default function Index() {
 
           {/* Contact — pastel cream band */}
           {s("contact").is_visible && (
-            <section id="contact" className="relative z-10 section-cream border-t border-border py-28 px-6 sm:px-10 lg:px-16">
+            <section id="contact" className="relative z-10 section-cream border-t border-border py-16 md:py-20 px-6 sm:px-10 lg:px-16">
               <div className="mx-auto max-w-6xl">
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
                   <div>
