@@ -251,6 +251,15 @@ export default function Packages() {
       return;
     }
 
+    // Ensure wallet exists before initializing a Paystack top-up
+    if (!wallet?.id) {
+      const { data: created, error: cErr } = await supabase.functions.invoke("paystack-wallet", { body: { action: "create_wallet" } });
+      if (cErr || (created as any)?.error) {
+        setBuying(false);
+        return toast.error((created as any)?.error || cErr?.message || "Could not prepare wallet");
+      }
+    }
+
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({
       package_id: selected.id, units, duration: needsDuration ? duration : null,
       selected_ids: selectedIds, platform, links: cleanLinks,
