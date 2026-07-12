@@ -196,12 +196,17 @@ export default function Packages() {
     if (commissionOnly) {
       return Number((units * COMMISSION_RESERVE_PER_USER).toFixed(2));
     }
-    const perUser = selectedMs
+    // Per-milestone: duration-based milestones bill per user per day, flat one-time milestones bill per user.
+    const total = selectedMs
       .filter((r) => r.pricing_type === "flat")
-      .reduce((s, r) => s + (r.price_usd || 0), 0);
-    const base = units * perUser;
-    return Number((needsDuration ? base * duration : base).toFixed(2));
-  }, [selectedMs, units, needsDuration, duration, commissionOnly]);
+      .reduce((s, r) => {
+        const m = milestones.find((x) => x.id === r.milestone_id);
+        const perUser = r.price_usd || 0;
+        const days = m?.requires_duration ? duration : 1;
+        return s + perUser * units * days;
+      }, 0);
+    return Number(total.toFixed(2));
+  }, [selectedMs, units, duration, commissionOnly, milestones]);
 
 
   const submit = async () => {
