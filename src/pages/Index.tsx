@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ContainerScroll, CardsContainer, CardTransformed } from "@/components/ui/animated-cards-stack";
 import { cn } from "@/lib/utils";
+import DisplayCards, { DisplayCardProps } from "@/components/ui/display-cards";
 
 interface SiteContent {
   section_key: string;
@@ -380,34 +381,74 @@ export default function Index() {
           {s("how_it_works").is_visible && (
             <section id="how-it-works" className="relative z-10 section-mint border-y border-border py-28 px-6 sm:px-10 lg:px-16">
               <div className="mx-auto max-w-7xl">
-                <div className="grid gap-10 lg:grid-cols-12 lg:items-end">
-                  <div className="lg:col-span-7">
-                    <span className="eyebrow">How it works</span>
-                    <h2 className="display-lg mt-3 text-foreground">{s("how_it_works").title}</h2>
-                  </div>
-                  <p className="lede lg:col-span-5">{s("how_it_works").subtitle}</p>
-                </div>
+                <div className="grid grid-cols-1 gap-16 lg:grid-cols-12 items-center">
 
-                <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-2 lg:grid-cols-4">
-                  {steps.map((step, i) => {
-                    const parts = step.replace(/^\d+\.\s*/, "").split(": ");
-                    const stepTitle = parts[0] || step;
-                    const desc = parts.slice(1).join(": ") || "";
-                    const icons = [Zap, Terminal, CheckCircle2, BarChart3];
-                    const Icon = icons[i] || Zap;
-                    return (
-                      <div key={i} className="group relative flex flex-col bg-card p-8 transition-colors hover:bg-secondary/50">
-                        <div className="flex items-center justify-between">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                            <Icon className="h-5 w-5" />
+                  {/* Left Side: Text and Steps */}
+                  <div className="lg:col-span-7 space-y-8">
+                    <div>
+                      <span className="eyebrow">How it works</span>
+                      <h2 className="display-lg mt-3 text-foreground font-semibold">{s("how_it_works").title}</h2>
+                      <p className="lede mt-5 text-muted-foreground">{s("how_it_works").subtitle}</p>
+                    </div>
+
+                    <div className="space-y-6">
+                      {steps.map((step, i) => {
+                        const parts = step.replace(/^\d+\.\s*/, "").split(": ");
+                        const stepTitle = parts[0] || step;
+                        const desc = parts.slice(1).join(": ") || "";
+                        const icons = [Zap, Terminal, CheckCircle2, BarChart3];
+                        const Icon = icons[i] || Zap;
+
+                        return (
+                          <div key={i} className="flex gap-4 items-start">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary mt-1">
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold tracking-tight text-foreground">
+                                <span className="font-mono text-xs text-muted-foreground mr-2">0{i + 1}.</span>
+                                {stepTitle}
+                              </h3>
+                              <p className="mt-1 text-sm text-muted-foreground max-w-xl">{desc}</p>
+                            </div>
                           </div>
-                          <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
-                        </div>
-                        <h3 className="mt-8 text-lg font-semibold tracking-tight">{stepTitle}</h3>
-                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{desc}</p>
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Right Side: Redesigned Interactive Layout with DisplayCards Stack */}
+                  <div className="lg:col-span-5 flex items-center justify-center py-10">
+                    <div className="relative w-full max-w-md aspect-[4/3] flex items-center justify-center">
+                      <DisplayCards
+                        cards={steps.slice(0, 3).map((step, i) => {
+                          const parts = step.replace(/^\d+\.\s*/, "").split(": ");
+                          const stepTitle = parts[0] || step;
+                          const desc = parts.slice(1).join(": ") || "";
+                          const icons = [Zap, Terminal, CheckCircle2];
+                          const Icon = icons[i] || Zap;
+
+                          // Custom translation values based on card index
+                          const translationClasses = [
+                            "[grid-area:stack] hover:-translate-y-10 opacity-75 grayscale hover:opacity-100 hover:grayscale-0",
+                            "[grid-area:stack] translate-x-12 translate-y-10 hover:-translate-y-1 opacity-75 grayscale hover:opacity-100 hover:grayscale-0",
+                            "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10 opacity-75 grayscale hover:opacity-100 hover:grayscale-0"
+                          ];
+
+                          return {
+                            icon: <Icon className="size-4 text-primary" />,
+                            title: stepTitle,
+                            description: desc.length > 25 ? desc.substring(0, 25) + "..." : desc,
+                            date: `Step 0${i + 1}`,
+                            iconClassName: "text-primary",
+                            titleClassName: "text-primary",
+                            className: translationClasses[i]
+                          };
+                        })}
+                      />
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </section>
