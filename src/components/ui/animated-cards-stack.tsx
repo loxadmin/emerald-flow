@@ -7,9 +7,7 @@ import {
   HTMLMotionProps,
   MotionValue,
   motion,
-  useMotionTemplate,
-  useScroll,
-  useTransform,
+  useMotionValue,
 } from "motion/react"
 
 import { cn } from "@/lib/utils"
@@ -26,10 +24,12 @@ const cardVariants = cva("absolute will-change-transform", {
     variant: "light",
   },
 })
+
 interface ReviewProps extends React.HTMLAttributes<HTMLDivElement> {
   rating: number
   maxRating?: number
 }
+
 interface CardStickyProps
   extends HTMLMotionProps<"div">,
     VariantProps<typeof cardVariants> {
@@ -39,6 +39,7 @@ interface CardStickyProps
   incrementZ?: number
   incrementRotation?: number
 }
+
 interface ContainerScrollContextValue {
   scrollYProgress: MotionValue<number>
 }
@@ -46,6 +47,7 @@ interface ContainerScrollContextValue {
 const ContainerScrollContext = React.createContext<
   ContainerScrollContextValue | undefined
 >(undefined)
+
 function useContainerScrollContext() {
   const context = React.useContext(ContainerScrollContext)
   if (context === undefined) {
@@ -59,17 +61,12 @@ function useContainerScrollContext() {
 export const ContainerScroll: React.FC<
   React.HTMLAttributes<HTMLDivElement>
 > = ({ children, style, className, ...props }) => {
-  const scrollRef = React.useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: scrollRef,
-    offset: ["start center", "end end"],
-  })
+  const scrollYProgress = useMotionValue(0)
 
   return (
     <ContainerScrollContext.Provider value={{ scrollYProgress }}>
       <div
-        ref={scrollRef}
-        className={cn("relative min-h-svh w-full", className)}
+        className={cn("relative w-full", className)}
         style={{ perspective: "1000px", ...style }}
         {...props}
       >
@@ -80,25 +77,94 @@ export const ContainerScroll: React.FC<
 }
 ContainerScroll.displayName = "ContainerScroll"
 
-export const CardsContainer: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
-  children,
-  className,
-  ...props
-}) => {
-  const containerRef = React.useRef<HTMLDivElement>(null)
+interface CardsContainerContextValue {
+  activeIndex: number
+  swipeDirection: "left" | "right"
+  isSwiping: boolean
+  hovered: boolean
+  hoveredCardIndex: number | null
+  setHoveredCardIndex: (index: number | null) => void
+  isMobile: boolean
+  totalCards: number
+}
+
+const CardsContainerContext = React.createContext<
+  CardsContainerContextValue | undefined
+>(undefined)
+
+function useCardsContainer() {
+  return React.useContext(CardsContainerContext)
+}
+
+export const CardsContainer = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ children, className, ...props }, ref) => {
+  const [activeIndex, setActiveIndex] = React.useState(0)
+  const [swipeDirection, setSwipeDirection] = React.useState<"left" | "right">("left")
+  const [isSwiping, setIsSwiping] = React.useState(false)
+  const [hovered, setHovered] = React.useState(false)
+  const [hoveredCardIndex, setHoveredCardIndex] = React.useState<number | null>(null)
+  const [isMobile, setIsMobile] = React.useState(false)
+
+  const totalCards = React.Children.count(children)
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640)
+    }
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
+
+  React.useEffect(() => {
+    if (hovered || totalCards <= 1) return
+
+    const interval = setInterval(() => {
+      setIsSwiping(true)
+      setTimeout(() => {
+        setActiveIndex((prev) => (prev + 1) % totalCards)
+        setSwipeDirection((prev) => (prev === "left" ? "right" : "left"))
+        setIsSwiping(false)
+      }, 500)
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [hovered, totalCards])
 
   return (
-    <div
-      ref={containerRef}
-      className={cn("relative", className)}
-      style={{ perspective: "1000px", ...props.style }}
-      {...props}
+    <CardsContainerContext.Provider
+      value={{
+        activeIndex,
+        swipeDirection,
+        isSwiping,
+        hovered,
+        hoveredCardIndex,
+        setHoveredCardIndex,
+        isMobile,
+        totalCards,
+      }}
     >
-      {children}
-    </div>
+      <div
+        ref={ref}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => {
+          setHovered(false)
+          setHoveredCardIndex(null)
+        }}
+        onTouchStart={() => setHovered(true)}
+        className={cn("relative", className)}
+        style={{ perspective: "1000px", ...props.style }}
+        {...props}
+      >
+        {children}
+      </div>
+    </CardsContainerContext.Provider>
   )
-}
+})
 CardsContainer.displayName = "CardsContainer"
+
 export const CardTransformed = React.forwardRef<
   HTMLDivElement,
   CardStickyProps
@@ -117,46 +183,89 @@ export const CardTransformed = React.forwardRef<
     },
     ref
   ) => {
+    const context = useCardsContainer()
 
+    const activeIndex = context?.activeIndex ?? 0
+    const swipeDirection = context?.swipeDirection ?? "left"
+    const isSwiping = context?.isSwiping ?? false
+    const hovered = context?.hovered ?? false
+    const hoveredCardIndex = context?.hoveredCardIndex ?? null
+    const setHoveredCardIndex = context?.setHoveredCardIndex ?? (() => {})
+    const isMobile = context?.isMobile ?? false
 
-    const { scrollYProgress } = useContainerScrollContext()
+    const cardZeroIndex = index - 1
+    const relIndex = (cardZeroIndex - activeIndex + arrayLength) % arrayLength
 
-    const start = index / (arrayLength + 1)
-    const end = (index + 1) / (arrayLength + 1)
-    const range = React.useMemo(() => [start, end], [start, end])
-    const rotateRange = [range[0] - 1.5, range[1] / 1.5]
+    const isThisCardHovered = hoveredCardIndex === cardZeroIndex
 
-    const y = useTransform(scrollYProgress, range, ["0%", "-180%"])
-    const rotate = useTransform(scrollYProgress, rotateRange, [
-      incrementRotation,
-      0,
-    ])
-    const transform = useMotionTemplate`translateZ(${
-      index * incrementZ
-    }px) translateY(${y}) rotate(${rotate}deg)`
+    // Layout configuration when stacked (unhovered)
+    let x = 0
+    let y = relIndex * (isMobile ? 8 : 12)
+    let scale = 1 - relIndex * 0.04
+    let rotate = relIndex * -2
+    let zIndex = (arrayLength - relIndex) * 10
+    let opacity = 1 - relIndex * 0.15
 
-    const dx = useTransform(scrollYProgress, rotateRange, [4, 0])
-    const dy = useTransform(scrollYProgress, rotateRange, [4, 12])
-    const blur = useTransform(scrollYProgress, rotateRange, [2, 24])
-    const alpha = useTransform(scrollYProgress, rotateRange, [0.15, 0.2])
-    const filter =
-      variant === "light"
-        ? useMotionTemplate`drop-shadow(${dx}px ${dy}px ${blur}px rgba(0,0,0,${alpha}))`
-        : "none"
+    if (hovered) {
+      // Spread layout
+      const offsetFromCenter = cardZeroIndex - (arrayLength - 1) / 2
 
-    const cardStyle = {
-      top: index * incrementY,
-      transform,
-      backfaceVisibility: "hidden" as const,
-      zIndex: (arrayLength - index) * incrementZ,
-      filter,
-      ...style,
+      // Horizontal spread sideways
+      x = offsetFromCenter * (isMobile ? 55 : 120)
+
+      // Beautiful arched vertical layout
+      y = Math.abs(offsetFromCenter) * (isMobile ? 6 : 12)
+
+      scale = isMobile ? 0.85 : 0.92
+      rotate = offsetFromCenter * (isMobile ? 4 : 8)
+      zIndex = (arrayLength - relIndex) * 10
+      opacity = 1
+
+      if (isThisCardHovered) {
+        // Elevate hovered card
+        scale = isMobile ? 0.92 : 1.02
+        zIndex = 100
+      }
+    } else {
+      // Stack layout state overrides
+      if (cardZeroIndex === activeIndex && isSwiping) {
+        // Swipe out sideways
+        x = swipeDirection === "left" ? -280 : 280
+        rotate = swipeDirection === "left" ? -12 : 12
+        zIndex = arrayLength * 10 + 5
+        opacity = 0.8
+      }
     }
+
     return (
       <motion.div
-        layout="position"
         ref={ref}
-        style={cardStyle}
+        onMouseEnter={() => setHoveredCardIndex(cardZeroIndex)}
+        onMouseLeave={() => setHoveredCardIndex(null)}
+        animate={{
+          x,
+          y,
+          scale,
+          rotate,
+          zIndex,
+          opacity,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: hovered ? 220 : 180,
+          damping: hovered ? 20 : 22,
+          mass: 1,
+          zIndex: { duration: 0 },
+        }}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          backfaceVisibility: "hidden",
+          transformOrigin: "center center",
+          ...style,
+        }}
         className={cn(cardVariants({ variant, className }))}
         {...props}
       />
