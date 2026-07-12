@@ -44,10 +44,20 @@ export default function Dashboard() {
     const fetchData = async () => {
       const { data: catData } = await supabase
         .from("advertiser_categories")
-        .select("category_id, categories(name)")
+        .select("category_id, advertiser_subtype, categories(name)")
         .eq("advertiser_id", user.id)
         .maybeSingle();
       if (catData) setCategoryName((catData as { categories?: { name?: string } | null })?.categories?.name || null);
+      const subtype = (catData as { advertiser_subtype?: string } | null)?.advertiser_subtype;
+      if (subtype) {
+        const { data: pkgs } = await supabase
+          .from("ad_packages")
+          .select("id")
+          .eq("is_active", true)
+          .contains("advertiser_subtypes", [subtype])
+          .limit(1);
+        setHasPackages(!!(pkgs && pkgs.length > 0));
+      }
 
       const { data: campaignsData } = await supabase
         .from("campaigns").select("*").eq("advertiser_id", user.id)
