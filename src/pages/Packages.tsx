@@ -30,7 +30,7 @@ type PkgMilestone = {
   commission_pct: number | null;
 };
 type WebsiteRow = { id: string; domain: string; is_verified: boolean };
-type WalletInfo = { balance: number; is_activated: boolean };
+type WalletInfo = { id?: string; balance: number; is_activated: boolean };
 
 const PENDING_KEY = "karbali_pending_package_purchase";
 
