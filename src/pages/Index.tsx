@@ -324,12 +324,12 @@ export default function Index() {
           </section>
 
           {/* Redesigned Feature Section with Animated Cards Stack */}
-          <section className="relative z-10 py-24 px-6 sm:px-10 lg:px-16 overflow-hidden">
+          <section className="relative z-10 py-12 md:py-16 px-6 sm:px-10 lg:px-16 overflow-hidden">
             <div className="mx-auto max-w-7xl">
-              <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16 items-start">
+              <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16 items-center">
 
-                {/* Left Side: Sticky Headers */}
-                <div className="lg:col-span-5 lg:sticky lg:top-28 lg:py-12">
+                {/* Left Side: Headers */}
+                <div className="lg:col-span-5 lg:py-6">
                   <span className="eyebrow">Platform</span>
                   <h2 className="display-lg mt-3 text-foreground font-semibold">
                     Everything you need to acquire customers, profitably.
@@ -340,10 +340,10 @@ export default function Index() {
                 </div>
 
                 {/* Right Side: Animated Cards Stack */}
-                <div className="lg:col-span-7 w-full flex justify-center">
-                  <ContainerScroll className="h-[220vh] w-full max-w-[440px]">
-                    <div className="sticky top-28 h-svh w-full py-12 flex items-start justify-center">
-                      <CardsContainer className="relative w-full h-[320px] sm:h-[280px]">
+                <div className="lg:col-span-7 w-full flex justify-center items-center min-h-[380px] sm:min-h-[340px]">
+                  <ContainerScroll className="w-full max-w-[400px]" arrayLength={features.length}>
+                    <div className="w-full py-4 flex items-center justify-center">
+                      <CardsContainer className="relative w-full h-[280px]">
                         {features.map((f, index) => (
                           <CardTransformed
                             arrayLength={features.length}
@@ -352,19 +352,19 @@ export default function Index() {
                             index={index + 1}
                             incrementY={12}
                             incrementZ={14}
-                            incrementRotation={-5 * (index + 1)}
+                            incrementRotation={-5}
                             className={cn(
-                              "flex flex-col items-center justify-center p-8 text-center rounded-2xl border backdrop-blur-md shadow-2xl transition-all",
+                              "flex flex-col items-center justify-center p-6 text-center rounded-2xl border backdrop-blur-md shadow-2xl transition-all",
                               theme === "dark"
                                 ? "bg-card/90 border-border/60 text-foreground"
                                 : "bg-card/90 border-border/40 text-foreground"
                             )}
                           >
-                            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary mb-5 shadow-sm">
-                              <f.icon className="h-6 w-6" />
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4 shadow-sm">
+                              <f.icon className="h-5 w-5" />
                             </div>
-                            <h3 className="text-xl font-bold tracking-tight text-foreground">{f.title}</h3>
-                            <p className="mt-2 text-sm leading-relaxed text-muted-foreground max-w-[280px]">{f.desc}</p>
+                            <h3 className="text-lg font-bold tracking-tight text-foreground">{f.title}</h3>
+                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground max-w-[260px]">{f.desc}</p>
                           </CardTransformed>
                         ))}
                       </CardsContainer>

@@ -1,17 +1,8 @@
 "use client"
 
 import * as React from "react"
-
 import { VariantProps, cva } from "class-variance-authority"
-import {
-  HTMLMotionProps,
-  MotionValue,
-  motion,
-  useMotionTemplate,
-  useScroll,
-  useTransform,
-} from "motion/react"
-
+import { HTMLMotionProps, motion } from "motion/react"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva("absolute will-change-transform", {
@@ -26,10 +17,12 @@ const cardVariants = cva("absolute will-change-transform", {
     variant: "light",
   },
 })
+
 interface ReviewProps extends React.HTMLAttributes<HTMLDivElement> {
   rating: number
   maxRating?: number
 }
+
 interface CardStickyProps
   extends HTMLMotionProps<"div">,
     VariantProps<typeof cardVariants> {
@@ -39,13 +32,20 @@ interface CardStickyProps
   incrementZ?: number
   incrementRotation?: number
 }
+
 interface ContainerScrollContextValue {
-  scrollYProgress: MotionValue<number>
+  activeIndex: number
+  setActiveIndex: React.Dispatch<React.SetStateAction<number>>
+  isHovered: boolean
+  setIsHovered: React.Dispatch<React.SetStateAction<boolean>>
+  arrayLength: number
+  setArrayLength: React.Dispatch<React.SetStateAction<number>>
 }
 
 const ContainerScrollContext = React.createContext<
   ContainerScrollContextValue | undefined
 >(undefined)
+
 function useContainerScrollContext() {
   const context = React.useContext(ContainerScrollContext)
   if (context === undefined) {
@@ -57,20 +57,35 @@ function useContainerScrollContext() {
 }
 
 export const ContainerScroll: React.FC<
-  React.HTMLAttributes<HTMLDivElement>
-> = ({ children, style, className, ...props }) => {
-  const scrollRef = React.useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: scrollRef,
-    offset: ["start center", "end end"],
-  })
+  React.HTMLAttributes<HTMLDivElement> & { arrayLength?: number }
+> = ({ children, style, className, arrayLength: propArrayLength = 4, ...props }) => {
+  const [activeIndex, setActiveIndex] = React.useState(0)
+  const [isHovered, setIsHovered] = React.useState(false)
+  const [arrayLength, setArrayLength] = React.useState(propArrayLength)
+
+  React.useEffect(() => {
+    if (propArrayLength !== arrayLength) {
+      setArrayLength(propArrayLength)
+    }
+  }, [propArrayLength])
+
+  React.useEffect(() => {
+    if (isHovered) return // Pause auto-swipe on hover so user can read
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % arrayLength)
+    }, 3200)
+    return () => clearInterval(interval)
+  }, [isHovered, arrayLength])
 
   return (
-    <ContainerScrollContext.Provider value={{ scrollYProgress }}>
+    <ContainerScrollContext.Provider
+      value={{ activeIndex, setActiveIndex, isHovered, setIsHovered, arrayLength, setArrayLength }}
+    >
       <div
-        ref={scrollRef}
-        className={cn("relative min-h-svh w-full", className)}
-        style={{ perspective: "1000px", ...style }}
+        className={cn("relative w-full", className)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={style}
         {...props}
       >
         {children}
@@ -85,11 +100,8 @@ export const CardsContainer: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   ...props
 }) => {
-  const containerRef = React.useRef<HTMLDivElement>(null)
-
   return (
     <div
-      ref={containerRef}
       className={cn("relative", className)}
       style={{ perspective: "1000px", ...props.style }}
       {...props}
@@ -99,17 +111,18 @@ export const CardsContainer: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   )
 }
 CardsContainer.displayName = "CardsContainer"
+
 export const CardTransformed = React.forwardRef<
   HTMLDivElement,
   CardStickyProps
 >(
   (
     {
-      arrayLength,
+      arrayLength: propArrayLength,
       index,
-      incrementY = 10,
-      incrementZ = 10,
-      incrementRotation = -index + 90,
+      incrementY = 12,
+      incrementZ = 14,
+      incrementRotation = -5,
       className,
       variant,
       style,
@@ -117,46 +130,78 @@ export const CardTransformed = React.forwardRef<
     },
     ref
   ) => {
+    const { activeIndex, isHovered, arrayLength, setArrayLength } = useContainerScrollContext()
 
+    React.useEffect(() => {
+      if (propArrayLength && propArrayLength !== arrayLength) {
+        setArrayLength(propArrayLength)
+      }
+    }, [propArrayLength, arrayLength, setArrayLength])
 
-    const { scrollYProgress } = useContainerScrollContext()
+    const cardIndex = index - 1
+    const offset = (cardIndex - activeIndex + arrayLength) % arrayLength
 
-    const start = index / (arrayLength + 1)
-    const end = (index + 1) / (arrayLength + 1)
-    const range = React.useMemo(() => [start, end], [start, end])
-    const rotateRange = [range[0] - 1.5, range[1] / 1.5]
+    // Track previous offset to detect swiping from front to back
+    const prevOffsetRef = React.useRef(offset)
+    const [isSwiping, setIsSwiping] = React.useState(false)
 
-    const y = useTransform(scrollYProgress, range, ["0%", "-180%"])
-    const rotate = useTransform(scrollYProgress, rotateRange, [
-      incrementRotation,
-      0,
-    ])
-    const transform = useMotionTemplate`translateZ(${
-      index * incrementZ
-    }px) translateY(${y}) rotate(${rotate}deg)`
+    React.useEffect(() => {
+      const prevOffset = prevOffsetRef.current
+      if (prevOffset === 0 && offset === arrayLength - 1) {
+        setIsSwiping(true)
+        const timer = setTimeout(() => {
+          setIsSwiping(false)
+        }, 600)
+        return () => clearTimeout(timer)
+      }
+      prevOffsetRef.current = offset
+    }, [offset, arrayLength])
 
-    const dx = useTransform(scrollYProgress, rotateRange, [4, 0])
-    const dy = useTransform(scrollYProgress, rotateRange, [4, 12])
-    const blur = useTransform(scrollYProgress, rotateRange, [2, 24])
-    const alpha = useTransform(scrollYProgress, rotateRange, [0.15, 0.2])
-    const filter =
-      variant === "light"
-        ? useMotionTemplate`drop-shadow(${dx}px ${dy}px ${blur}px rgba(0,0,0,${alpha}))`
-        : "none"
+    // Responsive swipe distance
+    const [swipeDistance, setSwipeDistance] = React.useState(220)
+    React.useEffect(() => {
+      const handleResize = () => {
+        setSwipeDistance(window.innerWidth < 640 ? 120 : 220)
+      }
+      handleResize()
+      window.addEventListener("resize", handleResize)
+      return () => window.removeEventListener("resize", handleResize)
+    }, [])
 
-    const cardStyle = {
-      top: index * incrementY,
-      transform,
-      backfaceVisibility: "hidden" as const,
-      zIndex: (arrayLength - index) * incrementZ,
-      filter,
-      ...style,
-    }
+    // Stack layout: spread out more on hover
+    const baseOffset = isHovered ? 26 : 12
+    const baseRotate = isHovered ? -7 : -3
+
+    const yVal = offset * baseOffset
+    const rotateVal = offset * baseRotate
+    const scaleVal = 1 - offset * 0.045
+    const opacityVal = 1 - offset * 0.15
+
     return (
       <motion.div
-        layout="position"
         ref={ref}
-        style={cardStyle}
+        layout
+        animate={{
+          x: isSwiping ? [0, swipeDistance, 0] : 0,
+          y: yVal,
+          scale: scaleVal,
+          rotate: rotateVal,
+          opacity: opacityVal,
+          zIndex: isSwiping ? arrayLength : arrayLength - offset,
+        }}
+        transition={{
+          duration: 0.6,
+          ease: [0.25, 1, 0.5, 1],
+        }}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backfaceVisibility: "hidden" as const,
+          ...style,
+        }}
         className={cn(cardVariants({ variant, className }))}
         {...props}
       />
