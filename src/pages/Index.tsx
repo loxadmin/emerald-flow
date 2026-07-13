@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { ContainerScroll, CardsContainer, CardTransformed } from "@/components/ui/animated-cards-stack";
 import { cn } from "@/lib/utils";
 import DisplayCards, { DisplayCardProps } from "@/components/ui/display-cards";
+import { CpuArchitecture } from "@/components/ui/cpu-architecture";
 
 interface SiteContent {
   section_key: string;
@@ -49,6 +50,7 @@ export default function Index() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [heroDesign, setHeroDesign] = useState<string>("default");
+  const [activeStep, setActiveStep] = useState<number>(0);
   const { theme, toggleTheme } = useTheme();
 
   const [contactName, setContactName] = useState("");
@@ -206,6 +208,8 @@ export default function Index() {
   ];
 
   const steps = (s("how_it_works").content || "").split(/\r?\n|\\n/).filter(Boolean);
+  const cpuTexts = ["CAMPAIGN", "API CODE", "APPROVED", "PAYOUT"];
+  const activeCpuText = cpuTexts[activeStep] || "KARBALI";
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -391,25 +395,54 @@ export default function Index() {
                       <p className="lede mt-5 text-muted-foreground">{s("how_it_works").subtitle}</p>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {steps.map((step, i) => {
                         const parts = step.replace(/^\d+\.\s*/, "").split(": ");
                         const stepTitle = parts[0] || step;
                         const desc = parts.slice(1).join(": ") || "";
                         const icons = [Zap, Terminal, CheckCircle2, BarChart3];
                         const Icon = icons[i] || Zap;
+                        const isActive = activeStep === i;
 
                         return (
-                          <div key={i} className="flex gap-4 items-start">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary mt-1">
+                          <div
+                            key={i}
+                            onMouseEnter={() => setActiveStep(i)}
+                            onClick={() => setActiveStep(i)}
+                            className={cn(
+                              "group flex gap-4 items-start p-4 rounded-xl border transition-all duration-300 cursor-pointer select-none",
+                              isActive
+                                ? "bg-card/90 border-primary/30 shadow-md scale-[1.01]"
+                                : "border-transparent hover:bg-card/40 hover:border-border/50"
+                            )}
+                          >
+                            <div className={cn(
+                              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-300 mt-1",
+                              isActive
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "bg-primary/10 text-primary group-hover:bg-primary/20"
+                            )}>
                               <Icon className="h-5 w-5" />
                             </div>
-                            <div>
-                              <h3 className="text-lg font-semibold tracking-tight text-foreground">
-                                <span className="font-mono text-xs text-muted-foreground mr-2">0{i + 1}.</span>
-                                {stepTitle}
+                            <div className="flex-1">
+                              <h3 className={cn(
+                                "text-lg font-semibold tracking-tight transition-colors duration-300 flex items-center justify-between",
+                                isActive ? "text-foreground" : "text-foreground/90 group-hover:text-foreground"
+                              )}>
+                                <span>
+                                  <span className="font-mono text-xs text-muted-foreground mr-2">0{i + 1}.</span>
+                                  {stepTitle}
+                                </span>
+                                {isActive && (
+                                  <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                )}
                               </h3>
-                              <p className="mt-1 text-sm text-muted-foreground max-w-xl">{desc}</p>
+                              <p className={cn(
+                                "mt-1 text-sm transition-colors duration-300 max-w-xl",
+                                isActive ? "text-foreground/80 font-medium" : "text-muted-foreground"
+                              )}>
+                                {desc}
+                              </p>
                             </div>
                           </div>
                         );
@@ -417,35 +450,58 @@ export default function Index() {
                     </div>
                   </div>
 
-                  {/* Right Side: Redesigned Interactive Layout with DisplayCards Stack */}
+                  {/* Right Side: Redesigned Interactive Layout with CpuArchitecture */}
                   <div className="lg:col-span-5 flex items-center justify-center py-10">
-                    <div className="relative w-full max-w-md aspect-[4/3] flex items-center justify-center">
-                      <DisplayCards
-                        cards={steps.slice(0, 3).map((step, i) => {
-                          const parts = step.replace(/^\d+\.\s*/, "").split(": ");
-                          const stepTitle = parts[0] || step;
-                          const desc = parts.slice(1).join(": ") || "";
-                          const icons = [Zap, Terminal, CheckCircle2];
-                          const Icon = icons[i] || Zap;
+                    <div className="relative w-full max-w-md flex flex-col items-center justify-center">
 
-                          // Custom translation values based on card index
-                          const translationClasses = [
-                            "[grid-area:stack] hover:-translate-y-10 opacity-75 grayscale hover:opacity-100 hover:grayscale-0",
-                            "[grid-area:stack] translate-x-12 translate-y-10 hover:-translate-y-1 opacity-75 grayscale hover:opacity-100 hover:grayscale-0",
-                            "[grid-area:stack] translate-x-24 translate-y-20 hover:translate-y-10 opacity-75 grayscale hover:opacity-100 hover:grayscale-0"
-                          ];
+                      {/* Premium Glassmorphic terminal-style container */}
+                      <div className="relative w-full rounded-2xl border border-border/80 bg-card/65 backdrop-blur-xl shadow-xl overflow-hidden p-6 transition-all duration-500 hover:shadow-2xl hover:border-primary/30">
 
-                          return {
-                            icon: <Icon className="size-4 text-primary" />,
-                            title: stepTitle,
-                            description: desc.length > 25 ? desc.substring(0, 25) + "..." : desc,
-                            date: `Step 0${i + 1}`,
-                            iconClassName: "text-primary",
-                            titleClassName: "text-primary",
-                            className: translationClasses[i]
-                          };
-                        })}
-                      />
+                        {/* Terminal Header */}
+                        <div className="flex items-center justify-between border-b border-border/40 pb-4 mb-4">
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-rose-500/80" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+                            <span className="font-mono text-[10px] text-muted-foreground ml-2 tracking-widest uppercase">System Analyzer</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
+                            <span className="font-mono text-[9px] text-primary font-semibold tracking-wider">LIVE DATA FLOW</span>
+                          </div>
+                        </div>
+
+                        {/* CPU SVG Component */}
+                        <div className="relative w-full aspect-[2/1] flex items-center justify-center py-2 bg-black/5 rounded-lg border border-border/20">
+                          <CpuArchitecture
+                            text={activeCpuText}
+                            className="w-full h-full text-primary/40"
+                            animateLines={true}
+                            animateMarkers={true}
+                          />
+                        </div>
+
+                        {/* Dynamic Status panel */}
+                        <div className="mt-4 pt-4 border-t border-border/40 grid grid-cols-2 gap-4 font-mono text-[10px]">
+                          <div>
+                            <span className="text-muted-foreground block uppercase tracking-wider mb-0.5">CURRENT STEP</span>
+                            <span className="text-foreground font-semibold uppercase tracking-widest">
+                              0{activeStep + 1} // {activeCpuText}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-muted-foreground block uppercase tracking-wider mb-0.5">ALLOCATION STATUS</span>
+                            <span className="text-primary font-bold tracking-widest animate-pulse">
+                              {activeStep === 0 ? "PREPARING BUDGET" :
+                               activeStep === 1 ? "LISTENING FOR EVENTS" :
+                               activeStep === 2 ? "SECURELY VERIFIED" :
+                               "PAYING ONLY FOR SALES"}
+                            </span>
+                          </div>
+                        </div>
+
+                      </div>
+
                     </div>
                   </div>
 
