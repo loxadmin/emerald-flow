@@ -383,79 +383,84 @@ export default function Index() {
 
           {/* How it works — pastel mint band */}
           {s("how_it_works").is_visible && (
-            <section id="how-it-works" className="relative z-10 section-mint border-y border-border py-12 md:py-16 px-6 sm:px-10 lg:px-16">
+            <section id="how-it-works" className="relative z-10 section-mint border-y border-border py-16 md:py-24 px-6 sm:px-10 lg:px-16">
               <div className="mx-auto max-w-7xl">
-                <div className="grid grid-cols-1 gap-16 lg:grid-cols-12 items-center">
 
-                  {/* Left Side: Text and Steps */}
-                  <div className="lg:col-span-7 space-y-8">
-                    <div>
-                      <span className="eyebrow">How it works</span>
-                      <h2 className="display-lg mt-3 text-foreground font-semibold">{s("how_it_works").title}</h2>
-                      <p className="lede mt-5 text-muted-foreground">{s("how_it_works").subtitle}</p>
-                    </div>
+                {/* Unified, Centered Section Header */}
+                <div className="text-center max-w-3xl mx-auto mb-16 md:mb-20">
+                  <span className="eyebrow">How it works</span>
+                  <h2 className="display-lg mt-3 text-foreground font-semibold">{s("how_it_works").title}</h2>
+                  <p className="lede mt-5 text-muted-foreground">{s("how_it_works").subtitle}</p>
+                </div>
 
-                    <div className="space-y-4">
-                      {steps.map((step, i) => {
-                        const parts = step.replace(/^\d+\.\s*/, "").split(": ");
-                        const stepTitle = parts[0] || step;
-                        const desc = parts.slice(1).join(": ") || "";
-                        const icons = [Zap, Terminal, CheckCircle2, BarChart3];
-                        const Icon = icons[i] || Zap;
-                        const isActive = activeStep === i;
+                {/* Symmetrical 3-Column Motherboard/CPU Dashboard Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
 
-                        return (
-                          <div
-                            key={i}
-                            onMouseEnter={() => setActiveStep(i)}
-                            onClick={() => setActiveStep(i)}
-                            className={cn(
-                              "group flex gap-4 items-start p-4 rounded-xl border transition-all duration-300 cursor-pointer select-none",
-                              isActive
-                                ? "bg-card/90 border-primary/30 shadow-md scale-[1.01]"
-                                : "border-transparent hover:bg-card/40 hover:border-border/50"
-                            )}
-                          >
-                            <div className={cn(
-                              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-300 mt-1",
-                              isActive
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "bg-primary/10 text-primary group-hover:bg-primary/20"
-                            )}>
-                              <Icon className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1">
-                              <h3 className={cn(
-                                "text-lg font-semibold tracking-tight transition-colors duration-300 flex items-center justify-between",
-                                isActive ? "text-foreground" : "text-foreground/90 group-hover:text-foreground"
-                              )}>
-                                <span>
-                                  <span className="font-mono text-xs text-muted-foreground mr-2">0{i + 1}.</span>
-                                  {stepTitle}
-                                </span>
-                                {isActive && (
-                                  <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                )}
-                              </h3>
-                              <p className={cn(
-                                "mt-1 text-sm transition-colors duration-300 max-w-xl",
-                                isActive ? "text-foreground/80 font-medium" : "text-muted-foreground"
-                              )}>
-                                {desc}
-                              </p>
-                            </div>
+                  {/* Left Column: Step 1 & Step 2 */}
+                  <div className="lg:col-span-4 flex flex-col justify-center gap-6 order-2 lg:order-1">
+                    {steps.slice(0, 2).map((step, i) => {
+                      const globalIndex = i;
+                      const parts = step.replace(/^\d+\.\s*/, "").split(": ");
+                      const stepTitle = parts[0] || step;
+                      const desc = parts.slice(1).join(": ") || "";
+                      const icons = [Zap, Terminal];
+                      const Icon = icons[i] || Zap;
+                      const isActive = activeStep === globalIndex;
+
+                      return (
+                        <div
+                          key={globalIndex}
+                          onMouseEnter={() => setActiveStep(globalIndex)}
+                          onClick={() => setActiveStep(globalIndex)}
+                          className={cn(
+                            "group flex gap-4 items-start p-6 rounded-2xl border transition-all duration-300 cursor-pointer select-none",
+                            isActive
+                              ? "bg-card/90 border-primary shadow-lg scale-[1.02] ring-1 ring-primary/20"
+                              : "bg-card/45 border-border/60 hover:bg-card/65 hover:border-border"
+                          )}
+                        >
+                          <div className={cn(
+                            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-300 mt-1",
+                            isActive
+                              ? "bg-primary text-primary-foreground shadow-md"
+                              : "bg-primary/10 text-primary group-hover:bg-primary/20"
+                          )}>
+                            <Icon className="h-5 w-5" />
                           </div>
-                        );
-                      })}
-                    </div>
+                          <div className="flex-1">
+                            <h3 className={cn(
+                              "text-lg font-semibold tracking-tight transition-colors duration-300 flex items-center justify-between",
+                              isActive ? "text-foreground" : "text-foreground/90 group-hover:text-foreground"
+                            )}>
+                              <span>
+                                <span className="font-mono text-xs text-muted-foreground mr-2">0{globalIndex + 1}.</span>
+                                {stepTitle}
+                              </span>
+                              {isActive && (
+                                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                              )}
+                            </h3>
+                            <p className={cn(
+                              "mt-2 text-sm leading-relaxed transition-colors duration-300",
+                              isActive ? "text-foreground/80 font-medium" : "text-muted-foreground"
+                            )}>
+                              {desc}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  {/* Right Side: Redesigned Interactive Layout with CpuArchitecture */}
-                  <div className="lg:col-span-5 flex items-center justify-center py-10">
+                  {/* Center Column: The CPU Motherboard Terminal Mainframe */}
+                  <div className="lg:col-span-4 flex items-center justify-center order-1 lg:order-2 py-4 lg:py-0">
                     <div className="relative w-full max-w-md flex flex-col items-center justify-center">
 
+                      {/* Decorative outer circuit borders */}
+                      <div className="absolute inset-0 border border-primary/20 rounded-3xl scale-105 pointer-events-none opacity-40 animate-pulse" />
+
                       {/* Premium Glassmorphic terminal-style container */}
-                      <div className="relative w-full rounded-2xl border border-border/80 bg-card/65 backdrop-blur-xl shadow-xl overflow-hidden p-6 transition-all duration-500 hover:shadow-2xl hover:border-primary/30">
+                      <div className="relative w-full rounded-2xl border border-border/90 bg-card/75 backdrop-blur-xl shadow-2xl overflow-hidden p-6 transition-all duration-500 hover:shadow-primary/5 hover:border-primary/40">
 
                         {/* Terminal Header */}
                         <div className="flex items-center justify-between border-b border-border/40 pb-4 mb-4">
@@ -472,7 +477,7 @@ export default function Index() {
                         </div>
 
                         {/* CPU SVG Component */}
-                        <div className="relative w-full aspect-[2/1] flex items-center justify-center py-2 bg-black/5 rounded-lg border border-border/20">
+                        <div className="relative w-full aspect-[2/1] flex items-center justify-center py-4 bg-black/5 rounded-xl border border-border/20 shadow-inner">
                           <CpuArchitecture
                             text={activeCpuText}
                             className="w-full h-full text-primary/40"
@@ -482,7 +487,7 @@ export default function Index() {
                         </div>
 
                         {/* Dynamic Status panel */}
-                        <div className="mt-4 pt-4 border-t border-border/40 grid grid-cols-2 gap-4 font-mono text-[10px]">
+                        <div className="mt-5 pt-4 border-t border-border/40 grid grid-cols-2 gap-4 font-mono text-[10px]">
                           <div>
                             <span className="text-muted-foreground block uppercase tracking-wider mb-0.5">CURRENT STEP</span>
                             <span className="text-foreground font-semibold uppercase tracking-widest">
@@ -503,6 +508,62 @@ export default function Index() {
                       </div>
 
                     </div>
+                  </div>
+
+                  {/* Right Column: Step 3 & Step 4 */}
+                  <div className="lg:col-span-4 flex flex-col justify-center gap-6 order-3 lg:order-3">
+                    {steps.slice(2, 4).map((step, i) => {
+                      const globalIndex = i + 2;
+                      const parts = step.replace(/^\d+\.\s*/, "").split(": ");
+                      const stepTitle = parts[0] || step;
+                      const desc = parts.slice(1).join(": ") || "";
+                      const icons = [CheckCircle2, BarChart3];
+                      const Icon = icons[i] || CheckCircle2;
+                      const isActive = activeStep === globalIndex;
+
+                      return (
+                        <div
+                          key={globalIndex}
+                          onMouseEnter={() => setActiveStep(globalIndex)}
+                          onClick={() => setActiveStep(globalIndex)}
+                          className={cn(
+                            "group flex gap-4 items-start p-6 rounded-2xl border transition-all duration-300 cursor-pointer select-none",
+                            isActive
+                              ? "bg-card/90 border-primary shadow-lg scale-[1.02] ring-1 ring-primary/20"
+                              : "bg-card/45 border-border/60 hover:bg-card/65 hover:border-border"
+                          )}
+                        >
+                          <div className={cn(
+                            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-300 mt-1",
+                            isActive
+                              ? "bg-primary text-primary-foreground shadow-md"
+                              : "bg-primary/10 text-primary group-hover:bg-primary/20"
+                          )}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className={cn(
+                              "text-lg font-semibold tracking-tight transition-colors duration-300 flex items-center justify-between",
+                              isActive ? "text-foreground" : "text-foreground/90 group-hover:text-foreground"
+                            )}>
+                              <span>
+                                <span className="font-mono text-xs text-muted-foreground mr-2">0{globalIndex + 1}.</span>
+                                {stepTitle}
+                              </span>
+                              {isActive && (
+                                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                              )}
+                            </h3>
+                            <p className={cn(
+                              "mt-2 text-sm leading-relaxed transition-colors duration-300",
+                              isActive ? "text-foreground/80 font-medium" : "text-muted-foreground"
+                            )}>
+                              {desc}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
                 </div>
