@@ -3,7 +3,7 @@
 
 export type AdvertiserSubtype =
   | "musician" | "youtuber" | "social_media_creator"
-  | "app" | "website" | "fintech"
+  | "app" | "website" | "fintech" | "game_developers" | "sports_betting"
   | "ecommerce" | "online_vendor" | "realtor"
   | "food_beverage" | "household_items"
   | "telecom" | "oil_gas";
@@ -32,6 +32,8 @@ export const SUBTYPES: SubtypeMeta[] = [
   { id: "app",                  label: "Mobile App Owner",      group: "performance",     mode: "online"  },
   { id: "website",              label: "Website Owner",         group: "performance",     mode: "online"  },
   { id: "fintech",              label: "Fintech",               group: "performance",     mode: "online"  },
+  { id: "game_developers",      label: "Game Developers",       group: "performance",     mode: "online"  },
+  { id: "sports_betting",       label: "Sports and Betting",    group: "performance",     mode: "online"  },
   // Offline — Daily Essentials
   { id: "food_beverage",        label: "Food & Beverage",       group: "daily_essentials",mode: "offline" },
   { id: "household_items",      label: "Household Items",       group: "daily_essentials",mode: "offline" },
@@ -55,6 +57,8 @@ export const SUBTYPE_GOAL_OPTIONS: Record<AdvertiserSubtype, string[]> = {
   app: ["App installs", "Signups", "In-app engagement", "Subscriptions"],
   website: ["Signups", "Leads", "CPA conversions", "Page engagement"],
   fintech: ["App installs", "Signups", "KYC completions", "First deposits", "Transactions"],
+  game_developers: ["Game installs", "Signups", "In-game purchases", "In-game engagement"],
+  sports_betting: ["Signups", "First deposits", "Placing bets", "App installs"],
   ecommerce: ["Sales", "Cart conversions", "Repeat purchases"],
   online_vendor: ["Sales", "Cart conversions", "Repeat purchases", "Lead orders"],
   realtor: ["Property leads", "Inspection bookings", "Property sales"],
