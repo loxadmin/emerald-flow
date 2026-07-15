@@ -11,7 +11,7 @@ import Logo from "@/components/Logo";
 import {
   CheckCircle, Loader2, Music, MonitorPlay, ShoppingBag, Globe, Smartphone,
   Home, ChevronDown, Truck, Fuel, Wifi, WifiOff, Users, Landmark, Store,
-  UtensilsCrossed, Package, Radio, Gamepad2, Trophy,
+  UtensilsCrossed, Package, Radio,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -33,7 +33,7 @@ type GroupSlug = OnlineGroupSlug | OfflineGroupSlug;
 type AdType = "engagement" | "performance" | "commerce" | "offline";
 type Subtype =
   | "musician" | "youtuber" | "social_media_creator"
-  | "app" | "website" | "fintech" | "game_developers" | "sports_betting"
+  | "app" | "website" | "fintech"
   | "ecommerce" | "online_vendor" | "realtor"
   | "food_beverage" | "household_items"
   | "telecom" | "oil_gas";
@@ -89,8 +89,6 @@ const ONLINE_GROUPS: GroupDef[] = [
       { id: "app", label: "Mobile App Owner", description: "Drive installs and in-app actions", icon: Smartphone },
       { id: "website", label: "Website Owner", description: "Drive signups and web conversions", icon: Globe },
       { id: "fintech", label: "Fintech", description: "Accounts, KYC, deposits, transactions", icon: Landmark },
-      { id: "game_developers", label: "Game Developers", description: "Drive game downloads, signups, and in-game events", icon: Gamepad2 },
-      { id: "sports_betting", label: "Sports and Betting", description: "Drive signups, deposits, and sports bets", icon: Trophy },
     ],
   },
 ];
