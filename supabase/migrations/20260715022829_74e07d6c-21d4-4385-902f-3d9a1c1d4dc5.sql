@@ -1,0 +1,14 @@
+ALTER TABLE public.wallet_transactions DROP CONSTRAINT IF EXISTS wallet_transactions_type_check;
+ALTER TABLE public.wallet_transactions ADD CONSTRAINT wallet_transactions_type_check
+  CHECK (type = ANY (ARRAY[
+    'funding',
+    'charge',
+    'activation',
+    'refund',
+    'escrow',
+    'package_escrow',
+    'escrow_topup',
+    'offer_escrow',
+    'offline_commission',
+    'sale_commission'
+  ]));
