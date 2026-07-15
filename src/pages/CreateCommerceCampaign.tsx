@@ -15,10 +15,23 @@ import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign
 
 interface Website { id: string; domain: string; is_verified: boolean; }
 
-const SALE_FLAT_FEE = 1;
 const SALE_COMMISSION_RATE = 0.10;
 const MIN_WALLET_BALANCE = 200;
 const COMMISSION_BUFFER = 100; // Extra escrow held to cover unknown 10% commission on purchases
+
+const functionErrorMessage = async (error: unknown, fallback: string) => {
+  const context = (error as { context?: { text?: () => Promise<string> } } | null)?.context;
+  if (context?.text) {
+    try {
+      const body = await context.text();
+      const parsed = JSON.parse(body);
+      return parsed?.error || parsed?.message || body || fallback;
+    } catch {
+      return (error as Error)?.message || fallback;
+    }
+  }
+  return (error as Error)?.message || fallback;
+};
 
 export default function CreateCommerceCampaign() {
   const navigate = useNavigate();
@@ -37,6 +50,7 @@ export default function CreateCommerceCampaign() {
   const [campaignName, setCampaignName] = useState("");
   const [targetSales, setTargetSales] = useState("100");
   const [walletBalance, setWalletBalance] = useState(0);
+  const [saleReserve, setSaleReserve] = useState(2);
   const [websites, setWebsites] = useState<Website[]>([]);
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState("");
@@ -72,6 +86,10 @@ export default function CreateCommerceCampaign() {
 
       const { data: w } = await supabase.from("wallets").select("balance").eq("advertiser_id", user.id).maybeSingle();
       if (w) setWalletBalance(Number(w.balance));
+
+      const { data: saleSetting } = await supabase.from("admin_settings").select("value").eq("key", "price_per_purchase").maybeSingle();
+      const configuredReserve = Number((saleSetting as any)?.value || 2);
+      setSaleReserve(Math.max(Number.isNaN(configuredReserve) ? 2 : configuredReserve, 1));
 
       let draftId = draftParam;
       const requestedStep = Number(stepParam ?? "0");
@@ -148,7 +166,7 @@ export default function CreateCommerceCampaign() {
   }, [selectedWebsiteId, websites]);
 
   const sales = Math.max(100, Number(targetSales) || 100);
-  const baseCost = SALE_FLAT_FEE * sales;
+  const baseCost = saleReserve * sales;
   const totalCost = baseCost + COMMISSION_BUFFER;
 
   const handleGenerateKey = async () => {
@@ -209,7 +227,7 @@ export default function CreateCommerceCampaign() {
     await supabase.from("campaigns").update({
       name: campaignName.trim(), target_users: sales,
       selected_milestones: ["purchase"], total_cost: totalCost,
-      price_purchase: SALE_FLAT_FEE,
+      price_purchase: saleReserve,
       integration_verified: verified, ad_type: "commerce",
     } as any).eq("id", campaignId);
 
@@ -220,7 +238,7 @@ export default function CreateCommerceCampaign() {
     });
 
     if (escrowError || escrowResult?.error) {
-      toast.error(escrowResult?.error || escrowError?.message || "Failed to fund escrow");
+      toast.error(escrowResult?.error || await functionErrorMessage(escrowError, "Failed to fund escrow"));
       setLoading(false);
       return;
     }
@@ -333,7 +351,7 @@ new KarbaliCommerce();`;
             <h1 className="text-xl font-semibold text-foreground flex items-center gap-2">
               <ShoppingBag className="h-5 w-5 text-primary" /> Create Commerce Campaign
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">Sales tracking with $1 flat fee + 10% commission per sale</p>
+            <p className="text-sm text-muted-foreground mt-1">Sales tracking with reserve escrow + 10% commission per sale</p>
           </div>
           {campaignId && (
             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive gap-1.5" onClick={handleStartOver} disabled={loading}>
@@ -481,9 +499,9 @@ new KarbaliCommerce();`;
             <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 text-sm">
               <p className="font-medium text-foreground text-xs">Pricing</p>
               <div className="text-xs text-muted-foreground space-y-1">
-                <p>• $1.00 flat fee per sale</p>
+                <p>• ${saleReserve.toFixed(2)} reserve per sale</p>
                 <p>• 10% commission on each sale amount</p>
-                <p>• Base reserve: ${baseCost.toFixed(2)} (${SALE_FLAT_FEE} × {sales} sales)</p>
+                <p>• Base reserve: ${baseCost.toFixed(2)} (${saleReserve.toFixed(2)} × {sales} sales)</p>
                 <p>• Commission buffer: ${COMMISSION_BUFFER.toFixed(2)} (covers unknown 10% per sale)</p>
                 <p className="text-foreground font-medium pt-1">Total escrow: ${totalCost.toFixed(2)}</p>
               </div>

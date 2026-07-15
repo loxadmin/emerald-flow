@@ -3,33 +3,6 @@ import { Toaster as Sonner, toast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-declare global {
-  interface Window {
-    __KARBALI_IS_ADMIN__?: boolean;
-  }
-}
-
-const GENERIC_ERROR = "Oops! Something went wrong";
-
-// Monkey-patch toast.error globally so even files that import directly
-// from "sonner" get the suppressed message for non-admins.
-type ErrorFn = typeof toast.error;
-const sonnerToast = toast as typeof toast & { __karbaliPatched?: boolean };
-if (!sonnerToast.__karbaliPatched) {
-  const originalError = toast.error.bind(toast) as ErrorFn;
-  const patched: ErrorFn = ((message: unknown, data?: unknown) => {
-    const isAdmin = typeof window !== "undefined" && window.__KARBALI_IS_ADMIN__ === true;
-    if (isAdmin) {
-      return (originalError as (m: unknown, d?: unknown) => string | number)(message, data);
-    }
-    // eslint-disable-next-line no-console
-    console.warn("[suppressed error]", message, data);
-    return (originalError as (m: unknown, d?: unknown) => string | number)(GENERIC_ERROR);
-  }) as ErrorFn;
-  (toast as { error: ErrorFn }).error = patched;
-  sonnerToast.__karbaliPatched = true;
-}
-
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
 
