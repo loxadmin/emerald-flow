@@ -19,8 +19,6 @@ interface AdminPrices { price_per_download: number; price_per_signup: number; pr
 interface Website { id: string; domain: string; is_verified: boolean; }
 type PlatformType = "website" | "mobile_app";
 
-const SALE_FLAT_FEE = 1;
-
 const functionErrorMessage = async (error: unknown, fallback: string) => {
   const context = (error as { context?: { text?: () => Promise<string> } } | null)?.context;
   if (context?.text) {
@@ -242,12 +240,14 @@ export default function CreateCampaign() {
     );
   };
 
+  const saleReserve = Math.max(Number(prices.price_per_purchase) || 0, 1);
+
   const totalCost = (() => {
     const users = Math.max(100, Number(targetUsers) || 100);
     let milestoneTotal = 0;
     if (milestones.includes("download")) milestoneTotal += prices.price_per_download;
     if (milestones.includes("signup")) milestoneTotal += prices.price_per_signup;
-    if (milestones.includes("purchase")) milestoneTotal += SALE_FLAT_FEE;
+    if (milestones.includes("purchase")) milestoneTotal += saleReserve;
     return milestoneTotal * users + prices.ad_placement_fee;
   })();
 
@@ -353,7 +353,7 @@ export default function CreateCampaign() {
       name: campaignName.trim(), target_users: users, selected_milestones: milestones, total_cost: totalCost,
       price_download: milestones.includes("download") ? prices.price_per_download : 0,
       price_signup: milestones.includes("signup") ? prices.price_per_signup : 0,
-      price_purchase: milestones.includes("purchase") ? SALE_FLAT_FEE : 0,
+      price_purchase: milestones.includes("purchase") ? saleReserve : 0,
       integration_verified: verified, integration_type: isPartnership ? "external_referral" : integrationType,
       website_id: selectedWebsiteId,
       platform_type: platformType,
@@ -522,7 +522,7 @@ new KarbaliTracking();`;
   const milestoneOptions = [
     { id: "download", label: "App Downloads", priceLabel: `$${prices.price_per_download.toFixed(2)} / user`, unitPrice: prices.price_per_download },
     { id: "signup", label: "Sign Ups", priceLabel: `$${prices.price_per_signup.toFixed(2)} / user`, unitPrice: prices.price_per_signup },
-    { id: "purchase", label: "Sales / Subscriptions", priceLabel: "$1.00 + 10% / sale", unitPrice: SALE_FLAT_FEE },
+    { id: "purchase", label: "Sales / Subscriptions", priceLabel: `$${saleReserve.toFixed(2)} reserve + 10% / sale`, unitPrice: saleReserve },
   ].filter((option) => allowedEvents.includes(option.id));
 
   // Partnership category: show choice first
@@ -761,7 +761,7 @@ new KarbaliTracking();`;
               <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 text-sm">
                 <p className="font-medium text-foreground text-xs">Cost Breakdown</p>
                 {milestones.map(m => {
-                  const price = m === "download" ? prices.price_per_download : m === "signup" ? prices.price_per_signup : SALE_FLAT_FEE;
+                  const price = m === "download" ? prices.price_per_download : m === "signup" ? prices.price_per_signup : saleReserve;
                   const users = Math.max(100, Number(targetUsers) || 100);
                   return <div key={m} className="flex justify-between text-xs text-muted-foreground"><span className="capitalize">{m === "purchase" ? "sales reserve" : m}: ${price.toFixed(2)} × {users}</span><span className="text-foreground">${(price * users).toFixed(2)}</span></div>;
                 })}

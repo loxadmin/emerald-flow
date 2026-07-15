@@ -21,8 +21,6 @@ interface AdminPrices {
   min_price_per_download: number; min_price_per_signup: number; min_price_per_purchase: number;
 }
 
-const SALE_FLAT_FEE = 1;
-
 interface ManualDraft {
   step: number;
   platformType: "website" | "mobile_app" | null;
@@ -159,7 +157,7 @@ export default function CreateManualCampaign() {
     const baseKey = `price_per_${event}` as const;
     const floor = Number(prices[minKey]) || 0;
     const def = Number(prices[baseKey]) || floor;
-    if (event === "purchase") return SALE_FLAT_FEE; // commerce-style flat fee
+    if (event === "purchase") return Math.max(floor, def, 1); // commerce-style reserve
     const requested = customPrices[event];
     return Math.max(floor, requested == null ? def : Number(requested));
   };
@@ -179,7 +177,7 @@ export default function CreateManualCampaign() {
       ? [{ id: "download", label: "App Downloads", priceLabel: `$${eventPrice("download").toFixed(2)} / user`, icon: Download, locked: true }]
       : []),
     { id: "signup", label: "Sign Ups", priceLabel: `$${eventPrice("signup").toFixed(2)} / user`, icon: UserPlus, locked: false },
-    { id: "purchase", label: "Purchases", priceLabel: "$1.00 + 10% / sale", icon: ShoppingCart, locked: false },
+    { id: "purchase", label: "Purchases", priceLabel: `$${eventPrice("purchase").toFixed(2)} reserve + 10% / sale`, icon: ShoppingCart, locked: false },
   ];
 
   const isValidAppLink = (link: string) => {
@@ -231,7 +229,7 @@ export default function CreateManualCampaign() {
       total_cost: totalCost,
       price_download: milestones.includes("download") ? eventPrice("download") : 0,
       price_signup: milestones.includes("signup") ? eventPrice("signup") : 0,
-      price_purchase: milestones.includes("purchase") ? SALE_FLAT_FEE : 0,
+      price_purchase: milestones.includes("purchase") ? eventPrice("purchase") : 0,
     } as any).select().single();
 
     if (campErr) { toast.error(campErr.message); setLoading(false); return; }
@@ -390,7 +388,7 @@ export default function CreateManualCampaign() {
                 const isLockedDownload = isDownload && isAppOwner && platformType === "mobile_app";
                 const evt = m.id as "download" | "signup" | "purchase";
                 const floor =
-                  evt === "purchase" ? SALE_FLAT_FEE : Number(prices[`min_price_per_${evt}` as const]);
+                  evt === "purchase" ? eventPrice("purchase") : Number(prices[`min_price_per_${evt}` as const]);
                 const showPriceInput = checked && evt !== "purchase";
                 return (
                   <div
