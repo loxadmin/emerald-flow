@@ -50,7 +50,7 @@ const FORBIDDEN_DOMAINS = [...PUBLIC_EMAIL_DOMAINS, ...DISPOSABLE_DOMAINS];
 
 type Subtype =
   | "musician" | "youtuber" | "social_media_creator"
-  | "app" | "website" | "fintech" | "game_developers" | "sports_betting"
+  | "app" | "website" | "fintech"
   | "ecommerce" | "online_vendor" | "realtor"
   | "food_beverage" | "household_items"
   | "telecom" | "oil_gas";
@@ -64,8 +64,6 @@ const SUBTYPE_OPTIONS: { id: Subtype; label: string; group: "engagement" | "perf
   { id: "app", label: "Mobile App Owner", group: "performance" },
   { id: "website", label: "Website Owner", group: "performance" },
   { id: "fintech", label: "Fintech", group: "performance" },
-  { id: "game_developers", label: "Game Developers", group: "performance" },
-  { id: "sports_betting", label: "Sports and Betting", group: "performance" },
   // Online — Commerce
   { id: "ecommerce", label: "E-commerce", group: "commerce" },
   { id: "online_vendor", label: "Online Vendor", group: "commerce" },

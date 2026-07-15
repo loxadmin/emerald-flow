@@ -301,7 +301,7 @@ function answerTopic(topic: Topic, state: ConversationState, ctx: AssistantConte
       };
     case "campaign_types":
       return {
-        text: "Two ad types: Online and Offline. Online has Engagement (musicians, YouTubers, creators), Performance (apps, websites, fintech, game developers, sports and betting), and Commerce (e-commerce, vendors, realtors). Offline has Daily Essentials and Mainstream brands.",
+        text: "Two ad types: Online and Offline. Online has Engagement (musicians, YouTubers, creators), Performance (apps, websites, fintech), and Commerce (e-commerce, vendors, realtors). Offline has Daily Essentials and Mainstream brands.",
         suggestions: ["What is Engagement?", "What is Performance?", "What is Commerce?"],
         stateUpdates: { topic: "campaign_types" },
       };

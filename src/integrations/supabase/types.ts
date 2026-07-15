@@ -2243,8 +2243,6 @@ export type Database = {
         | "food_beverage"
         | "household_items"
         | "telecom"
-        | "game_developers"
-        | "sports_betting"
       advertiser_type: "engagement" | "performance" | "commerce" | "offline"
       app_role: "admin" | "user"
       campaign_status:
@@ -2408,8 +2406,6 @@ export const Constants = {
         "food_beverage",
         "household_items",
         "telecom",
-        "game_developers",
-        "sports_betting",
       ],
       advertiser_type: ["engagement", "performance", "commerce", "offline"],
       app_role: ["admin", "user"],
