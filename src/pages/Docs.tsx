@@ -3,7 +3,6 @@ import { Helmet } from "react-helmet-async";
 import { ArrowLeft, Check, X } from "lucide-react";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
-import ModeBanner from "@/components/ModeBanner";
 import { useManualMode } from "@/lib/use-manual-mode";
 import { useAuth } from "@/lib/auth";
 
@@ -63,10 +62,6 @@ export default function Docs() {
           </Link>
         </div>
       </header>
-
-      <div className="border-b border-border pb-6 pt-8">
-        <ModeBanner />
-      </div>
 
       <div className="mx-auto flex max-w-6xl gap-12 px-6 py-14">
         {/* Sidebar */}

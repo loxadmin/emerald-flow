@@ -16,7 +16,6 @@ import LandingVariant2 from "@/components/landing/LandingVariant2";
 import LandingVariant3 from "@/components/landing/LandingVariant3";
 import LandingVariant4 from "@/components/landing/LandingVariant4";
 import LandingVariant5 from "@/components/landing/LandingVariant5";
-import ModeBanner from "@/components/ModeBanner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -303,11 +302,6 @@ export default function Index() {
           {s("hero").is_visible && (
             <LandingHero title={s("hero").title} subtitle={s("hero").subtitle} metrics={metrics} metricsLoading={metricsLoading} />
           )}
-
-          {/* Live mode banner — reflects Simple vs Advance across the platform */}
-          <section className="relative z-10 py-6">
-            <ModeBanner />
-          </section>
 
 
           {/* Logos / trust band */}
