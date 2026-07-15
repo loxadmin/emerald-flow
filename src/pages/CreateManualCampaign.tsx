@@ -21,6 +21,20 @@ interface AdminPrices {
   min_price_per_download: number; min_price_per_signup: number; min_price_per_purchase: number;
 }
 
+const functionErrorMessage = async (error: unknown, fallback: string) => {
+  const context = (error as { context?: { text?: () => Promise<string> } } | null)?.context;
+  if (context?.text) {
+    try {
+      const body = await context.text();
+      const parsed = JSON.parse(body);
+      return parsed?.error || parsed?.message || body || fallback;
+    } catch {
+      return (error as Error)?.message || fallback;
+    }
+  }
+  return (error as Error)?.message || fallback;
+};
+
 interface ManualDraft {
   step: number;
   platformType: "website" | "mobile_app" | null;
@@ -242,7 +256,7 @@ export default function CreateManualCampaign() {
     });
 
     if (escrowError || escrowResult?.error) {
-      toast.error(escrowResult?.error || escrowError?.message || "Failed to fund campaign escrow");
+      toast.error(escrowResult?.error || await functionErrorMessage(escrowError, "Failed to fund campaign escrow"));
       setLoading(false);
       return;
     }
