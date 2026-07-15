@@ -34,6 +34,20 @@ type WalletInfo = { id?: string; balance: number; is_activated: boolean };
 
 const PENDING_KEY = "karbali_pending_package_purchase";
 
+const functionErrorMessage = async (error: unknown, fallback: string) => {
+  const context = (error as { context?: { text?: () => Promise<string> } } | null)?.context;
+  if (context?.text) {
+    try {
+      const body = await context.text();
+      const parsed = JSON.parse(body);
+      return parsed?.error || parsed?.message || body || fallback;
+    } catch {
+      return (error as Error)?.message || fallback;
+    }
+  }
+  return (error as Error)?.message || fallback;
+};
+
 export default function Packages() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -256,7 +270,7 @@ export default function Packages() {
       const { data: created, error: cErr } = await supabase.functions.invoke("paystack-wallet", { body: { action: "create_wallet" } });
       if (cErr || (created as any)?.error) {
         setBuying(false);
-        return toast.error((created as any)?.error || cErr?.message || "Could not prepare wallet");
+        return toast.error((created as any)?.error || await functionErrorMessage(cErr, "Could not prepare wallet"));
       }
     }
 
@@ -270,7 +284,7 @@ export default function Packages() {
     setBuying(false);
     if (error || (data as any)?.error) {
       sessionStorage.removeItem(PENDING_KEY);
-      return toast.error((data as any)?.error || error?.message || "Payment failed");
+      return toast.error((data as any)?.error || await functionErrorMessage(error, "Payment failed"));
     }
     const url = (data as any)?.authorization_url;
     if (!url) { sessionStorage.removeItem(PENDING_KEY); return toast.error("No payment URL"); }
