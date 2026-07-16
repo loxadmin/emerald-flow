@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [hasPackages, setHasPackages] = useState(false);
+  const [packageOrders, setPackageOrders] = useState<any[]>([]);
 
 
   useEffect(() => {
@@ -63,6 +64,11 @@ export default function Dashboard() {
         .from("campaigns").select("*").eq("advertiser_id", user.id)
         .order("created_at", { ascending: false });
       setCampaigns((campaignsData as Campaign[]) || []);
+
+      const { data: orders } = await supabase
+        .from("package_orders" as any).select("*").eq("advertiser_id", user.id)
+        .order("created_at", { ascending: false });
+      setPackageOrders((orders as any[]) || []);
       if (campaignsData && campaignsData.length > 0) {
         const campaignIds = campaignsData.map((c: Campaign) => c.id);
         const { count: eventsCount } = await supabase
@@ -255,14 +261,14 @@ export default function Dashboard() {
                 <p className="eyebrow mb-0.5">Campaigns</p>
                 <h3 className="text-base font-semibold tracking-tight">Recent activity</h3>
               </div>
-              <span className="text-xs text-muted-foreground tabular-nums">{campaigns.length} total</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{campaigns.length + packageOrders.length} total</span>
             </div>
             <div>
               {loading ? (
                 <div className="flex justify-center py-12">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
-              ) : campaigns.length === 0 ? (
+              ) : campaigns.length === 0 && packageOrders.length === 0 ? (
                 <div className="px-6 py-14 text-center">
                   <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
                     <Sparkles className="h-4 w-4 text-primary" />
@@ -279,6 +285,32 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <ul className="divide-y divide-border">
+                  {packageOrders.slice(0, 5).map((o) => (
+                    <li key={`o-${o.id}`}>
+                      <Link
+                        to="/package-orders"
+                        className="flex items-center justify-between gap-3 px-6 py-4 group hover:bg-accent/40 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                              {o.package_name} <span className="text-[10px] font-normal text-muted-foreground">(package)</span>
+                            </p>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] px-1.5 py-0 font-medium uppercase tracking-wider ${statusClass(o.status === "pending_review" ? "pending" : o.status)}`}
+                            >
+                              {o.status === "pending_review" ? "pending" : o.status}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                            {o.units} units • <span className="font-mono">${Number(o.total_amount_usd || 0).toFixed(2)}</span>
+                          </p>
+                        </div>
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors shrink-0" />
+                      </Link>
+                    </li>
+                  ))}
                   {campaigns.slice(0, 8).map((campaign) => (
                     <li key={campaign.id}>
                       <Link

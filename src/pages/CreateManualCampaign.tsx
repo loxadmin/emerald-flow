@@ -14,6 +14,7 @@ import { draftKey, loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage"
 import {
   Globe, Smartphone, CheckCircle, Send, Loader2, Settings, Download, UserPlus, ShoppingCart, AlertCircle, Lock,
 } from "lucide-react";
+import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
 interface AdminPrices {
@@ -73,6 +74,7 @@ export default function CreateManualCampaign() {
   });
   // Per-event prices the advertiser may raise above the admin floor
   const [customPrices, setCustomPrices] = useState<{ download?: number; signup?: number; purchase?: number }>({});
+  const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const restored = useRef(false);
 
   const dKey = draftKey(user?.id, "manual", null);
@@ -244,6 +246,9 @@ export default function CreateManualCampaign() {
       price_download: milestones.includes("download") ? eventPrice("download") : 0,
       price_signup: milestones.includes("signup") ? eventPrice("signup") : 0,
       price_purchase: milestones.includes("purchase") ? eventPrice("purchase") : 0,
+      promo_media_url: promoMedia.url,
+      promo_media_path: promoMedia.path,
+      promo_media_type: promoMedia.type,
     } as any).select().single();
 
     if (campErr) { toast.error(campErr.message); setLoading(false); return; }
@@ -518,6 +523,7 @@ export default function CreateManualCampaign() {
             <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
               <p>Your campaign will be submitted for admin approval. Once approved, a referral link will be auto-generated and your campaign will go live.</p>
             </div>
+            <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>

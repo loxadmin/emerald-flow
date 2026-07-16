@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertCircle, Handshake, Globe, RotateCcw, Smartphone } from "lucide-react";
 import JSZip from "jszip";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
+import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
 
 interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
 interface Website { id: string; domain: string; is_verified: boolean; }
@@ -75,6 +76,7 @@ export default function CreateCampaign() {
   // Draft loading
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
+  const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
 
   const syncDraftUrl = (draftId: string, nextStep: number) => {
     const currentStep = Number(stepParam ?? "0");
@@ -358,6 +360,9 @@ export default function CreateCampaign() {
       website_id: selectedWebsiteId,
       platform_type: platformType,
       app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
+      promo_media_url: promoMedia.url,
+      promo_media_path: promoMedia.path,
+      promo_media_type: promoMedia.type,
     } as any).eq("id", cId);
     if (error) { toast.error(error.message); setLoading(false); return; }
 
@@ -812,6 +817,7 @@ new KarbaliTracking();`;
                 <div key={r.l} className="flex justify-between text-sm"><span className="text-muted-foreground">{r.l}</span><span className="text-foreground font-medium">{r.v}</span></div>
               ))}
             </div>
+            <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(isPartnership ? 1 : 3)}>← Back</Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>

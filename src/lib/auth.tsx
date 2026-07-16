@@ -6,6 +6,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 const INACTIVITY_TIMEOUT = 48 * 60 * 60 * 1000;
 const ACTIVITY_CHECK_INTERVAL = 60 * 1000;
 
+declare global {
+  interface Window {
+    __KARBALI_IS_ADMIN__?: boolean;
+  }
+}
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;

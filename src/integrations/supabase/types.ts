@@ -622,6 +622,9 @@ export type Database = {
           price_download: number
           price_purchase: number
           price_signup: number
+          promo_media_path: string | null
+          promo_media_type: string | null
+          promo_media_url: string | null
           selected_milestones: string[]
           status: Database["public"]["Enums"]["campaign_status"]
           target_users: number
@@ -650,6 +653,9 @@ export type Database = {
           price_download?: number
           price_purchase?: number
           price_signup?: number
+          promo_media_path?: string | null
+          promo_media_type?: string | null
+          promo_media_url?: string | null
           selected_milestones?: string[]
           status?: Database["public"]["Enums"]["campaign_status"]
           target_users?: number
@@ -678,6 +684,9 @@ export type Database = {
           price_download?: number
           price_purchase?: number
           price_signup?: number
+          promo_media_path?: string | null
+          promo_media_type?: string | null
+          promo_media_url?: string | null
           selected_milestones?: string[]
           status?: Database["public"]["Enums"]["campaign_status"]
           target_users?: number

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, ShoppingBag, Download, RotateCcw } from "lucide-react";
 import JSZip from "jszip";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
+import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
 
@@ -55,6 +56,7 @@ export default function CreateCommerceCampaign() {
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState("");
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
+  const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
 
   const syncDraftUrl = (draftId: string, nextStep: number) => {
     const currentStep = Number(stepParam ?? "0");
@@ -229,6 +231,9 @@ export default function CreateCommerceCampaign() {
       selected_milestones: ["purchase"], total_cost: totalCost,
       price_purchase: saleReserve,
       integration_verified: verified, ad_type: "commerce",
+      promo_media_url: promoMedia.url,
+      promo_media_path: promoMedia.path,
+      promo_media_type: promoMedia.type,
     } as any).eq("id", campaignId);
 
     const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -533,6 +538,7 @@ new KarbaliCommerce();`;
                 </div>
               ))}
             </div>
+            <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(3)}>← Back</Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>
