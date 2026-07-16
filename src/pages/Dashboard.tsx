@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [hasPackages, setHasPackages] = useState(false);
+  const [packageOrders, setPackageOrders] = useState<any[]>([]);
 
 
   useEffect(() => {
