@@ -523,6 +523,7 @@ export default function CreateManualCampaign() {
             <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
               <p>Your campaign will be submitted for admin approval. Once approved, a referral link will be auto-generated and your campaign will go live.</p>
             </div>
+            <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>
