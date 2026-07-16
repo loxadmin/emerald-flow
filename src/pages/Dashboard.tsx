@@ -64,6 +64,11 @@ export default function Dashboard() {
         .from("campaigns").select("*").eq("advertiser_id", user.id)
         .order("created_at", { ascending: false });
       setCampaigns((campaignsData as Campaign[]) || []);
+
+      const { data: orders } = await supabase
+        .from("package_orders" as any).select("*").eq("advertiser_id", user.id)
+        .order("created_at", { ascending: false });
+      setPackageOrders((orders as any[]) || []);
       if (campaignsData && campaignsData.length > 0) {
         const campaignIds = campaignsData.map((c: Campaign) => c.id);
         const { count: eventsCount } = await supabase
