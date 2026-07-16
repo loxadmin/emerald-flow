@@ -285,6 +285,32 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <ul className="divide-y divide-border">
+                  {packageOrders.slice(0, 5).map((o) => (
+                    <li key={`o-${o.id}`}>
+                      <Link
+                        to="/package-orders"
+                        className="flex items-center justify-between gap-3 px-6 py-4 group hover:bg-accent/40 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                              {o.package_name} <span className="text-[10px] font-normal text-muted-foreground">(package)</span>
+                            </p>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] px-1.5 py-0 font-medium uppercase tracking-wider ${statusClass(o.status === "pending_review" ? "pending" : o.status)}`}
+                            >
+                              {o.status === "pending_review" ? "pending" : o.status}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                            {o.units} units • <span className="font-mono">${Number(o.total_amount_usd || 0).toFixed(2)}</span>
+                          </p>
+                        </div>
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors shrink-0" />
+                      </Link>
+                    </li>
+                  ))}
                   {campaigns.slice(0, 8).map((campaign) => (
                     <li key={campaign.id}>
                       <Link
