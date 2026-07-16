@@ -14,6 +14,7 @@ import { draftKey, loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage"
 import {
   Globe, Smartphone, CheckCircle, Send, Loader2, Settings, Download, UserPlus, ShoppingCart, AlertCircle, Lock,
 } from "lucide-react";
+import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
 interface AdminPrices {
