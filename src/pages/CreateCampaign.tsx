@@ -360,6 +360,9 @@ export default function CreateCampaign() {
       website_id: selectedWebsiteId,
       platform_type: platformType,
       app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
+      promo_media_url: promoMedia.url,
+      promo_media_path: promoMedia.path,
+      promo_media_type: promoMedia.type,
     } as any).eq("id", cId);
     if (error) { toast.error(error.message); setLoading(false); return; }
 
