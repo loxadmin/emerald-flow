@@ -52,6 +52,7 @@ export default function AdminDashboard() {
   const [eventBreakdown, setEventBreakdown] = useState<{ name: string; value: number }[]>([]);
   const [categoryRequests, setCategoryRequests] = useState<CategoryChangeReq[]>([]);
   const [trackerDistribution, setTrackerDistribution] = useState<TrackerVersionDistribution[]>([]);
+  const [pendingPackageOrders, setPendingPackageOrders] = useState<any[]>([]);
 
   const fetchData = async () => {
     const { data: allCampaigns } = await supabase.from("campaigns").select("*").order("created_at", { ascending: false });
