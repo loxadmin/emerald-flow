@@ -62,6 +62,7 @@ export default function CreateEngagementCampaign() {
   const [targetSubscribers, setTargetSubscribers] = useState("200");
   const [transcribing, setTranscribing] = useState(false);
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
+  const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
 
   useEffect(() => {
     if (!user?.id || !advertiserType || advertiserType === "engagement") return;
