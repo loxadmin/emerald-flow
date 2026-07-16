@@ -11,6 +11,7 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign, Eye, UserPlus, Plus, Trash2 } from "lucide-react";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
+import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
 
 type MediaType = "music" | "video";
 type EventType = "viewer" | "subscriber";
