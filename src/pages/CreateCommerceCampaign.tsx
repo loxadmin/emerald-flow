@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, ShoppingBag, Download, RotateCcw } from "lucide-react";
 import JSZip from "jszip";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
+import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
 
