@@ -370,6 +370,37 @@ export default function AdminDashboard() {
           </div>
         </MotionWrapper>
 
+        {/* Pending Package Orders */}
+        <MotionWrapper delay={0.17}>
+          <div className="rounded-xl border border-border bg-card">
+            <div className="p-5 pb-3 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-foreground">Pending Package Orders</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Ad packages awaiting review</p>
+              </div>
+              <Link to="/admin/packages" className="text-xs text-primary hover:underline">Open packages →</Link>
+            </div>
+            <div className="px-5 pb-5">
+              {pendingPackageOrders.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No pending package orders</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {pendingPackageOrders.map((o) => (
+                    <Link key={o.id} to="/admin/packages" className="flex items-center justify-between gap-3 py-3.5 group">
+                      <div>
+                        <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{o.package_name}</p>
+                        <p className="text-xs text-muted-foreground">{o.advertiser_email} • {o.units} units • ${Number(o.total_amount_usd || 0).toFixed(2)}</p>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20">pending</Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </MotionWrapper>
+
+
         {/* All Campaigns */}
         <MotionWrapper delay={0.2}>
           <div className="rounded-xl border border-border bg-card">
