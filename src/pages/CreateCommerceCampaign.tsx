@@ -56,6 +56,7 @@ export default function CreateCommerceCampaign() {
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState("");
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
+  const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
 
   const syncDraftUrl = (draftId: string, nextStep: number) => {
     const currentStep = Number(stepParam ?? "0");
