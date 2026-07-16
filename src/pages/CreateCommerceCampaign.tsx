@@ -538,6 +538,7 @@ new KarbaliCommerce();`;
                 </div>
               ))}
             </div>
+            <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(3)}>← Back</Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>
