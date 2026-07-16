@@ -376,6 +376,8 @@ export default function Index() {
             </div>
           </section>
 
+          <MeetAmara />
+
           {/* How it works — pastel mint band */}
           {s("how_it_works").is_visible && (
             <section id="how-it-works" className="relative z-10 section-mint border-y border-border py-16 md:py-24 px-6 sm:px-10 lg:px-16">
