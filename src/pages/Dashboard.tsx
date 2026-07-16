@@ -261,14 +261,14 @@ export default function Dashboard() {
                 <p className="eyebrow mb-0.5">Campaigns</p>
                 <h3 className="text-base font-semibold tracking-tight">Recent activity</h3>
               </div>
-              <span className="text-xs text-muted-foreground tabular-nums">{campaigns.length} total</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{campaigns.length + packageOrders.length} total</span>
             </div>
             <div>
               {loading ? (
                 <div className="flex justify-center py-12">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
-              ) : campaigns.length === 0 ? (
+              ) : campaigns.length === 0 && packageOrders.length === 0 ? (
                 <div className="px-6 py-14 text-center">
                   <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
                     <Sparkles className="h-4 w-4 text-primary" />
