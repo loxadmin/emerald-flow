@@ -74,6 +74,7 @@ export default function CreateManualCampaign() {
   });
   // Per-event prices the advertiser may raise above the admin floor
   const [customPrices, setCustomPrices] = useState<{ download?: number; signup?: number; purchase?: number }>({});
+  const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const restored = useRef(false);
 
   const dKey = draftKey(user?.id, "manual", null);
