@@ -231,6 +231,9 @@ export default function CreateCommerceCampaign() {
       selected_milestones: ["purchase"], total_cost: totalCost,
       price_purchase: saleReserve,
       integration_verified: verified, ad_type: "commerce",
+      promo_media_url: promoMedia.url,
+      promo_media_path: promoMedia.path,
+      promo_media_type: promoMedia.type,
     } as any).eq("id", campaignId);
 
     const token = (await supabase.auth.getSession()).data.session?.access_token;
