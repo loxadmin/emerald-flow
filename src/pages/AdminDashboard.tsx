@@ -142,6 +142,18 @@ export default function AdminDashboard() {
         .sort((a, b) => b.campaigns - a.campaigns)
     );
 
+    const { data: pkgOrders } = await supabase
+      .from("package_orders" as any)
+      .select("*")
+      .eq("status", "pending_review")
+      .order("created_at", { ascending: false });
+    const orderAdvIds = [...new Set(((pkgOrders as any[]) || []).map((o: any) => o.advertiser_id))];
+    const { data: orderProfiles } = orderAdvIds.length
+      ? await supabase.from("profiles").select("id, email").in("id", orderAdvIds)
+      : { data: [] as any[] };
+    const orderProfMap = new Map((orderProfiles || []).map((p: any) => [p.id, p.email]));
+    setPendingPackageOrders(((pkgOrders as any[]) || []).map((o: any) => ({ ...o, advertiser_email: orderProfMap.get(o.advertiser_id) || "Unknown" })));
+
     setLoading(false);
   };
 
