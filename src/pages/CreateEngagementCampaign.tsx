@@ -181,6 +181,9 @@ export default function CreateEngagementCampaign() {
       price_signup: 0,
       price_purchase: 0,
       is_draft: false,
+      promo_media_url: promoMedia.url,
+      promo_media_path: promoMedia.path,
+      promo_media_type: promoMedia.type,
     } as any).select().single();
 
     if (campErr) { toast.error(campErr.message); setLoading(false); return; }
