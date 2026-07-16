@@ -24,6 +24,7 @@ import { ContainerScroll, CardsContainer, CardTransformed } from "@/components/u
 import { cn } from "@/lib/utils";
 import DisplayCards, { DisplayCardProps } from "@/components/ui/display-cards";
 import { CpuArchitecture } from "@/components/ui/cpu-architecture";
+import MeetAmara from "@/components/landing/MeetAmara";
 
 interface SiteContent {
   section_key: string;
