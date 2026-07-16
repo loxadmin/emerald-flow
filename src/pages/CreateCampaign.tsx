@@ -76,6 +76,7 @@ export default function CreateCampaign() {
   // Draft loading
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
+  const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
 
   const syncDraftUrl = (draftId: string, nextStep: number) => {
     const currentStep = Number(stepParam ?? "0");
