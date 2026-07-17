@@ -68,17 +68,17 @@ export default function MeetAmara() {
   const step = STEPS[active];
 
   return (
-    <section className="relative py-24 sm:py-32 bg-background">
-      <div className="mx-auto max-w-7xl px-6">
+    <section className="relative py-16 sm:py-24 md:py-32 bg-background">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section header */}
-        <div className="mx-auto max-w-3xl text-center mb-16">
-          <span className="inline-block text-[11px] uppercase tracking-[0.18em] text-primary font-semibold mb-4">
+        <div className="mx-auto max-w-3xl text-center mb-10 sm:mb-16">
+          <span className="inline-block text-[11px] uppercase tracking-[0.18em] text-primary font-semibold mb-3 sm:mb-4">
             How Karbali migrates customers to brands
           </span>
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
             Meet Amara <span className="inline-block">👋</span>
           </h2>
-          <p className="mt-5 text-base md:text-lg text-muted-foreground leading-relaxed">
+          <p className="mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed">
             Amara works a 9–5 in Lagos and dreams of a December vacation. She sets a
             <span className="font-semibold text-foreground"> {formatNaira(GOAL)} Vacation Goal </span>
             on Karbali. Watch how her everyday spending funds it.
@@ -86,33 +86,33 @@ export default function MeetAmara() {
         </div>
 
         {/* Storyboard */}
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-12 items-stretch">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-12 items-stretch">
           {/* Amara character panel */}
           <div className="relative rounded-3xl bg-card border border-border overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 pointer-events-none" />
-            <div className="relative p-8 flex flex-col items-center text-center">
-              <div className="relative">
-                <div className="absolute -inset-6 rounded-full bg-primary/10 blur-2xl" />
+            <div className="relative p-4 sm:p-6 md:p-8 flex flex-col items-center text-center">
+              <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 flex items-center justify-center">
+                <div className="absolute -inset-4 sm:-inset-6 rounded-full bg-primary/10 blur-2xl" />
                 <img
                   src="/assets/amara.png"
                   alt="Amara — a young Nigerian professional saving for her December vacation"
-                  className="relative h-72 w-72 sm:h-80 sm:w-80 object-contain drop-shadow-2xl"
+                  className="relative w-full h-full object-contain drop-shadow-2xl"
                 />
               </div>
-              <h3 className="mt-4 text-xl font-bold text-foreground">Amara Okafor</h3>
+              <h3 className="mt-4 text-lg sm:text-xl font-bold text-foreground">Amara Okafor</h3>
               <p className="text-xs text-muted-foreground">Lagos • Marketing Associate</p>
 
               {/* Goal progress */}
-              <div className="mt-8 w-full max-w-sm">
+              <div className="mt-6 sm:mt-8 w-full max-w-sm">
                 <div className="flex items-baseline justify-between mb-2">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     🏝️ Vacation goal
                   </span>
-                  <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
+                  <span className="text-[10px] sm:text-[11px] font-mono text-muted-foreground tabular-nums">
                     {formatNaira(raised)} / {formatNaira(GOAL)}
                   </span>
                 </div>
-                <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
+                <div className="h-2.5 sm:h-3 w-full rounded-full bg-muted overflow-hidden">
                   <motion.div
                     className="h-full rounded-full bg-primary"
                     initial={{ width: 0 }}
@@ -120,22 +120,22 @@ export default function MeetAmara() {
                     transition={{ type: "spring", stiffness: 90, damping: 20 }}
                   />
                 </div>
-                <p className="mt-2 text-xs font-semibold text-primary tabular-nums">
+                <p className="mt-2 text-xs font-semibold text-primary tabular-nums text-left sm:text-center">
                   {progress.toFixed(0)}% funded
                 </p>
 
                 {/* Sponsor chips */}
-                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <div className="mt-4 sm:mt-5 flex flex-wrap justify-center gap-1.5 sm:gap-2">
                   {STEPS.map((s, i) => (
                     <span
                       key={s.key}
-                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium transition-colors ${
                         i <= active
                           ? "border-primary/30 bg-primary/10 text-primary"
                           : "border-border bg-muted/50 text-muted-foreground"
                       }`}
                     >
-                      {i <= active && <Check className="h-3 w-3" />} {s.targetBrand}
+                      {i <= active && <Check className="h-2.5 sm:h-3 w-2.5 sm:w-3" />} {s.targetBrand}
                     </span>
                   ))}
                 </div>
@@ -144,110 +144,112 @@ export default function MeetAmara() {
           </div>
 
           {/* Interactive step panel */}
-          <div className="rounded-3xl bg-card border border-border p-8 flex flex-col">
-            {/* Step index rail */}
-            <div className="flex items-center gap-2 mb-6">
-              {STEPS.map((s, i) => {
-                const Icon = s.icon;
-                const state = i < active ? "done" : i === active ? "current" : "todo";
-                return (
-                  <button
-                    key={s.key}
-                    onClick={() => setActive(i)}
-                    className={`group flex-1 flex flex-col items-center gap-2 rounded-xl border p-3 transition-all ${
-                      state === "current"
-                        ? "border-primary bg-primary/5"
-                        : state === "done"
-                          ? "border-primary/30 bg-primary/5"
-                          : "border-border bg-muted/30 hover:bg-muted/60"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                        state === "todo" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"
+          <div className="rounded-3xl bg-card border border-border p-4 sm:p-6 md:p-8 flex flex-col justify-between">
+            <div>
+              {/* Step index rail */}
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 mb-6">
+                {STEPS.map((s, i) => {
+                  const Icon = s.icon;
+                  const state = i < active ? "done" : i === active ? "current" : "todo";
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => setActive(i)}
+                      className={`group flex-1 flex flex-row sm:flex-col items-center justify-start sm:justify-center gap-2 rounded-xl border p-2.5 sm:p-3 transition-all ${
+                        state === "current"
+                          ? "border-primary bg-primary/5"
+                          : state === "done"
+                            ? "border-primary/30 bg-primary/5"
+                            : "border-border bg-muted/30 hover:bg-muted/60"
                       }`}
                     >
-                      {state === "done" ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                      <span
+                        className={`flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full ${
+                          state === "todo" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"
+                        }`}
+                      >
+                        {state === "done" ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
+                      </span>
+                      <span className={`text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-left sm:text-center truncate ${
+                        state === "current" ? "text-primary" : "text-muted-foreground"
+                      }`}>
+                        {s.category}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Step body */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step.key}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex-1 flex flex-col"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <span
+                      className="rounded-lg bg-muted px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-medium text-muted-foreground line-through"
+                    >
+                      {step.currentBrand}
                     </span>
-                    <span className={`text-[10px] font-medium uppercase tracking-wider ${
-                      state === "current" ? "text-primary" : "text-muted-foreground"
-                    }`}>
-                      {s.category}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Step body */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step.key}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.3 }}
-                className="flex-1 flex flex-col"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <span
-                    className="rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground line-through"
-                  >
-                    {step.currentBrand}
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  <span
-                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-primary-foreground"
-                    style={{ backgroundColor: step.color }}
-                  >
-                    {step.targetBrand}
-                  </span>
-                </div>
-
-                <h3 className="text-2xl font-bold tracking-tight text-foreground">
-                  Switch to {step.targetBrand}
-                </h3>
-                <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed">
-                  {step.milestone}
-                </p>
-
-                <div className="mt-6 rounded-xl border border-border bg-muted/30 p-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                    Result
-                  </p>
-                  <p className="text-sm text-foreground leading-relaxed">
-                    Part of <span className="font-semibold" style={{ color: step.color }}>{step.targetBrand}</span>'s
-                    customer acquisition budget funds Amara's vacation goal.
-                  </p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Contribution unlocked</span>
-                    <span className="text-lg font-bold text-primary tabular-nums">
-                      +{formatNaira(step.contribution)}
+                    <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                    <span
+                      className="rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-semibold text-primary-foreground"
+                      style={{ backgroundColor: step.color }}
+                    >
+                      {step.targetBrand}
                     </span>
                   </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+
+                  <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                    Switch to {step.targetBrand}
+                  </h3>
+                  <p className="mt-2 sm:mt-3 text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed">
+                    {step.milestone}
+                  </p>
+
+                  <div className="mt-5 sm:mt-6 rounded-xl border border-border bg-muted/30 p-4 sm:p-5">
+                    <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 sm:mb-2">
+                      Result
+                    </p>
+                    <p className="text-xs sm:text-sm text-foreground leading-relaxed">
+                      Part of <span className="font-semibold" style={{ color: step.color }}>{step.targetBrand}</span>'s
+                      customer acquisition budget funds Amara's vacation goal.
+                    </p>
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Contribution unlocked</span>
+                      <span className="text-base sm:text-lg font-bold text-primary tabular-nums">
+                        +{formatNaira(step.contribution)}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
             {/* Navigation */}
-            <div className="mt-6 flex items-center justify-between">
+            <div className="mt-6 flex items-center justify-between border-t border-border/50 pt-4 sm:pt-0 sm:border-t-0">
               <button
                 onClick={() => setActive((i) => Math.max(0, i - 1))}
                 disabled={active === 0}
-                className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
               >
                 <ChevronLeft className="h-4 w-4" /> Previous
               </button>
               {active < STEPS.length - 1 ? (
                 <button
                   onClick={() => setActive((i) => Math.min(STEPS.length - 1, i + 1))}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
-                  Next milestone <ChevronRight className="h-4 w-4" />
+                  Next milestone <ChevronRight className="h-3.5 w-3.5" />
                 </button>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
-                  <PartyPopper className="h-4 w-4" /> Goal complete
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-primary">
+                  <PartyPopper className="h-3.5 w-3.5" /> Goal complete
                 </span>
               )}
             </div>
@@ -255,16 +257,16 @@ export default function MeetAmara() {
         </div>
 
         {/* Closing line */}
-        <div className="mt-16 mx-auto max-w-3xl text-center">
-          <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
+        <div className="mt-12 sm:mt-16 mx-auto max-w-3xl text-center">
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed">
             Amara didn't earn cashback. She didn't watch ads. She simply switched from brands she
             already used to brands investing in her future. Every completed milestone unlocked
             more of her vacation fund.
           </p>
-          <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+          <p className="mt-5 sm:mt-6 text-xs sm:text-sm font-semibold uppercase tracking-[0.18em] text-primary">
             That's how Karbali acquires customers.
           </p>
-          <p className="mt-3 text-sm text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-3 text-xs sm:text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             We don't interrupt people with advertising. We identify what they're already using,
             create verified preference-switch milestones, and help brands migrate customers by
             becoming part of their success story.
