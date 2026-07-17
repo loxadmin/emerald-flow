@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Car, Wallet, UtensilsCrossed, ShoppingBag, Check, ChevronLeft, ChevronRight, PartyPopper } from "lucide-react";
-import amaraAsset from "@/assets/amara-character.png.asset.json";
 
 type Step = {
   key: string;
@@ -95,7 +94,7 @@ export default function MeetAmara() {
               <div className="relative">
                 <div className="absolute -inset-6 rounded-full bg-primary/10 blur-2xl" />
                 <img
-                  src={amaraAsset.url}
+                  src="/assets/amara.png"
                   alt="Amara — a young Nigerian professional saving for her December vacation"
                   className="relative h-72 w-72 sm:h-80 sm:w-80 object-contain drop-shadow-2xl"
                 />
