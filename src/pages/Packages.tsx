@@ -251,9 +251,12 @@ export default function Packages() {
       if (!websites.some((s) => s.domain === cleanLinks[0] || cleanLinks[0].includes(s.domain))) {
         return toast.error("Website must be one of your verified sites");
       }
-    } else {
+    } else if (platform === "mobile") {
       if (cleanLinks.length < 1 || cleanLinks.length > 2) return toast.error("Add 1 or 2 app links");
       for (const l of cleanLinks) { try { new URL(l); } catch { return toast.error(`Invalid URL: ${l}`); } }
+    } else {
+      if (cleanLinks.length !== 1) return toast.error("Add exactly 1 link");
+      try { new URL(cleanLinks[0]); } catch { return toast.error(`Invalid URL: ${cleanLinks[0]}`); }
     }
     if (flatTotal <= 0) return toast.error("Total must be greater than zero");
 
