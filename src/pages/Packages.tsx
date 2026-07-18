@@ -12,7 +12,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock } from "lucide-react";
+import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock, Youtube, Music, Instagram, Video } from "lucide-react";
+
+const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; placeholder: string }> = {
+  mobile:    { label: "Mobile app", sub: "Up to 2 app links, install required", Icon: Smartphone, placeholder: "https://play.google.com/..." },
+  web:       { label: "Website",    sub: "1 verified website",                  Icon: Globe,      placeholder: "https://yourdomain.com" },
+  youtube:   { label: "YouTube",    sub: "1 channel or video link",             Icon: Youtube,    placeholder: "https://youtube.com/@yourchannel" },
+  spotify:   { label: "Spotify",    sub: "1 artist or track link",              Icon: Music,      placeholder: "https://open.spotify.com/artist/..." },
+  instagram: { label: "Instagram",  sub: "1 profile link",                      Icon: Instagram,  placeholder: "https://instagram.com/yourhandle" },
+  tiktok:    { label: "TikTok",     sub: "1 profile or video link",             Icon: Video,      placeholder: "https://tiktok.com/@yourhandle" },
+};
+const CREATOR_PLATFORMS = ["youtube", "spotify", "instagram", "tiktok"];
 
 import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
 
@@ -60,9 +70,10 @@ export default function Packages() {
   const [mySubtype, setMySubtype] = useState<AdvertiserSubtype | null>(null);
 
   const [selected, setSelected] = useState<Pkg | null>(null);
-  const [platform, setPlatform] = useState<"mobile" | "web">("mobile");
+  const [platform, setPlatform] = useState<string>("mobile");
   const [duration, setDuration] = useState<number>(30);
   const [units, setUnits] = useState<number>(500);
+  const [unitsText, setUnitsText] = useState<string>("500");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [links, setLinks] = useState<string[]>([""]);
   const [payMethod, setPayMethod] = useState<"wallet" | "paystack">("wallet");
