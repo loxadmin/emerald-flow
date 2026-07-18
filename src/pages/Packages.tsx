@@ -307,7 +307,16 @@ export default function Packages() {
     window.location.href = url;
   };
 
-  const unitsLabel = needsDuration ? "Daily users" : "Users (total)";
+  // If ALL selected milestones are streaming/view types, use "Streams" wording
+  const STREAM_SLUGS = new Set(["music_streams", "youtube_video_views"]);
+  const selectedSlugs = selectedMs
+    .map((r) => milestones.find((m) => m.id === r.milestone_id)?.slug)
+    .filter(Boolean) as string[];
+  const streamMode = selectedSlugs.length > 0 && selectedSlugs.every((s) => STREAM_SLUGS.has(s));
+  const unitsNoun = streamMode ? "streams" : "users";
+  const unitsLabel = streamMode
+    ? "Total streams"
+    : needsDuration ? "Daily users" : "Users (total)";
 
   return (
     <DashboardLayout>
