@@ -48,7 +48,7 @@ const emptyForm = {
   advertiser_subtypes: [] as AdvertiserSubtype[],
   min_units: "500", max_units: "10000",
   duration_options: [30] as number[],
-  platform_support: ["mobile", "web"] as string[],
+  platform_support: ["mobile"] as string[],
   is_active: true, sort_order: "0",
 };
 
@@ -418,15 +418,24 @@ export default function AdminPackages() {
 
             <div>
               <Label>Platforms supported</Label>
-              <div className="mt-1 flex gap-4">
-                {["mobile", "web"].map((p) => (
-                  <label key={p} className="flex items-center gap-2 text-sm capitalize">
-                    <Checkbox checked={form.platform_support.includes(p)} onCheckedChange={() => togglePlatform(p)} />
-                    {p} app
+              <div className="mt-1 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { v: "mobile", label: "Mobile app" },
+                  { v: "web", label: "Website" },
+                  { v: "youtube", label: "YouTube" },
+                  { v: "spotify", label: "Spotify" },
+                  { v: "instagram", label: "Instagram" },
+                  { v: "tiktok", label: "TikTok" },
+                ].map((p) => (
+                  <label key={p.v} className="flex items-center gap-2 text-sm">
+                    <Checkbox checked={form.platform_support.includes(p.v)} onCheckedChange={() => togglePlatform(p.v)} />
+                    {p.label}
                   </label>
                 ))}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Web = 1 verified website. Mobile = up to 2 app links, App Install always required.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Website = 1 verified domain. Mobile = up to 2 app links (Install required). YouTube/Spotify/Instagram/TikTok = 1 creator link (no verification).
+              </p>
             </div>
 
             <div className="rounded-lg border p-3 space-y-3">

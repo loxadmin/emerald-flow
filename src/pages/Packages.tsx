@@ -12,7 +12,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock } from "lucide-react";
+import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock, Youtube, Music, Instagram, Video } from "lucide-react";
+
+const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; placeholder: string }> = {
+  mobile:    { label: "Mobile app", sub: "Up to 2 app links, install required", Icon: Smartphone, placeholder: "https://play.google.com/..." },
+  web:       { label: "Website",    sub: "1 verified website",                  Icon: Globe,      placeholder: "https://yourdomain.com" },
+  youtube:   { label: "YouTube",    sub: "1 channel or video link",             Icon: Youtube,    placeholder: "https://youtube.com/@yourchannel" },
+  spotify:   { label: "Spotify",    sub: "1 artist or track link",              Icon: Music,      placeholder: "https://open.spotify.com/artist/..." },
+  instagram: { label: "Instagram",  sub: "1 profile link",                      Icon: Instagram,  placeholder: "https://instagram.com/yourhandle" },
+  tiktok:    { label: "TikTok",     sub: "1 profile or video link",             Icon: Video,      placeholder: "https://tiktok.com/@yourhandle" },
+};
+const CREATOR_PLATFORMS = ["youtube", "spotify", "instagram", "tiktok"];
 
 import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
 
@@ -60,9 +70,10 @@ export default function Packages() {
   const [mySubtype, setMySubtype] = useState<AdvertiserSubtype | null>(null);
 
   const [selected, setSelected] = useState<Pkg | null>(null);
-  const [platform, setPlatform] = useState<"mobile" | "web">("mobile");
+  const [platform, setPlatform] = useState<string>("mobile");
   const [duration, setDuration] = useState<number>(30);
   const [units, setUnits] = useState<number>(500);
+  const [unitsText, setUnitsText] = useState<string>("500");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [links, setLinks] = useState<string[]>([""]);
   const [payMethod, setPayMethod] = useState<"wallet" | "paystack">("wallet");
@@ -144,10 +155,11 @@ export default function Packages() {
   const openBuy = (p: Pkg) => {
     setSelected(p);
     const platforms = p.platform_support || ["mobile"];
-    const initPlat = (platforms.includes("mobile") ? "mobile" : "web") as "mobile" | "web";
+    const initPlat = platforms[0] || "mobile";
     setPlatform(initPlat);
     setDuration((p.duration_options && p.duration_options[0]) || 30);
     setUnits(p.min_units);
+    setUnitsText(String(p.min_units));
     const ms = pkgMs[p.id] || [];
     const requiredAppInstall = initPlat === "mobile" && appInstallId && ms.some((r) => r.milestone_id === appInstallId);
     setSelectedIds(requiredAppInstall ? [appInstallId] : []);
@@ -239,9 +251,12 @@ export default function Packages() {
       if (!websites.some((s) => s.domain === cleanLinks[0] || cleanLinks[0].includes(s.domain))) {
         return toast.error("Website must be one of your verified sites");
       }
-    } else {
+    } else if (platform === "mobile") {
       if (cleanLinks.length < 1 || cleanLinks.length > 2) return toast.error("Add 1 or 2 app links");
       for (const l of cleanLinks) { try { new URL(l); } catch { return toast.error(`Invalid URL: ${l}`); } }
+    } else {
+      if (cleanLinks.length !== 1) return toast.error("Add exactly 1 link");
+      try { new URL(cleanLinks[0]); } catch { return toast.error(`Invalid URL: ${cleanLinks[0]}`); }
     }
     if (flatTotal <= 0) return toast.error("Total must be greater than zero");
 
@@ -292,7 +307,16 @@ export default function Packages() {
     window.location.href = url;
   };
 
-  const unitsLabel = needsDuration ? "Daily users" : "Users (total)";
+  // If ALL selected milestones are streaming/view types, use "Streams" wording
+  const STREAM_SLUGS = new Set(["music_streams", "youtube_video_views"]);
+  const selectedSlugs = selectedMs
+    .map((r) => milestones.find((m) => m.id === r.milestone_id)?.slug)
+    .filter(Boolean) as string[];
+  const streamMode = selectedSlugs.length > 0 && selectedSlugs.every((s) => STREAM_SLUGS.has(s));
+  const unitsNoun = streamMode ? "streams" : "users";
+  const unitsLabel = streamMode
+    ? "Total streams"
+    : needsDuration ? "Daily users" : "Users (total)";
 
   return (
     <DashboardLayout>
@@ -384,15 +408,19 @@ export default function Packages() {
                   <div>
                     <Label>Platform</Label>
                     <div className="mt-1 grid grid-cols-2 gap-2">
-                      {(selected.platform_support || []).map((pl) => (
-                        <button key={pl} type="button"
-                          onClick={() => setPlatform(pl as any)}
-                          className={`rounded-lg border p-3 text-left text-sm transition ${platform === pl ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
-                          {pl === "mobile" ? <Smartphone className="h-4 w-4 mb-1" /> : <Globe className="h-4 w-4 mb-1" />}
-                          <p className="font-medium capitalize">{pl} app</p>
-                          <p className="text-xs text-muted-foreground">{pl === "web" ? "1 verified website" : "Up to 2 app links, install required"}</p>
-                        </button>
-                      ))}
+                      {(selected.platform_support || []).map((pl) => {
+                        const meta = PLATFORM_META[pl] || { label: pl, sub: "1 link", Icon: Globe, placeholder: "" };
+                        const Icon = meta.Icon;
+                        return (
+                          <button key={pl} type="button"
+                            onClick={() => setPlatform(pl)}
+                            className={`rounded-lg border p-3 text-left text-sm transition ${platform === pl ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
+                            <Icon className="h-4 w-4 mb-1" />
+                            <p className="font-medium">{meta.label}</p>
+                            <p className="text-xs text-muted-foreground">{meta.sub}</p>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -455,14 +483,37 @@ export default function Packages() {
                   {/* Units */}
                   <div>
                     <Label>{unitsLabel}</Label>
-                    <Input type="number" min={selected.min_units} max={selected.max_units} value={units}
-                      onChange={(e) => setUnits(Math.max(selected.min_units, Math.min(selected.max_units, Number(e.target.value) || 0)))} />
-                    <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()}</p>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={selected.min_units}
+                      max={selected.max_units}
+                      value={unitsText}
+                      onChange={(e) => {
+                        // Free typing — no clamping while user is editing.
+                        setUnitsText(e.target.value);
+                        const n = Number(e.target.value);
+                        if (!Number.isNaN(n) && e.target.value !== "") setUnits(n);
+                      }}
+                      onBlur={() => {
+                        const n = Number(unitsText);
+                        const clamped = Number.isFinite(n)
+                          ? Math.max(selected.min_units, Math.min(selected.max_units, Math.floor(n)))
+                          : selected.min_units;
+                        setUnits(clamped);
+                        setUnitsText(String(clamped));
+                      }}
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()} {unitsNoun}</p>
                   </div>
 
                   {/* Links */}
                   <div>
-                    <Label>{platform === "web" ? "Website (verified only)" : "App link(s)"}</Label>
+                    <Label>
+                      {platform === "web" ? "Website (verified only)"
+                        : platform === "mobile" ? "App link(s)"
+                        : `${PLATFORM_META[platform]?.label || platform} link`}
+                    </Label>
                     {platform === "web" ? (
                       websites.length === 0 ? (
                         <div className="rounded-md border border-dashed p-3 text-sm">
@@ -475,7 +526,7 @@ export default function Packages() {
                           <SelectContent>{websites.map((s) => <SelectItem key={s.id} value={s.domain}>{s.domain}</SelectItem>)}</SelectContent>
                         </Select>
                       )
-                    ) : (
+                    ) : platform === "mobile" ? (
                       <div className="space-y-2">
                         {links.map((l, i) => (
                           <div key={i} className="flex gap-2">
@@ -490,6 +541,12 @@ export default function Packages() {
                           <Button variant="ghost" size="sm" onClick={() => setLinks([...links, ""])}>+ Add second link</Button>
                         )}
                       </div>
+                    ) : (
+                      <Input
+                        value={links[0] || ""}
+                        placeholder={PLATFORM_META[platform]?.placeholder || "https://..."}
+                        onChange={(e) => setLinks([e.target.value])}
+                      />
                     )}
                   </div>
 
