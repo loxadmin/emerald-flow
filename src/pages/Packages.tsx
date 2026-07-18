@@ -408,15 +408,19 @@ export default function Packages() {
                   <div>
                     <Label>Platform</Label>
                     <div className="mt-1 grid grid-cols-2 gap-2">
-                      {(selected.platform_support || []).map((pl) => (
-                        <button key={pl} type="button"
-                          onClick={() => setPlatform(pl as any)}
-                          className={`rounded-lg border p-3 text-left text-sm transition ${platform === pl ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
-                          {pl === "mobile" ? <Smartphone className="h-4 w-4 mb-1" /> : <Globe className="h-4 w-4 mb-1" />}
-                          <p className="font-medium capitalize">{pl} app</p>
-                          <p className="text-xs text-muted-foreground">{pl === "web" ? "1 verified website" : "Up to 2 app links, install required"}</p>
-                        </button>
-                      ))}
+                      {(selected.platform_support || []).map((pl) => {
+                        const meta = PLATFORM_META[pl] || { label: pl, sub: "1 link", Icon: Globe, placeholder: "" };
+                        const Icon = meta.Icon;
+                        return (
+                          <button key={pl} type="button"
+                            onClick={() => setPlatform(pl)}
+                            className={`rounded-lg border p-3 text-left text-sm transition ${platform === pl ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
+                            <Icon className="h-4 w-4 mb-1" />
+                            <p className="font-medium">{meta.label}</p>
+                            <p className="text-xs text-muted-foreground">{meta.sub}</p>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
