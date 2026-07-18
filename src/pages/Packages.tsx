@@ -155,10 +155,11 @@ export default function Packages() {
   const openBuy = (p: Pkg) => {
     setSelected(p);
     const platforms = p.platform_support || ["mobile"];
-    const initPlat = (platforms.includes("mobile") ? "mobile" : "web") as "mobile" | "web";
+    const initPlat = platforms[0] || "mobile";
     setPlatform(initPlat);
     setDuration((p.duration_options && p.duration_options[0]) || 30);
     setUnits(p.min_units);
+    setUnitsText(String(p.min_units));
     const ms = pkgMs[p.id] || [];
     const requiredAppInstall = initPlat === "mobile" && appInstallId && ms.some((r) => r.milestone_id === appInstallId);
     setSelectedIds(requiredAppInstall ? [appInstallId] : []);
