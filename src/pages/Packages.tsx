@@ -483,14 +483,37 @@ export default function Packages() {
                   {/* Units */}
                   <div>
                     <Label>{unitsLabel}</Label>
-                    <Input type="number" min={selected.min_units} max={selected.max_units} value={units}
-                      onChange={(e) => setUnits(Math.max(selected.min_units, Math.min(selected.max_units, Number(e.target.value) || 0)))} />
-                    <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()}</p>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={selected.min_units}
+                      max={selected.max_units}
+                      value={unitsText}
+                      onChange={(e) => {
+                        // Free typing — no clamping while user is editing.
+                        setUnitsText(e.target.value);
+                        const n = Number(e.target.value);
+                        if (!Number.isNaN(n) && e.target.value !== "") setUnits(n);
+                      }}
+                      onBlur={() => {
+                        const n = Number(unitsText);
+                        const clamped = Number.isFinite(n)
+                          ? Math.max(selected.min_units, Math.min(selected.max_units, Math.floor(n)))
+                          : selected.min_units;
+                        setUnits(clamped);
+                        setUnitsText(String(clamped));
+                      }}
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()} {unitsNoun}</p>
                   </div>
 
                   {/* Links */}
                   <div>
-                    <Label>{platform === "web" ? "Website (verified only)" : "App link(s)"}</Label>
+                    <Label>
+                      {platform === "web" ? "Website (verified only)"
+                        : platform === "mobile" ? "App link(s)"
+                        : `${PLATFORM_META[platform]?.label || platform} link`}
+                    </Label>
                     {platform === "web" ? (
                       websites.length === 0 ? (
                         <div className="rounded-md border border-dashed p-3 text-sm">
@@ -503,7 +526,7 @@ export default function Packages() {
                           <SelectContent>{websites.map((s) => <SelectItem key={s.id} value={s.domain}>{s.domain}</SelectItem>)}</SelectContent>
                         </Select>
                       )
-                    ) : (
+                    ) : platform === "mobile" ? (
                       <div className="space-y-2">
                         {links.map((l, i) => (
                           <div key={i} className="flex gap-2">
@@ -518,6 +541,12 @@ export default function Packages() {
                           <Button variant="ghost" size="sm" onClick={() => setLinks([...links, ""])}>+ Add second link</Button>
                         )}
                       </div>
+                    ) : (
+                      <Input
+                        value={links[0] || ""}
+                        placeholder={PLATFORM_META[platform]?.placeholder || "https://..."}
+                        onChange={(e) => setLinks([e.target.value])}
+                      />
                     )}
                   </div>
 
