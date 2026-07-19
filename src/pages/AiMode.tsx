@@ -556,8 +556,15 @@ export default function AiMode() {
                       ? "bg-primary text-primary-foreground rounded-tr-sm"
                       : "bg-card border border-border text-foreground rounded-tl-sm"
                   }`}>
-                    {m.text}
+                    {m.role === "bot" ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-headings:my-2 prose-strong:text-foreground">
+                        <ReactMarkdown>{m.text}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      m.text
+                    )}
                   </div>
+
                 )}
 
                 {m.attachments && m.attachments.length > 0 && (
