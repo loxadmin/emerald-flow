@@ -85,44 +85,59 @@ export default function KarbaliAssistant() {
 
   if (!user) return null;
 
-  const reply = (text: string) => {
+  const reply = async (text: string) => {
     const userText = text.trim();
     if (!userText) return;
     setMessages((m) => [...m, { role: "user", text: userText }]);
     setInput("");
     setTyping(true);
-    setTimeout(() => {
+    try {
       if (isLoading) {
-        setMessages((m) => [...m, { role: "bot", text: "One second. I am still loading your advertiser profile." }]);
-        setTyping(false);
+        setMessages((m) => [...m, { role: "bot", text: "One second — still loading your profile." }]);
         return;
       }
+      // Track goal
       const goalMatch = userText.match(/^i\s+want(?:\s+to\s+get)?\s+(.+)$/i);
-      const r = goalMatch ? acknowledgeGoal(goalMatch[1], ctx) : detectIntent(userText, ctx, convoStateRef.current);
-      if (r.stateUpdates) {
-        const nextState = { ...convoStateRef.current, ...r.stateUpdates, turnCount: convoStateRef.current.turnCount + 1 };
-        convoStateRef.current = nextState;
-        setConvoState(nextState);
-      }
-      if (r.action === "start_campaign_flow") {
-        try {
-          localStorage.setItem(AI_AUTOSTART_KEY, JSON.stringify({ text: userText, campaignType: r.campaignType ?? null, stateUpdates: r.stateUpdates ?? {} }));
-        } catch {
-          // Ignore localStorage errors.
+      if (goalMatch) {
+        const ack = acknowledgeGoal(goalMatch[1], ctx);
+        if (ack.stateUpdates) {
+          convoStateRef.current = { ...convoStateRef.current, ...ack.stateUpdates };
+          setConvoState(convoStateRef.current);
         }
-        setMessages((m) => [...m, { role: "bot", text: "Opening AI Mode so I can ask the setup questions and prepare the campaign with you." }]);
-        setTyping(false);
+      }
+      // "Create campaign" → hand off to AI Mode
+      if (/\b(create|start|make|launch|new)\b.*\bcampaign\b/i.test(userText)) {
+        try { localStorage.setItem(AI_AUTOSTART_KEY, JSON.stringify({ text: userText })); } catch { /* ignore */ }
+        setMessages((m) => [...m, { role: "bot", text: "Opening AI Mode so I can walk you through it." }]);
         setTimeout(() => navigate("/ai"), 500);
         return;
       }
-      setMessages((m) => [...m, { role: "bot", text: r.text, suggestions: r.suggestions, navigateTo: r.navigateTo }]);
-      setTyping(false);
-      if (r.navigateTo && r.autoNavigate && r.navigateTo !== location.pathname) {
-        setTimeout(() => navigate(r.navigateTo!), 600);
-      }
-    }, 450 + Math.random() * 300);
 
+      const history = messages.filter((m) => m.text).slice(-10).map((m) => ({
+        role: m.role === "bot" ? "assistant" : "user",
+        content: m.text,
+      }));
+      const contextInfo = [
+        `Advertiser type: ${advertiserType ?? "not set"}`,
+        `Subcategory: ${advertiserSubtype ? subtypeLabel(advertiserSubtype) : "not set"}`,
+        `Wallet activated: ${walletActivated ? "yes" : "no"}`,
+        `Current page: ${location.pathname}`,
+        convoStateRef.current.goalDomain ? `Chosen goal: ${convoStateRef.current.goalDomain}` : "",
+      ].filter(Boolean).join("\n");
+
+      const { data, error } = await supabase.functions.invoke("karbali-ai-chat", {
+        body: { messages: [...history, { role: "user", content: userText }], contextInfo },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setMessages((m) => [...m, { role: "bot", text: (data as any)?.reply || "Try that again?" }]);
+    } catch (err: any) {
+      setMessages((m) => [...m, { role: "bot", text: err?.message || "Couldn't reach the AI. Try again." }]);
+    } finally {
+      setTyping(false);
+    }
   };
+
 
   return (
     <>
