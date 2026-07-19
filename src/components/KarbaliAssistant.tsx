@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { MessageCircle, X, Send, ChevronRight } from "lucide-react";
-import { detectIntent, getProactiveGreeting, acknowledgeGoal, initialState, type AssistantContext, type ConversationState } from "@/lib/assistant-nlp";
+import { getProactiveGreeting, acknowledgeGoal, initialState, type AssistantContext, type ConversationState } from "@/lib/assistant-nlp";
 import KarbaliPersonaIcon from "@/components/KarbaliPersonaIcon";
 import { getSubtypeGoalOptions, subtypeLabel } from "@/lib/advertiser-subtypes";
 
