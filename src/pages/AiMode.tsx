@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/lib/auth";
 import { useAiMode } from "@/lib/ai-mode";
 import { useTheme } from "@/lib/theme";
