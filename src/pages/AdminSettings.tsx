@@ -62,9 +62,27 @@ export default function AdminSettings() {
     if (error) toast.error(error.message); else toast.success(newVal === "true" ? "Switched to Simple mode" : "Switched to Advance mode");
   };
 
+  const aiProvider = editValues["ai_provider"] || "lovable";
+  const setAiProvider = async (provider: string) => {
+    setEditValues({ ...editValues, ai_provider: provider });
+    const defaults: Record<string, string> = {
+      lovable: "google/gemini-2.5-flash",
+      gemini: "gemini-2.0-flash",
+      openai: "gpt-4o-mini",
+    };
+    await supabase.from("admin_settings").update({ value: provider, updated_at: new Date().toISOString() }).eq("key", "ai_provider");
+    if (defaults[provider]) {
+      setEditValues((v) => ({ ...v, ai_provider: provider, ai_model: defaults[provider] }));
+      await supabase.from("admin_settings").update({ value: defaults[provider], updated_at: new Date().toISOString() }).eq("key", "ai_model");
+    }
+    toast.success(`AI provider set to ${provider === "lovable" ? "Lovable AI Gateway" : provider === "gemini" ? "Google Gemini (your key)" : "OpenAI (your key)"}`);
+  };
+
   const paystackSettings = settings.filter(s => s.key.includes("paystack"));
   const flutterwaveSettings = settings.filter(s => s.key.includes("flutterwave"));
-  const platformSettings = settings.filter(s => !s.key.includes("paystack") && !s.key.includes("flutterwave") && s.key !== "active_payment_gateway");
+  const platformSettings = settings.filter(s => !s.key.includes("paystack") && !s.key.includes("flutterwave") && s.key !== "active_payment_gateway" && !s.key.startsWith("ai_"));
+  const aiModelSetting = settings.find(s => s.key === "ai_model");
+
 
   const SettingRow = ({ setting }: { setting: Setting }) => (
     <div className="space-y-1.5">
