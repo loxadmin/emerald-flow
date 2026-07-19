@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Save, CreditCard, Settings2, ToggleLeft, ToggleRight, Construction } from "lucide-react";
+import { Save, CreditCard, Settings2, ToggleLeft, ToggleRight, Construction, Sparkles } from "lucide-react";
 
 interface Setting { id: string; key: string; value: string; description: string | null; }
 
