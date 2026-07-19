@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Save, CreditCard, Settings2, ToggleLeft, ToggleRight, Construction } from "lucide-react";
+import { Save, CreditCard, Settings2, ToggleLeft, ToggleRight, Construction, Sparkles } from "lucide-react";
 
 interface Setting { id: string; key: string; value: string; description: string | null; }
 
@@ -62,9 +62,27 @@ export default function AdminSettings() {
     if (error) toast.error(error.message); else toast.success(newVal === "true" ? "Switched to Simple mode" : "Switched to Advance mode");
   };
 
+  const aiProvider = editValues["ai_provider"] || "lovable";
+  const setAiProvider = async (provider: string) => {
+    setEditValues({ ...editValues, ai_provider: provider });
+    const defaults: Record<string, string> = {
+      lovable: "google/gemini-2.5-flash",
+      gemini: "gemini-2.0-flash",
+      openai: "gpt-4o-mini",
+    };
+    await supabase.from("admin_settings").update({ value: provider, updated_at: new Date().toISOString() }).eq("key", "ai_provider");
+    if (defaults[provider]) {
+      setEditValues((v) => ({ ...v, ai_provider: provider, ai_model: defaults[provider] }));
+      await supabase.from("admin_settings").update({ value: defaults[provider], updated_at: new Date().toISOString() }).eq("key", "ai_model");
+    }
+    toast.success(`AI provider set to ${provider === "lovable" ? "Lovable AI Gateway" : provider === "gemini" ? "Google Gemini (your key)" : "OpenAI (your key)"}`);
+  };
+
   const paystackSettings = settings.filter(s => s.key.includes("paystack"));
   const flutterwaveSettings = settings.filter(s => s.key.includes("flutterwave"));
-  const platformSettings = settings.filter(s => !s.key.includes("paystack") && !s.key.includes("flutterwave") && s.key !== "active_payment_gateway");
+  const platformSettings = settings.filter(s => !s.key.includes("paystack") && !s.key.includes("flutterwave") && s.key !== "active_payment_gateway" && !s.key.startsWith("ai_"));
+  const aiModelSetting = settings.find(s => s.key === "ai_model");
+
 
   const SettingRow = ({ setting }: { setting: Setting }) => (
     <div className="space-y-1.5">
@@ -159,6 +177,44 @@ export default function AdminSettings() {
               </div>
             </div>
 
+            {/* AI Provider */}
+            <div className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-medium text-foreground">Karbali Assistant — AI Provider</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">
+                Choose how the assistant thinks. Lovable Gateway is included in your plan (no key needed). Gemini and OpenAI let you use your own API key.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                {[
+                  { id: "lovable", label: "Lovable Gateway", desc: "Included. Gemini 2.5 Flash by default." },
+                  { id: "gemini", label: "Google Gemini", desc: "Bring your own Gemini API key." },
+                  { id: "openai", label: "OpenAI", desc: "Bring your own OpenAI API key." },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setAiProvider(opt.id)}
+                    className={`rounded-lg border p-3 text-left transition-colors ${
+                      aiProvider === opt.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-foreground">{opt.label}</span>
+                      {aiProvider === opt.id ? <ToggleRight className="h-4 w-4 text-primary" /> : <ToggleLeft className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+              {aiModelSetting && <SettingRow setting={aiModelSetting} />}
+              {aiProvider !== "lovable" && (
+                <p className="text-[11px] text-muted-foreground mt-3">
+                  Make sure the secret <code className="text-primary">{aiProvider === "gemini" ? "GEMINI_API_KEY" : "OPENAI_API_KEY"}</code> is set in your project secrets. If it's missing, the assistant will show an error and fall back to Lovable Gateway won't happen automatically.
+                </p>
+              )}
+            </div>
+
             {/* Paystack Keys */}
             <div className="rounded-xl border border-border bg-card p-6">
               <h3 className="text-sm font-medium text-foreground mb-4">Paystack API Keys</h3>
@@ -174,6 +230,7 @@ export default function AdminSettings() {
                 {flutterwaveSettings.map(s => <SettingRow key={s.key} setting={s} />)}
               </div>
             </div>
+
 
             {/* Platform Settings */}
             <div className="rounded-xl border border-border bg-card p-6">
