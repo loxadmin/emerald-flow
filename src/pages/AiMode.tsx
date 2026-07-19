@@ -369,7 +369,31 @@ export default function AiMode() {
     );
   }
 
-  const sendMessage = (rawText: string) => {
+  const callAI = async (userText: string): Promise<string> => {
+    // Build compact conversation history for the model
+    const history = messages
+      .filter((m) => m.text && (m.role === "user" || m.role === "bot"))
+      .slice(-12)
+      .map((m) => ({ role: m.role === "bot" ? "assistant" : "user", content: m.text }));
+    const contextInfo = [
+      `Advertiser email: ${user?.email ?? "unknown"}`,
+      `Advertiser type: ${advertiserType ?? "not set"}`,
+      `Subcategory: ${advertiserSubtype ? subtypeLabel(advertiserSubtype) : "not set"}`,
+      `Wallet activated: ${walletActivated ? "yes" : "no"}`,
+      `Business verified: ${businessVerified ? "yes" : "no"}`,
+      `Current page: ${location.pathname}`,
+      convoStateRef.current.goalDomain ? `Chosen goal: ${convoStateRef.current.goalDomain}` : "",
+    ].filter(Boolean).join("\n");
+
+    const { data, error } = await supabase.functions.invoke("karbali-ai-chat", {
+      body: { messages: [...history, { role: "user", content: userText }], contextInfo },
+    });
+    if (error) throw error;
+    if ((data as any)?.error) throw new Error((data as any).error);
+    return (data as any)?.reply || "I didn't catch that. Could you rephrase?";
+  };
+
+  const sendMessage = async (rawText: string) => {
     const text = rawText.trim();
     if (!text && pending.length === 0) return;
 
@@ -383,18 +407,16 @@ export default function AiMode() {
     setPending([]);
     setTyping(true);
 
-    setTimeout(() => {
-      let reply: Msg & { autoNavigate?: boolean };
-      let nextFlow = campaignFlow;
+    try {
       if (isLoading) {
-        reply = { role: "bot", text: "One second. I am still loading your advertiser profile so I do not guide you into the wrong campaign type." };
-      } else if (!text && userMsg.attachments?.length) {
-        reply = {
-          role: "bot",
-          text: `Got your file${userMsg.attachments.length > 1 ? "s" : ""}. What should I do with ${userMsg.attachments.length > 1 ? "them" : "it"}? Verification, business document, or campaign creative?`,
-          suggestions: ["For business verification", "Campaign creative", "Just review it"],
-        };
-      } else if (campaignFlow) {
+        setMessages((m) => [...m, { role: "bot", text: "One second — still loading your advertiser profile." }]);
+        return;
+      }
+
+      // Campaign creation flow — deterministic steps (no AI call, faster).
+      if (campaignFlow) {
+        let nextFlow = campaignFlow;
+        let reply: Msg & { autoNavigate?: boolean };
         if (campaignFlow.type && !isCampaignTypeAllowed(campaignFlow.type, ctx)) {
           const blocked = campaignTypeMismatchReply(campaignFlow.type, ctx);
           nextFlow = null;
@@ -402,74 +424,53 @@ export default function AiMode() {
         } else if (/^(cancel|stop|exit|start over)$/i.test(text)) {
           nextFlow = null;
           reply = { role: "bot", text: "No problem. Campaign setup stopped.", suggestions: ["Create a campaign", "What is Karbali?", "Open wallet"] };
-        } else if (/^continue campaign setup$/i.test(text)) {
-          nextFlow = campaignFlow;
-          reply = currentCampaignQuestion(campaignFlow);
         } else {
-          const userChangedContext = CAMPAIGN_VALUE_STEPS.has(campaignFlow.step) && isCampaignKnowledgeQuestion(text);
-          const requestedType = pickCampaignType(text);
-          if (userChangedContext) {
-            const detected = detectIntent(text, ctx, convoStateRef.current);
-            if (detected.stateUpdates) {
-              const nextState = { ...convoStateRef.current, ...detected.stateUpdates, turnCount: convoStateRef.current.turnCount + 1 };
-              convoStateRef.current = nextState;
-              setConvoState(nextState);
-            }
-            nextFlow = campaignFlow;
-            reply = { role: "bot", text: detected.text, suggestions: [...(detected.suggestions || []), "Continue campaign setup"].slice(0, 4), navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };
-          } else if (requestedType && campaignFlow.type && requestedType !== campaignFlow.type) {
-            const blocked = campaignTypeMismatchReply(requestedType, ctx);
-            nextFlow = isCampaignTypeAllowed(requestedType, ctx) ? { type: requestedType, data: { type: requestedType, createdAt: Date.now() }, step: "name" } : campaignFlow;
-            reply = isCampaignTypeAllowed(requestedType, ctx)
-              ? { role: "bot", text: `Switching to ${CAMPAIGN_TYPE_LABELS[requestedType]}. What should we call it?` }
-              : { role: "bot", text: blocked.text, suggestions: [...(blocked.suggestions || []), "Continue campaign setup"].slice(0, 4), navigateTo: blocked.navigateTo };
-          } else {
-            const result = nextCampaignPrompt(campaignFlow, text, ctx);
-            nextFlow = result.flow;
-            reply = result.reply;
-          }
+          const result = nextCampaignPrompt(campaignFlow, text, ctx);
+          nextFlow = result.flow;
+          reply = result.reply;
         }
-      } else {
-        // Detect goal-selection phrasing ("I want to get music streams") so the
-        // assistant threads the chosen goal into every follow-up answer.
-        const goalMatch = text.match(/^i\s+want(?:\s+to\s+get)?\s+(.+)$/i);
-        const detected = goalMatch
-          ? acknowledgeGoal(goalMatch[1], ctx)
-          : detectIntent(text, ctx, convoStateRef.current);
-        if (detected.stateUpdates) {
-          const nextState = { ...convoStateRef.current, ...detected.stateUpdates, turnCount: convoStateRef.current.turnCount + 1 };
+        setCampaignFlow(nextFlow);
+        setMessages((m) => [...m, { role: "bot", text: reply.text, suggestions: reply.suggestions, navigateTo: reply.navigateTo }]);
+        if (reply.navigateTo && reply.autoNavigate) {
+          setTimeout(() => navigate(reply.navigateTo!), 900);
+        }
+        return;
+      }
+
+      // Explicit "start a campaign" shortcut — flip into deterministic flow.
+      if (/\b(create|start|make|build|launch|set\s?up|new)\b.*\bcampaign\b/i.test(text) || /^create a campaign$/i.test(text)) {
+        const type = pickCampaignType(text) || getAllowedCampaignType(ctx);
+        const flow = createInitialCampaignFlow(type || null, convoStateRef.current, ctx);
+        setCampaignFlow(flow);
+        setMessages((m) => [...m, currentCampaignQuestion(flow)]);
+        return;
+      }
+
+      // Track chosen goal so future prompts have context.
+      const goalMatch = text.match(/^i\s+want(?:\s+to\s+get)?\s+(.+)$/i);
+      if (goalMatch) {
+        const ack = acknowledgeGoal(goalMatch[1], ctx);
+        if (ack.stateUpdates) {
+          const nextState = { ...convoStateRef.current, ...ack.stateUpdates, turnCount: convoStateRef.current.turnCount + 1 };
           convoStateRef.current = nextState;
           setConvoState(nextState);
         }
-        if (detected.action === "start_campaign_flow") {
-          const stateForFlow = { ...convoStateRef.current, ...detected.stateUpdates };
-          const startFlow = createInitialCampaignFlow(detected.campaignType ?? stateForFlow.campaignType ?? getAllowedCampaignType(ctx), stateForFlow, ctx);
-          nextFlow = startFlow;
-          reply = startFlow.type
-            ? currentCampaignQuestion(startFlow)
-            : { role: "bot", text: detected.text, suggestions: detected.suggestions };
-        } else {
-          reply = { role: "bot", text: detected.text, suggestions: detected.suggestions, navigateTo: detected.navigateTo, autoNavigate: detected.autoNavigate };
-        }
       }
 
-      setCampaignFlow(nextFlow);
-      setMessages((m) => [
-        ...m,
-        {
-          role: "bot",
-          text: reply.text,
-          suggestions: reply.suggestions,
-          navigateTo: reply.navigateTo,
-        },
-      ]);
+      // Everything else → real AI.
+      const reply = await callAI(text);
+      setMessages((m) => [...m, { role: "bot", text: reply }]);
+    } catch (err: any) {
+      const msg = err?.message?.includes("OPENAI_API_KEY") || err?.message?.includes("GEMINI_API_KEY")
+        ? "AI key is missing. An admin needs to set it in Admin Settings → AI Provider."
+        : err?.message || "The assistant had trouble reaching the AI. Please try again.";
+      setMessages((m) => [...m, { role: "bot", text: msg }]);
+    } finally {
       setTyping(false);
-      if (reply.navigateTo && reply.autoNavigate) {
-        setTimeout(() => navigate(reply.navigateTo!), 900);
-      }
       setTimeout(() => taRef.current?.focus(), 50);
-    }, 450 + Math.random() * 300);
+    }
   };
+
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
