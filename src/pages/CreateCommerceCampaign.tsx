@@ -250,6 +250,7 @@ export default function CreateCommerceCampaign() {
 
     setLoading(false);
     toast.success("Commerce campaign submitted!");
+    supabase.functions.invoke("notify", { body: { event: "campaign_submitted", payload: { campaign_id: campaignId } } }).catch(() => {});
     navigate(`/campaigns/${campaignId}`);
   };
 
