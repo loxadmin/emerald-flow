@@ -191,6 +191,7 @@ export default function AdminCampaignDetail() {
       // Notify advertiser via email
       supabase.functions.invoke("send-campaign-notification", { body: { action: "approval", campaign_id: id } })
         .catch((e) => console.warn("approval email failed", e));
+      supabase.functions.invoke("notify", { body: { event: "campaign_approved", payload: { campaign_id: id } } }).catch(() => {});
     }
     if (status === "rejected") {
       supabase.functions.invoke("notify", { body: { event: "campaign_rejected", payload: { campaign_id: id } } }).catch(() => {});
