@@ -220,6 +220,7 @@ export default function CreateEngagementCampaign() {
 
     setLoading(false);
     toast.success("Campaign submitted for review!");
+    supabase.functions.invoke("notify", { body: { event: "campaign_submitted", payload: { campaign_id: campaign.id } } }).catch(() => {});
     navigate(`/campaigns/${campaign.id}`);
   };
 

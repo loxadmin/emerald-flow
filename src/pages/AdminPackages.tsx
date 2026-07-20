@@ -187,6 +187,9 @@ export default function AdminPackages() {
     });
     if (error) return toast.error(error.message);
     toast.success(approve ? "Order approved" : "Order rejected & refunded");
+    supabase.functions.invoke("notify", {
+      body: { event: approve ? "package_order_approved" : "package_order_rejected", payload: { order_id: id, reason: notes } },
+    }).catch(() => {});
     load();
   };
 

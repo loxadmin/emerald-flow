@@ -80,10 +80,23 @@ Deno.serve(async (req) => {
         const { campaign_id } = payload;
         const { data: c } = await supabase.from("campaigns").select("id, name, advertiser_id, total_cost").eq("id", campaign_id).maybeSingle();
         if (!c) return json({ error: "campaign not found" }, 404);
-        const { data: p } = await supabase.from("profiles").select("email").eq("id", c.advertiser_id).maybeSingle();
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", c.advertiser_id).maybeSingle();
         await sendEmail(admin, `New campaign for review: ${c.name}`, wrap("Campaign submitted",
           `<p>Advertiser: ${p?.email || c.advertiser_id}</p><p>Campaign: <strong>${c.name}</strong></p><p>Escrow: $${Number(c.total_cost || 0).toFixed(2)}</p>`,
           `${APP_URL}/admin/campaigns/${c.id}`, "Review campaign"));
+        if (p?.email) await sendEmail(p.email, `We received your campaign: ${c.name}`, wrap("Campaign received ✅",
+          `<p>Hi ${p.full_name || "there"},</p><p>We've received <strong>${c.name}</strong> and it's now under review. A Karbali official will approve or reject it within <strong>3–7 business days</strong>.</p>`,
+          `${APP_URL}/campaigns/${c.id}`, "View campaign"));
+        return json({ ok: true });
+      }
+      case "campaign_approved": {
+        const { campaign_id } = payload;
+        const { data: c } = await supabase.from("campaigns").select("id, name, advertiser_id").eq("id", campaign_id).maybeSingle();
+        if (!c) return json({ error: "campaign not found" }, 404);
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", c.advertiser_id).maybeSingle();
+        if (p?.email) await sendEmail(p.email, `Campaign approved 🎉: ${c.name}`, wrap("Your campaign is live",
+          `<p>Hi ${p.full_name || "there"},</p><p><strong>${c.name}</strong> has been approved and is now live. You can start tracking results.</p>`,
+          `${APP_URL}/campaigns/${c.id}`, "Open campaign"));
         return json({ ok: true });
       }
       case "campaign_rejected": {
@@ -131,10 +144,33 @@ Deno.serve(async (req) => {
         const { order_id } = payload;
         const { data: o } = await supabase.from("package_orders").select("id, package_name, advertiser_id, total_amount_usd").eq("id", order_id).maybeSingle();
         if (!o) return json({ error: "order not found" }, 404);
-        const { data: p } = await supabase.from("profiles").select("email").eq("id", o.advertiser_id).maybeSingle();
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", o.advertiser_id).maybeSingle();
         await sendEmail(admin, `New package order: ${o.package_name}`, wrap("Package order for review",
           `<p>Advertiser: ${p?.email || o.advertiser_id}</p><p>Package: <strong>${o.package_name}</strong></p><p>Amount: $${Number(o.total_amount_usd || 0).toFixed(2)}</p>`,
           `${APP_URL}/admin/packages`, "Review order"));
+        if (p?.email) await sendEmail(p.email, `We received your package order: ${o.package_name}`, wrap("Package order received ✅",
+          `<p>Hi ${p.full_name || "there"},</p><p>We've received your order for <strong>${o.package_name}</strong>. Our team will approve or reject it within <strong>3–7 business days</strong>.</p>`,
+          `${APP_URL}/package-orders`, "View orders"));
+        return json({ ok: true });
+      }
+      case "package_order_approved": {
+        const { order_id } = payload;
+        const { data: o } = await supabase.from("package_orders").select("id, package_name, advertiser_id").eq("id", order_id).maybeSingle();
+        if (!o) return json({ error: "order not found" }, 404);
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", o.advertiser_id).maybeSingle();
+        if (p?.email) await sendEmail(p.email, `Package approved 🎉: ${o.package_name}`, wrap("Your package is live",
+          `<p>Hi ${p.full_name || "there"},</p><p><strong>${o.package_name}</strong> has been approved and is now live.</p>`,
+          `${APP_URL}/package-orders`, "Open orders"));
+        return json({ ok: true });
+      }
+      case "package_order_rejected": {
+        const { order_id, reason } = payload;
+        const { data: o } = await supabase.from("package_orders").select("id, package_name, advertiser_id").eq("id", order_id).maybeSingle();
+        if (!o) return json({ error: "order not found" }, 404);
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", o.advertiser_id).maybeSingle();
+        if (p?.email) await sendEmail(p.email, `Package not approved: ${o.package_name}`, wrap("Package order rejected",
+          `<p>Hi ${p.full_name || "there"},</p><p>Your order for <strong>${o.package_name}</strong> was not approved. Your escrow has been refunded to your wallet.</p>${reason ? `<p>Reason: ${reason}</p>` : ""}`,
+          `${APP_URL}/wallet`, "Open wallet"));
         return json({ ok: true });
       }
       case "withdrawal_requested": {

@@ -269,6 +269,7 @@ export default function CreateManualCampaign() {
     clearDraft(dKey);
     setLoading(false);
     toast.success("Campaign submitted for approval!");
+    supabase.functions.invoke("notify", { body: { event: "campaign_submitted", payload: { campaign_id: campaign.id } } }).catch(() => {});
     navigate(`/campaigns/${campaign.id}`);
   };
 
