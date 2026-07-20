@@ -80,10 +80,23 @@ Deno.serve(async (req) => {
         const { campaign_id } = payload;
         const { data: c } = await supabase.from("campaigns").select("id, name, advertiser_id, total_cost").eq("id", campaign_id).maybeSingle();
         if (!c) return json({ error: "campaign not found" }, 404);
-        const { data: p } = await supabase.from("profiles").select("email").eq("id", c.advertiser_id).maybeSingle();
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", c.advertiser_id).maybeSingle();
         await sendEmail(admin, `New campaign for review: ${c.name}`, wrap("Campaign submitted",
           `<p>Advertiser: ${p?.email || c.advertiser_id}</p><p>Campaign: <strong>${c.name}</strong></p><p>Escrow: $${Number(c.total_cost || 0).toFixed(2)}</p>`,
           `${APP_URL}/admin/campaigns/${c.id}`, "Review campaign"));
+        if (p?.email) await sendEmail(p.email, `We received your campaign: ${c.name}`, wrap("Campaign received ✅",
+          `<p>Hi ${p.full_name || "there"},</p><p>We've received <strong>${c.name}</strong> and it's now under review. A Karbali official will approve or reject it within <strong>3–7 business days</strong>.</p>`,
+          `${APP_URL}/campaigns/${c.id}`, "View campaign"));
+        return json({ ok: true });
+      }
+      case "campaign_approved": {
+        const { campaign_id } = payload;
+        const { data: c } = await supabase.from("campaigns").select("id, name, advertiser_id").eq("id", campaign_id).maybeSingle();
+        if (!c) return json({ error: "campaign not found" }, 404);
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", c.advertiser_id).maybeSingle();
+        if (p?.email) await sendEmail(p.email, `Campaign approved 🎉: ${c.name}`, wrap("Your campaign is live",
+          `<p>Hi ${p.full_name || "there"},</p><p><strong>${c.name}</strong> has been approved and is now live. You can start tracking results.</p>`,
+          `${APP_URL}/campaigns/${c.id}`, "Open campaign"));
         return json({ ok: true });
       }
       case "campaign_rejected": {
