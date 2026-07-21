@@ -91,7 +91,7 @@ export default function AdminPackageDelivery() {
 
   const submit = async (m: Milestone) => {
     if (!order) return;
-    const f = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "" };
+    const f: FormState = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] };
     const users = Number(f.users) || 0;
     const isTxn = m.slug === "transaction" || m.slug === "sale";
     let txnRows: any = null;
