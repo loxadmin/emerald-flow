@@ -307,15 +307,19 @@ export default function Packages() {
     window.location.href = url;
   };
 
-  // If ALL selected milestones are streaming/view types, use "Streams" wording
-  const STREAM_SLUGS = new Set(["music_streams", "youtube_video_views"]);
+  // Correlate unit noun with selected milestone types
+  const STREAM_SLUGS = new Set(["music_streams"]);
+  const VIEW_SLUGS = new Set(["youtube_video_views", "video_view"]);
   const selectedSlugs = selectedMs
     .map((r) => milestones.find((m) => m.id === r.milestone_id)?.slug)
     .filter(Boolean) as string[];
-  const streamMode = selectedSlugs.length > 0 && selectedSlugs.every((s) => STREAM_SLUGS.has(s));
-  const unitsNoun = streamMode ? "streams" : "users";
-  const unitsLabel = streamMode
+  const allStreams = selectedSlugs.length > 0 && selectedSlugs.every((s) => STREAM_SLUGS.has(s));
+  const allViews = selectedSlugs.length > 0 && selectedSlugs.every((s) => VIEW_SLUGS.has(s));
+  const unitsNoun = allStreams ? "streams" : allViews ? "views" : "users";
+  const unitsLabel = allStreams
     ? "Total streams"
+    : allViews
+    ? "Total views"
     : needsDuration ? "Daily users" : "Users (total)";
 
   return (
