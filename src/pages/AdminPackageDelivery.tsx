@@ -103,6 +103,11 @@ export default function AdminPackageDelivery() {
       return toast.error("Enter users delivered or upload transactions.");
     }
     setSaving(m.id);
+    const isSwitch = SWITCH_SLUGS.has(m.slug);
+    const breakdown = isSwitch
+      ? (f.competitors || []).filter((c) => c.competitor_app_id && Number(c.users_count) > 0)
+          .map((c) => ({ competitor_app_id: c.competitor_app_id, users_count: Number(c.users_count) }))
+      : null;
     const { error } = await supabase.rpc("record_package_delivery" as any, {
       _order_id: order.id,
       _milestone_id: m.id,
@@ -110,6 +115,7 @@ export default function AdminPackageDelivery() {
       _users_delivered: txnRows ? (users || txnRows.length) : users,
       _txn_rows: txnRows,
       _notes: f.notes || null,
+      _competitor_breakdown: breakdown && breakdown.length > 0 ? breakdown : null,
     });
     setSaving(null);
     if (error) return toast.error(error.message);
