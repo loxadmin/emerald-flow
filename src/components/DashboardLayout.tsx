@@ -8,7 +8,7 @@ import { useAiMode } from "@/lib/ai-mode";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
   Menu, X, Lock, AlertCircle, Megaphone, Globe, ChevronRight,
-  ShieldCheck, Package, ClipboardList,
+  ShieldCheck, Package, ClipboardList, Zap,
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
