@@ -189,6 +189,44 @@ export default function AdminPackageDelivery() {
                 </div>
               )}
 
+              {isSwitch && competitors.length > 0 && (
+                <div className="mt-3 rounded-md border border-dashed p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs">Users switched from (competitor breakdown)</Label>
+                    <Button size="sm" variant="ghost" onClick={() =>
+                      setForm(m.id, { competitors: [...(f.competitors || []), { competitor_app_id: "", users_count: 0 }] })
+                    }>+ Add</Button>
+                  </div>
+                  {(f.competitors || []).map((row, idx) => (
+                    <div key={idx} className="flex gap-2 mb-2">
+                      <select
+                        className="flex-1 h-9 rounded-md border bg-background px-2 text-sm"
+                        value={row.competitor_app_id}
+                        onChange={(e) => {
+                          const next = [...(f.competitors || [])];
+                          next[idx] = { ...next[idx], competitor_app_id: e.target.value };
+                          setForm(m.id, { competitors: next });
+                        }}
+                      >
+                        <option value="">Select competitor…</option>
+                        {competitors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <Input type="number" min={0} className="w-28" value={row.users_count}
+                        onChange={(e) => {
+                          const next = [...(f.competitors || [])];
+                          next[idx] = { ...next[idx], users_count: Number(e.target.value) || 0 };
+                          setForm(m.id, { competitors: next });
+                        }} placeholder="Users" />
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        const next = (f.competitors || []).filter((_, i) => i !== idx);
+                        setForm(m.id, { competitors: next });
+                      }}>×</Button>
+                    </div>
+                  ))}
+                  <p className="text-[11px] text-muted-foreground">e.g. 50 users switched from Opay, 30 from GTBank.</p>
+                </div>
+              )}
+
               <div className="mt-3">
                 <Label>Notes (optional)</Label>
                 <Input value={f.notes} onChange={(e) => setForm(m.id, { notes: e.target.value })} />
