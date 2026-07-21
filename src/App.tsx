@@ -50,6 +50,8 @@ import AdminMilestones from "./pages/AdminMilestones";
 
 import Packages from "./pages/Packages";
 import PackageOrders from "./pages/PackageOrders";
+import SwitchOffers from "./pages/SwitchOffers";
+import AdminSwitchOffers from "./pages/AdminSwitchOffers";
 import OfflineVerification from "./pages/OfflineVerification";
 import OfflineOffers from "./pages/OfflineOffers";
 import OfflineOrders from "./pages/OfflineOrders";
