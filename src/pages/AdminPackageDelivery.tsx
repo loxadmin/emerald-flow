@@ -24,12 +24,19 @@ type Delivery = {
   users_delivered: number; txn_rows: any; total_txn_amount: number | null;
 };
 
+type Competitor = { id: string; name: string; is_active: boolean };
+
+type CompetitorRow = { competitor_app_id: string; users_count: number };
+
 type FormState = {
   users: string;
   date: string;
   txnCsv: string;
   notes: string;
+  competitors: CompetitorRow[];
 };
+
+const SWITCH_SLUGS = new Set(["app_install", "signup", "kyc", "deposit"]);
 
 function parseTxnCsv(csv: string): { user_ref: string; txn_id: string; amount_usd: number }[] {
   const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
