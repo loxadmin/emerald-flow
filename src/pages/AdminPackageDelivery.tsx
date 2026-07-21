@@ -84,7 +84,7 @@ export default function AdminPackageDelivery() {
   }, [order, milestones]);
 
   const setForm = (mid: string, patch: Partial<FormState>) =>
-    setForms((f) => ({ ...f, [mid]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", ...(f[mid] || {}), ...patch } }));
+    setForms((f) => ({ ...f, [mid]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [], ...(f[mid] || {}), ...patch } }));
 
   const submit = async (m: Milestone) => {
     if (!order) return;
