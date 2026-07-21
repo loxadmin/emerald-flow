@@ -111,7 +111,7 @@ export default function AdminPackageDelivery() {
     setSaving(null);
     if (error) return toast.error(error.message);
     toast.success("Delivery recorded");
-    setForms((s) => ({ ...s, [m.id]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "" } }));
+    setForms((s) => ({ ...s, [m.id]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] } }));
     load();
   };
 
