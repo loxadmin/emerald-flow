@@ -307,15 +307,19 @@ export default function Packages() {
     window.location.href = url;
   };
 
-  // If ALL selected milestones are streaming/view types, use "Streams" wording
-  const STREAM_SLUGS = new Set(["music_streams", "youtube_video_views"]);
+  // Correlate unit noun with selected milestone types
+  const STREAM_SLUGS = new Set(["music_streams"]);
+  const VIEW_SLUGS = new Set(["youtube_video_views", "video_view"]);
   const selectedSlugs = selectedMs
     .map((r) => milestones.find((m) => m.id === r.milestone_id)?.slug)
     .filter(Boolean) as string[];
-  const streamMode = selectedSlugs.length > 0 && selectedSlugs.every((s) => STREAM_SLUGS.has(s));
-  const unitsNoun = streamMode ? "streams" : "users";
-  const unitsLabel = streamMode
+  const allStreams = selectedSlugs.length > 0 && selectedSlugs.every((s) => STREAM_SLUGS.has(s));
+  const allViews = selectedSlugs.length > 0 && selectedSlugs.every((s) => VIEW_SLUGS.has(s));
+  const unitsNoun = allStreams ? "streams" : allViews ? "views" : "users";
+  const unitsLabel = allStreams
     ? "Total streams"
+    : allViews
+    ? "Total views"
     : needsDuration ? "Daily users" : "Users (total)";
 
   return (
@@ -381,8 +385,14 @@ export default function Packages() {
                       <p className="font-medium text-sm">${fullPrice.toFixed(2)}<span className="text-muted-foreground">/user</span></p>
                     </div>
                     <div className="rounded-md bg-muted/50 p-2 col-span-2">
-                      <p className="text-muted-foreground">{anyDurational ? "Daily users" : "Users"}</p>
-                      <p className="font-medium text-sm">{p.min_units.toLocaleString()} to {p.max_units.toLocaleString()}</p>
+                      {(() => {
+                        const slugs = ms.map((r) => milestones.find((x) => x.id === r.milestone_id)?.slug).filter(Boolean) as string[];
+                        const allS = slugs.length > 0 && slugs.every((s) => s === "music_streams");
+                        const allV = slugs.length > 0 && slugs.every((s) => s === "youtube_video_views" || s === "video_view");
+                        const label = allS ? "Streams range" : allV ? "Views range" : anyDurational ? "Daily users" : "Users";
+                        return <><p className="text-muted-foreground">{label}</p>
+                          <p className="font-medium text-sm">{p.min_units.toLocaleString()} to {p.max_units.toLocaleString()}</p></>;
+                      })()}
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">

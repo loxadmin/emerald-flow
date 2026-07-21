@@ -24,12 +24,19 @@ type Delivery = {
   users_delivered: number; txn_rows: any; total_txn_amount: number | null;
 };
 
+type Competitor = { id: string; name: string; is_active: boolean };
+
+type CompetitorRow = { competitor_app_id: string; users_count: number };
+
 type FormState = {
   users: string;
   date: string;
   txnCsv: string;
   notes: string;
+  competitors: CompetitorRow[];
 };
+
+const SWITCH_SLUGS = new Set(["app_install", "signup", "kyc", "deposit"]);
 
 function parseTxnCsv(csv: string): { user_ref: string; txn_id: string; amount_usd: number }[] {
   const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -53,16 +60,19 @@ export default function AdminPackageDelivery() {
   const [loading, setLoading] = useState(true);
   const [forms, setForms] = useState<Record<string, FormState>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
 
   const load = async () => {
     if (!orderId) return;
     setLoading(true);
-    const [{ data: o }, { data: ms }, { data: dv }] = await Promise.all([
+    const [{ data: o }, { data: ms }, { data: dv }, { data: cps }] = await Promise.all([
       supabase.from("package_orders" as any).select("*").eq("id", orderId).maybeSingle(),
       supabase.from("milestones" as any).select("id,name,slug,requires_duration"),
       supabase.from("package_order_deliveries" as any).select("*").eq("order_id", orderId).order("delivery_date"),
+      supabase.from("competitor_apps" as any).select("id,name,is_active").eq("is_active", true).order("name"),
     ]);
     setOrder((o as any) || null);
+    setCompetitors((cps as any) || []);
     setMilestones((ms as any) || []);
     setDeliveries((dv as any) || []);
     setLoading(false);
@@ -77,11 +87,11 @@ export default function AdminPackageDelivery() {
   }, [order, milestones]);
 
   const setForm = (mid: string, patch: Partial<FormState>) =>
-    setForms((f) => ({ ...f, [mid]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", ...(f[mid] || {}), ...patch } }));
+    setForms((f) => ({ ...f, [mid]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [], ...(f[mid] || {}), ...patch } }));
 
   const submit = async (m: Milestone) => {
     if (!order) return;
-    const f = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "" };
+    const f: FormState = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] };
     const users = Number(f.users) || 0;
     const isTxn = m.slug === "transaction" || m.slug === "sale";
     let txnRows: any = null;
@@ -93,6 +103,11 @@ export default function AdminPackageDelivery() {
       return toast.error("Enter users delivered or upload transactions.");
     }
     setSaving(m.id);
+    const isSwitch = SWITCH_SLUGS.has(m.slug);
+    const breakdown = isSwitch
+      ? (f.competitors || []).filter((c) => c.competitor_app_id && Number(c.users_count) > 0)
+          .map((c) => ({ competitor_app_id: c.competitor_app_id, users_count: Number(c.users_count) }))
+      : null;
     const { error } = await supabase.rpc("record_package_delivery" as any, {
       _order_id: order.id,
       _milestone_id: m.id,
@@ -100,11 +115,12 @@ export default function AdminPackageDelivery() {
       _users_delivered: txnRows ? (users || txnRows.length) : users,
       _txn_rows: txnRows,
       _notes: f.notes || null,
+      _competitor_breakdown: breakdown && breakdown.length > 0 ? breakdown : null,
     });
     setSaving(null);
     if (error) return toast.error(error.message);
     toast.success("Delivery recorded");
-    setForms((s) => ({ ...s, [m.id]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "" } }));
+    setForms((s) => ({ ...s, [m.id]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] } }));
     load();
   };
 
@@ -130,8 +146,9 @@ export default function AdminPackageDelivery() {
 
       <div className="grid gap-4">
         {selectedMs.map((m) => {
-          const f = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "" };
+          const f: FormState = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] };
           const isTxn = m.slug === "transaction" || m.slug === "sale";
+          const isSwitch = SWITCH_SLUGS.has(m.slug);
           const dv = deliveries.filter((d) => d.milestone_id === m.id);
           const totalUsers = dv.reduce((s, d) => s + (d.users_delivered || 0), 0);
           const txnSum = dv.reduce((s, d) => s + (Number(d.total_txn_amount) || 0), 0);
@@ -169,6 +186,44 @@ export default function AdminPackageDelivery() {
                   </div>
                   <Textarea rows={4} value={f.txnCsv} onChange={(e) => setForm(m.id, { txnCsv: e.target.value })}
                     placeholder={"user123,TXN-001,50\nuser456,TXN-002,120"} className="mt-2 font-mono text-xs" />
+                </div>
+              )}
+
+              {isSwitch && competitors.length > 0 && (
+                <div className="mt-3 rounded-md border border-dashed p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs">Users switched from (competitor breakdown)</Label>
+                    <Button size="sm" variant="ghost" onClick={() =>
+                      setForm(m.id, { competitors: [...(f.competitors || []), { competitor_app_id: "", users_count: 0 }] })
+                    }>+ Add</Button>
+                  </div>
+                  {(f.competitors || []).map((row, idx) => (
+                    <div key={idx} className="flex gap-2 mb-2">
+                      <select
+                        className="flex-1 h-9 rounded-md border bg-background px-2 text-sm"
+                        value={row.competitor_app_id}
+                        onChange={(e) => {
+                          const next = [...(f.competitors || [])];
+                          next[idx] = { ...next[idx], competitor_app_id: e.target.value };
+                          setForm(m.id, { competitors: next });
+                        }}
+                      >
+                        <option value="">Select competitor…</option>
+                        {competitors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <Input type="number" min={0} className="w-28" value={row.users_count}
+                        onChange={(e) => {
+                          const next = [...(f.competitors || [])];
+                          next[idx] = { ...next[idx], users_count: Number(e.target.value) || 0 };
+                          setForm(m.id, { competitors: next });
+                        }} placeholder="Users" />
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        const next = (f.competitors || []).filter((_, i) => i !== idx);
+                        setForm(m.id, { competitors: next });
+                      }}>×</Button>
+                    </div>
+                  ))}
+                  <p className="text-[11px] text-muted-foreground">e.g. 50 users switched from Opay, 30 from GTBank.</p>
                 </div>
               )}
 

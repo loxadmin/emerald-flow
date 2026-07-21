@@ -840,6 +840,36 @@ export type Database = {
           },
         ]
       }
+      competitor_apps: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           admin_reply: string | null
@@ -1520,6 +1550,7 @@ export type Database = {
       }
       package_order_deliveries: {
         Row: {
+          competitor_breakdown: Json | null
           created_at: string
           delivered_by: string | null
           delivery_date: string
@@ -1533,6 +1564,7 @@ export type Database = {
           users_delivered: number
         }
         Insert: {
+          competitor_breakdown?: Json | null
           created_at?: string
           delivered_by?: string | null
           delivery_date?: string
@@ -1546,6 +1578,7 @@ export type Database = {
           users_delivered?: number
         }
         Update: {
+          competitor_breakdown?: Json | null
           created_at?: string
           delivered_by?: string | null
           delivery_date?: string
@@ -1819,6 +1852,124 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      switch_offer_orders: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          batch_size: number
+          competitor_app_id: string | null
+          competitor_app_name: string | null
+          completed_at: string | null
+          created_at: string
+          flat_price_usd: number
+          id: string
+          offer_id: string
+          offer_title: string
+          starts_at: string
+          status: string
+          target_link: string | null
+          updated_at: string
+          users_delivered: number
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          batch_size: number
+          competitor_app_id?: string | null
+          competitor_app_name?: string | null
+          completed_at?: string | null
+          created_at?: string
+          flat_price_usd: number
+          id?: string
+          offer_id: string
+          offer_title: string
+          starts_at?: string
+          status?: string
+          target_link?: string | null
+          updated_at?: string
+          users_delivered?: number
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          batch_size?: number
+          competitor_app_id?: string | null
+          competitor_app_name?: string | null
+          completed_at?: string | null
+          created_at?: string
+          flat_price_usd?: number
+          id?: string
+          offer_id?: string
+          offer_title?: string
+          starts_at?: string
+          status?: string
+          target_link?: string | null
+          updated_at?: string
+          users_delivered?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "switch_offer_orders_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "switch_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      switch_offers: {
+        Row: {
+          advertiser_subtypes: Database["public"]["Enums"]["advertiser_subtype"][]
+          batch_size: number
+          competitor_app_id: string | null
+          created_at: string
+          description: string | null
+          flat_price_usd: number
+          id: string
+          is_active: boolean
+          platform: string
+          target_link_required: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          advertiser_subtypes?: Database["public"]["Enums"]["advertiser_subtype"][]
+          batch_size: number
+          competitor_app_id?: string | null
+          created_at?: string
+          description?: string | null
+          flat_price_usd: number
+          id?: string
+          is_active?: boolean
+          platform?: string
+          target_link_required?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          advertiser_subtypes?: Database["public"]["Enums"]["advertiser_subtype"][]
+          batch_size?: number
+          competitor_app_id?: string | null
+          created_at?: string
+          description?: string | null
+          flat_price_usd?: number
+          id?: string
+          is_active?: boolean
+          platform?: string
+          target_link_required?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "switch_offers_competitor_app_id_fkey"
+            columns: ["competitor_app_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_apps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tracker_releases: {
         Row: {
@@ -2201,8 +2352,13 @@ export type Database = {
         Args: { _links: string[]; _package_id: string; _units: number }
         Returns: Json
       }
+      purchase_switch_offer: {
+        Args: { _offer_id: string; _target_link: string }
+        Returns: Json
+      }
       record_package_delivery: {
         Args: {
+          _competitor_breakdown?: Json
           _delivery_date: string
           _milestone_id: string
           _notes: string
@@ -2231,6 +2387,15 @@ export type Database = {
       submit_offline_offer: { Args: { _offer_id: string }; Returns: Json }
       topup_campaign_escrow: {
         Args: { _amount: number; _campaign_id: string }
+        Returns: Json
+      }
+      update_switch_order_delivery: {
+        Args: {
+          _notes: string
+          _order_id: string
+          _status: string
+          _users_delivered: number
+        }
         Returns: Json
       }
     }
