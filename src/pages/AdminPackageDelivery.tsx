@@ -65,12 +65,14 @@ export default function AdminPackageDelivery() {
   const load = async () => {
     if (!orderId) return;
     setLoading(true);
-    const [{ data: o }, { data: ms }, { data: dv }] = await Promise.all([
+    const [{ data: o }, { data: ms }, { data: dv }, { data: cps }] = await Promise.all([
       supabase.from("package_orders" as any).select("*").eq("id", orderId).maybeSingle(),
       supabase.from("milestones" as any).select("id,name,slug,requires_duration"),
       supabase.from("package_order_deliveries" as any).select("*").eq("order_id", orderId).order("delivery_date"),
+      supabase.from("competitor_apps" as any).select("id,name,is_active").eq("is_active", true).order("name"),
     ]);
     setOrder((o as any) || null);
+    setCompetitors((cps as any) || []);
     setMilestones((ms as any) || []);
     setDeliveries((dv as any) || []);
     setLoading(false);
