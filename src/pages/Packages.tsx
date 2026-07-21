@@ -385,8 +385,14 @@ export default function Packages() {
                       <p className="font-medium text-sm">${fullPrice.toFixed(2)}<span className="text-muted-foreground">/user</span></p>
                     </div>
                     <div className="rounded-md bg-muted/50 p-2 col-span-2">
-                      <p className="text-muted-foreground">{anyDurational ? "Daily users" : "Users"}</p>
-                      <p className="font-medium text-sm">{p.min_units.toLocaleString()} to {p.max_units.toLocaleString()}</p>
+                      {(() => {
+                        const slugs = ms.map((r) => milestones.find((x) => x.id === r.milestone_id)?.slug).filter(Boolean) as string[];
+                        const allS = slugs.length > 0 && slugs.every((s) => s === "music_streams");
+                        const allV = slugs.length > 0 && slugs.every((s) => s === "youtube_video_views" || s === "video_view");
+                        const label = allS ? "Streams range" : allV ? "Views range" : anyDurational ? "Daily users" : "Users";
+                        return <><p className="text-muted-foreground">{label}</p>
+                          <p className="font-medium text-sm">{p.min_units.toLocaleString()} to {p.max_units.toLocaleString()}</p></>;
+                      })()}
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">
