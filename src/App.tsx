@@ -115,6 +115,8 @@ const App = () => (
               <Route path="/websites" element={<RequireAuth><Websites /></RequireAuth>} />
               <Route path="/packages" element={<RequireAuth><Packages /></RequireAuth>} />
               <Route path="/packages/orders" element={<RequireAuth><PackageOrders /></RequireAuth>} />
+              <Route path="/switch-offers" element={<RequireAuth><SwitchOffers /></RequireAuth>} />
+              <Route path="/admin/switch-offers" element={<RequireAuth><RequireAdmin><AdminSwitchOffers /></RequireAdmin></RequireAuth>} />
 
               {/* Offline Ads */}
               <Route path="/offline/verify" element={<RequireAuth><OfflineVerification /></RequireAuth>} />
