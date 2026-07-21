@@ -60,6 +60,7 @@ export default function AdminPackageDelivery() {
   const [loading, setLoading] = useState(true);
   const [forms, setForms] = useState<Record<string, FormState>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
 
   const load = async () => {
     if (!orderId) return;
