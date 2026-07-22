@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +18,6 @@ export default function Admin2FA() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [sentOnce, setSentOnce] = useState(false);
-  const autoSentRef = useRef(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -43,23 +42,6 @@ export default function Admin2FA() {
     }
   };
 
-  useEffect(() => {
-    if (!isAdmin || !user?.id) return;
-    if (autoSentRef.current) return;
-    if (sessionStorage.getItem(ADMIN_2FA_FLAG) === "1") return;
-    // Only auto-send once per session per user — survives tab refocus/refresh
-    const autoSentKey = `karbali-admin-2fa-autosent-${user.id}`;
-    if (sessionStorage.getItem(autoSentKey) === "1") {
-      autoSentRef.current = true;
-      setSentOnce(true);
-      return;
-    }
-    autoSentRef.current = true;
-    sessionStorage.setItem(autoSentKey, "1");
-    sendCode();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, user?.id]);
-
   const verify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\d{6}$/.test(code)) { toast.error("Enter the 6-digit code"); return; }
@@ -76,7 +58,7 @@ export default function Admin2FA() {
     <AuthSplitShell
       eyebrow="Admin verification"
       title="Two-factor required"
-      description="A 6-digit code was sent to your admin email. Enter it to continue."
+      description="Send a 6-digit code to your admin email, then enter it to continue."
       footer={<span>Lost access? Contact another admin.</span>}
     >
       <form onSubmit={verify} className="space-y-4">
@@ -96,7 +78,7 @@ export default function Admin2FA() {
         </GlassButton>
         <button type="button" className="text-xs text-muted-foreground hover:text-foreground"
           onClick={sendCode} disabled={sending}>
-          {sending ? "Sending..." : "Resend code"}
+          {sending ? "Sending..." : sentOnce ? "Resend code" : "Send code"}
         </button>
       </form>
     </AuthSplitShell>

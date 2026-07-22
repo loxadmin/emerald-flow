@@ -282,27 +282,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       syncSessionState(nextSession);
     });
 
-    // Cross-tab session sync — refresh when this tab becomes visible so a
-    // login/logout done in another tab is picked up immediately.
-    const onVisibility = async () => {
-      if (document.visibilityState !== "visible") return;
-      const { data: { session: current } } = await supabase.auth.getSession();
-      if (!active) return;
-      const currentId = current?.user?.id ?? null;
-      if (currentId !== lastUserId) {
-        syncSessionState(current, { forceReload: true });
-      } else if (current && !session) {
-        syncSessionState(current, { forceReload: true });
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("focus", onVisibility);
-
     return () => {
       active = false;
       subscription.unsubscribe();
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("focus", onVisibility);
     };
   }, [loadAccessState, resetAccessState]);
 
