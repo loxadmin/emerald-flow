@@ -47,7 +47,15 @@ export default function Admin2FA() {
     if (!isAdmin || !user?.id) return;
     if (autoSentRef.current) return;
     if (sessionStorage.getItem(ADMIN_2FA_FLAG) === "1") return;
+    // Only auto-send once per session per user — survives tab refocus/refresh
+    const autoSentKey = `karbali-admin-2fa-autosent-${user.id}`;
+    if (sessionStorage.getItem(autoSentKey) === "1") {
+      autoSentRef.current = true;
+      setSentOnce(true);
+      return;
+    }
     autoSentRef.current = true;
+    sessionStorage.setItem(autoSentKey, "1");
     sendCode();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, user?.id]);
