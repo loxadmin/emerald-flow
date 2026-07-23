@@ -367,6 +367,76 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_migrations: {
+        Row: {
+          advertiser_id: string
+          campaign_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          migration_date: string
+          notes: string | null
+          package_order_id: string | null
+          source_name: string
+          source_type: string
+          switch_order_id: string | null
+          updated_at: string
+          users_migrated: number
+        }
+        Insert: {
+          advertiser_id: string
+          campaign_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          migration_date?: string
+          notes?: string | null
+          package_order_id?: string | null
+          source_name: string
+          source_type?: string
+          switch_order_id?: string | null
+          updated_at?: string
+          users_migrated?: number
+        }
+        Update: {
+          advertiser_id?: string
+          campaign_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          migration_date?: string
+          notes?: string | null
+          package_order_id?: string | null
+          source_name?: string
+          source_type?: string
+          switch_order_id?: string | null
+          updated_at?: string
+          users_migrated?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_migrations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_migrations_package_order_id_fkey"
+            columns: ["package_order_id"]
+            isOneToOne: false
+            referencedRelation: "package_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_migrations_switch_order_id_fkey"
+            columns: ["switch_order_id"]
+            isOneToOne: false
+            referencedRelation: "switch_offer_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_questions: {
         Row: {
           campaign_id: string
@@ -846,27 +916,33 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          logo_path: string | null
           logo_url: string | null
           name: string
           updated_at: string
+          website_url: string | null
         }
         Insert: {
           category?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
+          logo_path?: string | null
           logo_url?: string | null
           name: string
           updated_at?: string
+          website_url?: string | null
         }
         Update: {
           category?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
+          logo_path?: string | null
           logo_url?: string | null
           name?: string
           updated_at?: string
+          website_url?: string | null
         }
         Relationships: []
       }
