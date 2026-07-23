@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth";
 import PendingCountdown from "@/components/PendingCountdown";
+import MigrationChart from "@/components/MigrationChart";
 
 interface DailyData {
   date: string;
@@ -676,6 +677,10 @@ export default function CampaignDetail() {
             </MotionWrapper>
           </>
         )}
+
+        <MotionWrapper delay={0.25}>
+          <MigrationChart campaignId={campaign.id} title="Where your users are migrating from" />
+        </MotionWrapper>
       </div>
     </DashboardLayout>
   );
