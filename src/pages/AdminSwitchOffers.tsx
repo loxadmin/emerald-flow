@@ -378,24 +378,30 @@ export default function AdminSwitchOffers() {
 
       {/* Order fulfillment */}
       <Dialog open={!!ordEdit} onOpenChange={(v) => !v && setOrdEdit(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Update delivery</DialogTitle></DialogHeader>
           {ordEdit && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p className="text-sm text-muted-foreground">{ordEdit.offer_title}</p>
-              <div><Label>Users delivered</Label><Input type="number" min={0} value={ordForm.users_delivered} onChange={(e) => setOrdForm({ ...ordForm, users_delivered: Number(e.target.value) })} /></div>
-              <div><Label>Status</Label>
-                <Select value={ordForm.status} onValueChange={(v) => setOrdForm({ ...ordForm, status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="delivering">Delivering</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div><Label>Users delivered</Label><Input type="number" min={0} value={ordForm.users_delivered} onChange={(e) => setOrdForm({ ...ordForm, users_delivered: Number(e.target.value) })} /></div>
+                <div><Label>Status</Label>
+                  <Select value={ordForm.status} onValueChange={(v) => setOrdForm({ ...ordForm, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="delivering">Delivering</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div><Label>Notes</Label><Textarea rows={2} value={ordForm.notes} onChange={(e) => setOrdForm({ ...ordForm, notes: e.target.value })} /></div>
+              <AdminMigrationEntry
+                advertiserId={ordEdit.advertiser_id}
+                switchOrderId={ordEdit.id}
+              />
             </div>
           )}
           <DialogFooter><Button variant="outline" onClick={() => setOrdEdit(null)}>Cancel</Button><Button onClick={saveOrd}>Save</Button></DialogFooter>
