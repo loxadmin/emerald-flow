@@ -15,7 +15,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Pencil, Building2, Zap, ClipboardList } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, Building2, Zap, ClipboardList, ExternalLink } from "lucide-react";
+import CompetitorLogoUpload from "@/components/CompetitorLogoUpload";
+import AdminMigrationEntry from "@/components/AdminMigrationEntry";
 
 const SUBTYPES = [
   "musician","youtuber","social_media_creator",
@@ -25,7 +27,7 @@ const SUBTYPES = [
 ];
 const PLATFORMS = ["mobile","web","youtube","spotify","instagram","tiktok"];
 
-type Competitor = { id: string; name: string; logo_url: string | null; category: string | null; is_active: boolean };
+type Competitor = { id: string; name: string; logo_url: string | null; logo_path: string | null; website_url: string | null; category: string | null; is_active: boolean };
 type Offer = {
   id: string; title: string; description: string | null;
   competitor_app_id: string | null; advertiser_subtypes: string[];
@@ -49,7 +51,7 @@ export default function AdminSwitchOffers() {
 
   const [compOpen, setCompOpen] = useState(false);
   const [compEdit, setCompEdit] = useState<Competitor | null>(null);
-  const [compForm, setCompForm] = useState({ name: "", logo_url: "", category: "", is_active: true });
+  const [compForm, setCompForm] = useState({ name: "", logo_url: "", logo_path: "", website_url: "", category: "", is_active: true });
 
   const [offOpen, setOffOpen] = useState(false);
   const [offEdit, setOffEdit] = useState<Offer | null>(null);
@@ -80,8 +82,10 @@ export default function AdminSwitchOffers() {
   // Competitor CRUD
   const openComp = (c: Competitor | null) => {
     setCompEdit(c);
-    setCompForm(c ? { name: c.name, logo_url: c.logo_url || "", category: c.category || "", is_active: c.is_active }
-                  : { name: "", logo_url: "", category: "", is_active: true });
+    setCompForm(c ? {
+      name: c.name, logo_url: c.logo_url || "", logo_path: c.logo_path || "",
+      website_url: c.website_url || "", category: c.category || "", is_active: c.is_active,
+    } : { name: "", logo_url: "", logo_path: "", website_url: "", category: "", is_active: true });
     setCompOpen(true);
   };
   const saveComp = async () => {
@@ -89,6 +93,8 @@ export default function AdminSwitchOffers() {
     const payload = {
       name: compForm.name.trim(),
       logo_url: compForm.logo_url.trim() || null,
+      logo_path: compForm.logo_path.trim() || null,
+      website_url: compForm.website_url.trim() || null,
       category: compForm.category.trim() || null,
       is_active: compForm.is_active,
     };
@@ -251,13 +257,20 @@ export default function AdminSwitchOffers() {
                   {competitors.map((c) => (
                     <div key={c.id} className="rounded-lg border bg-card p-3 flex items-center gap-3">
                       {c.logo_url ? (
-                        <img src={c.logo_url} alt="" className="h-9 w-9 rounded object-cover" />
+                        <img src={c.logo_url} alt="" className="h-9 w-9 rounded object-cover bg-background border" />
                       ) : (
                         <div className="h-9 w-9 rounded bg-muted flex items-center justify-center text-xs">{c.name[0]}</div>
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate">{c.name}</p>
-                        <p className="text-[11px] text-muted-foreground">{c.category || "—"}{!c.is_active && " · inactive"}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {c.category || "—"}{!c.is_active && " · inactive"}
+                          {c.website_url && (
+                            <> · <a href={c.website_url} target="_blank" rel="noreferrer" className="text-primary inline-flex items-center gap-0.5 hover:underline">
+                              site <ExternalLink className="h-2.5 w-2.5" />
+                            </a></>
+                          )}
+                        </p>
                       </div>
                       <Button size="icon" variant="ghost" onClick={() => openComp(c)}><Pencil className="h-3.5 w-3.5" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => delComp(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -299,11 +312,15 @@ export default function AdminSwitchOffers() {
 
       {/* Competitor dialog */}
       <Dialog open={compOpen} onOpenChange={setCompOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{compEdit ? "Edit" : "Add"} competitor app</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Name</Label><Input value={compForm.name} onChange={(e) => setCompForm({ ...compForm, name: e.target.value })} placeholder="Opay" /></div>
-            <div><Label>Logo URL (optional)</Label><Input value={compForm.logo_url} onChange={(e) => setCompForm({ ...compForm, logo_url: e.target.value })} /></div>
+            <CompetitorLogoUpload
+              value={{ url: compForm.logo_url || null, path: compForm.logo_path || null }}
+              onChange={(v) => setCompForm({ ...compForm, logo_url: v.url || "", logo_path: v.path || "" })}
+            />
+            <div><Label>Website / platform link (optional)</Label><Input value={compForm.website_url} onChange={(e) => setCompForm({ ...compForm, website_url: e.target.value })} placeholder="https://opay.com" /></div>
             <div><Label>Category (optional)</Label><Input value={compForm.category} onChange={(e) => setCompForm({ ...compForm, category: e.target.value })} placeholder="fintech, social, ecommerce…" /></div>
             <div className="flex items-center gap-2"><Switch checked={compForm.is_active} onCheckedChange={(v) => setCompForm({ ...compForm, is_active: v })} /><Label>Active</Label></div>
           </div>
@@ -361,24 +378,30 @@ export default function AdminSwitchOffers() {
 
       {/* Order fulfillment */}
       <Dialog open={!!ordEdit} onOpenChange={(v) => !v && setOrdEdit(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Update delivery</DialogTitle></DialogHeader>
           {ordEdit && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p className="text-sm text-muted-foreground">{ordEdit.offer_title}</p>
-              <div><Label>Users delivered</Label><Input type="number" min={0} value={ordForm.users_delivered} onChange={(e) => setOrdForm({ ...ordForm, users_delivered: Number(e.target.value) })} /></div>
-              <div><Label>Status</Label>
-                <Select value={ordForm.status} onValueChange={(v) => setOrdForm({ ...ordForm, status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="delivering">Delivering</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div><Label>Users delivered</Label><Input type="number" min={0} value={ordForm.users_delivered} onChange={(e) => setOrdForm({ ...ordForm, users_delivered: Number(e.target.value) })} /></div>
+                <div><Label>Status</Label>
+                  <Select value={ordForm.status} onValueChange={(v) => setOrdForm({ ...ordForm, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="delivering">Delivering</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div><Label>Notes</Label><Textarea rows={2} value={ordForm.notes} onChange={(e) => setOrdForm({ ...ordForm, notes: e.target.value })} /></div>
+              <AdminMigrationEntry
+                advertiserId={ordEdit.advertiser_id}
+                switchOrderId={ordEdit.id}
+              />
             </div>
           )}
           <DialogFooter><Button variant="outline" onClick={() => setOrdEdit(null)}>Cancel</Button><Button onClick={saveOrd}>Save</Button></DialogFooter>
