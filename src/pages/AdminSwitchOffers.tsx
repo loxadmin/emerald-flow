@@ -15,7 +15,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Pencil, Building2, Zap, ClipboardList } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, Building2, Zap, ClipboardList, ExternalLink } from "lucide-react";
+import CompetitorLogoUpload from "@/components/CompetitorLogoUpload";
+import AdminMigrationEntry from "@/components/AdminMigrationEntry";
 
 const SUBTYPES = [
   "musician","youtuber","social_media_creator",
