@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 
 import MotionWrapper from "@/components/MotionWrapper";
 import AutoActivationEditor from "@/components/AutoActivationEditor";
+import AdminMigrationEntry from "@/components/AdminMigrationEntry";
 import { toast } from "sonner";
 import { CheckCircle, XCircle, Copy, Link as LinkIcon, Plus, Loader2, HelpCircle, Trash2, Sparkles, MessageSquareWarning } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
