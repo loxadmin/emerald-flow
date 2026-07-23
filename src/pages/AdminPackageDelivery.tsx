@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Save, Upload } from "lucide-react";
+import AdminMigrationEntry from "@/components/AdminMigrationEntry";
 
 type Order = {
   id: string; advertiser_id: string; package_name: string;
@@ -260,6 +261,13 @@ export default function AdminPackageDelivery() {
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-6">
+        <AdminMigrationEntry
+          advertiserId={order.advertiser_id}
+          packageOrderId={order.id}
+        />
       </div>
     </AdminLayout>
   );

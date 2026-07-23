@@ -13,6 +13,7 @@ import {
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Loader2, Zap, ArrowRight, Wallet as WalletIcon, ClipboardList } from "lucide-react";
+import MigrationChart from "@/components/MigrationChart";
 
 type Offer = {
   id: string; title: string; description: string | null;
@@ -157,18 +158,21 @@ export default function SwitchOffers() {
                   <ClipboardList className="h-4 w-4" />
                   <h2 className="text-base font-semibold">My switch orders</h2>
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-3">
                   {orders.map((o) => (
-                    <div key={o.id} className="rounded-lg border bg-card p-3 flex items-center gap-3 flex-wrap">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">{o.offer_title}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {o.competitor_app_name && `from ${o.competitor_app_name} · `}
-                          {o.users_delivered.toLocaleString()} / {o.batch_size.toLocaleString()} users delivered · ${Number(o.flat_price_usd).toFixed(2)}
-                        </p>
-                        {o.target_link && <p className="text-[11px] text-muted-foreground truncate">→ {o.target_link}</p>}
+                    <div key={o.id} className="rounded-lg border bg-card p-4 space-y-3">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{o.offer_title}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {o.competitor_app_name && `from ${o.competitor_app_name} · `}
+                            {o.users_delivered.toLocaleString()} / {o.batch_size.toLocaleString()} users delivered · ${Number(o.flat_price_usd).toFixed(2)}
+                          </p>
+                          {o.target_link && <p className="text-[11px] text-muted-foreground truncate">→ {o.target_link}</p>}
+                        </div>
+                        <Badge variant="outline" className="capitalize text-[10px]">{o.status.replace(/_/g, " ")}</Badge>
                       </div>
-                      <Badge variant="outline" className="capitalize text-[10px]">{o.status.replace(/_/g, " ")}</Badge>
+                      <MigrationChart switchOrderId={o.id} title="Where these users came from" />
                     </div>
                   ))}
                 </div>

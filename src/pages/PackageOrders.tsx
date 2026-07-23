@@ -111,9 +111,9 @@ export default function PackageOrders() {
                       </ul>
                     )}
 
-                    {/* Delivery breakdown */}
+                    {/* Delivery graph + breakdown */}
                     {(o.selected_milestone_ids || []).length > 0 && (
-                      <div className="mt-3 space-y-2">
+                      <div className="mt-4 space-y-3">
                         {(o.selected_milestone_ids || []).map((mid) => {
                           const m = milestones.find((x) => x.id === mid);
                           if (!m) return null;
@@ -121,38 +121,57 @@ export default function PackageOrders() {
                           const totalUsers = dv.reduce((s, d) => s + (d.users_delivered || 0), 0);
                           const txnTotal = dv.reduce((s, d) => s + (Number(d.total_txn_amount) || 0), 0);
                           const isTxn = m.slug === "transaction" || m.slug === "sale";
+                          const chartData = dv.map((d) => ({
+                            date: new Date(d.delivery_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                            users: d.users_delivered || 0,
+                          }));
+                          const pct = Math.min(100, Math.round((totalUsers / Math.max(o.units, 1)) * 100));
                           return (
-                            <div key={mid} className="rounded-md border bg-muted/30 p-2.5">
-                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div key={mid} className="rounded-xl border bg-card overflow-hidden">
+                              <div className="flex items-center justify-between gap-2 px-4 py-3 border-b">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium">{m.name}</span>
+                                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                                  <span className="text-sm font-semibold">{m.name}</span>
                                   {m.requires_duration && <Badge variant="outline" className="text-[9px]">daily</Badge>}
                                 </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {totalUsers.toLocaleString()} / {o.units.toLocaleString()}{m.requires_duration ? " users/day target" : " users delivered"}
-                                  {isTxn && txnTotal > 0 && <> · ${txnTotal.toFixed(2)} txn volume</>}
+                                <div className="text-right">
+                                  <p className="text-sm font-semibold tabular-nums">
+                                    {totalUsers.toLocaleString()} <span className="text-muted-foreground font-normal">/ {o.units.toLocaleString()}</span>
+                                  </p>
+                                  {isTxn && txnTotal > 0 && (
+                                    <p className="text-[10px] text-muted-foreground">${txnTotal.toFixed(2)} volume</p>
+                                  )}
                                 </div>
                               </div>
-                              {m.requires_duration && dv.length > 0 && (
-                                <div className="mt-2 max-h-32 overflow-y-auto">
-                                  <table className="w-full text-[11px]">
-                                    <thead className="text-muted-foreground">
-                                      <tr><th className="text-left py-1">Date</th><th className="text-left py-1">Users</th>{isTxn && <th className="text-right py-1">Txn total</th>}</tr>
-                                    </thead>
-                                    <tbody>
-                                      {dv.map((d) => (
-                                        <tr key={d.id} className="border-t border-border/50">
-                                          <td className="py-1">{new Date(d.delivery_date).toLocaleDateString()}</td>
-                                          <td className="py-1">{d.users_delivered}</td>
-                                          {isTxn && <td className="py-1 text-right">${Number(d.total_txn_amount || 0).toFixed(2)}</td>}
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
+                              <div className="px-4 pt-3">
+                                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                                  <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
                                 </div>
+                                <p className="mt-1 text-[10px] text-muted-foreground">{pct}% delivered</p>
+                              </div>
+                              {chartData.length > 0 ? (
+                                <div className="px-2 pb-3 pt-2">
+                                  <ResponsiveContainer width="100%" height={140}>
+                                    <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                                      <defs>
+                                        <linearGradient id={`dl-${mid}`} x1="0" y1="0" x2="0" y2="1">
+                                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                        </linearGradient>
+                                      </defs>
+                                      <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} opacity={0.4} />
+                                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={30} />
+                                      <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                                      <Area type="monotone" dataKey="users" stroke="hsl(var(--primary))" strokeWidth={1.5} fill={`url(#dl-${mid})`} />
+                                    </AreaChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              ) : (
+                                <p className="px-4 pb-3 pt-1 text-[11px] text-muted-foreground">No deliveries recorded yet.</p>
                               )}
                               {isTxn && dv.some((d) => Array.isArray(d.txn_rows) && d.txn_rows.length > 0) && (
-                                <details className="mt-2">
+                                <details className="px-4 pb-3">
                                   <summary className="text-xs cursor-pointer text-primary">Transaction details</summary>
                                   <div className="mt-1 max-h-40 overflow-y-auto">
                                     <table className="w-full text-[11px]">
@@ -175,6 +194,9 @@ export default function PackageOrders() {
                             </div>
                           );
                         })}
+
+                        {/* User migration chart */}
+                        <MigrationChart packageOrderId={o.id} />
                       </div>
                     )}
 

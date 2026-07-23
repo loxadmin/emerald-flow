@@ -767,6 +767,13 @@ export default function AdminCampaignDetail() {
             </GlassCardContent>
           </GlassCard>
         </MotionWrapper>
+
+        <MotionWrapper delay={0.3}>
+          <AdminMigrationEntry
+            advertiserId={campaign.advertiser_id}
+            campaignId={campaign.id}
+          />
+        </MotionWrapper>
       </div>
     </AdminLayout>
   );
