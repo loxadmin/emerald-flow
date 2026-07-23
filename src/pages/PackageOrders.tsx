@@ -6,7 +6,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
-import { Loader2, Package as PackageIcon, ArrowLeft } from "lucide-react";
+import { Loader2, Package as PackageIcon, ArrowLeft, TrendingUp } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import MigrationChart from "@/components/MigrationChart";
 
 type Order = {
   id: string; package_name: string; unit_label: string;
