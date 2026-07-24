@@ -20,8 +20,10 @@ export default function CompetitorLogoUpload({ value, onChange }: Props) {
     if (file.size > MAX_BYTES) return toast.error("Max 4 MB");
     setUploading(true);
     try {
+      const { data: userData, error: uErr } = await supabase.auth.getUser();
+      if (uErr || !userData.user) throw new Error("Not authenticated");
       const ext = file.name.split(".").pop() || "png";
-      const path = `competitor-logos/${crypto.randomUUID()}.${ext}`;
+      const path = `${userData.user.id}/competitor-logos/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage.from("campaign-media").upload(path, file, {
         cacheControl: "31536000", upsert: false, contentType: file.type,
       });
