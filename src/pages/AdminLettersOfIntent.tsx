@@ -160,7 +160,7 @@ export default function AdminLettersOfIntent() {
                   <div className="text-sm space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium">{r.company_name}</p>
-                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-muted text-muted-foreground">{r.status.replaceAll("_", " ")}</span>
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-muted text-muted-foreground">{r.status.replace(/_/g, " ")}</span>
                       <span className="text-xs text-muted-foreground">{r.agreement_id}</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
