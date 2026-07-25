@@ -910,6 +910,39 @@ export type Database = {
           },
         ]
       }
+      company_signature: {
+        Row: {
+          company_name: string
+          created_at: string
+          id: string
+          representative_name: string
+          representative_position: string
+          signature_path: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          id?: string
+          representative_name: string
+          representative_position: string
+          signature_path: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          id?: string
+          representative_name?: string
+          representative_position?: string
+          signature_path?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       competitor_apps: {
         Row: {
           category: string | null
@@ -1302,6 +1335,114 @@ export type Database = {
           },
         ]
       }
+      letters_of_intent: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          advertiser_signature_path: string
+          agreement_id: string
+          approved_at: string | null
+          business_email: string
+          campaign_goal: string
+          campaign_launched_at: string | null
+          company_name: string
+          contact_person: string
+          country: string
+          created_at: string
+          current_progress: number
+          custom_duration_text: string | null
+          custom_goal_text: string | null
+          customer_goal: number
+          duration_days: number | null
+          generated_at: string | null
+          id: string
+          job_title: string
+          karbali_company_name_snapshot: string | null
+          karbali_rep_name_snapshot: string | null
+          karbali_rep_position_snapshot: string | null
+          karbali_signature_path_snapshot: string | null
+          notes: string | null
+          pdf_path: string | null
+          phone: string
+          products: string[]
+          rejected_at: string | null
+          status: Database["public"]["Enums"]["loi_status"]
+          threshold_reached_at: string | null
+          updated_at: string
+          website: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          advertiser_signature_path: string
+          agreement_id: string
+          approved_at?: string | null
+          business_email: string
+          campaign_goal: string
+          campaign_launched_at?: string | null
+          company_name: string
+          contact_person: string
+          country: string
+          created_at?: string
+          current_progress?: number
+          custom_duration_text?: string | null
+          custom_goal_text?: string | null
+          customer_goal: number
+          duration_days?: number | null
+          generated_at?: string | null
+          id?: string
+          job_title: string
+          karbali_company_name_snapshot?: string | null
+          karbali_rep_name_snapshot?: string | null
+          karbali_rep_position_snapshot?: string | null
+          karbali_signature_path_snapshot?: string | null
+          notes?: string | null
+          pdf_path?: string | null
+          phone: string
+          products?: string[]
+          rejected_at?: string | null
+          status?: Database["public"]["Enums"]["loi_status"]
+          threshold_reached_at?: string | null
+          updated_at?: string
+          website: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          advertiser_signature_path?: string
+          agreement_id?: string
+          approved_at?: string | null
+          business_email?: string
+          campaign_goal?: string
+          campaign_launched_at?: string | null
+          company_name?: string
+          contact_person?: string
+          country?: string
+          created_at?: string
+          current_progress?: number
+          custom_duration_text?: string | null
+          custom_goal_text?: string | null
+          customer_goal?: number
+          duration_days?: number | null
+          generated_at?: string | null
+          id?: string
+          job_title?: string
+          karbali_company_name_snapshot?: string | null
+          karbali_rep_name_snapshot?: string | null
+          karbali_rep_position_snapshot?: string | null
+          karbali_signature_path_snapshot?: string | null
+          notes?: string | null
+          pdf_path?: string | null
+          phone?: string
+          products?: string[]
+          rejected_at?: string | null
+          status?: Database["public"]["Enums"]["loi_status"]
+          threshold_reached_at?: string | null
+          updated_at?: string
+          website?: string
+        }
+        Relationships: []
+      }
       manual_events: {
         Row: {
           campaign_id: string
@@ -1345,6 +1486,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      migration_opportunities: {
+        Row: {
+          category: string | null
+          completion_rate: number
+          created_at: string
+          current_brand: string
+          current_brand_logo_path: string | null
+          eligible_users: number
+          estimated_cost_usd: number
+          estimated_duration_days: number
+          id: string
+          is_active: boolean
+          target_brand: string
+          target_brand_logo_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          completion_rate?: number
+          created_at?: string
+          current_brand: string
+          current_brand_logo_path?: string | null
+          eligible_users?: number
+          estimated_cost_usd?: number
+          estimated_duration_days?: number
+          id?: string
+          is_active?: boolean
+          target_brand: string
+          target_brand_logo_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          completion_rate?: number
+          created_at?: string
+          current_brand?: string
+          current_brand_logo_path?: string | null
+          eligible_users?: number
+          estimated_cost_usd?: number
+          estimated_duration_days?: number
+          id?: string
+          is_active?: boolean
+          target_brand?: string
+          target_brand_logo_path?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       milestones: {
         Row: {
@@ -2380,6 +2569,10 @@ export type Database = {
         Args: { _package_id: string; _user: string }
         Returns: boolean
       }
+      approve_letter_of_intent: {
+        Args: { _loi_id: string; _pdf_path: string }
+        Returns: Json
+      }
       auto_activate_pending_campaigns: { Args: never; Returns: undefined }
       charge_sale_commission: {
         Args: { _order_id: string; _sale_amount_usd: number }
@@ -2413,6 +2606,7 @@ export type Database = {
         Args: { _subtype: string }
         Returns: Database["public"]["Enums"]["advertiser_type"]
       }
+      mark_loi_threshold_reached: { Args: { _loi_id: string }; Returns: Json }
       purchase_package_v2: {
         Args: {
           _duration_days: number
@@ -2448,6 +2642,10 @@ export type Database = {
         Args: { _campaign_id: string }
         Returns: number
       }
+      reject_letter_of_intent: {
+        Args: { _loi_id: string; _notes: string }
+        Returns: Json
+      }
       request_withdrawal: {
         Args: { _amount: number; _destination: Json; _method: string }
         Returns: Json
@@ -2460,9 +2658,33 @@ export type Database = {
         Args: { _approve: boolean; _notes: string; _order_id: string }
         Returns: Json
       }
+      submit_letter_of_intent: {
+        Args: {
+          _business_email: string
+          _campaign_goal: string
+          _company_name: string
+          _contact_person: string
+          _country: string
+          _custom_duration_text: string
+          _custom_goal_text: string
+          _customer_goal: number
+          _duration_days: number
+          _job_title: string
+          _notes: string
+          _phone: string
+          _products: string[]
+          _signature_path: string
+          _website: string
+        }
+        Returns: Json
+      }
       submit_offline_offer: { Args: { _offer_id: string }; Returns: Json }
       topup_campaign_escrow: {
         Args: { _amount: number; _campaign_id: string }
+        Returns: Json
+      }
+      update_loi_progress: {
+        Args: { _current: number; _loi_id: string }
         Returns: Json
       }
       update_switch_order_delivery: {
@@ -2503,6 +2725,12 @@ export type Database = {
         | "paused"
         | "ended"
       event_type: "download" | "signup" | "purchase"
+      loi_status:
+        | "pending_admin_approval"
+        | "approved"
+        | "rejected"
+        | "threshold_reached"
+        | "campaign_launched"
       moq_unit: "liter" | "kg" | "piece"
       offline_order_status:
         | "pending_acceptance"
@@ -2668,6 +2896,13 @@ export const Constants = {
         "ended",
       ],
       event_type: ["download", "signup", "purchase"],
+      loi_status: [
+        "pending_admin_approval",
+        "approved",
+        "rejected",
+        "threshold_reached",
+        "campaign_launched",
+      ],
       moq_unit: ["liter", "kg", "piece"],
       offline_order_status: [
         "pending_acceptance",
