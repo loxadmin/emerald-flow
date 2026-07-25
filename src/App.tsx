@@ -85,7 +85,7 @@ function RequireCampaignType({ allow, children }: { allow: "performance" | "enga
   }, [isLoading, advertiserType, allow]);
   if (isLoading) return null;
   if (advertiserType && advertiserType !== allow) {
-    return <Navigate to={advertiserType === "offline" ? "/offline/verify" : "/campaigns/create"} replace />;
+    return <Navigate to={advertiserType === "offline" ? "/offline/loi" : "/campaigns/create"} replace />;
   }
   return <>{children}</>;
 }

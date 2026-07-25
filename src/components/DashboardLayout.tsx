@@ -8,7 +8,7 @@ import { useAiMode } from "@/lib/ai-mode";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
   Menu, X, Lock, AlertCircle, Megaphone, Globe, ChevronRight,
-  ShieldCheck, Package, ClipboardList, Zap,
+  Package, ClipboardList, Zap, Rocket, FileSignature,
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
@@ -31,16 +31,16 @@ const baseAdvertiserLinks: NavLink[] = [
   { to: "/campaigns/create", label: "New campaign", icon: Plus, group: "Workspace", hideForOffline: true },
   { to: "/packages", label: "Ad packages", icon: Package, group: "Workspace", hideForOffline: true },
   { to: "/switch-offers", label: "Switch offers", icon: Zap, group: "Workspace", hideForOffline: true },
-  { to: "/offline/verify", label: "Business verification", icon: ShieldCheck, group: "Workspace", onlyForOffline: true },
-  { to: "/offline/offers", label: "My offers", icon: Package, group: "Workspace", onlyForOffline: true },
-  { to: "/offline/orders", label: "Orders", icon: ClipboardList, group: "Workspace", onlyForOffline: true },
+  { to: "/offline/loi", label: "Letter of Intent", icon: FileSignature, group: "Workspace", onlyForOffline: true },
+  { to: "/offline/loi/status", label: "Reservation status", icon: ClipboardList, group: "Workspace", onlyForOffline: true },
+  { to: "/offline/campaign", label: "Launch campaign", icon: Rocket, group: "Workspace", onlyForOffline: true },
   { to: "/websites", label: "Websites", icon: Globe, hideForEngagement: true, hideForOffline: true, group: "Account" },
   { to: "/wallet", label: "Wallet", icon: Wallet, group: "Account" },
   { to: "/docs", label: "API & Docs", icon: FileText, hideForEngagement: true, hideForOffline: true, group: "Account" },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, signOut, walletActivated, categoryStatus, maintenanceMode, advertiserType, businessVerified } = useAuth();
+  const { user, signOut, walletActivated, categoryStatus, maintenanceMode, advertiserType } = useAuth();
 
   const isEngagement = advertiserType === "engagement";
   const isOffline = advertiserType === "offline";
@@ -65,23 +65,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const isWalletNotActivated = walletActivated !== true;
   const isCategoryInactive = categoryStatus === "waiting_list";
   const isPageLocked = (path: string) => {
+    // Offline advertisers skip wallet/category gates entirely — LOI flow handles gating server-side.
+    if (isOffline) return false;
     if (path === "/wallet" || path === "/docs" || path === "/websites") return false;
-    if (path === "/offline/verify") return false;
-    if (isOffline && (path === "/offline/offers" || path === "/offline/orders")) {
-      if (isCategoryInactive) return true;
-      if (isWalletNotActivated) return true;
-      if (businessVerified !== true) return true;
-      return false;
-    }
     if (isCategoryInactive) return true;
     if (isWalletNotActivated) return true;
     return false;
   };
 
   const getLockReason = () => {
+    if (isOffline) return "";
     if (isCategoryInactive) return "Your category is not live yet. Please wait for activation.";
     if (isWalletNotActivated) return "Activate your wallet to unlock the rest of your workspace.";
-    if (isOffline && businessVerified !== true) return "Submit your business verification documents to unlock offers and orders.";
     return "";
   };
 
