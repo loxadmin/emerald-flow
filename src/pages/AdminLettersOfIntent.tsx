@@ -65,7 +65,6 @@ export default function AdminLettersOfIntent() {
 
   const approve = async (loi: LOI) => {
     try {
-      // Generate PDF first
       const { data: gen, error: genErr } = await supabase.functions.invoke("generate-loi-pdf", {
         body: { loi_id: loi.id },
       });
@@ -76,6 +75,7 @@ export default function AdminLettersOfIntent() {
         _pdf_path: pdfPath,
       });
       if (error) throw error;
+      supabase.functions.invoke("notify", { body: { event: "loi_approved", payload: { loi_id: loi.id } } }).catch(() => {});
       toast.success("LOI approved and PDF generated");
       load();
     } catch (e: any) {
@@ -98,6 +98,7 @@ export default function AdminLettersOfIntent() {
     if (!confirm(`Mark threshold reached for ${loi.company_name}? Advertiser will be notified.`)) return;
     const { error } = await supabase.rpc("mark_loi_threshold_reached" as any, { _loi_id: loi.id });
     if (error) return toast.error(error.message);
+    supabase.functions.invoke("notify", { body: { event: "loi_threshold_reached", payload: { loi_id: loi.id } } }).catch(() => {});
     toast.success("Threshold reached — advertiser notified");
     load();
   };
