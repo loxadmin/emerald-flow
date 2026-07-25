@@ -40,4 +40,8 @@ verify_jwt = false
 [functions.karbali-ai-chat]
 verify_jwt = true
 
+[functions.process-signature]
+verify_jwt = true
 
+[functions.generate-loi-pdf]
+verify_jwt = true

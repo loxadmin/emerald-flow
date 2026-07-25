@@ -183,6 +183,39 @@ Deno.serve(async (req) => {
           `${APP_URL}/admin/wallets`, "Open wallets"));
         return json({ ok: true });
       }
+      case "loi_submitted": {
+        const { loi_id } = payload;
+        const { data: l } = await supabase.from("letters_of_intent").select("*").eq("id", loi_id).maybeSingle();
+        if (!l) return json({ error: "loi not found" }, 404);
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", l.advertiser_id).maybeSingle();
+        await sendEmail(admin, `New Letter of Intent: ${l.company_name}`, wrap("New LOI to review",
+          `<p>Advertiser: ${p?.email || l.advertiser_id}</p><p>Company: <strong>${l.company_name}</strong> (${l.country})</p><p>Reservation: <strong>${Number(l.customer_goal).toLocaleString()} users</strong> for ${(l.products || []).join(", ")}</p><p>Agreement ID: ${l.agreement_id}</p>`,
+          `${APP_URL}/admin/loi`, "Review LOI"));
+        if (p?.email) await sendEmail(p.email, `We received your Letter of Intent`, wrap("LOI received ✅",
+          `<p>Hi ${p.full_name || "there"},</p><p>Thanks — we've received your reservation for <strong>${Number(l.customer_goal).toLocaleString()} users</strong>. Once a Karbali admin approves and signs it, your Letter of Intent (${l.agreement_id}) will be available to download.</p>`,
+          `${APP_URL}/offline/loi/status`, "View status"));
+        return json({ ok: true });
+      }
+      case "loi_approved": {
+        const { loi_id } = payload;
+        const { data: l } = await supabase.from("letters_of_intent").select("*").eq("id", loi_id).maybeSingle();
+        if (!l) return json({ error: "loi not found" }, 404);
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", l.advertiser_id).maybeSingle();
+        if (p?.email) await sendEmail(p.email, `Your Letter of Intent is signed`, wrap("LOI signed by Karbali ✍️",
+          `<p>Hi ${p.full_name || "there"},</p><p>Your Letter of Intent <strong>${l.agreement_id}</strong> has been signed by Karbali. You can now download the signed PDF and we'll notify you once we reach your reserved threshold of ${Number(l.customer_goal).toLocaleString()} users.</p>`,
+          `${APP_URL}/offline/loi/status`, "Download LOI"));
+        return json({ ok: true });
+      }
+      case "loi_threshold_reached": {
+        const { loi_id } = payload;
+        const { data: l } = await supabase.from("letters_of_intent").select("*").eq("id", loi_id).maybeSingle();
+        if (!l) return json({ error: "loi not found" }, 404);
+        const { data: p } = await supabase.from("profiles").select("email, full_name").eq("id", l.advertiser_id).maybeSingle();
+        if (p?.email) await sendEmail(p.email, `Your consumer demand has been reached 🎯`, wrap("Your Consumer Demand Has Been Reached",
+          `<p>Hi ${p.full_name || "there"},</p><p>Congratulations. Karbali has reached the customer threshold you requested (<strong>${Number(l.customer_goal).toLocaleString()} users</strong>) for your reservation ${l.agreement_id}.</p><p>You can now log in and launch your customer acquisition campaign against real, verified migration opportunities.</p>`,
+          `${APP_URL}/offline/campaign`, "Create campaign"));
+        return json({ ok: true });
+      }
       default:
         return json({ error: "unknown event" }, 400);
     }

@@ -43,7 +43,9 @@ import AdminMessages from "./pages/AdminMessages";
 import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminExtension from "./pages/AdminExtension";
 import AdminOfferwall from "./pages/AdminOfferwall";
-import AdminOffline from "./pages/AdminOffline";
+import AdminLettersOfIntent from "./pages/AdminLettersOfIntent";
+import AdminCompanySignature from "./pages/AdminCompanySignature";
+import AdminMigrationOpportunities from "./pages/AdminMigrationOpportunities";
 import AdminPackages from "./pages/AdminPackages";
 import AdminPackageDelivery from "./pages/AdminPackageDelivery";
 import AdminMilestones from "./pages/AdminMilestones";
@@ -52,9 +54,9 @@ import Packages from "./pages/Packages";
 import PackageOrders from "./pages/PackageOrders";
 import SwitchOffers from "./pages/SwitchOffers";
 import AdminSwitchOffers from "./pages/AdminSwitchOffers";
-import OfflineVerification from "./pages/OfflineVerification";
-import OfflineOffers from "./pages/OfflineOffers";
-import OfflineOrders from "./pages/OfflineOrders";
+import OfflineLOI from "./pages/OfflineLOI";
+import OfflineLOIStatus from "./pages/OfflineLOIStatus";
+import OfflineCampaignLaunch from "./pages/OfflineCampaignLaunch";
 import Admin2FA from "./pages/Admin2FA";
 import About from "./pages/About";
 import Docs from "./pages/Docs";
@@ -83,7 +85,7 @@ function RequireCampaignType({ allow, children }: { allow: "performance" | "enga
   }, [isLoading, advertiserType, allow]);
   if (isLoading) return null;
   if (advertiserType && advertiserType !== allow) {
-    return <Navigate to={advertiserType === "offline" ? "/offline/verify" : "/campaigns/create"} replace />;
+    return <Navigate to={advertiserType === "offline" ? "/offline/loi" : "/campaigns/create"} replace />;
   }
   return <>{children}</>;
 }
@@ -119,9 +121,9 @@ const App = () => (
               <Route path="/admin/switch-offers" element={<RequireAuth><RequireAdmin><AdminSwitchOffers /></RequireAdmin></RequireAuth>} />
 
               {/* Offline Ads */}
-              <Route path="/offline/verify" element={<RequireAuth><OfflineVerification /></RequireAuth>} />
-              <Route path="/offline/offers" element={<RequireAuth><OfflineOffers /></RequireAuth>} />
-              <Route path="/offline/orders" element={<RequireAuth><OfflineOrders /></RequireAuth>} />
+              <Route path="/offline/loi" element={<RequireAuth><OfflineLOI /></RequireAuth>} />
+              <Route path="/offline/loi/status" element={<RequireAuth><OfflineLOIStatus /></RequireAuth>} />
+              <Route path="/offline/campaign" element={<RequireAuth><OfflineCampaignLaunch /></RequireAuth>} />
               
               <Route path="/campaigns/create" element={<RequireAuth><CampaignRouter /></RequireAuth>} />
               <Route path="/campaigns/create/performance" element={<RequireAuth><RequireCampaignType allow="performance"><CreateCampaign /></RequireCampaignType></RequireAuth>} />
@@ -165,7 +167,9 @@ const App = () => (
               <Route path="/admin/broadcast" element={<RequireAuth><RequireAdmin><AdminBroadcast /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/extension" element={<RequireAuth><RequireAdmin><AdminExtension /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/offerwall" element={<RequireAuth><RequireAdmin><AdminOfferwall /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/offline" element={<RequireAuth><RequireAdmin><AdminOffline /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/loi" element={<RequireAuth><RequireAdmin><AdminLettersOfIntent /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/signature" element={<RequireAuth><RequireAdmin><AdminCompanySignature /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/migration-opportunities" element={<RequireAuth><RequireAdmin><AdminMigrationOpportunities /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/packages" element={<RequireAuth><RequireAdmin><AdminPackages /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/packages/orders/:orderId/deliver" element={<RequireAuth><RequireAdmin><AdminPackageDelivery /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/milestones" element={<RequireAuth><RequireAdmin><AdminMilestones /></RequireAdmin></RequireAuth>} />

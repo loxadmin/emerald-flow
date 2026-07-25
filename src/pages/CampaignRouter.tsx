@@ -47,13 +47,7 @@ export default function CampaignRouter() {
       }
 
       if (adType === "offline") {
-        if (businessVerified !== true) {
-          navigate("/offline/verify", { replace: true });
-        } else if (walletActivated !== true) {
-          navigate("/wallet", { replace: true });
-        } else {
-          navigate("/offline/offers", { replace: true });
-        }
+        navigate("/offline/loi", { replace: true });
         setLoading(false);
         return;
       }

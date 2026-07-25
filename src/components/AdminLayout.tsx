@@ -5,7 +5,7 @@ import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import {
   Shield, BarChart3, Settings, LogOut, Sun, Moon, PenSquare, Users, Layers,
-  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap,
+  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap, FileSignature, PenTool, GitBranch,
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
@@ -41,7 +41,9 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
     label: "Products",
     links: [
       { to: "/admin/offerwall", label: "Offerwall", icon: Gamepad2 },
-      { to: "/admin/offline", label: "Offline Ads", icon: Handshake },
+      { to: "/admin/loi", label: "Letters of Intent", icon: FileSignature },
+      { to: "/admin/migration-opportunities", label: "Migration Opps", icon: GitBranch },
+      { to: "/admin/signature", label: "Company Signature", icon: PenTool },
       { to: "/admin/packages", label: "Ad Packages", icon: Package },
       { to: "/admin/switch-offers", label: "Switch Offers", icon: Zap },
       { to: "/admin/milestones", label: "Milestones", icon: Flag },

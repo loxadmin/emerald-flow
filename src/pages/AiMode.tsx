@@ -317,7 +317,7 @@ export default function AiMode() {
         if (hasPackages) actions.push({ label: "View ad packages", to: "/packages" });
         actions.push({ label: "Create a campaign with AI", prompt: "Create a campaign" });
       } else {
-        actions.push({ label: "Submit an offer", to: "/offline/offers" });
+        actions.push({ label: "Submit a Letter of Intent", to: "/offline/loi" });
       }
 
       let startingMessages: Msg[] = [{
