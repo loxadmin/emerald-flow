@@ -121,9 +121,9 @@ const App = () => (
               <Route path="/admin/switch-offers" element={<RequireAuth><RequireAdmin><AdminSwitchOffers /></RequireAdmin></RequireAuth>} />
 
               {/* Offline Ads */}
-              <Route path="/offline/verify" element={<RequireAuth><OfflineVerification /></RequireAuth>} />
-              <Route path="/offline/offers" element={<RequireAuth><OfflineOffers /></RequireAuth>} />
-              <Route path="/offline/orders" element={<RequireAuth><OfflineOrders /></RequireAuth>} />
+              <Route path="/offline/loi" element={<RequireAuth><OfflineLOI /></RequireAuth>} />
+              <Route path="/offline/loi/status" element={<RequireAuth><OfflineLOIStatus /></RequireAuth>} />
+              <Route path="/offline/campaign" element={<RequireAuth><OfflineCampaignLaunch /></RequireAuth>} />
               
               <Route path="/campaigns/create" element={<RequireAuth><CampaignRouter /></RequireAuth>} />
               <Route path="/campaigns/create/performance" element={<RequireAuth><RequireCampaignType allow="performance"><CreateCampaign /></RequireCampaignType></RequireAuth>} />
