@@ -167,7 +167,9 @@ const App = () => (
               <Route path="/admin/broadcast" element={<RequireAuth><RequireAdmin><AdminBroadcast /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/extension" element={<RequireAuth><RequireAdmin><AdminExtension /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/offerwall" element={<RequireAuth><RequireAdmin><AdminOfferwall /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/offline" element={<RequireAuth><RequireAdmin><AdminOffline /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/loi" element={<RequireAuth><RequireAdmin><AdminLettersOfIntent /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/signature" element={<RequireAuth><RequireAdmin><AdminCompanySignature /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/migration-opportunities" element={<RequireAuth><RequireAdmin><AdminMigrationOpportunities /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/packages" element={<RequireAuth><RequireAdmin><AdminPackages /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/packages/orders/:orderId/deliver" element={<RequireAuth><RequireAdmin><AdminPackageDelivery /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/milestones" element={<RequireAuth><RequireAdmin><AdminMilestones /></RequireAdmin></RequireAuth>} />
