@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import {
   Plus, BarChart3, DollarSign, MousePointerClick, Tag, ArrowUpRight,
-  Activity, RefreshCw, Sparkles, Gift,
+  Activity, RefreshCw, Sparkles, Gift, Repeat2,
+
 
 } from "lucide-react";
 import {
@@ -29,6 +30,19 @@ const STATUS_STYLES: Record<string, string> = {
   completed:"bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
 };
 
+/** Turns "https://www.cabally.com" into "Cabally" so offers can be personalised. */
+function brandFromProfile(website?: string | null, companyName?: string | null): string {
+  const raw = (website || "").trim().toLowerCase();
+  if (raw) {
+    const host = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+    const label = host.split(".")[0];
+    if (label) return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  if (companyName && companyName.trim()) return companyName.trim();
+  return "your platform";
+}
+
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -38,7 +52,8 @@ export default function Dashboard() {
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [hasPackages, setHasPackages] = useState(false);
   const [packageOrders, setPackageOrders] = useState<any[]>([]);
-
+  const [switchOffers, setSwitchOffers] = useState<any[]>([]);
+  const [brandName, setBrandName] = useState<string>("your platform");
 
   useEffect(() => {
     if (!user) return;
@@ -50,6 +65,14 @@ export default function Dashboard() {
         .maybeSingle();
       if (catData) setCategoryName((catData as { categories?: { name?: string } | null })?.categories?.name || null);
       const subtype = (catData as { advertiser_subtype?: string } | null)?.advertiser_subtype;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("website, company_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      setBrandName(brandFromProfile((profile as any)?.website, (profile as any)?.company_name));
+
       if (subtype) {
         const { data: pkgs } = await supabase
           .from("ad_packages")
@@ -58,7 +81,28 @@ export default function Dashboard() {
           .contains("advertiser_subtypes", [subtype])
           .limit(1);
         setHasPackages(!!(pkgs && pkgs.length > 0));
+
+        const { data: offers } = await supabase
+          .from("switch_offers" as any)
+          .select("*")
+          .eq("is_active", true)
+          .contains("advertiser_subtypes", [subtype])
+          .order("created_at", { ascending: false })
+          .limit(4);
+        const offerList = (offers as any[]) || [];
+        const compIds = [...new Set(offerList.map((o) => o.competitor_app_id).filter(Boolean))];
+        let compMap: Record<string, string> = {};
+        if (compIds.length > 0) {
+          const { data: comps } = await supabase
+            .from("competitor_apps" as any)
+            .select("id,name")
+            .in("id", compIds);
+          ((comps as any[]) || []).forEach((c) => { compMap[c.id] = c.name; });
+        }
+        setSwitchOffers(offerList.map((o) => ({ ...o, competitor_name: compMap[o.competitor_app_id] || null })));
       }
+
+
 
       const { data: campaignsData } = await supabase
         .from("campaigns").select("*").eq("advertiser_id", user.id)
@@ -162,6 +206,49 @@ export default function Dashboard() {
           </MotionWrapper>
         )}
 
+        {switchOffers.length > 0 && (
+          <MotionWrapper delay={0.07}>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="eyebrow mb-1">Ready to switch</p>
+                  <h3 className="text-base font-semibold tracking-tight">Users waiting to move to {brandName}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Real users on competitor platforms, packaged and ready. Pay from your wallet and we start delivery.
+                  </p>
+                </div>
+                <Link to="/switch-offers" className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  View all
+                </Link>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {switchOffers.map((o) => (
+                  <div key={o.id} className="rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                        <Repeat2 className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          {Number(o.batch_size).toLocaleString()} {o.competitor_name ? `${o.competitor_name} ` : ""}
+                          users are willing to switch to {brandName}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Flat price ${Number(o.flat_price_usd).toFixed(2)} · {o.title}
+                        </p>
+                      </div>
+                    </div>
+                    <Link to="/switch-offers" className="mt-3 block">
+                      <Button size="sm" className="w-full gap-1.5 bg-emerald-600 hover:bg-emerald-600/90 text-white">
+                        Switch them now <ArrowUpRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </MotionWrapper>
+        )}
 
 
         {/* Stats */}

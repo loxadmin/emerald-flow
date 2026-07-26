@@ -8,8 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { X, Upload, ShieldCheck } from "lucide-react";
+import SignaturePad from "@/components/SignaturePad";
 
-const FREE_EMAIL = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "protonmail.com", "aol.com"];
+const FREE_EMAIL = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "protonmail.com", "aol.com", "live.com", "googlemail.com", "yahoo.co.uk", "msn.com"];
+
 
 const DURATIONS = [
   { value: 30, label: "30 days" },
@@ -52,7 +54,10 @@ export default function OfflineLOI() {
   const [campaignGoal, setCampaignGoal] = useState("Brand Switching");
   const [customGoal, setCustomGoal] = useState("");
   const [notes, setNotes] = useState("");
-  const [sigFile, setSigFile] = useState<File | null>(null);
+  const [noWebsite, setNoWebsite] = useState(false);
+  const [sigData, setSigData] = useState<string | null>(null);
+  const [sigMime, setSigMime] = useState("image/png");
+
 
   useEffect(() => {
     (async () => {
@@ -84,36 +89,41 @@ export default function OfflineLOI() {
 
   const submit = async () => {
     // Validate
-    if (!companyName || !website || !businessEmail || !contactPerson || !jobTitle || !phone || !country) {
+    if (!companyName || !businessEmail || !contactPerson || !jobTitle || !phone || !country) {
       return toast.error("Fill all company details");
     }
-    const domain = extractDomain(website);
-    if (!domain) return toast.error("Enter a valid website URL");
     const emailDomain = businessEmail.split("@")[1]?.toLowerCase();
     if (!emailDomain) return toast.error("Invalid business email");
-    if (FREE_EMAIL.includes(emailDomain)) {
-      return toast.error("Please use an official company email, not a free provider like Gmail or Yahoo.");
+
+    if (!noWebsite) {
+      if (!website) return toast.error("Enter your company website, or tick “We don't have a website”");
+      const domain = extractDomain(website);
+      if (!domain) return toast.error("Enter a valid website URL");
+      if (FREE_EMAIL.includes(emailDomain)) {
+        return toast.error("Please use an official company email on your website domain, not Gmail or Yahoo.");
+      }
+      // Email must share the registrable root with the website
+      const emailRoot = emailDomain.split(".").slice(-2).join(".");
+      const siteRoot = domain.split(".").slice(-2).join(".");
+      if (emailRoot !== siteRoot) {
+        return toast.error(`Business email must match the company website (${siteRoot})`);
+      }
     }
-    // Email must share the registrable root with the website
-    const emailRoot = emailDomain.split(".").slice(-2).join(".");
-    const siteRoot = domain.split(".").slice(-2).join(".");
-    if (emailRoot !== siteRoot) {
-      return toast.error(`Business email must match the company website (${siteRoot})`);
-    }
+
     if (products.length === 0) return toast.error("Add at least one product");
     const goalN = Number(customerGoal);
     if (!goalN || goalN <= 0) return toast.error("Customer goal must be a positive number");
     if (duration === 0 && !customDuration) return toast.error("Enter custom duration");
     if (campaignGoal === "Custom" && !customGoal) return toast.error("Describe your custom campaign goal");
-    if (!sigFile) return toast.error("Upload your signature");
+    if (!sigData) return toast.error("Upload or draw your signature");
 
     setSubmitting(true);
     try {
       // Process signature
-      const b64 = await fileToBase64(sigFile);
       const { data: sig, error: sigErr } = await supabase.functions.invoke("process-signature", {
-        body: { file_base64: b64, mime: sigFile.type },
+        body: { file_base64: sigData, mime: sigMime },
       });
+
       if (sigErr) throw sigErr;
       const sigPath = (sig as any).path;
 
@@ -172,16 +182,43 @@ export default function OfflineLOI() {
         <Section title="Company information">
           <Grid>
             <Field label="Company name"><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></Field>
-            <Field label="Official website"><Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://www.pzcussons.com" /></Field>
-            <Field label="Official business email"><Input value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} placeholder="marketing@pzcussons.com" /></Field>
+            <Field label={noWebsite ? "Official website (not applicable)" : "Official website"}>
+              <Input
+                value={website}
+                disabled={noWebsite}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://www.pzcussons.com"
+              />
+            </Field>
+            <Field label={noWebsite ? "Contact email" : "Official business email"}>
+              <Input
+                value={businessEmail}
+                onChange={(e) => setBusinessEmail(e.target.value)}
+                placeholder={noWebsite ? "yourbrand@gmail.com" : "marketing@pzcussons.com"}
+              />
+            </Field>
             <Field label="Contact person"><Input value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} /></Field>
             <Field label="Job title"><Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} /></Field>
             <Field label="Phone number"><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
             <Field label="Country"><Input value={country} onChange={(e) => setCountry(e.target.value)} /></Field>
           </Grid>
-          <p className="text-xs text-muted-foreground mt-3">
-            Your business email must be on your company's domain — e.g. <code>marketing@pzcussons.com</code>, not Gmail.
+          <label className="mt-3 flex items-start gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={noWebsite}
+              onChange={(e) => { setNoWebsite(e.target.checked); if (e.target.checked) setWebsite(""); }}
+              className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+            />
+            <span className="text-xs text-muted-foreground">
+              We don't have a website — I'll use a personal email (Gmail, Outlook, Hotmail, etc.)
+            </span>
+          </label>
+          <p className="text-xs text-muted-foreground mt-2">
+            {noWebsite
+              ? "No website needed. Your CAC/business document verification will be used to confirm your brand."
+              : <>Your business email must be on your company's domain — e.g. <code>marketing@pzcussons.com</code>, not Gmail.</>}
           </p>
+
         </Section>
 
         {/* Reservation */}
@@ -258,15 +295,17 @@ export default function OfflineLOI() {
         {/* Signature */}
         <Section title="Advertiser signature">
           <div className="rounded-md border border-border bg-muted/40 p-4 text-xs text-muted-foreground mb-3">
-            <p className="font-medium text-foreground mb-1">Signature instructions</p>
-            <ol className="list-decimal ml-4 space-y-0.5">
-              <li>Sign on a plain white sheet of paper.</li>
-              <li>Take a clear picture or scan it.</li>
-              <li>Upload below — we'll automatically remove the background and place your signature on the Letter of Intent.</li>
-            </ol>
+            <p className="font-medium text-foreground mb-1">Two ways to sign</p>
+            <ul className="list-disc ml-4 space-y-0.5">
+              <li>Upload: sign on plain white paper, photograph or scan it, then upload. We remove the background automatically.</li>
+              <li>Draw: sign directly with your mouse, trackpad or finger.</li>
+            </ul>
           </div>
-          <Input type="file" accept="image/png,image/jpeg" onChange={(e) => setSigFile(e.target.files?.[0] || null)} />
-          {sigFile && <p className="text-xs text-muted-foreground mt-1">{sigFile.name}</p>}
+          <SignaturePad
+            value={sigData}
+            onChange={(d, m) => { setSigData(d); setSigMime(m); }}
+          />
+
         </Section>
 
         <div className="flex items-center gap-3 mt-6">
@@ -300,12 +339,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>;
-}
-function fileToBase64(f: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(f);
-  });
 }

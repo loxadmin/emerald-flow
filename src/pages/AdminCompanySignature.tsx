@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import SignaturePad from "@/components/SignaturePad";
 
 type Sig = {
   id: string;
@@ -20,8 +21,10 @@ export default function AdminCompanySignature() {
   const [companyName, setCompanyName] = useState("Karbali Ads");
   const [repName, setRepName] = useState("");
   const [repPosition, setRepPosition] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [sigData, setSigData] = useState<string | null>(null);
+  const [sigMime, setSigMime] = useState("image/png");
   const [saving, setSaving] = useState(false);
+
 
   const load = async () => {
     const { data } = await supabase
@@ -53,18 +56,15 @@ export default function AdminCompanySignature() {
     setSaving(true);
     try {
       let path = sig?.signature_path || "";
-      if (file) {
-        const { data: u } = await supabase.auth.getUser();
-        const uid = u?.user?.id;
-        if (!uid) throw new Error("Not authenticated");
-        const b64 = await fileToBase64(file);
+      if (sigData) {
         const { data, error } = await supabase.functions.invoke("process-signature", {
-          body: { file_base64: b64, mime: file.type },
+          body: { file_base64: sigData, mime: sigMime },
         });
         if (error) throw error;
         path = (data as any).path;
       }
-      if (!path) throw new Error("Upload a signature image");
+      if (!path) throw new Error("Upload or draw a signature");
+
 
       if (sig) {
         const { error } = await supabase
@@ -87,7 +87,7 @@ export default function AdminCompanySignature() {
         if (error) throw error;
       }
       toast.success("Company signature saved");
-      setFile(null);
+      setSigData(null);
       load();
     } catch (e: any) {
       toast.error(e.message || "Failed to save");
@@ -106,20 +106,18 @@ export default function AdminCompanySignature() {
 
         <div className="rounded-lg border border-border bg-card p-6 space-y-4">
           <div>
-            <Label>Karbali signature (PNG or JPEG)</Label>
+            <Label>Karbali signature</Label>
             <p className="text-xs text-muted-foreground mb-2">
-              Sign on a plain white sheet, take a clear picture, and upload. Background will be removed automatically.
+              Upload a photo of your signature on plain white paper, or draw it directly. Background is removed automatically.
             </p>
-            <Input
-              type="file"
-              accept="image/png,image/jpeg"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
-            {previewUrl && !file && (
+            <SignaturePad value={sigData} onChange={(d, m) => { setSigData(d); setSigMime(m); }} />
+            {previewUrl && !sigData && (
               <div className="mt-3 rounded-md border border-border bg-[repeating-conic-gradient(#f3f4f6_0%_25%,transparent_0%_50%)] bg-[length:12px_12px] p-3 inline-block">
+                <p className="text-[10px] text-muted-foreground mb-1">Current signature</p>
                 <img src={previewUrl} alt="Signature" className="max-h-16" />
               </div>
             )}
+
           </div>
           <div>
             <Label>Company name</Label>
@@ -140,13 +138,4 @@ export default function AdminCompanySignature() {
       </div>
     </AdminLayout>
   );
-}
-
-function fileToBase64(f: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(f);
-  });
 }
