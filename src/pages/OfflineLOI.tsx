@@ -182,16 +182,43 @@ export default function OfflineLOI() {
         <Section title="Company information">
           <Grid>
             <Field label="Company name"><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></Field>
-            <Field label="Official website"><Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://www.pzcussons.com" /></Field>
-            <Field label="Official business email"><Input value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} placeholder="marketing@pzcussons.com" /></Field>
+            <Field label={noWebsite ? "Official website (not applicable)" : "Official website"}>
+              <Input
+                value={website}
+                disabled={noWebsite}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://www.pzcussons.com"
+              />
+            </Field>
+            <Field label={noWebsite ? "Contact email" : "Official business email"}>
+              <Input
+                value={businessEmail}
+                onChange={(e) => setBusinessEmail(e.target.value)}
+                placeholder={noWebsite ? "yourbrand@gmail.com" : "marketing@pzcussons.com"}
+              />
+            </Field>
             <Field label="Contact person"><Input value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} /></Field>
             <Field label="Job title"><Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} /></Field>
             <Field label="Phone number"><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
             <Field label="Country"><Input value={country} onChange={(e) => setCountry(e.target.value)} /></Field>
           </Grid>
-          <p className="text-xs text-muted-foreground mt-3">
-            Your business email must be on your company's domain — e.g. <code>marketing@pzcussons.com</code>, not Gmail.
+          <label className="mt-3 flex items-start gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={noWebsite}
+              onChange={(e) => { setNoWebsite(e.target.checked); if (e.target.checked) setWebsite(""); }}
+              className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+            />
+            <span className="text-xs text-muted-foreground">
+              We don't have a website — I'll use a personal email (Gmail, Outlook, Hotmail, etc.)
+            </span>
+          </label>
+          <p className="text-xs text-muted-foreground mt-2">
+            {noWebsite
+              ? "No website needed. Your CAC/business document verification will be used to confirm your brand."
+              : <>Your business email must be on your company's domain — e.g. <code>marketing@pzcussons.com</code>, not Gmail.</>}
           </p>
+
         </Section>
 
         {/* Reservation */}
