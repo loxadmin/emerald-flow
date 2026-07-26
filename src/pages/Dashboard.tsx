@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import {
   Plus, BarChart3, DollarSign, MousePointerClick, Tag, ArrowUpRight,
-  Activity, RefreshCw, Sparkles, Gift,
+  Activity, RefreshCw, Sparkles, Gift, Repeat2,
+
 
 } from "lucide-react";
 import {
