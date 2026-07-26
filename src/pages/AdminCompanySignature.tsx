@@ -87,7 +87,7 @@ export default function AdminCompanySignature() {
         if (error) throw error;
       }
       toast.success("Company signature saved");
-      setFile(null);
+      setSigData(null);
       load();
     } catch (e: any) {
       toast.error(e.message || "Failed to save");
