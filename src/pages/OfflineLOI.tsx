@@ -268,15 +268,17 @@ export default function OfflineLOI() {
         {/* Signature */}
         <Section title="Advertiser signature">
           <div className="rounded-md border border-border bg-muted/40 p-4 text-xs text-muted-foreground mb-3">
-            <p className="font-medium text-foreground mb-1">Signature instructions</p>
-            <ol className="list-decimal ml-4 space-y-0.5">
-              <li>Sign on a plain white sheet of paper.</li>
-              <li>Take a clear picture or scan it.</li>
-              <li>Upload below — we'll automatically remove the background and place your signature on the Letter of Intent.</li>
-            </ol>
+            <p className="font-medium text-foreground mb-1">Two ways to sign</p>
+            <ul className="list-disc ml-4 space-y-0.5">
+              <li>Upload: sign on plain white paper, photograph or scan it, then upload. We remove the background automatically.</li>
+              <li>Draw: sign directly with your mouse, trackpad or finger.</li>
+            </ul>
           </div>
-          <Input type="file" accept="image/png,image/jpeg" onChange={(e) => setSigFile(e.target.files?.[0] || null)} />
-          {sigFile && <p className="text-xs text-muted-foreground mt-1">{sigFile.name}</p>}
+          <SignaturePad
+            value={sigData}
+            onChange={(d, m) => { setSigData(d); setSigMime(m); }}
+          />
+
         </Section>
 
         <div className="flex items-center gap-3 mt-6">
