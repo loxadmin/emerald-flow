@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import SignaturePad from "@/components/SignaturePad";
 
 type Sig = {
   id: string;
@@ -20,8 +21,10 @@ export default function AdminCompanySignature() {
   const [companyName, setCompanyName] = useState("Karbali Ads");
   const [repName, setRepName] = useState("");
   const [repPosition, setRepPosition] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [sigData, setSigData] = useState<string | null>(null);
+  const [sigMime, setSigMime] = useState("image/png");
   const [saving, setSaving] = useState(false);
+
 
   const load = async () => {
     const { data } = await supabase
