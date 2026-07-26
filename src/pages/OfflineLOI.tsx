@@ -8,8 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { X, Upload, ShieldCheck } from "lucide-react";
+import SignaturePad from "@/components/SignaturePad";
 
-const FREE_EMAIL = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "protonmail.com", "aol.com"];
+const FREE_EMAIL = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "protonmail.com", "aol.com", "live.com", "googlemail.com", "yahoo.co.uk", "msn.com"];
+
 
 const DURATIONS = [
   { value: 30, label: "30 days" },
