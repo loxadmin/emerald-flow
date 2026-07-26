@@ -56,18 +56,15 @@ export default function AdminCompanySignature() {
     setSaving(true);
     try {
       let path = sig?.signature_path || "";
-      if (file) {
-        const { data: u } = await supabase.auth.getUser();
-        const uid = u?.user?.id;
-        if (!uid) throw new Error("Not authenticated");
-        const b64 = await fileToBase64(file);
+      if (sigData) {
         const { data, error } = await supabase.functions.invoke("process-signature", {
-          body: { file_base64: b64, mime: file.type },
+          body: { file_base64: sigData, mime: sigMime },
         });
         if (error) throw error;
         path = (data as any).path;
       }
-      if (!path) throw new Error("Upload a signature image");
+      if (!path) throw new Error("Upload or draw a signature");
+
 
       if (sig) {
         const { error } = await supabase
