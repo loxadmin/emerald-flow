@@ -89,36 +89,41 @@ export default function OfflineLOI() {
 
   const submit = async () => {
     // Validate
-    if (!companyName || !website || !businessEmail || !contactPerson || !jobTitle || !phone || !country) {
+    if (!companyName || !businessEmail || !contactPerson || !jobTitle || !phone || !country) {
       return toast.error("Fill all company details");
     }
-    const domain = extractDomain(website);
-    if (!domain) return toast.error("Enter a valid website URL");
     const emailDomain = businessEmail.split("@")[1]?.toLowerCase();
     if (!emailDomain) return toast.error("Invalid business email");
-    if (FREE_EMAIL.includes(emailDomain)) {
-      return toast.error("Please use an official company email, not a free provider like Gmail or Yahoo.");
+
+    if (!noWebsite) {
+      if (!website) return toast.error("Enter your company website, or tick “We don't have a website”");
+      const domain = extractDomain(website);
+      if (!domain) return toast.error("Enter a valid website URL");
+      if (FREE_EMAIL.includes(emailDomain)) {
+        return toast.error("Please use an official company email on your website domain, not Gmail or Yahoo.");
+      }
+      // Email must share the registrable root with the website
+      const emailRoot = emailDomain.split(".").slice(-2).join(".");
+      const siteRoot = domain.split(".").slice(-2).join(".");
+      if (emailRoot !== siteRoot) {
+        return toast.error(`Business email must match the company website (${siteRoot})`);
+      }
     }
-    // Email must share the registrable root with the website
-    const emailRoot = emailDomain.split(".").slice(-2).join(".");
-    const siteRoot = domain.split(".").slice(-2).join(".");
-    if (emailRoot !== siteRoot) {
-      return toast.error(`Business email must match the company website (${siteRoot})`);
-    }
+
     if (products.length === 0) return toast.error("Add at least one product");
     const goalN = Number(customerGoal);
     if (!goalN || goalN <= 0) return toast.error("Customer goal must be a positive number");
     if (duration === 0 && !customDuration) return toast.error("Enter custom duration");
     if (campaignGoal === "Custom" && !customGoal) return toast.error("Describe your custom campaign goal");
-    if (!sigFile) return toast.error("Upload your signature");
+    if (!sigData) return toast.error("Upload or draw your signature");
 
     setSubmitting(true);
     try {
       // Process signature
-      const b64 = await fileToBase64(sigFile);
       const { data: sig, error: sigErr } = await supabase.functions.invoke("process-signature", {
-        body: { file_base64: b64, mime: sigFile.type },
+        body: { file_base64: sigData, mime: sigMime },
       });
+
       if (sigErr) throw sigErr;
       const sigPath = (sig as any).path;
 
