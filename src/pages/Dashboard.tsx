@@ -205,6 +205,49 @@ export default function Dashboard() {
           </MotionWrapper>
         )}
 
+        {switchOffers.length > 0 && (
+          <MotionWrapper delay={0.07}>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="eyebrow mb-1">Ready to switch</p>
+                  <h3 className="text-base font-semibold tracking-tight">Users waiting to move to {brandName}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Real users on competitor platforms, packaged and ready. Pay from your wallet and we start delivery.
+                  </p>
+                </div>
+                <Link to="/switch-offers" className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  View all
+                </Link>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {switchOffers.map((o) => (
+                  <div key={o.id} className="rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                        <Repeat2 className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          {Number(o.batch_size).toLocaleString()} {o.competitor_name ? `${o.competitor_name} ` : ""}
+                          users are willing to switch to {brandName}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Flat price ${Number(o.flat_price_usd).toFixed(2)} · {o.title}
+                        </p>
+                      </div>
+                    </div>
+                    <Link to="/switch-offers" className="mt-3 block">
+                      <Button size="sm" className="w-full gap-1.5 bg-emerald-600 hover:bg-emerald-600/90 text-white">
+                        Switch them now <ArrowUpRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </MotionWrapper>
+        )}
 
 
         {/* Stats */}
