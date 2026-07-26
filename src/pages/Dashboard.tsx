@@ -29,6 +29,19 @@ const STATUS_STYLES: Record<string, string> = {
   completed:"bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
 };
 
+/** Turns "https://www.cabally.com" into "Cabally" so offers can be personalised. */
+function brandFromProfile(website?: string | null, companyName?: string | null): string {
+  const raw = (website || "").trim().toLowerCase();
+  if (raw) {
+    const host = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+    const label = host.split(".")[0];
+    if (label) return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  if (companyName && companyName.trim()) return companyName.trim();
+  return "your platform";
+}
+
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
