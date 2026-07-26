@@ -38,7 +38,8 @@ export default function Dashboard() {
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [hasPackages, setHasPackages] = useState(false);
   const [packageOrders, setPackageOrders] = useState<any[]>([]);
-
+  const [switchOffers, setSwitchOffers] = useState<any[]>([]);
+  const [brandName, setBrandName] = useState<string>("your platform");
 
   useEffect(() => {
     if (!user) return;
@@ -50,6 +51,14 @@ export default function Dashboard() {
         .maybeSingle();
       if (catData) setCategoryName((catData as { categories?: { name?: string } | null })?.categories?.name || null);
       const subtype = (catData as { advertiser_subtype?: string } | null)?.advertiser_subtype;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("website, company_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      setBrandName(brandFromProfile((profile as any)?.website, (profile as any)?.company_name));
+
       if (subtype) {
         const { data: pkgs } = await supabase
           .from("ad_packages")
@@ -58,7 +67,28 @@ export default function Dashboard() {
           .contains("advertiser_subtypes", [subtype])
           .limit(1);
         setHasPackages(!!(pkgs && pkgs.length > 0));
+
+        const { data: offers } = await supabase
+          .from("switch_offers" as any)
+          .select("*")
+          .eq("is_active", true)
+          .contains("advertiser_subtypes", [subtype])
+          .order("created_at", { ascending: false })
+          .limit(4);
+        const offerList = (offers as any[]) || [];
+        const compIds = [...new Set(offerList.map((o) => o.competitor_app_id).filter(Boolean))];
+        let compMap: Record<string, string> = {};
+        if (compIds.length > 0) {
+          const { data: comps } = await supabase
+            .from("competitor_apps" as any)
+            .select("id,name")
+            .in("id", compIds);
+          ((comps as any[]) || []).forEach((c) => { compMap[c.id] = c.name; });
+        }
+        setSwitchOffers(offerList.map((o) => ({ ...o, competitor_name: compMap[o.competitor_app_id] || null })));
       }
+
+
 
       const { data: campaignsData } = await supabase
         .from("campaigns").select("*").eq("advertiser_id", user.id)
