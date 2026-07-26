@@ -106,20 +106,18 @@ export default function AdminCompanySignature() {
 
         <div className="rounded-lg border border-border bg-card p-6 space-y-4">
           <div>
-            <Label>Karbali signature (PNG or JPEG)</Label>
+            <Label>Karbali signature</Label>
             <p className="text-xs text-muted-foreground mb-2">
-              Sign on a plain white sheet, take a clear picture, and upload. Background will be removed automatically.
+              Upload a photo of your signature on plain white paper, or draw it directly. Background is removed automatically.
             </p>
-            <Input
-              type="file"
-              accept="image/png,image/jpeg"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
-            {previewUrl && !file && (
+            <SignaturePad value={sigData} onChange={(d, m) => { setSigData(d); setSigMime(m); }} />
+            {previewUrl && !sigData && (
               <div className="mt-3 rounded-md border border-border bg-[repeating-conic-gradient(#f3f4f6_0%_25%,transparent_0%_50%)] bg-[length:12px_12px] p-3 inline-block">
+                <p className="text-[10px] text-muted-foreground mb-1">Current signature</p>
                 <img src={previewUrl} alt="Signature" className="max-h-16" />
               </div>
             )}
+
           </div>
           <div>
             <Label>Company name</Label>
