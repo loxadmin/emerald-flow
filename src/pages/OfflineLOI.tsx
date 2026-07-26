@@ -54,7 +54,10 @@ export default function OfflineLOI() {
   const [campaignGoal, setCampaignGoal] = useState("Brand Switching");
   const [customGoal, setCustomGoal] = useState("");
   const [notes, setNotes] = useState("");
-  const [sigFile, setSigFile] = useState<File | null>(null);
+  const [noWebsite, setNoWebsite] = useState(false);
+  const [sigData, setSigData] = useState<string | null>(null);
+  const [sigMime, setSigMime] = useState("image/png");
+
 
   useEffect(() => {
     (async () => {
