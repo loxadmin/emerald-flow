@@ -67,11 +67,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const isPageLocked = (path: string) => {
     // Offline advertisers skip wallet/category gates entirely — LOI flow handles gating server-side.
     if (isOffline) return false;
-    if (path === "/wallet" || path === "/docs" || path === "/websites") return false;
+    // Overview stays open so advertisers can always see their dashboard.
+    if (path === "/dashboard" || path === "/wallet" || path === "/docs" || path === "/websites") return false;
     if (isCategoryInactive) return true;
     if (isWalletNotActivated) return true;
     return false;
   };
+
 
   const getLockReason = () => {
     if (isOffline) return "";
