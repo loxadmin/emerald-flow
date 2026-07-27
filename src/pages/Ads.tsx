@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
+import Sparkline from "@/components/Sparkline";
 import { Plus, BarChart3, ArrowRight, FileEdit, Clock, CheckCircle, XCircle, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,6 +14,17 @@ interface Campaign {
   id: string; name: string; status: string; budget_remaining: number; created_at: string;
   target_users: number; selected_milestones: string[]; total_cost: number;
   is_draft: boolean; integration_verified: boolean; integration_type: string;
+}
+
+/** Buckets timestamps into a 14-day series ending today. */
+function toSeries(timestamps: string[], days = 14): number[] {
+  const buckets = new Array(days).fill(0);
+  const now = Date.now();
+  timestamps.forEach((ts) => {
+    const idx = days - 1 - Math.floor((now - new Date(ts).getTime()) / 86400000);
+    if (idx >= 0 && idx < days) buckets[idx] += 1;
+  });
+  return buckets;
 }
 
 const TABS = ["all", "draft", "pending", "active", "rejected", "completed"] as const;
@@ -24,12 +36,29 @@ export default function AdsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [series, setSeries] = useState<Record<string, number[]>>({});
 
   const fetchCampaigns = async () => {
     if (!user) return;
     const { data } = await supabase.from("campaigns").select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false });
-    setCampaigns((data as Campaign[]) || []);
+    const list = (data as Campaign[]) || [];
+    setCampaigns(list);
     setLoading(false);
+
+    // Live metric snippets — events per campaign over the last 14 days
+    const ids = list.filter((c) => !c.is_draft).map((c) => c.id);
+    if (ids.length > 0) {
+      const { data: events } = await supabase
+        .from("events")
+        .select("campaign_id, created_at")
+        .in("campaign_id", ids)
+        .gte("created_at", new Date(Date.now() - 14 * 86400000).toISOString());
+      const grouped: Record<string, string[]> = {};
+      ((events as any[]) || []).forEach((e) => { (grouped[e.campaign_id] ||= []).push(e.created_at); });
+      const next: Record<string, number[]> = {};
+      Object.entries(grouped).forEach(([id, list2]) => { next[id] = toSeries(list2); });
+      setSeries(next);
+    }
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -178,6 +207,15 @@ export default function AdsPage() {
                             </div>
                           </div>
                         </div>
+                        {!c.is_draft && (
+                          <div className="hidden h-9 w-24 shrink-0 sm:block md:w-32">
+                            <Sparkline
+                              data={(series[c.id] && series[c.id].length ? series[c.id] : new Array(14).fill(0).map((_, i) => i % 3))}
+                              tone={c.status === "active" ? "primary" : c.status === "rejected" ? "destructive" : "muted"}
+                              className="h-9 w-full"
+                            />
+                          </div>
+                        )}
                         <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
                       </Link>
                       <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive shrink-0"

@@ -6,11 +6,11 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
+import Sparkline from "@/components/Sparkline";
+import AnimatedDonut from "@/components/AnimatedDonut";
 import {
   Plus, BarChart3, DollarSign, MousePointerClick, Tag, ArrowUpRight,
-  Activity, RefreshCw, Sparkles, Gift, Repeat2,
-
-
+  Activity, RefreshCw, Sparkles, Gift, Repeat2, Wallet, Lock,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -42,9 +42,20 @@ function brandFromProfile(website?: string | null, companyName?: string | null):
   return "your platform";
 }
 
+/** Buckets timestamps into an N-day series ending today. */
+function toSeries(timestamps: string[], days = 14): number[] {
+  const buckets = new Array(days).fill(0);
+  const now = Date.now();
+  timestamps.forEach((ts) => {
+    const diff = Math.floor((now - new Date(ts).getTime()) / 86400000);
+    const idx = days - 1 - diff;
+    if (idx >= 0 && idx < days) buckets[idx] += 1;
+  });
+  return buckets;
+}
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, walletActivated, advertiserType } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [stats, setStats] = useState({ totalEvents: 0, totalSpent: 0, totalClicks: 0 });
   const [loading, setLoading] = useState(true);
@@ -54,6 +65,13 @@ export default function Dashboard() {
   const [packageOrders, setPackageOrders] = useState<any[]>([]);
   const [switchOffers, setSwitchOffers] = useState<any[]>([]);
   const [brandName, setBrandName] = useState<string>("your platform");
+  const [eventSeries, setEventSeries] = useState<number[]>([]);
+  const [clickSeries, setClickSeries] = useState<number[]>([]);
+  const [spendSeries, setSpendSeries] = useState<number[]>([]);
+  const [campaignSeries, setCampaignSeries] = useState<Record<string, number[]>>({});
+
+  const isOffline = advertiserType === "offline";
+  const needsActivation = !isOffline && walletActivated !== true;
 
   useEffect(() => {
     if (!user) return;
@@ -91,7 +109,7 @@ export default function Dashboard() {
           .limit(4);
         const offerList = (offers as any[]) || [];
         const compIds = [...new Set(offerList.map((o) => o.competitor_app_id).filter(Boolean))];
-        let compMap: Record<string, string> = {};
+        const compMap: Record<string, string> = {};
         if (compIds.length > 0) {
           const { data: comps } = await supabase
             .from("competitor_apps" as any)
@@ -102,8 +120,6 @@ export default function Dashboard() {
         setSwitchOffers(offerList.map((o) => ({ ...o, competitor_name: compMap[o.competitor_app_id] || null })));
       }
 
-
-
       const { data: campaignsData } = await supabase
         .from("campaigns").select("*").eq("advertiser_id", user.id)
         .order("created_at", { ascending: false });
@@ -113,12 +129,13 @@ export default function Dashboard() {
         .from("package_orders" as any).select("*").eq("advertiser_id", user.id)
         .order("created_at", { ascending: false });
       setPackageOrders((orders as any[]) || []);
+
       if (campaignsData && campaignsData.length > 0) {
         const campaignIds = campaignsData.map((c: Campaign) => c.id);
         const { count: eventsCount } = await supabase
           .from("events").select("*", { count: "exact", head: true }).in("campaign_id", campaignIds);
         const { data: txData } = await supabase
-          .from("transactions").select("amount").in("campaign_id", campaignIds);
+          .from("transactions").select("amount, created_at").in("campaign_id", campaignIds);
         const { data: referralData } = await supabase
           .from("referrals").select("id").in("campaign_id", campaignIds);
         const referralIds = referralData?.map((r) => r.id) || [];
@@ -127,10 +144,18 @@ export default function Dashboard() {
           : { count: 0 };
         const totalSpent = txData?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
         setStats({ totalEvents: eventsCount || 0, totalSpent, totalClicks: clicksCount || 0 });
+        setSpendSeries(toSeries((txData || []).map((t: any) => t.created_at)));
 
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        if (referralIds.length > 0) {
+          const { data: recentClicks } = await supabase
+            .from("clicks").select("created_at").in("referral_id", referralIds)
+            .gte("created_at", new Date(Date.now() - 14 * 86400000).toISOString());
+          setClickSeries(toSeries((recentClicks || []).map((c: any) => c.created_at)));
+        }
+
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
         const { data: events } = await supabase
-          .from("events").select("created_at").in("campaign_id", campaignIds).gte("created_at", thirtyDaysAgo);
+          .from("events").select("created_at, campaign_id").in("campaign_id", campaignIds).gte("created_at", thirtyDaysAgo);
         if (events && events.length > 0) {
           const byDay: Record<string, number> = {};
           events.forEach((e) => {
@@ -138,6 +163,15 @@ export default function Dashboard() {
             byDay[day] = (byDay[day] || 0) + 1;
           });
           setDailyData(Object.entries(byDay).map(([date, ev]) => ({ date, events: ev })));
+          setEventSeries(toSeries(events.map((e: any) => e.created_at)));
+
+          const perCampaign: Record<string, string[]> = {};
+          events.forEach((e: any) => {
+            (perCampaign[e.campaign_id] ||= []).push(e.created_at);
+          });
+          const series: Record<string, number[]> = {};
+          Object.entries(perCampaign).forEach(([id, list]) => { series[id] = toSeries(list); });
+          setCampaignSeries(series);
         }
       }
       setLoading(false);
@@ -147,17 +181,40 @@ export default function Dashboard() {
   }, [user?.id]);
 
   const activeCampaigns = campaigns.filter((c) => c.status === "active").length;
+  const pendingCampaigns = campaigns.filter((c) => c.status === "pending").length;
+  const otherCampaigns = campaigns.length - activeCampaigns - pendingCampaigns;
   const firstName = user?.email?.split("@")[0] || "there";
 
   const statusClass = (s: string) => STATUS_STYLES[s] || "bg-muted text-muted-foreground border-border";
 
+  const fallback = (arr: number[]) => (arr.length ? arr : new Array(14).fill(0).map((_, i) => i % 3));
+
+  const statCards = [
+    {
+      label: "Events", value: stats.totalEvents.toLocaleString(), icon: Activity,
+      hint: "Total events tracked", series: fallback(eventSeries), tone: "primary" as const, to: "/ads",
+    },
+    {
+      label: "Clicks", value: stats.totalClicks.toLocaleString(), icon: MousePointerClick,
+      hint: "Verified clicks", series: fallback(clickSeries), tone: "primary" as const, to: "/ads",
+    },
+    {
+      label: "Spent", value: `$${stats.totalSpent.toFixed(2)}`, icon: DollarSign,
+      hint: "Across all campaigns", series: fallback(spendSeries), tone: "muted" as const, to: "/wallet",
+    },
+    {
+      label: "Active", value: activeCampaigns.toString(), icon: BarChart3,
+      hint: "Live campaigns", series: fallback(eventSeries), tone: "primary" as const, to: "/ads",
+    },
+  ];
+
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-6xl space-y-8">
+      <div className="mx-auto w-full max-w-[1400px] space-y-6 sm:space-y-8">
         {/* Header */}
         <MotionWrapper>
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-2">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-2 min-w-0">
               <p className="eyebrow">Overview</p>
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
                 Welcome back, <span className="text-foreground">{firstName}</span>
@@ -181,35 +238,176 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-            <Link to="/campaigns/create" className="self-start sm:self-auto">
-              <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
-                <Plus className="h-4 w-4" /> New campaign
-              </Button>
-            </Link>
+            {!needsActivation && (
+              <Link to="/campaigns/create" className="self-start lg:self-auto">
+                <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
+                  <Plus className="h-4 w-4" /> New campaign
+                </Button>
+              </Link>
+            )}
+          </div>
+        </MotionWrapper>
+
+        {/* Activation notice */}
+        {needsActivation && (
+          <MotionWrapper delay={0.03}>
+            <div className="rounded-xl border border-primary/25 bg-primary/5 p-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">Your account is not activated yet</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  You can explore your dashboard freely. Deposit $25 into your wallet to unlock campaigns, ad packages and switch offers.
+                </p>
+              </div>
+              <Link to="/wallet" className="shrink-0">
+                <Button size="sm" className="w-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground sm:w-auto">
+                  <Wallet className="h-4 w-4" /> Activate with $25
+                </Button>
+              </Link>
+            </div>
+          </MotionWrapper>
+        )}
+
+        {/* Stats */}
+        <MotionStagger className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+          {statCards.map((s) => (
+            <MotionItem key={s.label}>
+              <Link
+                to={s.to}
+                className="group relative flex h-full flex-col justify-between rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/30"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
+                      <s.icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="eyebrow">{s.label}</span>
+                  </div>
+                  <p className="stat-number mt-4">{s.value}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{s.hint}</p>
+                </div>
+                <div className="mt-4 h-10 w-full">
+                  <Sparkline data={s.series} tone={s.tone} className="h-10 w-full" />
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-[11px] text-muted-foreground">
+                  View details
+                  <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </div>
+              </Link>
+            </MotionItem>
+          ))}
+        </MotionStagger>
+
+        {/* Performance + mix */}
+        <MotionWrapper delay={0.1}>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="rounded-xl border border-border bg-card overflow-hidden lg:col-span-2">
+              <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-5 pb-2 sm:px-6 sm:pt-6">
+                <div>
+                  <p className="eyebrow mb-1">Performance</p>
+                  <h3 className="text-base font-semibold tracking-tight">Events trend</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Last 30 days · all campaigns</p>
+                </div>
+                <Badge variant="outline" className="text-[11px] font-normal border-border bg-secondary/50">
+                  30D
+                </Badge>
+              </div>
+              <div className="px-1 pb-4 sm:px-3">
+                {dailyData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={dailyData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.22} />
+                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} opacity={0.5} />
+                      <XAxis
+                        dataKey="date" axisLine={false} tickLine={false}
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        dy={8} minTickGap={16}
+                      />
+                      <YAxis
+                        axisLine={false} tickLine={false} width={32}
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                      />
+                      <Tooltip
+                        cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                        contentStyle={{
+                          background: "hsl(var(--popover))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: 12,
+                          color: "hsl(var(--foreground))",
+                          boxShadow: "var(--shadow-md)",
+                          padding: "8px 10px",
+                        }}
+                        labelStyle={{ color: "hsl(var(--muted-foreground))", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}
+                      />
+                      <Area
+                        type="monotone" dataKey="events"
+                        stroke="hsl(var(--primary))" strokeWidth={1.75}
+                        fillOpacity={1} fill="url(#colorEvents)"
+                        animationDuration={1100}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[260px]">
+                    <div className="text-center">
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium text-foreground">No event data yet</p>
+                      <p className="text-xs text-muted-foreground mt-1">Events will appear once campaigns go live</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 flex flex-col">
+              <p className="eyebrow mb-1">Campaign mix</p>
+              <h3 className="text-base font-semibold tracking-tight">Portfolio status</h3>
+              <div className="flex flex-1 items-center justify-center py-6">
+                <AnimatedDonut
+                  segments={[
+                    { label: "Active", value: activeCampaigns, color: "hsl(var(--primary))" },
+                    { label: "Pending", value: pendingCampaigns, color: "hsl(var(--warning))" },
+                    { label: "Other", value: Math.max(otherCampaigns, 0), color: "hsl(var(--muted-foreground) / 0.4)" },
+                  ]}
+                  centerValue={campaigns.length.toString()}
+                  centerLabel="campaigns"
+                />
+              </div>
+            </div>
           </div>
         </MotionWrapper>
 
         {hasPackages && (
-          <MotionWrapper delay={0.05}>
+          <MotionWrapper delay={0.12}>
             <Link to="/packages" className="block group">
-              <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent p-5 flex items-center gap-4 hover:border-emerald-500/50 transition-colors">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 flex items-center gap-4 transition-colors hover:border-primary/50">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
                   <Gift className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground">Place ads on a discounted package 🎁</p>
+                  <p className="text-sm font-semibold text-foreground">Place ads on a discounted package</p>
                   <p className="text-xs text-muted-foreground mt-0.5">We've prepared a ready-to-run ad package for your category — grab it before it's gone.</p>
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                <ArrowUpRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </div>
             </Link>
           </MotionWrapper>
         )}
 
         {switchOffers.length > 0 && (
-          <MotionWrapper delay={0.07}>
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-4 flex items-start justify-between gap-3">
+          <MotionWrapper delay={0.14}>
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="eyebrow mb-1">Ready to switch</p>
                   <h3 className="text-base font-semibold tracking-tight">Users waiting to move to {brandName}</h3>
@@ -223,9 +421,9 @@ export default function Dashboard() {
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 {switchOffers.map((o) => (
-                  <div key={o.id} className="rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-4">
+                  <div key={o.id} className="rounded-lg border border-primary/25 bg-primary/5 p-4">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                         <Repeat2 className="h-4 w-4" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -239,7 +437,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <Link to="/switch-offers" className="mt-3 block">
-                      <Button size="sm" className="w-full gap-1.5 bg-emerald-600 hover:bg-emerald-600/90 text-white">
+                      <Button size="sm" className="w-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground">
                         Switch them now <ArrowUpRight className="h-3.5 w-3.5" />
                       </Button>
                     </Link>
@@ -250,103 +448,13 @@ export default function Dashboard() {
           </MotionWrapper>
         )}
 
-
-        {/* Stats */}
-        <MotionStagger className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          {[
-            { label: "Events", value: stats.totalEvents.toLocaleString(), icon: Activity, hint: "Total events tracked" },
-            { label: "Clicks", value: stats.totalClicks.toLocaleString(), icon: MousePointerClick, hint: "Verified clicks" },
-            { label: "Spent", value: `$${stats.totalSpent.toFixed(2)}`, icon: DollarSign, hint: "Across all campaigns" },
-            { label: "Active", value: activeCampaigns.toString(), icon: BarChart3, hint: "Live campaigns" },
-          ].map((s) => (
-            <MotionItem key={s.label}>
-              <div className="group relative h-full rounded-xl border border-border bg-card p-5 transition-colors hover:border-foreground/15">
-                <div className="flex items-start justify-between mb-4">
-                  <span className="eyebrow">{s.label}</span>
-                  <s.icon className="h-3.5 w-3.5 text-muted-foreground/70" />
-                </div>
-                <p className="stat-number">{s.value}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">{s.hint}</p>
-              </div>
-            </MotionItem>
-          ))}
-        </MotionStagger>
-
-        {/* Performance chart */}
-        <MotionWrapper delay={0.1}>
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-2">
-              <div>
-                <p className="eyebrow mb-1">Performance</p>
-                <h3 className="text-base font-semibold tracking-tight">Events trend</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Last 30 days · all campaigns</p>
-              </div>
-              <Badge variant="outline" className="text-[11px] font-normal border-border bg-secondary/50">
-                30D
-              </Badge>
-            </div>
-            <div className="px-2 sm:px-4 pb-4">
-              {dailyData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={240}>
-                  <AreaChart data={dailyData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.22} />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} opacity={0.5} />
-                    <XAxis
-                      dataKey="date" axisLine={false} tickLine={false}
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      dy={8}
-                    />
-                    <YAxis
-                      axisLine={false} tickLine={false} width={32}
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                    />
-                    <Tooltip
-                      cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
-                      contentStyle={{
-                        background: "hsl(var(--popover))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                        fontSize: 12,
-                        color: "hsl(var(--foreground))",
-                        boxShadow: "var(--shadow-md)",
-                        padding: "8px 10px",
-                      }}
-                      labelStyle={{ color: "hsl(var(--muted-foreground))", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}
-                    />
-                    <Area
-                      type="monotone" dataKey="events"
-                      stroke="hsl(var(--primary))" strokeWidth={1.75}
-                      fillOpacity={1} fill="url(#colorEvents)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[240px]">
-                  <div className="text-center">
-                    <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                      <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm font-medium text-foreground">No event data yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">Events will appear once campaigns go live</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </MotionWrapper>
-
         {/* Campaigns */}
-        <MotionWrapper delay={0.15}>
+        <MotionWrapper delay={0.16}>
           <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border sm:px-6">
               <div>
                 <p className="eyebrow mb-0.5">Campaigns</p>
-                <h3 className="text-base font-semibold tracking-tight">Recent activity</h3>
+                <h3 className="text-base font-semibold tracking-tight">Live activity</h3>
               </div>
               <span className="text-xs text-muted-foreground tabular-nums">{campaigns.length + packageOrders.length} total</span>
             </div>
@@ -364,9 +472,9 @@ export default function Dashboard() {
                   <p className="text-xs text-muted-foreground mt-1 mb-5">
                     Launch your first campaign to start reaching real customers.
                   </p>
-                  <Link to="/campaigns/create">
+                  <Link to={needsActivation ? "/wallet" : "/campaigns/create"}>
                     <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                      <Plus className="mr-1.5 h-3.5 w-3.5" /> Create campaign
+                      <Plus className="mr-1.5 h-3.5 w-3.5" /> {needsActivation ? "Activate to start" : "Create campaign"}
                     </Button>
                   </Link>
                 </div>
@@ -376,10 +484,10 @@ export default function Dashboard() {
                     <li key={`o-${o.id}`}>
                       <Link
                         to="/package-orders"
-                        className="flex items-center justify-between gap-3 px-6 py-4 group hover:bg-accent/40 transition-colors"
+                        className="flex items-center justify-between gap-3 px-5 py-4 group hover:bg-accent/40 transition-colors sm:px-6"
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                               {o.package_name} <span className="text-[10px] font-normal text-muted-foreground">(package)</span>
                             </p>
@@ -391,7 +499,7 @@ export default function Dashboard() {
                             </Badge>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                            {o.units} units • <span className="font-mono">${Number(o.total_amount_usd || 0).toFixed(2)}</span>
+                            {o.units} units · <span className="font-mono">${Number(o.total_amount_usd || 0).toFixed(2)}</span>
                           </p>
                         </div>
                         <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors shrink-0" />
@@ -402,10 +510,10 @@ export default function Dashboard() {
                     <li key={campaign.id}>
                       <Link
                         to={`/campaigns/${campaign.id}`}
-                        className="flex items-center justify-between gap-3 px-6 py-4 group hover:bg-accent/40 transition-colors"
+                        className="flex items-center gap-4 px-5 py-4 group hover:bg-accent/40 transition-colors sm:px-6"
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                               {campaign.name}
                             </p>
@@ -419,6 +527,13 @@ export default function Dashboard() {
                           <p className="mt-1 text-xs text-muted-foreground tabular-nums">
                             Budget remaining: <span className="font-mono">${Number(campaign.budget_remaining).toFixed(2)}</span>
                           </p>
+                        </div>
+                        <div className="hidden h-9 w-24 shrink-0 sm:block md:w-32">
+                          <Sparkline
+                            data={fallback(campaignSeries[campaign.id] || [])}
+                            tone={campaign.status === "active" ? "primary" : "muted"}
+                            className="h-9 w-full"
+                          />
                         </div>
                         <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors shrink-0" />
                       </Link>
