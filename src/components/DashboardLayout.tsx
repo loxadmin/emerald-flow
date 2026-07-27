@@ -159,8 +159,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         })}
       </nav>
 
+      {/* Activation call-to-action */}
+      {!isOffline && isWalletNotActivated && (
+        <div className="px-3 pb-3">
+          <div className="rounded-lg border border-primary/25 bg-primary/5 p-3.5">
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 text-primary" />
+              <p className="text-[12.5px] font-semibold text-foreground">Workspace locked</p>
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              Deposit $25 into your wallet to activate your account and unlock campaigns, packages and switch offers.
+            </p>
+            <Link to="/wallet" onClick={() => setMobileMenuOpen(false)} className="mt-3 block">
+              <Button size="sm" className="w-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Wallet className="h-3.5 w-3.5" /> Activate account
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Footer / user */}
       <div className="border-t border-border px-3 py-3">
+
         <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
           <div className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-semibold">
             {initial}
