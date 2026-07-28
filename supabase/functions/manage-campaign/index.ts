@@ -490,11 +490,23 @@ Deno.serve(async (req) => {
         const q = trimQ(cap(`Does ${subject} include the word ${kw}`));
         if (!seen.has(q.toLowerCase())) { seen.add(q.toLowerCase()); trues.push({ question: q, correct_answer: true }); }
       }
+      // Still short? Use remaining frequent words from the whole transcript
+      for (const [word] of tf) {
+        if (trues.length >= 12) break;
+        const q = trimQ(cap(`Does ${subject} use the word ${word}`));
+        if (!seen.has(q.toLowerCase())) { seen.add(q.toLowerCase()); trues.push({ question: q, correct_answer: true }); }
+      }
       // If still short, pad with generic affirmations grounded in the medium
       const truePad = [
         `Does ${subject} have spoken or sung words`,
         `Is ${subject} in English`,
         `Does ${subject} contain a message for the listener`,
+        `Is ${subject} meant for an audience`,
+        `Does ${subject} have a beginning and an end`,
+        `Is ${subject} shorter than one hour`,
+        `Does ${subject} include at least one full sentence`,
+        `Can ${subject} be played on a phone or computer`,
+        `Is ${subject} available to watch or listen to online`,
       ];
       for (const q of truePad) {
         if (trues.length >= 12) break;
@@ -506,6 +518,10 @@ Deno.serve(async (req) => {
         `Is ${subject} a silent film with no audio`,
         `Does ${subject} last more than five hours`,
         `Is ${subject} only in sign language`,
+        `Does ${subject} contain no words at all`,
+        `Is ${subject} a printed newspaper article`,
+        `Does ${subject} play backwards from end to start`,
+        `Is ${subject} a blank screen with no content`,
       ];
       for (const q of falsePad) {
         if (falses.length >= 8) break;

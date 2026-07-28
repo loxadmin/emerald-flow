@@ -186,8 +186,12 @@ export default function AdminCampaignDetail() {
       }
       // For engagement campaigns, auto-generate questions
       if ((campaign as any)?.ad_type === "engagement") {
-        await supabase.functions.invoke("manage-campaign", { body: { action: "generate_questions", campaign_id: id } });
-        toast.success("Quiz questions auto-generated!");
+        const { error: qErr } = await supabase.functions.invoke("manage-campaign", { body: { action: "generate_questions", campaign_id: id } });
+        if (qErr) {
+          toast.warning(`Quiz not generated: ${await extractFunctionError(qErr)}`);
+        } else {
+          toast.success("Quiz questions auto-generated!");
+        }
       }
       // Notify advertiser via email
       supabase.functions.invoke("send-campaign-notification", { body: { action: "approval", campaign_id: id } })
@@ -308,14 +312,13 @@ export default function AdminCampaignDetail() {
 
   const handleRegenerateQuestions = async () => {
     if (!id) return;
-    if (!confirm("Regenerate all quiz questions? This deletes existing ones.")) return;
+    if (!confirm("Regenerate all quiz questions? This replaces existing ones.")) return;
     setGeneratingQuestions(true);
     try {
-      await supabase.from("campaign_questions").delete().eq("campaign_id", id);
       const { error } = await supabase.functions.invoke("manage-campaign", {
         body: { action: "generate_questions", campaign_id: id },
       });
-      if (error) throw error;
+      if (error) throw new Error(await extractFunctionError(error));
       toast.success("Questions regenerated");
       fetchData();
     } catch (err: any) {
