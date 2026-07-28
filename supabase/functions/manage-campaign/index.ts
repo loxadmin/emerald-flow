@@ -316,12 +316,19 @@ Deno.serve(async (req) => {
         "why","how","who","whom","which","whose","than","more","less","most","least","much","many","some","any","all","each",
         "every","other","another","such","own","same","new","old","one","two","three","get","got","go","goes","going","said",
         "says","like","want","wanted","make","made","take","took","let","lets",
+        "https","http","www","com","org","net","html",
       ]);
 
       const clean = String(creative.transcription)
         .replace(/\[[^\]]*\]/g, " ") // [Music], [Applause]
         .replace(/\s+/g, " ")
         .trim();
+
+      if (clean.split(/\s+/).filter(Boolean).length < 3) {
+        return jsonResponse({
+          error: "Transcription is empty or too short to build a quiz. Add a fuller transcription to the creative first, then regenerate.",
+        }, 400);
+      }
 
       // Sentence split (handles ., !, ?, newlines)
       const rawSentences = clean
@@ -345,7 +352,7 @@ Deno.serve(async (req) => {
       // Term frequency across whole transcript for keyword scoring
       const tf = new Map<string, number>();
       tokenize(clean).forEach((t) => {
-        if (STOPWORDS.has(t.lower) || t.lower.length < 3) return;
+        if (STOPWORDS.has(t.lower) || t.lower.length < 3 || /\d/.test(t.lower)) return;
         tf.set(t.lower, (tf.get(t.lower) || 0) + 1);
       });
 
@@ -363,7 +370,7 @@ Deno.serve(async (req) => {
         toks.forEach((t, i) => {
           if (isNumber(t)) numbers.push(t.raw);
           else if (isProperNoun(t, i)) entities.push(t.raw);
-          else if (!STOPWORDS.has(t.lower) && t.lower.length >= 4) keywords.push(t.lower);
+          else if (!STOPWORDS.has(t.lower) && t.lower.length >= 4 && !/\d/.test(t.lower)) keywords.push(t.lower);
         });
         // top keyword by global frequency
         keywords.sort((a, b) => (tf.get(b) || 0) - (tf.get(a) || 0));
