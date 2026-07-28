@@ -34,6 +34,19 @@ interface CreativeCampaignRow {
   media_type?: string | null;
 }
 
+// supabase-js hides edge function error bodies behind a generic
+// "non-2xx status code" message — pull the real error from the response.
+const extractFunctionError = async (error: unknown): Promise<string> => {
+  try {
+    const ctx = (error as { context?: Response })?.context;
+    if (ctx && typeof ctx.json === "function") {
+      const body = await ctx.json();
+      if (body?.error) return body.error as string;
+    }
+  } catch { /* fall through to generic message */ }
+  return (error as Error)?.message || "Request failed";
+};
+
 export default function AdminCampaignDetail() {
   const { id } = useParams<{ id: string }>();
   const [campaign, setCampaign] = useState<(Tables<"campaigns"> & { target_users?: number; selected_milestones?: string[]; total_cost?: number; integration_verified?: boolean; integration_type?: string; campaign_mode?: string; platform_type?: string; app_link?: string }) | null>(null);
@@ -186,8 +199,12 @@ export default function AdminCampaignDetail() {
       }
       // For engagement campaigns, auto-generate questions
       if ((campaign as any)?.ad_type === "engagement") {
-        await supabase.functions.invoke("manage-campaign", { body: { action: "generate_questions", campaign_id: id } });
-        toast.success("Quiz questions auto-generated!");
+        const { error: qErr } = await supabase.functions.invoke("manage-campaign", { body: { action: "generate_questions", campaign_id: id } });
+        if (qErr) {
+          toast.warning(`Quiz not generated: ${await extractFunctionError(qErr)}`);
+        } else {
+          toast.success("Quiz questions auto-generated!");
+        }
       }
       // Notify advertiser via email
       supabase.functions.invoke("send-campaign-notification", { body: { action: "approval", campaign_id: id } })
@@ -308,14 +325,13 @@ export default function AdminCampaignDetail() {
 
   const handleRegenerateQuestions = async () => {
     if (!id) return;
-    if (!confirm("Regenerate all quiz questions? This deletes existing ones.")) return;
+    if (!confirm("Regenerate all quiz questions? This replaces existing ones.")) return;
     setGeneratingQuestions(true);
     try {
-      await supabase.from("campaign_questions").delete().eq("campaign_id", id);
       const { error } = await supabase.functions.invoke("manage-campaign", {
         body: { action: "generate_questions", campaign_id: id },
       });
-      if (error) throw error;
+      if (error) throw new Error(await extractFunctionError(error));
       toast.success("Questions regenerated");
       fetchData();
     } catch (err: any) {
