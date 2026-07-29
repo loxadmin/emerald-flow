@@ -12,6 +12,43 @@ declare global {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Admin 2FA verification flag.
+ *
+ * Stored in localStorage (not sessionStorage) and keyed to the admin's
+ * user id with a TTL. sessionStorage was lost on hard navigations and
+ * could be cleared by a spurious SIGNED_IN event during bootstrap,
+ * which bounced admins to the OTP screen mid-session.
+ * ------------------------------------------------------------------ */
+const ADMIN_2FA_KEY = "karbali-admin-2fa";
+const ADMIN_2FA_TTL = 12 * 60 * 60 * 1000;
+
+export function markAdmin2FAVerified(userId: string) {
+  try {
+    localStorage.setItem(ADMIN_2FA_KEY, JSON.stringify({ userId, at: Date.now() }));
+  } catch { /* storage unavailable */ }
+}
+
+export function isAdmin2FAVerified(userId?: string | null): boolean {
+  if (!userId) return false;
+  try {
+    const raw = localStorage.getItem(ADMIN_2FA_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { userId?: string; at?: number };
+    return parsed.userId === userId && Date.now() - (parsed.at || 0) < ADMIN_2FA_TTL;
+  } catch {
+    return false;
+  }
+}
+
+export function clearAdmin2FA() {
+  try {
+    localStorage.removeItem(ADMIN_2FA_KEY);
+    sessionStorage.removeItem("karbali-admin-2fa-verified");
+  } catch { /* storage unavailable */ }
+}
+
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
@@ -78,7 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     resetAccessState();
     setIsLoading(false);
-    sessionStorage.removeItem("karbali-admin-2fa-verified");
+    clearAdmin2FA();
+
     localStorage.removeItem("karbali-ads-last-activity");
   }, [resetAccessState]);
 
@@ -225,15 +263,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const syncSessionState = (
       nextSession: Session | null,
-      options: { forceReload?: boolean; clearAdmin2FA?: boolean } = {},
+      options: { forceReload?: boolean; clearTwoFactor?: boolean } = {},
     ) => {
       if (!active) return;
 
       const nextUserId = nextSession?.user?.id ?? null;
       const userChanged = nextUserId !== lastUserId;
 
-      if (options.clearAdmin2FA) {
-        sessionStorage.removeItem("karbali-admin-2fa-verified");
+      if (options.clearTwoFactor) {
+        clearAdmin2FA();
       }
 
       setSession(nextSession);
@@ -262,7 +300,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (event === "SIGNED_OUT") {
-        syncSessionState(nextSession, { forceReload: true, clearAdmin2FA: true });
+        syncSessionState(nextSession, { forceReload: true, clearTwoFactor: true });
         return;
       }
 
@@ -270,12 +308,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const nextUserId = nextSession?.user?.id ?? null;
         const isNewUser = nextUserId !== null && nextUserId !== lastUserId;
 
-        syncSessionState(nextSession, {
-          forceReload: isNewUser,
-          clearAdmin2FA: isNewUser,
-        });
+        // Never clear the 2FA flag here — Supabase re-emits SIGNED_IN on
+        // bootstrap/refresh, which previously wiped a valid verification and
+        // bounced admins to the OTP page mid-session. The flag is keyed to the
+        // user id, so a genuinely different user is already excluded.
+        syncSessionState(nextSession, { forceReload: isNewUser });
         return;
       }
+
+
 
       // INITIAL_SESSION / TOKEN_REFRESHED / USER_UPDATED / PASSWORD_RECOVERY
       // should update session state silently unless the user identity changed.
@@ -346,20 +387,22 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const verified = isAdmin2FAVerified(session?.user?.id);
+
   useEffect(() => {
     if (!isLoading && session && !isAdmin) {
       navigate("/dashboard", { replace: true });
       return;
     }
-    // Email OTP 2FA gate for admins, per-tab via sessionStorage
+    // Email OTP 2FA gate for admins — persisted per user with a TTL.
     if (
       !isLoading && session && isAdmin &&
       location.pathname !== "/admin/2fa" &&
-      sessionStorage.getItem("karbali-admin-2fa-verified") !== "1"
+      !verified
     ) {
       navigate("/admin/2fa", { replace: true });
     }
-  }, [session, isAdmin, isLoading, navigate, location.pathname]);
+  }, [session, isAdmin, isLoading, verified, navigate, location.pathname]);
 
   if (isLoading) {
     return (
@@ -370,6 +413,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   }
 
   if (!isAdmin) return null;
-  if (sessionStorage.getItem("karbali-admin-2fa-verified") !== "1") return null;
+  if (!verified) return null;
+
   return <>{children}</>;
 }

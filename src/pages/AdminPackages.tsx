@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -349,9 +351,9 @@ export default function AdminPackages() {
                         <Button size="sm" variant="outline" onClick={() => reviewOrder(o.id, false)}>Reject</Button>
                       </div>
                     ) : (o.status === "active" || o.status === "completed") ? (
-                      <a href={`/admin/packages/orders/${o.id}/deliver`}>
+                      <Link to={`/admin/packages/orders/${o.id}/deliver`}>
                         <Button size="sm" variant="outline">Deliver / update</Button>
-                      </a>
+                      </Link>
                     ) : null}
                   </div>
                 </div>
