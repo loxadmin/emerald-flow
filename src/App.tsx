@@ -30,6 +30,7 @@ import Websites from "./pages/Websites";
 import Wallet from "./pages/Wallet";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCampaignDetail from "./pages/AdminCampaignDetail";
+import AdminCampaigns from "./pages/AdminCampaigns";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSettings from "./pages/AdminSettings";
 import AdminBlogs from "./pages/AdminBlogs";
@@ -153,6 +154,7 @@ const App = () => (
               {/* Admin routes (separate panel) */}
               <Route path="/admin/2fa" element={<RequireAuth><Admin2FA /></RequireAuth>} />
               <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />
+              <Route path="/admin/campaigns" element={<RequireAuth><RequireAdmin><AdminCampaigns /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/campaigns/:id" element={<RequireAuth><RequireAdmin><AdminCampaignDetail /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/analytics" element={<RequireAuth><RequireAdmin><AdminAnalytics /></RequireAdmin></RequireAuth>} />
               <Route path="/admin/settings" element={<RequireAuth><RequireAdmin><AdminSettings /></RequireAdmin></RequireAuth>} />
