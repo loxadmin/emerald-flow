@@ -263,15 +263,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const syncSessionState = (
       nextSession: Session | null,
-      options: { forceReload?: boolean; clearAdmin2FA?: boolean } = {},
+      options: { forceReload?: boolean; clearTwoFactor?: boolean } = {},
     ) => {
       if (!active) return;
 
       const nextUserId = nextSession?.user?.id ?? null;
       const userChanged = nextUserId !== lastUserId;
 
-      if (options.clearAdmin2FA) {
-        sessionStorage.removeItem("karbali-admin-2fa-verified");
+      if (options.clearTwoFactor) {
+        clearAdmin2FA();
       }
 
       setSession(nextSession);
@@ -300,7 +300,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (event === "SIGNED_OUT") {
-        syncSessionState(nextSession, { forceReload: true, clearAdmin2FA: true });
+        syncSessionState(nextSession, { forceReload: true, clearTwoFactor: true });
         return;
       }
 
@@ -308,12 +308,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const nextUserId = nextSession?.user?.id ?? null;
         const isNewUser = nextUserId !== null && nextUserId !== lastUserId;
 
-        syncSessionState(nextSession, {
-          forceReload: isNewUser,
-          clearAdmin2FA: isNewUser,
-        });
+        // Never clear the 2FA flag here — Supabase re-emits SIGNED_IN on
+        // bootstrap/refresh, which previously wiped a valid verification and
+        // bounced admins to the OTP page mid-session. The flag is keyed to the
+        // user id, so a genuinely different user is already excluded.
+        syncSessionState(nextSession, { forceReload: isNewUser });
         return;
       }
+
+
 
       // INITIAL_SESSION / TOKEN_REFRESHED / USER_UPDATED / PASSWORD_RECOVERY
       // should update session state silently unless the user identity changed.
