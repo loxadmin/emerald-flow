@@ -468,81 +468,79 @@ export default function Packages() {
                 return mm?.requires_duration;
               });
               return (
-                <div key={p.id} className="group relative rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-6 flex flex-col hover:bg-card/90 hover:border-border transition-all duration-200 shadow-sm hover:shadow-md">
-                  {/* Top horizontal header alignment */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1.5 flex-1 min-w-0">
-                      <h3 className="font-semibold text-base text-foreground tracking-tight group-hover:text-primary transition-colors truncate">
-                        {p.name}
-                      </h3>
-                      <div className="flex flex-wrap gap-1">
-                        {(p.platform_support || []).map((pl) => (
-                          <span key={pl} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-secondary text-muted-foreground border border-border/40">
-                            {pl}
-                          </span>
-                        ))}
+                <div key={p.id} className="group relative rounded-xl border border-border/50 bg-card/40 backdrop-blur-md p-5 flex flex-col justify-between hover:bg-card/70 hover:border-primary/40 transition-all duration-300 shadow-sm hover:shadow-md">
+                  {/* Top horizontal header alignment - inspiration-style */}
+                  <div className="flex items-center justify-between gap-4 border-b border-border/20 pb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="shrink-0 bg-primary/10 text-primary border border-primary/20 rounded-lg p-2.5">
+                        <PackageIcon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm text-foreground tracking-tight group-hover:text-primary transition-colors truncate">
+                          {p.name}
+                        </h3>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {(p.platform_support || []).map((pl) => (
+                            <span key={pl} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-secondary/80 text-muted-foreground border border-border/30">
+                              {pl}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                    <div className="shrink-0 bg-secondary/80 text-muted-foreground border border-border/60 rounded-lg p-2">
-                      <PackageIcon className="h-4 w-4" />
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0 font-semibold text-xs border-primary/30 text-primary hover:bg-primary/10 hover:text-primary transition-all rounded-full px-4 h-8"
+                      onClick={() => openBuy(p)}
+                      disabled={ms.length === 0}
+                    >
+                      {ms.length === 0 ? "Configuring" : "Deploy"}
+                    </Button>
                   </div>
 
                   {p.description && (
-                    <p className="mt-4 text-xs text-muted-foreground leading-relaxed line-clamp-2 min-h-[2.25rem]">
+                    <p className="mt-4 text-xs text-muted-foreground/80 leading-relaxed line-clamp-2 min-h-[2.5rem]">
                       {p.description}
                     </p>
                   )}
 
-                  {/* Tabular metadata rows (Loud Pro & Biomarkers inspired) */}
-                  <div className="mt-6 border-t border-border/40 pt-4 flex flex-col gap-3 flex-grow">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-muted-foreground">Price range</span>
-                      <span className="font-semibold text-foreground font-mono">
-                        ${cheapest != null ? cheapest.toFixed(2) : "0.00"} – ${fullPrice.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">/ user</span>
+                  {/* Horizontally aligned metrics - Clean & minimal, no overwhelming text */}
+                  <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-border/20">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Price Range</span>
+                      <span className="font-semibold text-xs text-foreground font-mono">
+                        ${cheapest != null ? cheapest.toFixed(2) : "0.00"} – ${fullPrice.toFixed(2)}
                       </span>
                     </div>
-
-                    <div className="flex justify-between items-center text-xs border-t border-border/20 pt-3">
-                      <span className="text-muted-foreground">Target volume</span>
-                      <span className="font-semibold text-foreground font-mono">
-                        {p.min_units.toLocaleString()} – {p.max_units.toLocaleString()} users
+                    <div className="space-y-0.5 text-right">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Target Volume</span>
+                      <span className="font-semibold text-xs text-foreground font-mono">
+                        {p.min_units.toLocaleString()} – {p.max_units.toLocaleString()}
                       </span>
                     </div>
+                  </div>
 
-                    <div className="border-t border-border/20 pt-3 space-y-2">
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground block">
-                        Included Milestones
-                      </span>
-                      <div className="space-y-1.5">
+                  {/* Milestones row as elegant inline badges instead of heavy list */}
+                  {ms.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-border/10">
+                      <span className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-widest block mb-2">Funnel Goals</span>
+                      <div className="flex flex-wrap gap-1.5">
                         {ms.map((rm) => {
                           const m = milestones.find((x) => x.id === rm.milestone_id);
                           return (
-                            <div key={rm.milestone_id} className="flex justify-between items-center text-[11px]">
-                              <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                                <span className="h-1.5 w-1.5 rounded-full bg-primary/70 shrink-0" />
-                                <span className="font-medium truncate">{m?.name || "Milestone"}</span>
-                                {m?.requires_duration && (
-                                  <span className="text-[9px] text-primary bg-primary/5 px-1 py-0.2 rounded border border-primary/10">daily</span>
-                                )}
-                              </div>
-                              <span className="font-semibold text-foreground font-mono shrink-0">
-                                {rm.pricing_type === "commission_pct" ? `${rm.commission_pct}%` : `$${(rm.price_usd || 0).toFixed(2)}`}
+                            <span key={rm.milestone_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-secondary/50 text-foreground border border-border/30">
+                              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                              <span>{m?.name || "Goal"}</span>
+                              <span className="text-[9px] text-muted-foreground font-mono font-semibold">
+                                ({rm.pricing_type === "commission_pct" ? `${rm.commission_pct}%` : `$${(rm.price_usd || 0).toFixed(1)}`})
                               </span>
-                            </div>
+                            </span>
                           );
                         })}
                       </div>
                     </div>
-                  </div>
-
-                  <Button
-                    className="mt-6 w-full font-medium shadow-none hover:bg-primary/90 active:scale-[0.98] transition-all py-4 rounded-lg text-xs"
-                    onClick={() => openBuy(p)}
-                    disabled={ms.length === 0}
-                  >
-                    <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> {ms.length === 0 ? "Under Configuration" : "Deploy Campaign"}
-                  </Button>
+                  )}
                 </div>
               );
             })}
@@ -551,42 +549,53 @@ export default function Packages() {
 
         {/* Modern dialog modal revamp */}
         <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
-          <DialogContent className="max-w-xl max-h-[95vh] overflow-y-auto border-border/60 bg-card p-6 md:p-8 rounded-lg shadow-lg">
+          <DialogContent className="max-w-xl max-h-[95vh] overflow-y-auto border-border/40 bg-card p-5 md:p-6 rounded-lg shadow-2xl">
             {selected && (
               <>
-                <DialogHeader className="border-b border-border/30 pb-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-secondary p-2 rounded-lg text-muted-foreground border border-border/40">
-                      <PackageIcon className="h-4 w-4" />
+                <DialogHeader className="border-b border-border/20 pb-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-primary/10 text-primary border border-primary/20 rounded-lg p-2 shrink-0">
+                        <PackageIcon className="h-5 w-5" />
+                      </div>
+                      <div className="text-left">
+                        <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
+                          {selected.name}
+                        </DialogTitle>
+                        <p className="text-xs text-muted-foreground mt-0.5">Campaign Setup</p>
+                      </div>
                     </div>
-                    <div>
-                      <DialogTitle className="text-lg font-semibold tracking-tight text-foreground">
-                        Configure Campaign
-                      </DialogTitle>
-                      <p className="text-xs text-muted-foreground mt-0.5">{selected.name}</p>
-                    </div>
+                    <Badge variant="outline" className="text-[10px] font-semibold border-primary/20 text-primary bg-primary/5 rounded px-2.5 py-0.5">
+                      {subtypeLabel(mySubtype || "fintech" as any)}
+                    </Badge>
                   </div>
                 </DialogHeader>
 
-                <div className="space-y-6">
-                  {/* Platform selection buttons */}
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Select Campaign Platform</Label>
-                    <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-5">
+                  {/* Platform selection - Compact grid */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">Campaign Destination</Label>
+                    <div className="grid grid-cols-2 gap-2">
                       {(selected.platform_support || []).map((pl) => {
                         const meta = PLATFORM_META[pl] || { label: pl, sub: "1 Link", Icon: Globe, placeholder: "" };
                         const Icon = meta.Icon;
+                        const isActive = platform === pl;
                         return (
-                          <button key={pl} type="button"
+                          <button
+                            key={pl}
+                            type="button"
                             onClick={() => setPlatform(pl)}
-                            className={`group rounded-lg border p-3 text-left transition-all flex flex-col justify-between min-h-[85px] relative ${platform === pl ? "border-primary bg-primary/5" : "border-border/60 hover:bg-secondary/40"}`}>
-                            {platform === pl && (
-                              <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-primary" />
-                            )}
-                            <Icon className={`h-4 w-4 ${platform === pl ? "text-primary" : "text-muted-foreground group-hover:text-foreground"} transition-colors`} />
-                            <div className="mt-2">
-                              <p className="font-semibold text-xs text-foreground">{meta.label}</p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{meta.sub}</p>
+                            className={`group rounded-lg border p-2.5 text-left transition-all flex items-center justify-between gap-3 ${isActive ? "border-primary bg-primary/5" : "border-border/40 bg-secondary/10 hover:bg-secondary/30"}`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+                              <div className="min-w-0 leading-tight">
+                                <p className="font-semibold text-xs text-foreground truncate">{meta.label}</p>
+                                <p className="text-[9px] text-muted-foreground/80 truncate">{meta.sub}</p>
+                              </div>
+                            </div>
+                            <div className={`h-4 w-4 rounded-full border flex items-center justify-center shrink-0 ${isActive ? "border-primary bg-primary" : "border-border/60"}`}>
+                              {isActive && <Check className="h-2.5 w-2.5 text-white" />}
                             </div>
                           </button>
                         );
@@ -594,16 +603,17 @@ export default function Packages() {
                     </div>
                   </div>
 
-                  {/* Milestones Checkboxes */}
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Funnel Milestones</Label>
+                  {/* Milestones check list - minimalist row list */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">Funnel Milestones</Label>
                     <div className="space-y-2">
                       {packageMs.map((r) => {
                         const m = milestones.find((x) => x.id === r.milestone_id);
                         const checked = selectedIds.includes(r.milestone_id);
                         const locked = platform === "mobile" && appInstallId === r.milestone_id;
                         return (
-                          <div key={r.milestone_id}
+                          <div
+                            key={r.milestone_id}
                             onClick={() => {
                               if (locked) return;
                               const isChecked = !checked;
@@ -611,25 +621,19 @@ export default function Packages() {
                                 ? Array.from(new Set([...ids, r.milestone_id]))
                                 : ids.filter((id) => id !== r.milestone_id));
                             }}
-                            className={`w-full flex items-center justify-between gap-3 rounded-lg border px-3 py-3 text-xs transition-all cursor-pointer select-none ${checked ? "border-primary/40 bg-primary/5" : "border-border/60 hover:bg-secondary/30"}`}>
-                            <div className="flex items-center gap-3 min-w-0">
-                              <Checkbox
-                                checked={checked}
-                                disabled={locked}
-                                onCheckedChange={(v) => {
-                                  const isChecked = v === true;
-                                  setSelectedIds((ids) => isChecked
-                                    ? Array.from(new Set([...ids, r.milestone_id]))
-                                    : ids.filter((id) => id !== r.milestone_id));
-                                }}
-                              />
-                              <div className="min-w-0">
-                                <span className="font-semibold text-foreground text-xs leading-none">{m?.name || "?"}</span>
+                            className={`flex items-center justify-between gap-4 rounded-lg border px-3 py-2.5 text-xs transition-all cursor-pointer select-none ${checked ? "border-primary/40 bg-primary/5" : "border-border/40 bg-secondary/10 hover:bg-secondary/20"}`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${checked ? "border-primary bg-primary" : "border-border/60"}`}>
+                                {checked && <Check className="h-3 w-3 text-white" />}
+                              </div>
+                              <div className="min-w-0 leading-tight">
+                                <span className="font-semibold text-foreground text-xs">{m?.name || "Milestone"}</span>
                                 {m?.requires_duration && (
-                                  <span className="text-[9px] text-primary font-medium uppercase tracking-wider mt-0.5 block">Durational delivery required</span>
+                                  <span className="text-[9px] text-primary font-semibold uppercase tracking-wider mt-0.5 block">Requires retention period</span>
                                 )}
                               </div>
-                              {locked && <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />}
+                              {locked && <Lock className="h-3 w-3 text-muted-foreground/60 shrink-0" />}
                             </div>
                             <span className="shrink-0 text-xs font-semibold text-foreground/90 font-mono">
                               {r.pricing_type === "commission_pct"
@@ -642,15 +646,14 @@ export default function Packages() {
                     </div>
                   </div>
 
-                  {/* Dual Grid for Volume Input & Duration Selector if durational */}
-                  <div className={`grid gap-4 ${needsDuration ? "grid-cols-2" : "grid-cols-1"}`}>
-                    {/* Units Input */}
+                  {/* Dual Grid for Volume Input & Duration Selector */}
+                  <div className="grid gap-3 grid-cols-2">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{unitsLabel}</Label>
+                      <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">{unitsLabel}</Label>
                       <Input
                         type="number"
                         inputMode="numeric"
-                        className="rounded-lg border-border/80 bg-background h-10 px-3 text-xs font-semibold text-foreground focus-visible:ring-primary focus-visible:ring-offset-0"
+                        className="rounded-lg border-border/40 bg-background/50 h-9 px-3 text-xs font-semibold text-foreground focus-visible:ring-primary focus-visible:ring-offset-0"
                         min={selected.min_units}
                         max={selected.max_units}
                         value={unitsText}
@@ -668,65 +671,68 @@ export default function Packages() {
                           setUnitsText(String(clamped));
                         }}
                       />
-                      <p className="text-[10px] text-muted-foreground font-mono">Range: {selected.min_units.toLocaleString()} - {selected.max_units.toLocaleString()} {unitsNoun}</p>
+                      <p className="text-[9px] text-muted-foreground font-mono">Limits: {selected.min_units.toLocaleString()} - {selected.max_units.toLocaleString()}</p>
                     </div>
 
-                    {/* Duration selector */}
-                    {needsDuration && (
+                    {needsDuration ? (
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Delivery Duration</Label>
+                        <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">Duration</Label>
                         <Select value={String(duration)} onValueChange={(v) => setDuration(Number(v))}>
-                          <SelectTrigger className="rounded-lg border-border/80 bg-background h-10 text-xs font-semibold focus:ring-primary focus:ring-offset-0"><SelectValue /></SelectTrigger>
-                          <SelectContent className="border-border">
+                          <SelectTrigger className="rounded-lg border-border/40 bg-background/50 h-9 text-xs font-semibold focus:ring-primary focus:ring-offset-0"><SelectValue /></SelectTrigger>
+                          <SelectContent className="border-border bg-popover">
                             {(selected.duration_options || []).map((d) => (
                               <SelectItem key={d} value={String(d)} className="font-semibold text-xs">{d} days</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <p className="text-[10px] text-muted-foreground font-mono">Total users: {(units * duration).toLocaleString()}</p>
+                        <p className="text-[9px] text-muted-foreground font-mono">Total users: {(units * duration).toLocaleString()}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 opacity-50 select-none">
+                        <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">Duration</Label>
+                        <div className="rounded-lg border border-border/20 bg-secondary/5 h-9 flex items-center px-3 text-xs text-muted-foreground font-semibold">
+                          Continuous delivery
+                        </div>
+                        <p className="text-[9px] text-muted-foreground font-mono">No minimum duration</p>
                       </div>
                     )}
                   </div>
 
-                  {/* Links Field */}
+                  {/* Links Selector */}
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                      {platform === "web" ? "Verified Destination Website"
-                        : platform === "mobile" ? "App Store Links"
-                        : `${PLATFORM_META[platform]?.label || platform} Destination Link`}
-                    </Label>
+                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">Destination URL</Label>
                     <div>
                       {platform === "web" ? (
                         websites.length === 0 ? (
-                          <div className="rounded-lg border border-dashed border-border p-3 text-xs text-center bg-secondary/20">
-                            <p className="text-muted-foreground font-semibold">No verified websites connected.</p>
-                            <Link to="/websites"><Button size="sm" variant="link" className="text-primary hover:underline px-0 mt-1 font-semibold text-xs">Verify domain first →</Button></Link>
+                          <div className="rounded-lg border border-dashed border-border/40 p-2.5 text-xs text-center bg-secondary/5">
+                            <p className="text-muted-foreground font-semibold">No verified websites.</p>
+                            <Link to="/websites"><Button size="sm" variant="link" className="text-primary hover:underline px-0 mt-0.5 font-semibold text-xs">Verify domain →</Button></Link>
                           </div>
                         ) : (
                           <Select value={links[0]} onValueChange={(v) => setLinks([v])}>
-                            <SelectTrigger className="rounded-lg border-border/80 bg-background h-10 text-xs font-semibold"><SelectValue placeholder="Pick a verified website" /></SelectTrigger>
-                            <SelectContent className="border-border">{websites.map((s) => <SelectItem key={s.id} value={s.domain} className="text-xs font-medium">{s.domain}</SelectItem>)}</SelectContent>
+                            <SelectTrigger className="rounded-lg border-border/40 bg-background/50 h-9 text-xs font-semibold"><SelectValue placeholder="Select verified website" /></SelectTrigger>
+                            <SelectContent className="border-border bg-popover">{websites.map((s) => <SelectItem key={s.id} value={s.domain} className="text-xs font-medium">{s.domain}</SelectItem>)}</SelectContent>
                           </Select>
                         )
                       ) : platform === "mobile" ? (
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           {links.map((l, i) => (
                             <div key={i} className="flex gap-2">
-                              <Input value={l} placeholder={PLATFORM_META[platform]?.placeholder || "https://..."} className="rounded-lg border-border/80 bg-background h-10 text-xs"
+                              <Input value={l} placeholder={PLATFORM_META[platform]?.placeholder || "https://..."} className="rounded-lg border-border/40 bg-background/50 h-9 text-xs"
                                 onChange={(e) => setLinks(links.map((x, j) => j === i ? e.target.value : x))} />
                               {links.length > 1 && (
-                                <Button variant="outline" size="icon" className="rounded-lg shrink-0 h-10 w-10" onClick={() => setLinks(links.filter((_, j) => j !== i))}>✕</Button>
+                                <Button variant="outline" size="icon" className="rounded-lg shrink-0 h-9 w-9 border-border/40" onClick={() => setLinks(links.filter((_, j) => j !== i))}>✕</Button>
                               )}
                             </div>
                           ))}
                           {links.length < 2 && (
-                            <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5 rounded-lg mt-0.5 font-semibold text-xs px-2 h-8" onClick={() => setLinks([...links, ""])}>+ Add App Link</Button>
+                            <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5 rounded-lg mt-0.5 font-semibold text-xs px-2 h-7" onClick={() => setLinks([...links, ""])}>+ Add Link</Button>
                           )}
                         </div>
                       ) : (
                         <Input
                           value={links[0] || ""}
-                          className="rounded-lg border-border/80 bg-background h-10 text-xs"
+                          className="rounded-lg border-border/40 bg-background/50 h-9 text-xs"
                           placeholder={PLATFORM_META[platform]?.placeholder || "https://..."}
                           onChange={(e) => setLinks([e.target.value])}
                         />
@@ -734,63 +740,69 @@ export default function Packages() {
                     </div>
                   </div>
 
-                  {/* Payment Methods buttons */}
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Choose Payment Gateway</Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button type="button" onClick={() => setPayMethod("wallet")}
-                        className={`rounded-lg border p-3 text-left transition-all flex flex-col justify-between min-h-[85px] relative ${payMethod === "wallet" ? "border-primary bg-primary/5" : "border-border/60 hover:bg-secondary/20"}`}>
-                        {payMethod === "wallet" && (
-                          <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-primary" />
-                        )}
-                        <Wallet className={`h-4 w-4 ${payMethod === "wallet" ? "text-primary" : "text-muted-foreground"}`} />
-                        <div className="mt-2">
-                          <p className="font-semibold text-xs text-foreground">Corporate Wallet</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">Balance: ${(wallet?.balance || 0).toFixed(2)}</p>
+                  {/* Payment Methods */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">Payment Method</Label>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setPayMethod("wallet")}
+                        className={`rounded-lg border p-2.5 text-left transition-all flex items-center justify-between gap-3 ${payMethod === "wallet" ? "border-primary bg-primary/5" : "border-border/40 bg-secondary/10 hover:bg-secondary/30"}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Wallet className={`h-4 w-4 shrink-0 ${payMethod === "wallet" ? "text-primary" : "text-muted-foreground"}`} />
+                          <div className="min-w-0 leading-none">
+                            <p className="font-semibold text-xs text-foreground">Wallet</p>
+                            <p className="text-[9px] text-muted-foreground mt-0.5">Bal: ${wallet?.balance?.toFixed(1) || "0.0"}</p>
+                          </div>
+                        </div>
+                        <div className={`h-4 w-4 rounded-full border flex items-center justify-center shrink-0 ${payMethod === "wallet" ? "border-primary bg-primary" : "border-border/60"}`}>
+                          {payMethod === "wallet" && <Check className="h-2.5 w-2.5 text-white" />}
                         </div>
                       </button>
-                      <button type="button" onClick={() => setPayMethod("paystack")}
-                        className={`rounded-lg border p-3 text-left transition-all flex flex-col justify-between min-h-[85px] relative ${payMethod === "paystack" ? "border-primary bg-primary/5" : "border-border/60 hover:bg-secondary/20"}`}>
-                        {payMethod === "paystack" && (
-                          <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-primary" />
-                        )}
-                        <CreditCard className={`h-4 w-4 ${payMethod === "paystack" ? "text-primary" : "text-muted-foreground"}`} />
-                        <div className="mt-2">
-                          <p className="font-semibold text-xs text-foreground">Paystack Engine</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">Card, Bank, USSD</p>
+
+                      <button
+                        type="button"
+                        onClick={() => setPayMethod("paystack")}
+                        className={`rounded-lg border p-2.5 text-left transition-all flex items-center justify-between gap-3 ${payMethod === "paystack" ? "border-primary bg-primary/5" : "border-border/40 bg-secondary/10 hover:bg-secondary/30"}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <CreditCard className={`h-4 w-4 shrink-0 ${payMethod === "paystack" ? "text-primary" : "text-muted-foreground"}`} />
+                          <div className="min-w-0 leading-none">
+                            <p className="font-semibold text-xs text-foreground font-medium">Paystack</p>
+                            <p className="text-[9px] text-muted-foreground mt-0.5">Card, bank, USSD</p>
+                          </div>
+                        </div>
+                        <div className={`h-4 w-4 rounded-full border flex items-center justify-center shrink-0 ${payMethod === "paystack" ? "border-primary bg-primary" : "border-border/60"}`}>
+                          {payMethod === "paystack" && <Check className="h-2.5 w-2.5 text-white" />}
                         </div>
                       </button>
                     </div>
                   </div>
 
-                  {/* Summary calculation card - Modernized (Loud Pro inspired) */}
-                  <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2.5">
+                  {/* Calculation Summary box - flat, clear border */}
+                  <div className="rounded-lg border border-border/30 bg-secondary/20 p-3.5 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Upfront billing amount</span>
-                      <span className="text-xl font-bold text-foreground font-mono tabular-nums">${flatTotal.toFixed(2)}</span>
+                      <span className="text-xs font-semibold text-muted-foreground">Upfront Funding Required</span>
+                      <span className="text-lg font-bold text-foreground font-mono">${flatTotal.toFixed(2)}</span>
                     </div>
-                    <div className="border-t border-border/40 pt-2.5">
-                      <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    <div className="border-t border-border/10 pt-2">
+                      <p className="text-[10px] leading-relaxed text-muted-foreground">
                         {commissionOnly
                           ? `${units.toLocaleString()} users × $${COMMISSION_RESERVE_PER_USER}/user reserve locked in escrow to fund per-sale commissions.`
                           : needsDuration
                           ? `${units.toLocaleString()} users × ${duration} days × selected flat milestones.`
                           : `${units.toLocaleString()} users × selected flat milestones.`}
                       </p>
-                      {commissionRows.length > 0 && (
-                        <p className="text-[11px] font-semibold text-primary mt-1">
-                          + {commissionRows.map((c) => `${c.commission_pct}% per sale`).join(", ")} deducted upon delivery verification.
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>
 
-                <DialogFooter className="mt-6 border-t border-border/30 pt-4 gap-2 flex items-center justify-end">
-                  <Button variant="outline" className="rounded-lg font-medium border-border/80 text-xs px-4 h-10" onClick={() => setSelected(null)}>Cancel</Button>
-                  <Button onClick={submit} className="rounded-lg font-semibold text-xs px-5 h-10 shadow-none hover:bg-primary/95" disabled={buying || flatTotal <= 0 || (platform === "web" && websites.length === 0)}>
-                    {buying ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
-                    {buying ? "Processing..." : `Confirm: $${flatTotal.toFixed(2)}`}
+                <DialogFooter className="mt-5 border-t border-border/20 pt-4 gap-2 flex items-center justify-end">
+                  <Button variant="outline" className="rounded-lg font-medium border-border/80 text-xs h-9" onClick={() => setSelected(null)}>Cancel</Button>
+                  <Button onClick={submit} className="rounded-lg font-semibold text-xs h-9 shadow-none hover:bg-primary/95" disabled={buying || flatTotal <= 0 || (platform === "web" && websites.length === 0)}>
+                    {buying ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                    {buying ? "Deploying..." : `Authorize: $${flatTotal.toFixed(2)}`}
                   </Button>
                 </DialogFooter>
               </>
