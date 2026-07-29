@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
-import { Loader2, Package as PackageIcon, ArrowLeft, TrendingUp } from "lucide-react";
+import { Loader2, Package as PackageIcon, ArrowLeft, TrendingUp, Calendar, CreditCard, Layers, ExternalLink } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import MigrationChart from "@/components/MigrationChart";
 
@@ -25,10 +25,10 @@ type Delivery = {
 };
 
 const STATUS: Record<string, string> = {
-  pending_payment: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  pending_review: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  active: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  completed: "bg-sky-500/10 text-sky-600 border-sky-500/20",
+  pending_payment: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  pending_review: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  active: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  completed: "bg-sky-500/10 text-sky-500 border-sky-500/20",
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
   refunded: "bg-muted text-muted-foreground border-border",
 };
@@ -67,142 +67,219 @@ export default function PackageOrders() {
   return (
     <DashboardLayout>
       <MotionWrapper>
-        <div className="mb-6 flex items-center gap-3">
-          <Link to="/packages"><Button variant="ghost" size="sm"><ArrowLeft className="mr-2 h-4 w-4" /> Packages</Button></Link>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">My package orders</h1>
-            <p className="text-sm text-muted-foreground">Track delivery for every package you've purchased.</p>
+        {/* Modern Nav Breadcrumb Header */}
+        <div className="mb-8 flex items-center justify-between gap-4 flex-wrap border-b border-border pb-6">
+          <div className="flex items-center gap-3">
+            <Link to="/packages">
+              <Button variant="outline" size="sm" className="h-9 rounded-xl border-border hover:bg-accent">
+                <ArrowLeft className="mr-2 h-4 w-4 text-primary" /> Packages
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Package Orders</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">Track live delivery status, conversion charts, and user transactions.</p>
+            </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : orders.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
-            <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            No orders yet. Browse packages to get started.
+          <div className="rounded-2xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground bg-card/20 backdrop-blur-md">
+            <PackageIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40 animate-bounce" />
+            <p className="text-base font-semibold">No package orders submitted yet.</p>
+            <p className="text-xs mt-1 text-muted-foreground">Launch a campaign to begin monitoring delivery metrics.</p>
           </div>
         ) : (
-          <div className="grid gap-3">
+          <div className="grid gap-6">
             {orders.map((o) => (
-              <div key={o.id} className="rounded-lg border bg-card p-4">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="min-w-0 flex-1">
+              <div key={o.id} className="rounded-2xl border border-border bg-card/30 backdrop-blur-md p-6 space-y-6 premium-shadow">
+                {/* Header Row */}
+                <div className="flex items-start justify-between gap-4 flex-wrap border-b border-border/40 pb-5">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium">{o.package_name}</p>
-                      <Badge variant="outline" className={STATUS[o.status] || ""}>{o.status.replace(/_/g, " ")}</Badge>
-                      <Badge variant="secondary">{o.payment_method}</Badge>
-                      {o.platform && <Badge variant="outline" className="capitalize">{o.platform}</Badge>}
+                      <h2 className="text-lg font-extrabold text-foreground tracking-tight">{o.package_name}</h2>
+                      <Badge variant="outline" className={`capitalize font-bold text-[10px] ${STATUS[o.status] || ""}`}>
+                        {o.status.replace(/_/g, " ")}
+                      </Badge>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {o.units.toLocaleString()} {o.unit_label || "users"} · ${o.total_amount_usd}
-                      {o.duration_days ? ` · ${o.duration_days} days` : ""}
-                    </p>
-                    {o.starts_at && (
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        Running: {new Date(o.starts_at).toLocaleDateString()} → {o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "—"}
-                      </p>
-                    )}
-                    {o.app_links?.length > 0 && (
-                      <ul className="mt-2 text-xs space-y-0.5">
-                        {o.app_links.map((l, i) => (
-                          <li key={i} className="truncate"><a className="text-primary underline" href={l} target="_blank" rel="noreferrer">{l}</a></li>
-                        ))}
-                      </ul>
-                    )}
 
-                    {/* Delivery graph + breakdown */}
-                    {(o.selected_milestone_ids || []).length > 0 && (
-                      <div className="mt-4 space-y-3">
-                        {(o.selected_milestone_ids || []).map((mid) => {
-                          const m = milestones.find((x) => x.id === mid);
-                          if (!m) return null;
-                          const dv = deliveriesFor(o.id, mid);
-                          const totalUsers = dv.reduce((s, d) => s + (d.users_delivered || 0), 0);
-                          const txnTotal = dv.reduce((s, d) => s + (Number(d.total_txn_amount) || 0), 0);
-                          const isTxn = m.slug === "transaction" || m.slug === "sale";
-                          const chartData = dv.map((d) => ({
-                            date: new Date(d.delivery_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-                            users: d.users_delivered || 0,
-                          }));
-                          const pct = Math.min(100, Math.round((totalUsers / Math.max(o.units, 1)) * 100));
-                          return (
-                            <div key={mid} className="rounded-xl border bg-card overflow-hidden">
-                              <div className="flex items-center justify-between gap-2 px-4 py-3 border-b">
-                                <div className="flex items-center gap-2">
-                                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                                  <span className="text-sm font-semibold">{m.name}</span>
-                                  {m.requires_duration && <Badge variant="outline" className="text-[9px]">daily</Badge>}
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-sm font-semibold tabular-nums">
-                                    {totalUsers.toLocaleString()} <span className="text-muted-foreground font-normal">/ {o.units.toLocaleString()}</span>
-                                  </p>
-                                  {isTxn && txnTotal > 0 && (
-                                    <p className="text-[10px] text-muted-foreground">${txnTotal.toFixed(2)} volume</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="px-4 pt-3">
-                                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                                  <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-                                </div>
-                                <p className="mt-1 text-[10px] text-muted-foreground">{pct}% delivered</p>
-                              </div>
-                              {chartData.length > 0 ? (
-                                <div className="px-2 pb-3 pt-2">
-                                  <ResponsiveContainer width="100%" height={140}>
-                                    <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                                      <defs>
-                                        <linearGradient id={`dl-${mid}`} x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                                        </linearGradient>
-                                      </defs>
-                                      <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} opacity={0.4} />
-                                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={30} />
-                                      <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                                      <Area type="monotone" dataKey="users" stroke="hsl(var(--primary))" strokeWidth={1.5} fill={`url(#dl-${mid})`} />
-                                    </AreaChart>
-                                  </ResponsiveContainer>
-                                </div>
-                              ) : (
-                                <p className="px-4 pb-3 pt-1 text-[11px] text-muted-foreground">No deliveries recorded yet.</p>
-                              )}
-                              {isTxn && dv.some((d) => Array.isArray(d.txn_rows) && d.txn_rows.length > 0) && (
-                                <details className="px-4 pb-3">
-                                  <summary className="text-xs cursor-pointer text-primary">Transaction details</summary>
-                                  <div className="mt-1 max-h-40 overflow-y-auto">
-                                    <table className="w-full text-[11px]">
-                                      <thead className="text-muted-foreground">
-                                        <tr><th className="text-left py-1">User</th><th className="text-left py-1">Txn ID</th><th className="text-right py-1">Amount</th></tr>
-                                      </thead>
-                                      <tbody>
-                                        {dv.flatMap((d) => (Array.isArray(d.txn_rows) ? d.txn_rows : []).map((t: any, i: number) => (
-                                          <tr key={d.id + i} className="border-t border-border/50">
-                                            <td className="py-1">{t.user_ref}</td>
-                                            <td className="py-1 font-mono">{t.txn_id}</td>
-                                            <td className="py-1 text-right">${Number(t.amount_usd || 0).toFixed(2)}</td>
-                                          </tr>
-                                        )))}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                </details>
-                              )}
-                            </div>
-                          );
-                        })}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                      <span className="inline-flex items-center gap-1 font-semibold text-foreground/80">
+                        <Layers className="h-3 w-3 text-primary" /> {o.units.toLocaleString()} {o.unit_label || "users"}
+                      </span>
+                      <span className="text-border/60">•</span>
+                      <span className="inline-flex items-center gap-1">
+                        <CreditCard className="h-3 w-3 text-muted-foreground" /> {o.payment_method}
+                      </span>
+                      {o.duration_days && (
+                        <>
+                          <span className="text-border/60">•</span>
+                          <span className="font-semibold text-foreground">{o.duration_days} days coverage</span>
+                        </>
+                      )}
+                      {o.platform && (
+                        <>
+                          <span className="text-border/60">•</span>
+                          <Badge variant="secondary" className="capitalize text-[9px] font-extrabold bg-accent/40 text-muted-foreground">
+                            {o.platform}
+                          </Badge>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                        {/* User migration chart */}
-                        <MigrationChart packageOrderId={o.id} />
-                      </div>
-                    )}
-
-                    {o.admin_notes && <p className="mt-2 text-xs text-muted-foreground">Admin notes: {o.admin_notes}</p>}
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Investment</p>
+                    <p className="text-xl font-extrabold text-foreground font-mono mt-0.5">${Number(o.total_amount_usd).toFixed(2)}</p>
                   </div>
                 </div>
+
+                {/* Date range details */}
+                {o.starts_at && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-accent/15 border border-border/40 rounded-xl px-4 py-2.5">
+                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                    <span className="font-semibold">Delivery Timeline:</span>
+                    <span>{new Date(o.starts_at).toLocaleDateString()}</span>
+                    <span>→</span>
+                    <span className="font-medium">{o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "continuous"}</span>
+                  </div>
+                )}
+
+                {/* Landing links list */}
+                {o.app_links?.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Campaign Target URLs</p>
+                    <div className="grid gap-2">
+                      {o.app_links.map((l, i) => (
+                        <div key={i} className="flex items-center gap-2 rounded-xl bg-background/50 border border-border/40 px-3 py-2 text-xs text-muted-foreground">
+                          <ExternalLink className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <a href={l} target="_blank" rel="noreferrer" className="truncate text-primary hover:underline font-mono">
+                            {l}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Delivery graph + breakdown */}
+                {(o.selected_milestone_ids || []).length > 0 && (
+                  <div className="space-y-5">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Conversion Funnel Delivery</p>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {(o.selected_milestone_ids || []).map((mid) => {
+                        const m = milestones.find((x) => x.id === mid);
+                        if (!m) return null;
+                        const dv = deliveriesFor(o.id, mid);
+                        const totalUsers = dv.reduce((s, d) => s + (d.users_delivered || 0), 0);
+                        const txnTotal = dv.reduce((s, d) => s + (Number(d.total_txn_amount) || 0), 0);
+                        const isTxn = m.slug === "transaction" || m.slug === "sale";
+                        const chartData = dv.map((d) => ({
+                          date: new Date(d.delivery_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                          users: d.users_delivered || 0,
+                        }));
+                        const pct = Math.min(100, Math.round((totalUsers / Math.max(o.units, 1)) * 100));
+                        return (
+                          <div key={mid} className="rounded-xl border border-border bg-background/25 overflow-hidden flex flex-col justify-between">
+                            {/* Inner header */}
+                            <div className="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-border/40">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-primary" />
+                                <span className="text-xs font-extrabold text-foreground">{m.name}</span>
+                                {m.requires_duration && <Badge variant="outline" className="text-[9px] px-1 bg-primary/5 text-primary border-primary/20">daily</Badge>}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs font-extrabold text-foreground font-mono">
+                                  {totalUsers.toLocaleString()} <span className="text-[10px] text-muted-foreground font-semibold">/ {o.units.toLocaleString()}</span>
+                                </p>
+                                {isTxn && txnTotal > 0 && (
+                                  <p className="text-[9px] text-primary font-bold font-mono">${txnTotal.toFixed(2)} Vol.</p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Inner bar */}
+                            <div className="px-4 pt-4">
+                              <div className="flex items-center justify-between mb-1.5 text-[10px] font-bold text-muted-foreground">
+                                <span>Progress</span>
+                                <span className="text-foreground font-mono">{pct}%</span>
+                              </div>
+                              <div className="h-2 w-full rounded-full bg-muted/60 overflow-hidden border border-border/30">
+                                <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+
+                            {/* Area chart */}
+                            {chartData.length > 0 ? (
+                              <div className="px-2 pb-4 pt-3 flex-1 min-h-[140px]">
+                                <ResponsiveContainer width="100%" height={140}>
+                                  <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                                    <defs>
+                                      <linearGradient id={`dl-${mid}`} x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                      </linearGradient>
+                                    </defs>
+                                    <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={25} />
+                                    <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
+                                    <Area type="monotone" dataKey="users" stroke="hsl(var(--primary))" strokeWidth={1.5} fill={`url(#dl-${mid})`} />
+                                  </AreaChart>
+                                </ResponsiveContainer>
+                              </div>
+                            ) : (
+                              <p className="px-4 pb-5 pt-3 text-[10px] font-semibold text-muted-foreground flex-1 flex items-center justify-center">
+                                No conversions recorded yet.
+                              </p>
+                            )}
+
+                            {/* Transaction toggle panel */}
+                            {isTxn && dv.some((d) => Array.isArray(d.txn_rows) && d.txn_rows.length > 0) && (
+                              <details className="px-4 pb-4 pt-1 border-t border-border/30 group">
+                                <summary className="text-[11px] font-bold cursor-pointer text-primary select-none list-none flex items-center gap-1.5">
+                                  <span className="transition-transform group-open:rotate-90">▶</span> View conversion audit rows
+                                </summary>
+                                <div className="mt-3.5 max-h-48 overflow-y-auto rounded-xl border border-border/40 bg-background/40">
+                                  <table className="w-full text-[10px] font-mono">
+                                    <thead className="text-muted-foreground bg-accent/20 sticky top-0">
+                                      <tr>
+                                        <th className="text-left px-3 py-2">User ID</th>
+                                        <th className="text-left px-3 py-2">Txn Ref</th>
+                                        <th className="text-right px-3 py-2">Volume</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/20">
+                                      {dv.flatMap((d) => (Array.isArray(d.txn_rows) ? d.txn_rows : []).map((t: any, i: number) => (
+                                        <tr key={d.id + i} className="hover:bg-accent/15 transition-colors">
+                                          <td className="px-3 py-2 text-foreground/80 truncate max-w-[100px]">{t.user_ref}</td>
+                                          <td className="px-3 py-2 font-mono text-muted-foreground truncate max-w-[120px]">{t.txn_id}</td>
+                                          <td className="px-3 py-2 text-right font-bold text-foreground">${Number(t.amount_usd || 0).toFixed(2)}</td>
+                                        </tr>
+                                      )))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </details>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* User migration source flow chart */}
+                    <MigrationChart packageOrderId={o.id} />
+                  </div>
+                )}
+
+                {o.admin_notes && (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4.5 text-xs text-amber-500 space-y-1">
+                    <p className="font-bold uppercase tracking-wider text-[10px]">Operations Desk Note</p>
+                    <p className="leading-relaxed">{o.admin_notes}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

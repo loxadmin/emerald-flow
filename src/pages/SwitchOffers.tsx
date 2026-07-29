@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Loader2, Zap, ArrowRight, Wallet as WalletIcon, ClipboardList, Sparkles } from "lucide-react";
+import { Loader2, Zap, ArrowRight, Wallet as WalletIcon, ClipboardList, Sparkles, Check } from "lucide-react";
 import MigrationChart from "@/components/MigrationChart";
 
 type Offer = {
@@ -120,47 +120,72 @@ export default function SwitchOffers() {
                 {visible.map((o) => {
                   const c = o.competitor_app_id ? competitors[o.competitor_app_id] : null;
                   return (
-                    <div key={o.id} className="group relative rounded-2xl border border-border bg-card/40 backdrop-blur-md p-6 flex flex-col hover:bg-card hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 premium-shadow">
-                      {/* Badge top indicator */}
-                      <div className="absolute top-4 right-4 text-primary bg-primary/10 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Sparkles className="h-3.5 w-3.5" />
-                      </div>
+                    <div key={o.id} className="group relative rounded-2xl border border-border bg-card/30 backdrop-blur-md p-6 flex flex-col hover:bg-card/50 hover:border-primary/40 hover:-translate-y-1 transition-all duration-300 premium-shadow">
+                      {/* Decorative corner glow */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-300 pointer-events-none" />
 
-                      <div className="flex items-center gap-3.5">
-                        {c?.logo_url ? (
-                          <img src={c.logo_url} alt="" className="h-11 w-11 rounded-xl object-cover border border-border shadow-sm" />
-                        ) : (
-                          <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                            <Zap className="h-5 w-5" />
+                      {/* Top Header Section */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {c?.logo_url ? (
+                            <img src={c.logo_url} alt="" className="h-12 w-12 rounded-xl object-cover border border-border shadow-inner" />
+                          ) : (
+                            <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-inner">
+                              <Zap className="h-5 w-5" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-extrabold text-base text-foreground leading-snug truncate group-hover:text-primary transition-colors">{o.title}</p>
+                            {c && (
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-0.5">
+                                Pool: {c.name}
+                              </p>
+                            )}
                           </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="font-bold text-base text-foreground leading-snug truncate">{o.title}</p>
-                          {c && <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-0.5">Pool: {c.name}</p>}
                         </div>
-                      </div>
-
-                      {o.description && <p className="mt-3.5 text-xs leading-relaxed text-muted-foreground line-clamp-3 min-h-[3.25rem]">{o.description}</p>}
-
-                      <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                        <div className="rounded-xl bg-accent/25 p-3 border border-border/40">
-                          <p className="text-muted-foreground font-medium">Cohort Batch</p>
-                          <p className="font-bold text-sm mt-0.5 text-foreground">{o.batch_size.toLocaleString()} users</p>
-                        </div>
-                        <div className="rounded-xl bg-accent/25 p-3 border border-border/40">
-                          <p className="text-muted-foreground font-medium">Flat Price</p>
-                          <p className="font-bold text-sm mt-0.5 text-foreground">${Number(o.flat_price_usd).toFixed(2)}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4.5 flex items-center justify-between">
-                        <Badge variant="outline" className="capitalize text-[10px] font-bold bg-background/50 border-border/80">
-                          {o.platform} Pool
+                        <Badge variant="outline" className="capitalize text-[9px] font-extrabold tracking-wider bg-accent/40 text-muted-foreground border-border/60 shrink-0">
+                          {o.platform}
                         </Badge>
                       </div>
 
-                      <Button className="mt-5 w-full font-semibold shadow-md group-hover:bg-primary/95 group-hover:scale-[1.01] transition-all" onClick={() => { setSelected(o); setLink(""); }}>
-                        Switch Users <ArrowRight className="ml-2 h-4 w-4" />
+                      {o.description && (
+                        <p className="mt-4 text-xs leading-relaxed text-muted-foreground line-clamp-3 min-h-[3.25rem]">
+                          {o.description}
+                        </p>
+                      )}
+
+                      {/* Grid Data display with precise cards */}
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <div className="rounded-xl bg-accent/15 p-3.5 border border-border/40 space-y-0.5">
+                          <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">Cohort Batch</p>
+                          <p className="font-extrabold text-sm text-foreground font-mono">{o.batch_size.toLocaleString()}</p>
+                        </div>
+                        <div className="rounded-xl bg-accent/15 p-3.5 border border-border/40 space-y-0.5">
+                          <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">Acquisition Cost</p>
+                          <p className="font-extrabold text-sm text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</p>
+                        </div>
+                      </div>
+
+                      {/* High hierarchy checkmark highlights */}
+                      <div className="mt-5 space-y-2 flex-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Key Highlights</p>
+                        <ul className="space-y-1.5">
+                          <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <span>Guaranteed competitive switchers</span>
+                          </li>
+                          <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <span>Instant webhook synchronization</span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <Button
+                        className="mt-6 w-full font-bold shadow-md shadow-primary/5 hover:shadow-primary/15 hover:bg-primary/95 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 py-5 rounded-xl flex items-center justify-center gap-2"
+                        onClick={() => { setSelected(o); setLink(""); }}
+                      >
+                        Initiate Transition <ArrowRight className="h-4 w-4" />
                       </Button>
                     </div>
                   );
@@ -170,35 +195,56 @@ export default function SwitchOffers() {
 
             {/* Premium "My Switch Orders" and charts section */}
             {orders.length > 0 && (
-              <div className="mt-12 border-t border-border pt-10">
-                <div className="mb-6 flex items-center gap-2.5">
-                  <div className="p-1.5 bg-primary/10 rounded-lg text-primary border border-primary/25">
+              <div className="mt-16 border-t border-border/40 pt-12">
+                <div className="mb-8 flex items-center gap-3">
+                  <div className="p-2.5 bg-primary/10 rounded-xl text-primary border border-primary/25 shadow-sm">
                     <ClipboardList className="h-5 w-5" />
                   </div>
-                  <h2 className="text-lg font-bold tracking-tight text-foreground">Active Cohort Transitions</h2>
+                  <div>
+                    <h2 className="text-xl font-bold tracking-tight text-foreground">Active Cohort Transitions</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Track live user migration status and platform distribution details.</p>
+                  </div>
                 </div>
-                <div className="grid gap-5">
+                <div className="grid gap-6">
                   {orders.map((o) => (
-                    <div key={o.id} className="rounded-2xl border border-border bg-card/40 backdrop-blur-md p-5 md:p-6 space-y-4 premium-shadow">
-                      <div className="flex items-center justify-between gap-3 flex-wrap border-b border-border/40 pb-4">
-                        <div className="min-w-0 flex-1 space-y-0.5">
-                          <p className="text-base font-bold text-foreground">{o.offer_title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {o.competitor_app_name && <span className="font-semibold text-foreground mr-1.5">From {o.competitor_app_name}</span>}
-                            <span className="text-border">·</span>
-                            <span className="font-bold text-primary ml-1.5 tabular-nums">{o.users_delivered.toLocaleString()}</span> of {o.batch_size.toLocaleString()} migrated
-                            <span className="text-border mx-1.5">·</span> Price: ${Number(o.flat_price_usd).toFixed(2)}
-                          </p>
+                    <div key={o.id} className="rounded-2xl border border-border/80 bg-card/30 backdrop-blur-md p-6 space-y-6 premium-shadow">
+                      <div className="flex items-start justify-between gap-4 flex-wrap border-b border-border/40 pb-5">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <p className="text-lg font-extrabold text-foreground tracking-tight">{o.offer_title}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                            {o.competitor_app_name && (
+                              <span className="font-bold text-foreground">
+                                From: {o.competitor_app_name}
+                              </span>
+                            )}
+                            <span className="text-border/60">•</span>
+                            <span>Price: <span className="font-bold text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</span></span>
+                            <span className="text-border/60">•</span>
+                            <span>Batch: <span className="font-bold text-foreground font-mono">{o.batch_size.toLocaleString()} users</span></span>
+                          </div>
                           {o.target_link && (
-                            <p className="text-[11px] font-mono text-muted-foreground truncate max-w-xl mt-1.5 bg-background/50 border rounded px-2 py-0.5 inline-block">
-                              → Destination: {o.target_link}
+                            <p className="text-[10px] font-mono text-muted-foreground truncate max-w-xl mt-2 bg-background/50 border border-border/60 rounded-lg px-2.5 py-1 inline-block">
+                              → Destination: <a href={o.target_link} target="_blank" rel="noreferrer" className="text-primary hover:underline">{o.target_link}</a>
                             </p>
                           )}
                         </div>
-                        <Badge variant="outline" className="capitalize text-[10px] font-bold px-2.5 py-0.5 bg-primary/10 border-primary/20 text-primary">
+                        <Badge variant="outline" className="capitalize text-[10px] font-extrabold px-3 py-1 bg-primary/10 border-primary/20 text-primary">
                           {o.status.replace(/_/g, " ")}
                         </Badge>
                       </div>
+
+                      <div className="bg-background/25 rounded-xl border border-border/40 p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Migration Progress</span>
+                          <span className="text-xs font-bold text-foreground font-mono">
+                            {o.users_delivered.toLocaleString()} / {o.batch_size.toLocaleString()} ({Math.min(100, Math.round((o.users_delivered / o.batch_size) * 100))}% completed)
+                          </span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-muted/50 overflow-hidden border border-border/40">
+                          <div className="h-full bg-primary transition-all duration-500" style={{ width: `${Math.min(100, (o.users_delivered / o.batch_size) * 100)}%` }} />
+                        </div>
+                      </div>
+
                       <MigrationChart switchOrderId={o.id} title="Real-time Migration Sources breakdown" />
                     </div>
                   ))}
@@ -211,47 +257,56 @@ export default function SwitchOffers() {
 
       {/* Modern Dialog Revamp */}
       <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
-        <DialogContent className="border-border/80 bg-card/95 backdrop-blur-2xl rounded-2xl premium-shadow">
-          <DialogHeader>
-            <div className="flex items-center gap-2.5">
-              <div className="bg-primary/10 p-2 rounded-lg text-primary border border-primary/20">
+        <DialogContent className="border-border/80 bg-card/95 backdrop-blur-2xl rounded-2xl p-6 md:p-8 max-w-md premium-shadow">
+          <DialogHeader className="border-b border-border/40 pb-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2.5 rounded-xl text-primary border border-primary/20">
                 <Zap className="h-5 w-5" />
               </div>
-              <DialogTitle className="text-lg font-bold tracking-tight text-foreground">
-                Switch: {selected?.title}
-              </DialogTitle>
+              <div>
+                <DialogTitle className="text-lg font-bold tracking-tight text-foreground">
+                  Confirm Switch Request
+                </DialogTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Transition campaign activation</p>
+              </div>
             </div>
           </DialogHeader>
           {selected && (
-            <div className="space-y-4 mt-2">
+            <div className="space-y-5">
               {selected.description && <p className="text-xs leading-relaxed text-muted-foreground">{selected.description}</p>}
 
-              <div className="rounded-xl border border-border bg-accent/20 p-4 space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground font-medium">Switch Target Batch</span>
-                  <span className="font-bold text-foreground">{selected.batch_size.toLocaleString()} users</span>
+              <div className="rounded-xl border border-border bg-accent/10 p-4 space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-semibold">Switch Target Batch</span>
+                  <span className="font-extrabold text-foreground font-mono">{selected.batch_size.toLocaleString()} users</span>
                 </div>
-                <div className="flex justify-between mt-1 pt-1.5 border-t border-border/40">
+                <div className="flex justify-between items-center pt-2 border-t border-border/40">
                   <span className="text-muted-foreground font-semibold">Total Acquisition Price</span>
-                  <span className="font-extrabold text-foreground">${Number(selected.flat_price_usd).toFixed(2)}</span>
+                  <span className="font-extrabold text-foreground font-mono">${Number(selected.flat_price_usd).toFixed(2)}</span>
                 </div>
               </div>
 
               {selected.target_link_required && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Target Destination link</Label>
-                  <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://..." className="rounded-xl border-border bg-background" />
+                  <Label className="text-[11px] uppercase tracking-wider font-extrabold text-muted-foreground">Target Destination link</Label>
+                  <Input
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                    placeholder="https://..."
+                    className="rounded-xl border-border bg-background/50 h-11 text-xs"
+                  />
                 </div>
               )}
-              <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Payment is debited directly from your corporate wallet (balance: <span className="font-bold">${balance.toFixed(2)}</span>).
+              <p className="text-[10px] leading-relaxed text-muted-foreground font-medium">
+                Payment is debited directly from your corporate wallet (balance: <span className="font-bold text-foreground">${balance.toFixed(2)}</span>).
               </p>
             </div>
           )}
-          <DialogFooter className="mt-5 border-t border-border pt-4 gap-2">
-            <Button variant="outline" className="rounded-xl font-semibold" onClick={() => setSelected(null)}>Cancel</Button>
-            <Button onClick={buy} className="rounded-xl font-bold shadow-md shadow-primary/20" disabled={buying || !selected || balance < (selected?.flat_price_usd || 0)}>
-              {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : `Authorize Transition: $${selected?.flat_price_usd.toFixed(2)}`}
+          <DialogFooter className="mt-6 border-t border-border/40 pt-4 gap-2">
+            <Button variant="outline" className="rounded-xl font-bold border-border/85 text-xs h-11" onClick={() => setSelected(null)}>Cancel</Button>
+            <Button onClick={buy} className="rounded-xl font-extrabold shadow-md shadow-primary/20 text-xs h-11" disabled={buying || !selected || balance < (selected?.flat_price_usd || 0)}>
+              {buying ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {buying ? "Processing..." : `Authorize Transition: $${selected?.flat_price_usd.toFixed(2)}`}
             </Button>
           </DialogFooter>
         </DialogContent>
