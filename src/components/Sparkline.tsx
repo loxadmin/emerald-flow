@@ -39,6 +39,7 @@ function smoothPath(coords: readonly (readonly [number, number])[], tension = 0.
 /**
  * Lightweight SVG sparkline whose line draws itself when scrolled into view.
  * Responsive: scales to its container via preserveAspectRatio="none".
+ * Enhanced: features continuous dynamic live wiggling / flowing waves when visible.
  */
 export default function Sparkline({
   data,
@@ -52,8 +53,10 @@ export default function Sparkline({
   const ref = useRef<SVGSVGElement | null>(null);
   const pathRef = useRef<SVGPathElement | null>(null);
   const [visible, setVisible] = useState(false);
+  const [time, setTime] = useState(0);
   const gradientId = useRef(`spark-${Math.random().toString(36).slice(2, 9)}`);
 
+  // Intersection Observer for visibility
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -63,20 +66,47 @@ export default function Sparkline({
           if (e.isIntersecting) setVisible(true);
         });
       },
-      { threshold: 0.25 }
+      { threshold: 0.1 }
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  // Request Animation Frame loop for continuous live motion when visible
+  useEffect(() => {
+    if (!visible) return;
+    let frameId: number;
+    let lastTime = performance.now();
+
+    const tick = (now: number) => {
+      // Advance wave time smoothly
+      const delta = (now - lastTime) / 1000;
+      lastTime = now;
+      setTime((prev) => (prev + delta * 3.5) % (Math.PI * 2));
+      frameId = requestAnimationFrame(tick);
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [visible]);
 
   const points = data && data.length > 1 ? data : [0, 0];
   const max = Math.max(...points);
   const min = Math.min(...points);
   const span = max - min || 1;
   const stepX = width / (points.length - 1);
+
+  // Calculate coordinates with dynamic wave wiggling (anchored at start and end)
   const coords = points.map((v, i) => {
     const x = i * stepX;
-    const y = height - 3 - ((v - min) / span) * (height - 6);
+    const baseRawY = height - 3 - ((v - min) / span) * (height - 6);
+
+    // Anchor factor: 0 at first and last, peak of 1 in middle
+    const anchorFactor = Math.sin((i / (points.length - 1)) * Math.PI);
+    // Dynamic sine wave wiggle
+    const wiggle = Math.sin(time + i * 0.7) * 2.2 * anchorFactor;
+
+    const y = Math.max(2, Math.min(height - 2, baseRawY + (visible ? wiggle : 0)));
     return [x, y] as const;
   });
 
@@ -85,9 +115,15 @@ export default function Sparkline({
 
   const [length, setLength] = useState(0);
   useEffect(() => {
-    if (pathRef.current) setLength(pathRef.current.getTotalLength());
-  }, [line]);
-
+    if (pathRef.current) {
+      try {
+        setLength(pathRef.current.getTotalLength());
+      } catch (e) {
+        // Fallback for environment constraints where getTotalLength might throw or be undefined
+        setLength(width * 1.5);
+      }
+    }
+  }, [line, width]);
 
   const stroke = TONES[tone] || TONES.primary;
 
@@ -128,7 +164,7 @@ export default function Sparkline({
         style={{
           strokeDasharray: length || undefined,
           strokeDashoffset: visible ? 0 : length || undefined,
-          transition: "stroke-dashoffset 1100ms cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: length ? "stroke-dashoffset 1100ms cubic-bezier(0.4, 0, 0.2, 1)" : undefined,
         }}
       />
     </svg>
