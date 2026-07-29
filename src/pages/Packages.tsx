@@ -12,17 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock, Youtube, Music, Instagram, Video } from "lucide-react";
+import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock, Youtube, Music, Instagram, Video, Sparkles, LayoutGrid } from "lucide-react";
 
 const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; placeholder: string }> = {
-  mobile:    { label: "Mobile app", sub: "Up to 2 app links, install required", Icon: Smartphone, placeholder: "https://play.google.com/..." },
-  web:       { label: "Website",    sub: "1 verified website",                  Icon: Globe,      placeholder: "https://yourdomain.com" },
-  youtube:   { label: "YouTube",    sub: "1 channel or video link",             Icon: Youtube,    placeholder: "https://youtube.com/@yourchannel" },
-  spotify:   { label: "Spotify",    sub: "1 artist or track link",              Icon: Music,      placeholder: "https://open.spotify.com/artist/..." },
-  instagram: { label: "Instagram",  sub: "1 profile link",                      Icon: Instagram,  placeholder: "https://instagram.com/yourhandle" },
-  tiktok:    { label: "TikTok",     sub: "1 profile or video link",             Icon: Video,      placeholder: "https://tiktok.com/@yourhandle" },
+  mobile:    { label: "Mobile App", sub: "Up to 2 app store/play store links", Icon: Smartphone, placeholder: "https://play.google.com/..." },
+  web:       { label: "Verified Website",    sub: "Must be owned and verified",                  Icon: Globe,      placeholder: "https://yourdomain.com" },
+  youtube:   { label: "YouTube Channel",    sub: "1 channel or custom video link",             Icon: Youtube,    placeholder: "https://youtube.com/@yourchannel" },
+  spotify:   { label: "Spotify Platform",    sub: "1 artist profile or album link",              Icon: Music,      placeholder: "https://open.spotify.com/artist/..." },
+  instagram: { label: "Instagram",  sub: "1 profile link or video post",                      Icon: Instagram,  placeholder: "https://instagram.com/yourhandle" },
+  tiktok:    { label: "TikTok Video",     sub: "1 profile link or video post",                      Icon: Video,      placeholder: "https://tiktok.com/@yourhandle" },
 };
-const CREATOR_PLATFORMS = ["youtube", "spotify", "instagram", "tiktok"];
 
 import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
 
@@ -222,7 +221,6 @@ export default function Packages() {
     if (commissionOnly) {
       return Number((units * COMMISSION_RESERVE_PER_USER).toFixed(2));
     }
-    // Per-milestone: duration-based milestones bill per user per day, flat one-time milestones bill per user.
     const total = selectedMs
       .filter((r) => r.pricing_type === "flat")
       .reduce((s, r) => {
@@ -233,7 +231,6 @@ export default function Packages() {
       }, 0);
     return Number(total.toFixed(2));
   }, [selectedMs, units, duration, commissionOnly, milestones]);
-
 
   const submit = async () => {
     if (!selected || !user) return;
@@ -280,7 +277,6 @@ export default function Packages() {
       return;
     }
 
-    // Ensure wallet exists before initializing a Paystack top-up
     if (!wallet?.id) {
       const { data: created, error: cErr } = await supabase.functions.invoke("paystack-wallet", { body: { action: "create_wallet" } });
       if (cErr || (created as any)?.error) {
@@ -307,7 +303,6 @@ export default function Packages() {
     window.location.href = url;
   };
 
-  // Correlate unit noun with selected milestone types
   const STREAM_SLUGS = new Set(["music_streams"]);
   const VIEW_SLUGS = new Set(["youtube_video_views", "video_view"]);
   const selectedSlugs = selectedMs
@@ -325,39 +320,42 @@ export default function Packages() {
   return (
     <DashboardLayout>
       <MotionWrapper>
-        <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+        {/* Dynamic Header */}
+        <div className="mb-8 flex items-center justify-between flex-wrap gap-4 border-b border-border pb-6">
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-semibold tracking-tight">Ad Packages</h1>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">Ad Packages</h1>
               {mySubtype && (
-                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-500 border border-emerald-500/20">
                   {subtypeLabel(mySubtype)}
                 </span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">Templates scoped strictly to your subcategory. Pick exactly the milestones you want.</p>
+            <p className="text-sm text-muted-foreground mt-1.5">Premium tailored, fully-integrated campaigns ready to go live in clicks.</p>
           </div>
           <Link to="/packages/orders">
-            <Button variant="outline" size="sm"><ClipboardList className="mr-2 h-4 w-4" /> My orders</Button>
+            <Button variant="outline" size="sm" className="gap-2 font-semibold shadow-sm hover:bg-accent hover:-translate-y-0.5 transition-all">
+              <ClipboardList className="h-4 w-4 text-primary" /> My Orders
+            </Button>
           </Link>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : packages.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
-            <PackageIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
+          <div className="rounded-xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground bg-card/20 backdrop-blur-md">
+            <PackageIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
             {mySubtype ? (
-              <>No packages available for <strong>{subtypeLabel(mySubtype)}</strong> yet.</>
+              <p className="text-base font-semibold">No packages available for <strong>{subtypeLabel(mySubtype)}</strong> yet.</p>
             ) : (
               <>
-                <p>No packages match your account yet.</p>
-                <Link to="/category-select" className="mt-3 inline-block text-primary underline">Set your subcategory</Link>
+                <p className="text-base font-semibold">No packages match your advertiser profile yet.</p>
+                <Link to="/category-select" className="mt-3 inline-block text-primary underline font-medium">Set your subcategory</Link>
               </>
             )}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {packages.map((p) => {
               const ms = pkgMs[p.id] || [];
               const flatRows = ms.filter((r) => r.pricing_type === "flat");
@@ -372,36 +370,70 @@ export default function Packages() {
                 return mm?.requires_duration;
               });
               return (
-                <div key={p.id} className="rounded-xl border bg-card p-5 flex flex-col">
-                  <h3 className="font-semibold">{p.name}</h3>
-                  {p.description && <p className="mt-1.5 text-sm text-muted-foreground line-clamp-3">{p.description}</p>}
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-md bg-muted/50 p-2">
-                      <p className="text-muted-foreground">Starts from</p>
-                      <p className="font-medium text-sm">${cheapest != null ? cheapest.toFixed(2) : "—"}<span className="text-muted-foreground">/user</span></p>
+                <div key={p.id} className="group relative rounded-2xl border border-border bg-card/40 backdrop-blur-md p-6 flex flex-col hover:bg-card hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 premium-shadow">
+                  {/* Badge top indicator */}
+                  <div className="absolute top-4 right-4 text-primary bg-primary/10 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </div>
+
+                  <h3 className="font-bold text-lg text-foreground tracking-tight">{p.name}</h3>
+                  {p.description && <p className="mt-2 text-xs leading-relaxed text-muted-foreground line-clamp-3 min-h-[3rem]">{p.description}</p>}
+
+                  {/* Sleek pricing indicator tables */}
+                  <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
+                    <div className="rounded-xl bg-accent/25 p-3 border border-border/40">
+                      <p className="text-muted-foreground font-medium">Starts from</p>
+                      <p className="font-bold text-base mt-0.5 text-foreground">
+                        ${cheapest != null ? cheapest.toFixed(2) : "—"}
+                        <span className="text-xs text-muted-foreground font-normal">/user</span>
+                      </p>
                     </div>
-                    <div className="rounded-md bg-muted/50 p-2">
-                      <p className="text-muted-foreground">Full funnel</p>
-                      <p className="font-medium text-sm">${fullPrice.toFixed(2)}<span className="text-muted-foreground">/user</span></p>
+                    <div className="rounded-xl bg-accent/25 p-3 border border-border/40">
+                      <p className="text-muted-foreground font-medium">Full funnel</p>
+                      <p className="font-bold text-base mt-0.5 text-foreground">
+                        ${fullPrice.toFixed(2)}
+                        <span className="text-xs text-muted-foreground font-normal">/user</span>
+                      </p>
                     </div>
-                    <div className="rounded-md bg-muted/50 p-2 col-span-2">
+                    <div className="rounded-xl bg-accent/25 p-3 border border-border/40 col-span-2">
                       {(() => {
                         const slugs = ms.map((r) => milestones.find((x) => x.id === r.milestone_id)?.slug).filter(Boolean) as string[];
                         const allS = slugs.length > 0 && slugs.every((s) => s === "music_streams");
                         const allV = slugs.length > 0 && slugs.every((s) => s === "youtube_video_views" || s === "video_view");
-                        const label = allS ? "Streams range" : allV ? "Views range" : anyDurational ? "Daily users" : "Users";
-                        return <><p className="text-muted-foreground">{label}</p>
-                          <p className="font-medium text-sm">{p.min_units.toLocaleString()} to {p.max_units.toLocaleString()}</p></>;
+                        const label = allS ? "Streams range" : allV ? "Views range" : anyDurational ? "Daily target volume" : "User volume range";
+                        return (
+                          <>
+                            <p className="text-muted-foreground font-medium">{label}</p>
+                            <p className="font-bold text-sm mt-0.5 text-foreground">
+                              {p.min_units.toLocaleString()} – {p.max_units.toLocaleString()}
+                            </p>
+                          </>
+                        );
                       })()}
                     </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {(p.platform_support || []).map((pl) => <Badge key={pl} variant="outline" className="capitalize text-[10px]">{pl}</Badge>)}
-                    {anyDurational && (p.duration_options || []).map((d) => <Badge key={d} variant="secondary" className="text-[10px]">{d}d</Badge>)}
-                    {hasCommission && <Badge variant="outline" className="text-[10px]">+ sale commission</Badge>}
+
+                  {/* Badges footer */}
+                  <div className="mt-5 flex flex-wrap gap-1.5">
+                    {(p.platform_support || []).map((pl) => (
+                      <Badge key={pl} variant="outline" className="capitalize text-[10px] font-semibold bg-background/50 border-border/80">
+                        {pl}
+                      </Badge>
+                    ))}
+                    {anyDurational && (p.duration_options || []).map((d) => (
+                      <Badge key={d} variant="secondary" className="text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                        {d} days duration
+                      </Badge>
+                    ))}
+                    {hasCommission && (
+                      <Badge variant="outline" className="text-[10px] font-semibold border-amber-500/20 bg-amber-500/5 text-amber-500">
+                        + sale commission
+                      </Badge>
+                    )}
                   </div>
-                  <Button className="mt-4" onClick={() => openBuy(p)} disabled={ms.length === 0}>
-                    <ShoppingCart className="mr-2 h-4 w-4" /> {ms.length === 0 ? "Not configured" : "Buy package"}
+
+                  <Button className="mt-6 w-full font-semibold shadow-md group-hover:bg-primary/95 group-hover:scale-[1.01] transition-all" onClick={() => openBuy(p)} disabled={ms.length === 0}>
+                    <ShoppingCart className="mr-2 h-4 w-4" /> {ms.length === 0 ? "Under Configuration" : "Deploy Package"}
                   </Button>
                 </div>
               );
@@ -409,43 +441,55 @@ export default function Packages() {
           </div>
         )}
 
+        {/* Premium dialog modal revamp */}
         <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto border-border/80 bg-card/95 backdrop-blur-2xl rounded-2xl premium-shadow">
             {selected && (
               <>
-                <DialogHeader><DialogTitle>{selected.name}</DialogTitle></DialogHeader>
-                <div className="space-y-4">
+                <DialogHeader>
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-primary/10 p-2 rounded-lg text-primary border border-primary/20">
+                      <PackageIcon className="h-5 w-5" />
+                    </div>
+                    <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
+                      Deploy: {selected.name}
+                    </DialogTitle>
+                  </div>
+                </DialogHeader>
+
+                <div className="space-y-5 mt-2">
+                  {/* Platform selection buttons */}
                   <div>
-                    <Label>Platform</Label>
-                    <div className="mt-1 grid grid-cols-2 gap-2">
+                    <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Select Campaign Platform</Label>
+                    <div className="mt-2 grid grid-cols-2 gap-3">
                       {(selected.platform_support || []).map((pl) => {
-                        const meta = PLATFORM_META[pl] || { label: pl, sub: "1 link", Icon: Globe, placeholder: "" };
+                        const meta = PLATFORM_META[pl] || { label: pl, sub: "1 Link", Icon: Globe, placeholder: "" };
                         const Icon = meta.Icon;
                         return (
                           <button key={pl} type="button"
                             onClick={() => setPlatform(pl)}
-                            className={`rounded-lg border p-3 text-left text-sm transition ${platform === pl ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
-                            <Icon className="h-4 w-4 mb-1" />
-                            <p className="font-medium">{meta.label}</p>
-                            <p className="text-xs text-muted-foreground">{meta.sub}</p>
+                            className={`rounded-xl border p-3.5 text-left transition-all duration-200 ${platform === pl ? "border-primary bg-primary/10 shadow-sm shadow-primary/10" : "border-border/60 hover:bg-accent/40"}`}>
+                            <Icon className={`h-5 w-5 mb-2 ${platform === pl ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
+                            <p className="font-bold text-sm text-foreground">{meta.label}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{meta.sub}</p>
                           </button>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* Milestones */}
+                  {/* Milestones Checkboxes */}
                   <div>
-                    <Label>Select milestones</Label>
-                    <div className="mt-1 space-y-1.5">
+                    <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Select funnel Milestones</Label>
+                    <div className="mt-2 space-y-2">
                       {packageMs.map((r) => {
                         const m = milestones.find((x) => x.id === r.milestone_id);
                         const checked = selectedIds.includes(r.milestone_id);
                         const locked = platform === "mobile" && appInstallId === r.milestone_id;
                         return (
                           <label key={r.milestone_id}
-                            className={`w-full flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm transition ${checked ? "border-primary/40 bg-primary/5" : "hover:bg-accent"}`}>
-                            <div className="flex items-center gap-3 min-w-0">
+                            className={`w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm transition-all duration-200 cursor-pointer ${checked ? "border-primary/45 bg-primary/5" : "border-border/60 hover:bg-accent/30"}`}>
+                            <div className="flex items-center gap-3.5 min-w-0">
                               <Checkbox
                                 checked={checked}
                                 disabled={locked}
@@ -456,150 +500,160 @@ export default function Packages() {
                                     : ids.filter((id) => id !== r.milestone_id));
                                 }}
                               />
-                              <span className="font-medium truncate">{m?.name || "?"}</span>
-                              {m?.requires_duration && <Badge variant="outline" className="text-[9px]">daily</Badge>}
-                              {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                              <div className="min-w-0">
+                                <span className="font-semibold text-foreground truncate block">{m?.name || "?"}</span>
+                                {m?.requires_duration && <span className="text-[10px] text-primary font-medium mt-0.5 block">Durational delivery required</span>}
+                              </div>
+                              {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground/60" />}
                             </div>
-                            <span className="shrink-0 text-xs text-muted-foreground">
+                            <span className="shrink-0 text-xs font-bold text-foreground">
                               {r.pricing_type === "commission_pct"
-                                ? `${r.commission_pct}% per sale`
-                                : `+$${(r.price_usd || 0).toFixed(2)}/${m?.requires_duration ? "user/day" : "user"}`}
+                                ? `${r.commission_pct}% commission`
+                                : `+$${(r.price_usd || 0).toFixed(2)} / ${m?.requires_duration ? "user/day" : "user"}`}
                             </span>
                           </label>
                         );
                       })}
                     </div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                      One-off milestones (install, signup, KYC, deposit) deliver a total number of users. Engagement and Transaction deliver users per day over a duration.
-                    </p>
                   </div>
 
-                  {/* Duration (only if needed) */}
+                  {/* Duration selector */}
                   {needsDuration && (
                     <div>
-                      <Label>Delivery duration</Label>
-                      <Select value={String(duration)} onValueChange={(v) => setDuration(Number(v))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {(selected.duration_options || []).map((d) => (
-                            <SelectItem key={d} value={String(d)}>{d} days</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="mt-1 text-xs text-muted-foreground">{units.toLocaleString()} users daily × {duration} days.</p>
+                      <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Delivery Duration</Label>
+                      <div className="mt-2">
+                        <Select value={String(duration)} onValueChange={(v) => setDuration(Number(v))}>
+                          <SelectTrigger className="rounded-xl border-border bg-background"><SelectValue /></SelectTrigger>
+                          <SelectContent className="border-border">
+                            {(selected.duration_options || []).map((d) => (
+                              <SelectItem key={d} value={String(d)} className="font-semibold">{d} days</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="mt-1.5 text-xs text-muted-foreground font-medium">{units.toLocaleString()} users daily × {duration} days total coverage.</p>
+                      </div>
                     </div>
                   )}
 
-                  {/* Units */}
+                  {/* Units Input */}
                   <div>
-                    <Label>{unitsLabel}</Label>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      min={selected.min_units}
-                      max={selected.max_units}
-                      value={unitsText}
-                      onChange={(e) => {
-                        // Free typing — no clamping while user is editing.
-                        setUnitsText(e.target.value);
-                        const n = Number(e.target.value);
-                        if (!Number.isNaN(n) && e.target.value !== "") setUnits(n);
-                      }}
-                      onBlur={() => {
-                        const n = Number(unitsText);
-                        const clamped = Number.isFinite(n)
-                          ? Math.max(selected.min_units, Math.min(selected.max_units, Math.floor(n)))
-                          : selected.min_units;
-                        setUnits(clamped);
-                        setUnitsText(String(clamped));
-                      }}
-                    />
-                    <p className="mt-1 text-xs text-muted-foreground">Min {selected.min_units.toLocaleString()} · Max {selected.max_units.toLocaleString()} {unitsNoun}</p>
+                    <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">{unitsLabel}</Label>
+                    <div className="mt-2">
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        className="rounded-xl border-border bg-background"
+                        min={selected.min_units}
+                        max={selected.max_units}
+                        value={unitsText}
+                        onChange={(e) => {
+                          setUnitsText(e.target.value);
+                          const n = Number(e.target.value);
+                          if (!Number.isNaN(n) && e.target.value !== "") setUnits(n);
+                        }}
+                        onBlur={() => {
+                          const n = Number(unitsText);
+                          const clamped = Number.isFinite(n)
+                            ? Math.max(selected.min_units, Math.min(selected.max_units, Math.floor(n)))
+                            : selected.min_units;
+                          setUnits(clamped);
+                          setUnitsText(String(clamped));
+                        }}
+                      />
+                      <p className="mt-1.5 text-[11px] text-muted-foreground">Limit: {selected.min_units.toLocaleString()} to {selected.max_units.toLocaleString()} {unitsNoun}.</p>
+                    </div>
                   </div>
 
-                  {/* Links */}
+                  {/* Links Field */}
                   <div>
-                    <Label>
-                      {platform === "web" ? "Website (verified only)"
-                        : platform === "mobile" ? "App link(s)"
-                        : `${PLATFORM_META[platform]?.label || platform} link`}
+                    <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                      {platform === "web" ? "Verified Destination Website"
+                        : platform === "mobile" ? "App Store Links"
+                        : `${PLATFORM_META[platform]?.label || platform} Destination Link`}
                     </Label>
-                    {platform === "web" ? (
-                      websites.length === 0 ? (
-                        <div className="rounded-md border border-dashed p-3 text-sm">
-                          <p className="text-muted-foreground">You have no verified websites.</p>
-                          <Link to="/websites"><Button size="sm" variant="link" className="px-0">Verify a website first →</Button></Link>
+                    <div className="mt-2">
+                      {platform === "web" ? (
+                        websites.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-border p-4 text-sm text-center bg-muted/20">
+                            <p className="text-muted-foreground font-medium">No verified websites connected.</p>
+                            <Link to="/websites"><Button size="sm" variant="link" className="text-primary hover:underline px-0 mt-1 font-semibold">Verify domain first →</Button></Link>
+                          </div>
+                        ) : (
+                          <Select value={links[0]} onValueChange={(v) => setLinks([v])}>
+                            <SelectTrigger className="rounded-xl border-border bg-background"><SelectValue placeholder="Pick a verified website" /></SelectTrigger>
+                            <SelectContent className="border-border">{websites.map((s) => <SelectItem key={s.id} value={s.domain}>{s.domain}</SelectItem>)}</SelectContent>
+                          </Select>
+                        )
+                      ) : platform === "mobile" ? (
+                        <div className="space-y-2">
+                          {links.map((l, i) => (
+                            <div key={i} className="flex gap-2">
+                              <Input value={l} placeholder="https://play.google.com/..." className="rounded-xl border-border bg-background"
+                                onChange={(e) => setLinks(links.map((x, j) => j === i ? e.target.value : x))} />
+                              {links.length > 1 && (
+                                <Button variant="outline" size="icon" className="rounded-xl shrink-0" onClick={() => setLinks(links.filter((_, j) => j !== i))}>✕</Button>
+                              )}
+                            </div>
+                          ))}
+                          {links.length < 2 && (
+                            <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/5 rounded-lg mt-1 font-semibold" onClick={() => setLinks([...links, ""])}>+ Add Android/iOS URL</Button>
+                          )}
                         </div>
                       ) : (
-                        <Select value={links[0]} onValueChange={(v) => setLinks([v])}>
-                          <SelectTrigger><SelectValue placeholder="Pick a verified website" /></SelectTrigger>
-                          <SelectContent>{websites.map((s) => <SelectItem key={s.id} value={s.domain}>{s.domain}</SelectItem>)}</SelectContent>
-                        </Select>
-                      )
-                    ) : platform === "mobile" ? (
-                      <div className="space-y-2">
-                        {links.map((l, i) => (
-                          <div key={i} className="flex gap-2">
-                            <Input value={l} placeholder="https://play.google.com/..."
-                              onChange={(e) => setLinks(links.map((x, j) => j === i ? e.target.value : x))} />
-                            {links.length > 1 && (
-                              <Button variant="outline" size="icon" onClick={() => setLinks(links.filter((_, j) => j !== i))}>✕</Button>
-                            )}
-                          </div>
-                        ))}
-                        {links.length < 2 && (
-                          <Button variant="ghost" size="sm" onClick={() => setLinks([...links, ""])}>+ Add second link</Button>
-                        )}
-                      </div>
-                    ) : (
-                      <Input
-                        value={links[0] || ""}
-                        placeholder={PLATFORM_META[platform]?.placeholder || "https://..."}
-                        onChange={(e) => setLinks([e.target.value])}
-                      />
-                    )}
+                        <Input
+                          value={links[0] || ""}
+                          className="rounded-xl border-border bg-background"
+                          placeholder={PLATFORM_META[platform]?.placeholder || "https://..."}
+                          onChange={(e) => setLinks([e.target.value])}
+                        />
+                      )}
+                    </div>
                   </div>
 
-                  {/* Total */}
-                  <div className="rounded-lg border bg-muted/40 p-3">
+                  {/* Summary calculation card */}
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Upfront total</span>
-                      <span className="text-lg font-semibold">${flatTotal.toFixed(2)}</span>
+                      <span className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Upfront billing amount</span>
+                      <span className="text-xl font-bold text-foreground">${flatTotal.toFixed(2)}</span>
                     </div>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
+                    <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                       {commissionOnly
-                        ? `${units.toLocaleString()} users × $${COMMISSION_RESERVE_PER_USER}/user reserve (locked in escrow to fund per-sale commissions).`
+                        ? `${units.toLocaleString()} users × $${COMMISSION_RESERVE_PER_USER}/user reserve locked in escrow to fund per-sale commissions.`
                         : needsDuration
                         ? `${units.toLocaleString()} users × ${duration} days × selected flat milestones.`
                         : `${units.toLocaleString()} users × selected flat milestones.`}
                     </p>
                     {commissionRows.length > 0 && (
-                      <p className="mt-1 text-[11px] text-amber-600">
-                        + {commissionRows.map((c) => `${c.commission_pct}% per sale`).join(", ")} — deducted from your wallet as each sale is confirmed.
+                      <p className="mt-2 text-[11px] font-bold text-amber-500">
+                        + {commissionRows.map((c) => `${c.commission_pct}% per sale`).join(", ")} deducted upon delivery verification.
                       </p>
                     )}
                   </div>
 
-                  {/* Payment */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => setPayMethod("wallet")}
-                      className={`rounded-lg border p-3 text-left text-sm transition ${payMethod === "wallet" ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
-                      <Wallet className="h-4 w-4 mb-1" />
-                      <p className="font-medium">Wallet</p>
-                      <p className="text-xs text-muted-foreground">Balance: ${(wallet?.balance || 0).toFixed(2)}</p>
-                    </button>
-                    <button type="button" onClick={() => setPayMethod("paystack")}
-                      className={`rounded-lg border p-3 text-left text-sm transition ${payMethod === "paystack" ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
-                      <CreditCard className="h-4 w-4 mb-1" />
-                      <p className="font-medium">Paystack</p>
-                      <p className="text-xs text-muted-foreground">Card / bank</p>
-                    </button>
+                  {/* Payment Methods buttons */}
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Choose Payment Gateway</Label>
+                    <div className="mt-2 grid grid-cols-2 gap-3">
+                      <button type="button" onClick={() => setPayMethod("wallet")}
+                        className={`rounded-xl border p-4 text-left transition-all duration-200 ${payMethod === "wallet" ? "border-primary bg-primary/10 shadow-sm shadow-primary/10" : "border-border/60 hover:bg-accent/40"}`}>
+                        <Wallet className={`h-5 w-5 mb-2 ${payMethod === "wallet" ? "text-primary" : "text-muted-foreground"}`} />
+                        <p className="font-bold text-sm text-foreground">Corporate Wallet</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Available: ${(wallet?.balance || 0).toFixed(2)}</p>
+                      </button>
+                      <button type="button" onClick={() => setPayMethod("paystack")}
+                        className={`rounded-xl border p-4 text-left transition-all duration-200 ${payMethod === "paystack" ? "border-primary bg-primary/10 shadow-sm shadow-primary/10" : "border-border/60 hover:bg-accent/40"}`}>
+                        <CreditCard className={`h-5 w-5 mb-2 ${payMethod === "paystack" ? "text-primary" : "text-muted-foreground"}`} />
+                        <p className="font-bold text-sm text-foreground">Paystack Engine</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Instant Card/Bank payment</p>
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setSelected(null)}>Cancel</Button>
-                  <Button onClick={submit} disabled={buying || flatTotal <= 0 || (platform === "web" && websites.length === 0)}>
-                    {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : `Pay $${flatTotal.toFixed(2)}`}
+
+                <DialogFooter className="mt-6 border-t border-border pt-4 gap-2">
+                  <Button variant="outline" className="rounded-xl font-semibold" onClick={() => setSelected(null)}>Cancel</Button>
+                  <Button onClick={submit} className="rounded-xl font-bold shadow-md shadow-primary/20 scale-100 hover:scale-[1.01] transition-transform" disabled={buying || flatTotal <= 0 || (platform === "web" && websites.length === 0)}>
+                    {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : `Authorize Payment: $${flatTotal.toFixed(2)}`}
                   </Button>
                 </DialogFooter>
               </>

@@ -11,6 +11,7 @@ import AnimatedDonut from "@/components/AnimatedDonut";
 import {
   Plus, BarChart3, Tag, ArrowUpRight, ArrowRight, RefreshCw,
   Sparkles, Repeat2, Wallet, Lock, Package as PackageIcon,
+  TrendingUp, Activity, MousePointer, CreditCard, Layers, ArrowDownRight
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -23,11 +24,11 @@ interface Campaign {
 interface DailyData { date: string; events: number; }
 
 const STATUS_STYLES: Record<string, string> = {
-  active:   "bg-primary/10 text-primary border-primary/20",
-  pending:  "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  rejected: "bg-destructive/10 text-destructive border-destructive/20",
+  active:   "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  pending:  "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  rejected: "bg-rose-500/10 text-rose-500 border-rose-500/20",
   paused:   "bg-muted text-muted-foreground border-border",
-  completed:"bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+  completed:"bg-blue-500/10 text-blue-500 border-blue-500/20",
 };
 
 /** Turns "https://www.cabally.com" into "Cabally" so offers can be personalised. */
@@ -245,34 +246,34 @@ export default function Dashboard() {
   const fallback = (arr: number[]) => (arr.length ? arr : new Array(14).fill(0));
 
   const statCards = [
-    { label: "Total events", value: stats.totalEvents.toLocaleString(), hint: "All tracked activity", delta: pctDelta(eventSeries), to: "/ads" },
-    { label: "Users delivered", value: stats.delivered.toLocaleString(), hint: "From ad packages", delta: pctDelta(deliverySeries), to: "/packages/orders" },
-    { label: "Clicks", value: stats.totalClicks.toLocaleString(), hint: "Verified clicks", delta: pctDelta(clickSeries), to: "/ads" },
-    { label: "Total spent", value: `$${stats.totalSpent.toFixed(2)}`, hint: "Across all campaigns", delta: pctDelta(spendSeries), to: "/wallet" },
-    { label: "Running", value: (activeCampaigns + activeOrders).toString(), hint: "Live campaigns & packages", delta: null, to: "/ads" },
+    { label: "Total events", value: stats.totalEvents.toLocaleString(), hint: "All tracked activity", delta: pctDelta(eventSeries), to: "/ads", icon: TrendingUp },
+    { label: "Users delivered", value: stats.delivered.toLocaleString(), hint: "From ad packages", delta: pctDelta(deliverySeries), to: "/packages/orders", icon: Layers },
+    { label: "Clicks", value: stats.totalClicks.toLocaleString(), hint: "Verified clicks", delta: pctDelta(clickSeries), to: "/ads", icon: MousePointer },
+    { label: "Total spent", value: `$${stats.totalSpent.toFixed(2)}`, hint: "Across all campaigns", delta: pctDelta(spendSeries), to: "/wallet", icon: CreditCard },
+    { label: "Running", value: (activeCampaigns + activeOrders).toString(), hint: "Live campaigns & packages", delta: null, to: "/ads", icon: Activity },
   ];
 
   return (
     <DashboardLayout>
-      <div className="mx-auto w-full max-w-[1400px] space-y-5">
-        {/* Header */}
+      <div className="mx-auto w-full max-w-[1400px] space-y-6">
+        {/* Workspace Topbar Header */}
         <MotionWrapper>
-          <div className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-1.5 min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight">
+          <div className="flex flex-col gap-4 border-b border-border pb-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
                 Welcome back, {firstName}
               </h1>
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <span>Live performance across your workspace.</span>
+                <span>Workspace performance overview and campaign metrics.</span>
                 {categoryName && (
                   <>
                     <span className="text-border">·</span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-foreground">
-                      <Tag className="h-3 w-3 text-muted-foreground" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-0.5 text-xs font-semibold text-foreground bg-accent/40">
+                      <Tag className="h-3 w-3 text-primary" />
                       {categoryName}
                     </span>
-                    <Link to="/category-select" className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-                      <RefreshCw className="h-3 w-3" /> change
+                    <Link to="/category-select" className="inline-flex items-center gap-1 text-xs text-primary hover:underline transition-colors ml-1 font-medium">
+                      <RefreshCw className="h-3 w-3 animate-spin-slow" /> change
                     </Link>
                   </>
                 )}
@@ -280,8 +281,8 @@ export default function Dashboard() {
             </div>
             {!needsActivation && (
               <Link to="/campaigns/create" className="self-start lg:self-auto">
-                <Button size="sm" className="gap-1.5">
-                  <Plus className="h-4 w-4" /> New campaign
+                <Button size="default" className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 scale-100 hover:scale-[1.02] transition-transform duration-200">
+                  <Plus className="h-4.5 w-4.5" /> New campaign
                 </Button>
               </Link>
             )}
@@ -291,9 +292,9 @@ export default function Dashboard() {
         {/* Activation notice */}
         {needsActivation && (
           <MotionWrapper delay={0.03}>
-            <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Lock className="h-4 w-4" />
+            <div className="rounded-xl border border-border bg-card/60 backdrop-blur-xl p-5 flex flex-col gap-4 sm:flex-row sm:items-center premium-shadow">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Lock className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground">Your account is not activated yet</p>
@@ -302,7 +303,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <Link to="/wallet" className="shrink-0">
-                <Button size="sm" className="w-full gap-1.5 sm:w-auto">
+                <Button size="sm" className="w-full gap-1.5 sm:w-auto font-semibold">
                   <Wallet className="h-4 w-4" /> Activate with $25
                 </Button>
               </Link>
@@ -310,42 +311,42 @@ export default function Dashboard() {
           </MotionWrapper>
         )}
 
-        {/* Switch offers — top of the dashboard */}
+        {/* Dynamic Switch Offers banner row */}
         {switchOffers.length > 0 && (
           <MotionWrapper delay={0.04}>
-            <section className="rounded-xl border border-border bg-card">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3.5">
+            <section className="rounded-xl border border-border bg-card/50 backdrop-blur-md premium-shadow overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Repeat2 className="h-4 w-4 text-primary shrink-0" />
-                  <h2 className="text-sm font-semibold tracking-tight">Users ready to switch to {brandName}</h2>
+                  <Repeat2 className="h-5 w-5 text-primary shrink-0" />
+                  <h2 className="text-base font-bold tracking-tight">Users ready to switch to {brandName}</h2>
                 </div>
-                <Link to="/switch-offers" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                  View all <ArrowRight className="h-3 w-3" />
+                <Link to="/switch-offers" className="inline-flex items-center gap-1 text-xs text-primary hover:underline transition-colors font-semibold">
+                  View all <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
               <ul className="divide-y divide-border">
                 {switchOffers.map((o) => (
-                  <li key={o.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
+                  <li key={o.id} className="flex flex-wrap items-center gap-4 px-5 py-4 hover:bg-accent/20 transition-colors">
                     {o.competitor_logo ? (
-                      <img src={o.competitor_logo} alt="" className="h-9 w-9 shrink-0 rounded-lg object-cover" />
+                      <img src={o.competitor_logo} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover border border-border shadow-sm" />
                     ) : (
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
-                        <Repeat2 className="h-4 w-4" />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground border border-border">
+                        <Repeat2 className="h-5 w-5 text-muted-foreground" />
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {Number(o.batch_size).toLocaleString()} {o.competitor_name || ""} users ready to move
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {Number(o.batch_size).toLocaleString()} {o.competitor_name || ""} users ready to migrate
                       </p>
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">{o.title}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold tabular-nums text-foreground">${Number(o.flat_price_usd).toFixed(2)}</p>
-                      <p className="text-[11px] text-muted-foreground">flat</p>
+                      <p className="text-sm font-bold tabular-nums text-foreground">${Number(o.flat_price_usd).toFixed(2)}</p>
+                      <p className="text-[11px] text-muted-foreground">flat rate</p>
                     </div>
                     <Link to="/switch-offers" className="shrink-0">
-                      <Button size="sm" variant="outline" className="gap-1">
-                        Switch <ArrowRight className="h-3.5 w-3.5" />
+                      <Button size="sm" variant="outline" className="gap-1 bg-background hover:bg-accent hover:-translate-y-0.5 transition-all">
+                        Migrate <ArrowRight className="h-3.5 w-3.5" />
                       </Button>
                     </Link>
                   </li>
@@ -355,107 +356,130 @@ export default function Dashboard() {
           </MotionWrapper>
         )}
 
-        {/* Ad packages — top of the dashboard */}
+        {/* Ad packages suggestion */}
         {hasPackages && (
           <MotionWrapper delay={0.06}>
             <Link to="/packages" className="group block">
-              <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <PackageIcon className="h-4 w-4" />
+              <div className="flex items-center gap-4 rounded-xl border border-border bg-card/40 backdrop-blur-md p-5 transition-all duration-300 hover:border-primary/40 hover:bg-card/70 hover:translate-y-[-2px] premium-shadow">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+                  <PackageIcon className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-foreground">Ready-to-run ad packages for your category</p>
+                  <p className="text-sm font-bold text-foreground">Ready-to-run ad packages for your category</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">Pick your milestones, set your volume and go live without building a campaign.</p>
                 </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight className="h-4.5 w-4.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
               </div>
             </Link>
           </MotionWrapper>
         )}
 
-        {/* Stats strip */}
+        {/* Premium Fintech Metric Cards */}
         <MotionWrapper delay={0.08}>
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-5">
-            {statCards.map((s) => (
-              <Link key={s.label} to={s.to} className="group bg-card p-5 transition-colors hover:bg-accent/40">
-                <p className="text-xs text-muted-foreground">{s.label}</p>
-                <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">{s.value}</p>
-                <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
-                  {s.delta !== null ? (
-                    <span className={s.delta >= 0 ? "text-primary" : "text-destructive"}>
-                      {s.delta >= 0 ? "↑" : "↓"} {Math.abs(s.delta).toFixed(1)}%
-                    </span>
-                  ) : null}
-                  <span className="text-muted-foreground">{s.hint}</span>
-                </div>
-              </Link>
-            ))}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {statCards.map((s, idx) => {
+              const Icon = s.icon;
+              return (
+                <Link
+                  key={s.label}
+                  to={s.to}
+                  className="group relative overflow-hidden rounded-xl border border-border bg-card/40 backdrop-blur-md p-5 transition-all duration-300 hover:bg-card hover:-translate-y-1 hover:border-primary/30 premium-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</p>
+                    <div className="rounded-lg bg-accent/30 p-1.5 text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                  </div>
+                  <p className="mt-4 text-3xl font-bold tracking-tight tabular-nums text-foreground group-hover:text-primary-foreground/95 transition-colors">
+                    {s.value}
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs">
+                    {s.delta !== null ? (
+                      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${s.delta >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                        {s.delta >= 0 ? <TrendingUp className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                        {Math.abs(s.delta).toFixed(1)}%
+                      </span>
+                    ) : null}
+                    <span className="text-muted-foreground truncate">{s.hint}</span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </MotionWrapper>
 
-        {/* Performance + mix */}
+        {/* Premium Analytics display based on provided samples */}
         <MotionWrapper delay={0.1}>
-          <div className="grid gap-5 lg:grid-cols-3">
-            <div className="rounded-xl border border-border bg-card overflow-hidden lg:col-span-2">
-              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-border">
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Main chart section (Sales/Events Overview theme) */}
+            <div className="rounded-xl border border-border bg-card/40 backdrop-blur-md overflow-hidden lg:col-span-2 premium-shadow flex flex-col">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4.5 border-b border-border bg-card/20">
                 <div>
-                  <h3 className="text-sm font-semibold tracking-tight">Total performance</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Events and delivered users · last 30 days</p>
+                  <h3 className="text-base font-bold tracking-tight">Performance vs Benchmarks</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Live aggregated system-wide conversions and events</p>
                 </div>
-                <Badge variant="outline" className="text-[11px] font-normal">30D</Badge>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-500 border border-emerald-500/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Activity
+                  </span>
+                  <Badge variant="outline" className="text-xs font-semibold px-2 py-1 bg-background/50">30D</Badge>
+                </div>
               </div>
-              <div className="px-1 py-4 sm:px-2">
+              <div className="p-4 flex-1 flex flex-col justify-center">
                 {dailyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <AreaChart data={dailyData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                  <ResponsiveContainer width="100%" height={290}>
+                    <AreaChart data={dailyData} margin={{ top: 12, right: 16, left: -20, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.16} />
+                        <linearGradient id="colorPrimaryGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.22} />
                           <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 6" vertical={false} />
+                      <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 4" vertical={false} opacity={0.6} />
                       <XAxis
                         dataKey="date" axisLine={false} tickLine={false}
-                        tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                        dy={10} minTickGap={40} interval="preserveStartEnd"
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
+                        dy={8} minTickGap={40} interval="preserveStartEnd"
                       />
                       <YAxis
-                        axisLine={false} tickLine={false} width={34}
-                        tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false} tickLine={false}
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
                         allowDecimals={false}
                       />
                       <Tooltip
-                        cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                        cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1.5, strokeDasharray: "3 3" }}
                         contentStyle={{
                           background: "hsl(var(--popover))",
                           border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
+                          borderRadius: "12px",
                           fontSize: 12,
                           color: "hsl(var(--foreground))",
-                          padding: "8px 10px",
+                          padding: "10px 14px",
+                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.4)",
                         }}
-                        labelStyle={{ color: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                        labelStyle={{ color: "hsl(var(--muted-foreground))", fontSize: 11, fontWeight: 600, marginBottom: 4 }}
                       />
                       <Area
-                        type="monotone" dataKey="events" name="Activity"
-                        stroke="hsl(var(--primary))" strokeWidth={1.25}
-                        fillOpacity={1} fill="url(#colorEvents)"
-                        dot={false}
-                        activeDot={{ r: 3, strokeWidth: 1.25 }}
-                        animationDuration={900}
+                        type="monotone" dataKey="events" name="Total Activity"
+                        stroke="hsl(var(--primary))" strokeWidth={2}
+                        fillOpacity={1} fill="url(#colorPrimaryGrad)"
+                        dot={{ r: 1, strokeWidth: 1 }}
+                        activeDot={{ r: 5, strokeWidth: 1.5, stroke: "hsl(var(--background))", fill: "hsl(var(--primary))" }}
+                        animationDuration={1200}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-[280px]">
+                  <div className="flex items-center justify-center h-[290px]">
                     <div className="text-center px-6">
-                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-muted border border-border">
+                        <BarChart3 className="h-5 w-5 text-muted-foreground" />
                       </div>
-                      <p className="text-sm font-medium text-foreground">No activity yet</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        This chart fills up as your campaigns and packages start delivering.
+                      <p className="text-sm font-semibold text-foreground">No activity metrics yet</p>
+                      <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                        This chart fills up as your campaigns and package orders start delivering conversion events.
                       </p>
                     </div>
                   </div>
@@ -463,10 +487,11 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card flex flex-col">
-              <div className="border-b border-border px-5 py-3.5">
-                <h3 className="text-sm font-semibold tracking-tight">Portfolio status</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Campaign mix</p>
+            {/* Side breakdown / campaign mix */}
+            <div className="rounded-xl border border-border bg-card/40 backdrop-blur-md flex flex-col premium-shadow">
+              <div className="border-b border-border px-5 py-4 bg-card/20">
+                <h3 className="text-base font-bold tracking-tight">Portfolio Allocation</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Campaign status distribution</p>
               </div>
               <div className="flex flex-1 items-center justify-center p-6">
                 <AnimatedDonut
@@ -483,32 +508,32 @@ export default function Dashboard() {
           </div>
         </MotionWrapper>
 
-        {/* Campaigns table */}
+        {/* Live campaigns table with animated graph lines */}
         <MotionWrapper delay={0.12}>
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-border">
-              <h3 className="text-sm font-semibold tracking-tight">Your campaigns</h3>
-              <Link to="/ads" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                View all <ArrowRight className="h-3 w-3" />
+          <div className="rounded-xl border border-border bg-card/40 backdrop-blur-md overflow-hidden premium-shadow">
+            <div className="flex items-center justify-between gap-3 px-6 py-4.5 border-b border-border bg-card/20">
+              <h3 className="text-base font-bold tracking-tight">Live Campaign Metrics</h3>
+              <Link to="/ads" className="inline-flex items-center gap-1 text-xs text-primary hover:underline transition-colors font-semibold">
+                View detailed list <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             {loading ? (
               <div className="flex justify-center py-14">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
             ) : campaigns.length === 0 && packageOrders.length === 0 ? (
               <div className="px-6 py-14 text-center">
-                <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <Sparkles className="h-4 w-4 text-primary" />
+                <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-primary/15 border border-primary/20">
+                  <Sparkles className="h-5 w-5 text-primary" />
                 </div>
-                <p className="text-sm font-medium text-foreground">No campaigns yet</p>
+                <p className="text-sm font-semibold text-foreground">No active campaigns or orders yet</p>
                 <p className="text-xs text-muted-foreground mt-1 mb-5">
-                  Launch your first campaign to start reaching real customers.
+                  Launch your first campaign to start reaching real customers on our network.
                 </p>
                 <Link to={needsActivation ? "/wallet" : "/campaigns/create"}>
-                  <Button size="sm">
-                    <Plus className="mr-1.5 h-3.5 w-3.5" /> {needsActivation ? "Activate to start" : "Create campaign"}
+                  <Button size="sm" className="font-semibold shadow-md shadow-primary/25">
+                    <Plus className="mr-1.5 h-4 w-4" /> {needsActivation ? "Activate to start" : "Create campaign"}
                   </Button>
                 </Link>
               </div>
@@ -516,65 +541,69 @@ export default function Dashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                      <th className="px-5 py-2.5 font-normal">Name</th>
-                      <th className="px-3 py-2.5 font-normal">Source</th>
-                      <th className="px-3 py-2.5 font-normal">Status</th>
-                      <th className="px-3 py-2.5 font-normal text-right">Value</th>
-                      <th className="hidden px-3 py-2.5 font-normal sm:table-cell">Trend</th>
-                      <th className="px-5 py-2.5 font-normal" />
+                    <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground bg-muted/20">
+                      <th className="px-6 py-3 font-semibold">Name</th>
+                      <th className="px-4 py-3 font-semibold">Source Type</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold text-right">Value Details</th>
+                      <th className="hidden px-4 py-3 font-semibold sm:table-cell">Live Trend (Animated)</th>
+                      <th className="px-6 py-3 font-semibold" />
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border/60">
                     {packageOrders.slice(0, 5).map((o) => (
-                      <tr key={`o-${o.id}`} className="border-b border-border last:border-0 transition-colors hover:bg-accent/40">
-                        <td className="px-5 py-3">
-                          <Link to="/packages/orders" className="font-medium text-foreground hover:text-primary transition-colors">
+                      <tr key={`o-${o.id}`} className="transition-colors hover:bg-accent/30">
+                        <td className="px-6 py-4.5">
+                          <Link to="/packages/orders" className="font-semibold text-foreground hover:text-primary transition-colors">
                             {o.package_name}
                           </Link>
                         </td>
-                        <td className="px-3 py-3 text-xs text-muted-foreground">Package</td>
-                        <td className="px-3 py-3">
-                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium ${statusClass(o.status === "pending_review" ? "pending" : o.status)}`}>
+                        <td className="px-4 py-4.5 text-xs text-muted-foreground">Ad Package</td>
+                        <td className="px-4 py-4.5">
+                          <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-bold uppercase ${statusClass(o.status === "pending_review" ? "pending" : o.status)}`}>
                             {o.status === "pending_review" ? "pending" : o.status}
                           </Badge>
                         </td>
-                        <td className="px-3 py-3 text-right tabular-nums text-xs text-muted-foreground">
-                          {Number(o.units).toLocaleString()} units · ${Number(o.total_amount_usd || 0).toFixed(2)}
+                        <td className="px-4 py-4.5 text-right tabular-nums text-xs font-medium text-foreground">
+                          {Number(o.units).toLocaleString()} units <span className="text-muted-foreground font-normal">·</span> ${Number(o.total_amount_usd || 0).toFixed(2)}
                         </td>
-                        <td className="hidden px-3 py-3 sm:table-cell">
-                          <Sparkline data={fallback(deliverySeries)} tone={o.status === "active" ? "primary" : "muted"} className="h-7 w-24" />
+                        <td className="hidden px-4 py-4.5 sm:table-cell">
+                          <Sparkline data={fallback(deliverySeries)} tone={o.status === "active" ? "primary" : "muted"} className="h-7 w-28 scale-100 group-hover:scale-105 transition-transform" />
                         </td>
-                        <td className="px-5 py-3 text-right">
-                          <Link to="/packages/orders"><ArrowUpRight className="h-4 w-4 text-muted-foreground/50" /></Link>
+                        <td className="px-6 py-4.5 text-right">
+                          <Link to="/packages/orders" className="rounded-lg p-1 hover:bg-accent/40 inline-block transition-colors">
+                            <ArrowUpRight className="h-4.5 w-4.5 text-muted-foreground" />
+                          </Link>
                         </td>
                       </tr>
                     ))}
                     {campaigns.slice(0, 8).map((c) => (
-                      <tr key={c.id} className="border-b border-border last:border-0 transition-colors hover:bg-accent/40">
-                        <td className="px-5 py-3">
-                          <Link to={`/campaigns/${c.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                      <tr key={c.id} className="transition-colors hover:bg-accent/30">
+                        <td className="px-6 py-4.5">
+                          <Link to={`/campaigns/${c.id}`} className="font-semibold text-foreground hover:text-primary transition-colors">
                             {c.name}
                           </Link>
                         </td>
-                        <td className="px-3 py-3 text-xs text-muted-foreground">Campaign</td>
-                        <td className="px-3 py-3">
-                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium ${statusClass(c.status)}`}>
+                        <td className="px-4 py-4.5 text-xs text-muted-foreground">Direct Campaign</td>
+                        <td className="px-4 py-4.5">
+                          <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-bold uppercase ${statusClass(c.status)}`}>
                             {c.status}
                           </Badge>
                         </td>
-                        <td className="px-3 py-3 text-right tabular-nums text-xs text-muted-foreground">
-                          ${Number(c.budget_remaining).toFixed(2)} left
+                        <td className="px-4 py-4.5 text-right tabular-nums text-xs font-medium text-foreground">
+                          ${Number(c.budget_remaining).toFixed(2)} <span className="text-muted-foreground font-normal">left</span>
                         </td>
-                        <td className="hidden px-3 py-3 sm:table-cell">
+                        <td className="hidden px-4 py-4.5 sm:table-cell">
                           <Sparkline
                             data={fallback(campaignSeries[c.id] || [])}
                             tone={c.status === "active" ? "primary" : "muted"}
-                            className="h-7 w-24"
+                            className="h-7 w-28 scale-100 group-hover:scale-105 transition-transform"
                           />
                         </td>
-                        <td className="px-5 py-3 text-right">
-                          <Link to={`/campaigns/${c.id}`}><ArrowUpRight className="h-4 w-4 text-muted-foreground/50" /></Link>
+                        <td className="px-6 py-4.5 text-right">
+                          <Link to={`/campaigns/${c.id}`} className="rounded-lg p-1 hover:bg-accent/40 inline-block transition-colors">
+                            <ArrowUpRight className="h-4.5 w-4.5 text-muted-foreground" />
+                          </Link>
                         </td>
                       </tr>
                     ))}
