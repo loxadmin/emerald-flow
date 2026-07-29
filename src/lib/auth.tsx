@@ -115,7 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     resetAccessState();
     setIsLoading(false);
-    sessionStorage.removeItem("karbali-admin-2fa-verified");
+    clearAdmin2FA();
+
     localStorage.removeItem("karbali-ads-last-activity");
   }, [resetAccessState]);
 
