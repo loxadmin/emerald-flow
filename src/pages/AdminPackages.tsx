@@ -349,9 +349,9 @@ export default function AdminPackages() {
                         <Button size="sm" variant="outline" onClick={() => reviewOrder(o.id, false)}>Reject</Button>
                       </div>
                     ) : (o.status === "active" || o.status === "completed") ? (
-                      <a href={`/admin/packages/orders/${o.id}/deliver`}>
+                      <Link to={`/admin/packages/orders/${o.id}/deliver`}>
                         <Button size="sm" variant="outline">Deliver / update</Button>
-                      </a>
+                      </Link>
                     ) : null}
                   </div>
                 </div>

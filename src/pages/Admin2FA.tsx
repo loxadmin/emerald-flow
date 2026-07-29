@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/lib/auth";
+import { useAuth, isAdmin2FAVerified, markAdmin2FAVerified } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import AuthSplitShell from "@/components/auth/AuthSplitShell";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ export default function Admin2FA() {
     if (isLoading) return;
     if (!user) { navigate("/login", { replace: true }); return; }
     if (!isAdmin) { navigate("/dashboard", { replace: true }); return; }
-    if (sessionStorage.getItem(ADMIN_2FA_FLAG) === "1") {
+    if (isAdmin2FAVerified(user.id)) {
       navigate("/admin", { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -49,7 +49,7 @@ export default function Admin2FA() {
     const { data, error } = await supabase.functions.invoke("admin-2fa", { body: { action: "verify", code } });
     setVerifying(false);
     if (error || data?.error) { toast.error(data?.error || error?.message || "Verification failed"); return; }
-    sessionStorage.setItem(ADMIN_2FA_FLAG, "1");
+    markAdmin2FAVerified(user!.id);
     toast.success("Verified");
     navigate("/admin", { replace: true });
   };
