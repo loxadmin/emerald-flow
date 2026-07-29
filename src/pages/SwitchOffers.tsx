@@ -204,70 +204,66 @@ export default function SwitchOffers() {
                 {visible.map((o) => {
                   const c = o.competitor_app_id ? competitors[o.competitor_app_id] : null;
                   return (
-                    <div key={o.id} className="group relative rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-6 flex flex-col hover:bg-card/90 hover:border-border transition-all duration-200 shadow-sm hover:shadow-md">
-                      {/* Top Header Section */}
-                      <div className="flex items-start justify-between gap-4">
+                    <div key={o.id} className="group relative rounded-xl border border-border/50 bg-card/40 backdrop-blur-md p-5 flex flex-col justify-between hover:bg-card/70 hover:border-primary/40 transition-all duration-300 shadow-sm hover:shadow-md">
+                      {/* Top Header Section - Inspiration-style */}
+                      <div className="flex items-center justify-between gap-4 border-b border-border/20 pb-4">
                         <div className="flex items-center gap-3 min-w-0">
                           {c?.logo_url ? (
-                            <img src={c.logo_url} alt="" className="h-10 w-10 rounded-lg object-cover border border-border/60 shadow-sm shrink-0" />
+                            <img src={c.logo_url} alt="" className="h-10 w-10 rounded-lg object-cover border border-border/40 shadow-sm shrink-0" />
                           ) : (
-                            <div className="h-10 w-10 rounded-lg bg-secondary border border-border/60 flex items-center justify-center text-muted-foreground shadow-sm shrink-0">
+                            <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-sm shrink-0">
                               <Zap className="h-4 w-4" />
                             </div>
                           )}
-                          <div className="min-w-0 space-y-0.5">
+                          <div className="min-w-0">
                             <p className="font-semibold text-sm text-foreground leading-tight group-hover:text-primary transition-colors truncate">{o.title}</p>
                             {c && (
-                              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                                Pool: {c.name}
+                              <p className="text-[10px] font-medium text-muted-foreground mt-1">
+                                Pool: <span className="font-semibold text-foreground">{c.name}</span>
                               </p>
                             )}
                           </div>
                         </div>
-                        <Badge variant="outline" className="capitalize text-[10px] font-medium tracking-wider bg-secondary text-muted-foreground border-border/40 shrink-0 rounded px-1.5 py-0.5">
-                          {o.platform}
-                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0 font-semibold text-xs border-primary/30 text-primary hover:bg-primary/10 hover:text-primary transition-all rounded-full px-4 h-8"
+                          onClick={() => { setSelected(o); setLink(""); }}
+                        >
+                          Initiate
+                        </Button>
                       </div>
 
                       {o.description && (
-                        <p className="mt-4 text-xs leading-relaxed text-muted-foreground line-clamp-2 min-h-[2.25rem]">
+                        <p className="mt-4 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2 min-h-[2.5rem]">
                           {o.description}
                         </p>
                       )}
 
                       {/* Precise grid containers (Loud Pro & Biomarkers inspired) */}
-                      <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border/40 pt-4">
-                        <div className="rounded-lg bg-secondary/35 p-3 border border-border/30 space-y-0.5">
-                          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Cohort Batch</p>
-                          <p className="font-semibold text-sm text-foreground font-mono">{o.batch_size.toLocaleString()}</p>
+                      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/20 pt-3">
+                        <div className="space-y-0.5">
+                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Cohort Batch</p>
+                          <p className="font-semibold text-xs text-foreground font-mono">{o.batch_size.toLocaleString()} users</p>
                         </div>
-                        <div className="rounded-lg bg-secondary/35 p-3 border border-border/30 space-y-0.5">
-                          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Acquisition Cost</p>
-                          <p className="font-semibold text-sm text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</p>
-                        </div>
-                      </div>
-
-                      {/* Tabular Highlights */}
-                      <div className="mt-5 border-t border-border/20 pt-4 space-y-2 flex-grow">
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Campaign Highlights</p>
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary/70 shrink-0" />
-                            <span>Guaranteed competitive switchers</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground border-t border-border/10 pt-1.5">
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary/70 shrink-0" />
-                            <span>Instant webhook synchronization</span>
-                          </div>
+                        <div className="space-y-0.5 text-right">
+                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Acquisition Cost</p>
+                          <p className="font-semibold text-xs text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</p>
                         </div>
                       </div>
 
-                      <Button
-                        className="mt-6 w-full font-medium shadow-none hover:bg-primary/90 active:scale-[0.98] transition-all py-4 rounded-lg text-xs flex items-center justify-center gap-1.5"
-                        onClick={() => { setSelected(o); setLink(""); }}
-                      >
-                        Initiate Transition <ArrowRight className="h-3.5 w-3.5" />
-                      </Button>
+                      {/* Clean highlights badge row */}
+                      <div className="mt-4 pt-3 border-t border-border/10 flex flex-wrap gap-1.5">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-secondary/60 text-muted-foreground border border-border/30">
+                          Guaranteed Switch
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-secondary/60 text-muted-foreground border border-border/30">
+                          Webhook Sync
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                          {o.platform}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -276,52 +272,52 @@ export default function SwitchOffers() {
 
             {/* Premium "My Switch Orders" and charts section */}
             {orders.length > 0 && (
-              <div className="mt-16 border-t border-border/40 pt-10">
+              <div className="mt-16 border-t border-border/20 pt-10">
                 <div className="mb-6 flex items-center gap-2.5">
-                  <div className="p-2 bg-secondary rounded-lg text-muted-foreground border border-border/60">
-                    <ClipboardList className="h-4 w-4" />
+                  <div className="p-2.5 bg-primary/10 text-primary border border-primary/20 rounded-lg shrink-0">
+                    <ClipboardList className="h-5 w-5" />
                   </div>
                   <div>
                     <h2 className="text-base font-semibold tracking-tight text-foreground">Active Cohort Transitions</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">Track live user migration status and platform distribution details.</p>
                   </div>
                 </div>
-                <div className="grid gap-5">
+                <div className="grid gap-6">
                   {orders.map((o) => (
-                    <div key={o.id} className="rounded-lg border border-border/80 bg-card p-5 space-y-5 shadow-sm">
-                      <div className="flex items-start justify-between gap-4 flex-wrap border-b border-border/30 pb-4">
-                        <div className="min-w-0 flex-1 space-y-1">
+                    <div key={o.id} className="rounded-xl border border-border/40 bg-card/35 backdrop-blur-sm p-5 space-y-5 shadow-md">
+                      <div className="flex items-start justify-between gap-4 flex-wrap border-b border-border/20 pb-4">
+                        <div className="min-w-0 flex-1 space-y-1.5">
                           <p className="font-semibold text-sm text-foreground tracking-tight">{o.offer_title}</p>
-                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                          <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground flex-wrap">
                             {o.competitor_app_name && (
-                              <span className="font-semibold text-foreground">
-                                From: {o.competitor_app_name}
+                              <span className="font-semibold text-foreground bg-secondary/80 px-2 py-0.5 rounded border border-border/30">
+                                Pool: {o.competitor_app_name}
                               </span>
                             )}
                             <span className="text-border/40">•</span>
-                            <span>Price: <span className="font-semibold text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</span></span>
+                            <span>Acquisition Price: <span className="font-semibold text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</span></span>
                             <span className="text-border/40">•</span>
-                            <span>Batch: <span className="font-semibold text-foreground font-mono">{o.batch_size.toLocaleString()} users</span></span>
+                            <span>Migration Cohort: <span className="font-semibold text-foreground font-mono">{o.batch_size.toLocaleString()} users</span></span>
                           </div>
                           {o.target_link && (
-                            <p className="text-[10px] font-mono text-muted-foreground truncate max-w-xl mt-1.5 bg-secondary/30 border border-border/40 rounded px-2 py-0.5 inline-block">
-                              Destination: <a href={o.target_link} target="_blank" rel="noreferrer" className="text-primary hover:underline">{o.target_link}</a>
+                            <p className="text-[10px] font-mono text-muted-foreground truncate max-w-xl mt-2 bg-secondary/35 border border-border/30 rounded px-2.5 py-1 inline-block">
+                              Target App Link: <a href={o.target_link} target="_blank" rel="noreferrer" className="text-primary hover:underline font-semibold">{o.target_link}</a>
                             </p>
                           )}
                         </div>
-                        <Badge variant="outline" className="capitalize text-[10px] font-semibold px-2 py-0.5 bg-primary/5 border-primary/20 text-primary rounded">
+                        <Badge variant="outline" className="capitalize text-[10px] font-semibold px-2.5 py-0.5 bg-primary/5 border-primary/20 text-primary rounded-full">
                           {o.status.replace(/_/g, " ")}
                         </Badge>
                       </div>
 
-                      <div className="bg-secondary/20 rounded-lg border border-border/30 p-3">
-                        <div className="flex items-center justify-between mb-1.5 text-xs">
+                      <div className="bg-secondary/15 rounded-lg border border-border/20 p-3.5">
+                        <div className="flex items-center justify-between mb-2 text-xs">
                           <span className="font-medium text-muted-foreground">Migration Progress</span>
                           <span className="font-semibold text-foreground font-mono">
                             {o.users_delivered.toLocaleString()} / {o.batch_size.toLocaleString()} ({Math.min(100, Math.round((o.users_delivered / o.batch_size) * 100))}% completed)
                           </span>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden border border-border/20">
+                        <div className="h-2 w-full rounded-full bg-secondary/80 overflow-hidden border border-border/10">
                           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${Math.min(100, (o.users_delivered / o.batch_size) * 100)}%` }} />
                         </div>
                       </div>
@@ -338,30 +334,30 @@ export default function SwitchOffers() {
 
       {/* Modern Dialog Revamp */}
       <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
-        <DialogContent className="border-border/60 bg-card p-6 md:p-8 max-w-md rounded-lg shadow-lg">
-          <DialogHeader className="border-b border-border/30 pb-4 mb-4">
+        <DialogContent className="border-border/40 bg-card p-5 md:p-6 max-w-md rounded-lg shadow-2xl">
+          <DialogHeader className="border-b border-border/20 pb-4 mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-secondary p-2 rounded-lg text-muted-foreground border border-border/40">
-                <Zap className="h-4 w-4" />
+              <div className="bg-primary/10 text-primary border border-primary/20 rounded-lg p-2.5 shrink-0">
+                <Zap className="h-5 w-5" />
               </div>
-              <div>
+              <div className="text-left">
                 <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
-                  Confirm Switch Request
+                  Confirm Transition Offer
                 </DialogTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">Transition campaign activation</p>
               </div>
             </div>
           </DialogHeader>
           {selected && (
-            <div className="space-y-5">
-              {selected.description && <p className="text-xs leading-relaxed text-muted-foreground">{selected.description}</p>}
+            <div className="space-y-4">
+              {selected.description && <p className="text-xs leading-relaxed text-muted-foreground/80">{selected.description}</p>}
 
-              <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2.5 text-xs">
+              <div className="rounded-lg border border-border/30 bg-secondary/20 p-3.5 space-y-2 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground font-semibold">Switch Target Batch</span>
                   <span className="font-semibold text-foreground font-mono">{selected.batch_size.toLocaleString()} users</span>
                 </div>
-                <div className="flex justify-between items-center pt-2.5 border-t border-border/40">
+                <div className="flex justify-between items-center pt-2 border-t border-border/10">
                   <span className="text-muted-foreground font-semibold">Total Acquisition Price</span>
                   <span className="font-semibold text-foreground font-mono">${Number(selected.flat_price_usd).toFixed(2)}</span>
                 </div>
@@ -369,24 +365,24 @@ export default function SwitchOffers() {
 
               {selected.target_link_required && (
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Target Destination Link</Label>
+                  <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">Target Destination Link</Label>
                   <Input
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                     placeholder="https://..."
-                    className="rounded-lg border-border bg-background h-10 text-xs"
+                    className="rounded-lg border-border/40 bg-background/50 h-9 text-xs"
                   />
                 </div>
               )}
-              <p className="text-[10px] leading-relaxed text-muted-foreground font-medium">
+              <p className="text-[10px] leading-relaxed text-muted-foreground/60 font-medium">
                 Payment is debited directly from your corporate wallet (balance: <span className="font-semibold text-foreground">${balance.toFixed(2)}</span>).
               </p>
             </div>
           )}
-          <DialogFooter className="mt-6 border-t border-border/30 pt-4 gap-2">
-            <Button variant="outline" className="rounded-lg font-medium border-border/80 text-xs h-10 px-4" onClick={() => setSelected(null)}>Cancel</Button>
-            <Button onClick={buy} className="rounded-lg font-semibold text-xs h-10 px-5 shadow-none hover:bg-primary/95" disabled={buying || !selected || balance < (selected?.flat_price_usd || 0)}>
-              {buying ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+          <DialogFooter className="mt-5 border-t border-border/20 pt-4 gap-2">
+            <Button variant="outline" className="rounded-lg font-medium border-border/80 text-xs h-9" onClick={() => setSelected(null)}>Cancel</Button>
+            <Button onClick={buy} className="rounded-lg font-semibold text-xs h-9 shadow-none hover:bg-primary/95" disabled={buying || !selected || balance < (selected?.flat_price_usd || 0)}>
+              {buying ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
               {buying ? "Processing..." : `Authorize: $${selected?.flat_price_usd.toFixed(2)}`}
             </Button>
           </DialogFooter>

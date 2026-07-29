@@ -93,68 +93,67 @@ export default function PackageOrders() {
         ) : (
           <div className="grid gap-6">
             {orders.map((o) => (
-              <div key={o.id} className="rounded-2xl border border-border bg-card/30 backdrop-blur-md p-6 space-y-6 premium-shadow">
-                {/* Header Row */}
-                <div className="flex items-start justify-between gap-4 flex-wrap border-b border-border/40 pb-5">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-lg font-extrabold text-foreground tracking-tight">{o.package_name}</h2>
-                      <Badge variant="outline" className={`capitalize font-bold text-[10px] ${STATUS[o.status] || ""}`}>
-                        {o.status.replace(/_/g, " ")}
-                      </Badge>
+              <div key={o.id} className="rounded-xl border border-border/40 bg-card/30 backdrop-blur-md p-5 space-y-5 shadow-md">
+                {/* Header Row - Aligned precisely */}
+                <div className="flex items-center justify-between gap-4 flex-wrap border-b border-border/20 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="shrink-0 bg-primary/10 text-primary border border-primary/20 rounded-lg p-2.5">
+                      <PackageIcon className="h-5 w-5" />
                     </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-sm font-semibold text-foreground tracking-tight">{o.package_name}</h2>
+                        <Badge variant="outline" className={`capitalize font-semibold text-[9px] px-2 py-0.5 rounded-full ${STATUS[o.status] || ""}`}>
+                          {o.status.replace(/_/g, " ")}
+                        </Badge>
+                      </div>
 
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                      <span className="inline-flex items-center gap-1 font-semibold text-foreground/80">
-                        <Layers className="h-3 w-3 text-primary" /> {o.units.toLocaleString()} {o.unit_label || "users"}
-                      </span>
-                      <span className="text-border/60">•</span>
-                      <span className="inline-flex items-center gap-1">
-                        <CreditCard className="h-3 w-3 text-muted-foreground" /> {o.payment_method}
-                      </span>
-                      {o.duration_days && (
-                        <>
-                          <span className="text-border/60">•</span>
-                          <span className="font-semibold text-foreground">{o.duration_days} days coverage</span>
-                        </>
-                      )}
-                      {o.platform && (
-                        <>
-                          <span className="text-border/60">•</span>
-                          <Badge variant="secondary" className="capitalize text-[9px] font-extrabold bg-accent/40 text-muted-foreground">
-                            {o.platform}
-                          </Badge>
-                        </>
-                      )}
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap mt-1">
+                        <span className="font-semibold text-foreground">{o.units.toLocaleString()} {o.unit_label || "users"}</span>
+                        <span className="text-border/40">•</span>
+                        <span>{o.payment_method}</span>
+                        {o.duration_days && (
+                          <>
+                            <span className="text-border/40">•</span>
+                            <span>{o.duration_days} days</span>
+                          </>
+                        )}
+                        {o.platform && (
+                          <>
+                            <span className="text-border/40">•</span>
+                            <span className="capitalize text-[10px] font-bold text-primary">{o.platform}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Investment</p>
-                    <p className="text-xl font-extrabold text-foreground font-mono mt-0.5">${Number(o.total_amount_usd).toFixed(2)}</p>
+                  <div className="text-right">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Investment</p>
+                    <p className="text-base font-bold text-foreground font-mono mt-0.5">${Number(o.total_amount_usd).toFixed(2)}</p>
                   </div>
                 </div>
 
-                {/* Date range details */}
+                {/* Date range details - Aligned, subtle box */}
                 {o.starts_at && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-accent/15 border border-border/40 rounded-xl px-4 py-2.5">
-                    <Calendar className="h-3.5 w-3.5 text-primary" />
-                    <span className="font-semibold">Delivery Timeline:</span>
-                    <span>{new Date(o.starts_at).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/10 border border-border/20 rounded-lg px-3.5 py-2">
+                    <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="font-semibold text-foreground/90">Delivery Timeline:</span>
+                    <span className="font-mono">{new Date(o.starts_at).toLocaleDateString()}</span>
                     <span>→</span>
-                    <span className="font-medium">{o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "continuous"}</span>
+                    <span className="font-mono">{o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "continuous"}</span>
                   </div>
                 )}
 
                 {/* Landing links list */}
                 {o.app_links?.length > 0 && (
                   <div className="space-y-1.5">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Campaign Target URLs</p>
-                    <div className="grid gap-2">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Campaign Target URLs</p>
+                    <div className="grid gap-1.5">
                       {o.app_links.map((l, i) => (
-                        <div key={i} className="flex items-center gap-2 rounded-xl bg-background/50 border border-border/40 px-3 py-2 text-xs text-muted-foreground">
+                        <div key={i} className="flex items-center gap-2 rounded-lg bg-secondary/15 border border-border/20 px-3 py-1.5 text-xs text-muted-foreground">
                           <ExternalLink className="h-3.5 w-3.5 text-primary shrink-0" />
-                          <a href={l} target="_blank" rel="noreferrer" className="truncate text-primary hover:underline font-mono">
+                          <a href={l} target="_blank" rel="noreferrer" className="truncate text-primary hover:underline font-mono font-medium">
                             {l}
                           </a>
                         </div>
@@ -165,8 +164,8 @@ export default function PackageOrders() {
 
                 {/* Delivery graph + breakdown */}
                 {(o.selected_milestone_ids || []).length > 0 && (
-                  <div className="space-y-5">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Conversion Funnel Delivery</p>
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Conversion Funnel Delivery</p>
 
                     <div className="grid gap-4 md:grid-cols-2">
                       {(o.selected_milestone_ids || []).map((mid) => {
@@ -182,31 +181,31 @@ export default function PackageOrders() {
                         }));
                         const pct = Math.min(100, Math.round((totalUsers / Math.max(o.units, 1)) * 100));
                         return (
-                          <div key={mid} className="rounded-xl border border-border bg-background/25 overflow-hidden flex flex-col justify-between">
+                          <div key={mid} className="rounded-lg border border-border/40 bg-secondary/10 overflow-hidden flex flex-col justify-between">
                             {/* Inner header */}
-                            <div className="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-border/40">
+                            <div className="flex items-center justify-between gap-2 px-3.5 py-3 border-b border-border/20">
                               <div className="flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-primary" />
-                                <span className="text-xs font-extrabold text-foreground">{m.name}</span>
-                                {m.requires_duration && <Badge variant="outline" className="text-[9px] px-1 bg-primary/5 text-primary border-primary/20">daily</Badge>}
+                                <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                                <span className="text-xs font-semibold text-foreground">{m.name}</span>
+                                {m.requires_duration && <Badge variant="outline" className="text-[8px] px-1 bg-primary/5 text-primary border-primary/20">daily</Badge>}
                               </div>
                               <div className="text-right">
-                                <p className="text-xs font-extrabold text-foreground font-mono">
-                                  {totalUsers.toLocaleString()} <span className="text-[10px] text-muted-foreground font-semibold">/ {o.units.toLocaleString()}</span>
+                                <p className="text-xs font-semibold text-foreground font-mono">
+                                  {totalUsers.toLocaleString()} <span className="text-[9px] text-muted-foreground font-normal">/ {o.units.toLocaleString()}</span>
                                 </p>
                                 {isTxn && txnTotal > 0 && (
-                                  <p className="text-[9px] text-primary font-bold font-mono">${txnTotal.toFixed(2)} Vol.</p>
+                                  <p className="text-[9px] text-primary font-semibold font-mono">${txnTotal.toFixed(2)} Vol.</p>
                                 )}
                               </div>
                             </div>
 
                             {/* Inner bar */}
-                            <div className="px-4 pt-4">
-                              <div className="flex items-center justify-between mb-1.5 text-[10px] font-bold text-muted-foreground">
+                            <div className="px-3.5 pt-3">
+                              <div className="flex items-center justify-between mb-1 text-[10px] font-medium text-muted-foreground">
                                 <span>Progress</span>
                                 <span className="text-foreground font-mono">{pct}%</span>
                               </div>
-                              <div className="h-2 w-full rounded-full bg-muted/60 overflow-hidden border border-border/30">
+                              <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden border border-border/10">
                                 <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
                               </div>
                             </div>
