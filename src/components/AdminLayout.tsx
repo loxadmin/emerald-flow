@@ -15,6 +15,7 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
     label: "Overview",
     links: [
       { to: "/admin", label: "Dashboard", icon: Shield },
+      { to: "/admin/campaigns", label: "Campaigns", icon: Megaphone },
       { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     ],
   },
