@@ -12,6 +12,43 @@ declare global {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Admin 2FA verification flag.
+ *
+ * Stored in localStorage (not sessionStorage) and keyed to the admin's
+ * user id with a TTL. sessionStorage was lost on hard navigations and
+ * could be cleared by a spurious SIGNED_IN event during bootstrap,
+ * which bounced admins to the OTP screen mid-session.
+ * ------------------------------------------------------------------ */
+const ADMIN_2FA_KEY = "karbali-admin-2fa";
+const ADMIN_2FA_TTL = 12 * 60 * 60 * 1000;
+
+export function markAdmin2FAVerified(userId: string) {
+  try {
+    localStorage.setItem(ADMIN_2FA_KEY, JSON.stringify({ userId, at: Date.now() }));
+  } catch { /* storage unavailable */ }
+}
+
+export function isAdmin2FAVerified(userId?: string | null): boolean {
+  if (!userId) return false;
+  try {
+    const raw = localStorage.getItem(ADMIN_2FA_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { userId?: string; at?: number };
+    return parsed.userId === userId && Date.now() - (parsed.at || 0) < ADMIN_2FA_TTL;
+  } catch {
+    return false;
+  }
+}
+
+export function clearAdmin2FA() {
+  try {
+    localStorage.removeItem(ADMIN_2FA_KEY);
+    sessionStorage.removeItem("karbali-admin-2fa-verified");
+  } catch { /* storage unavailable */ }
+}
+
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
