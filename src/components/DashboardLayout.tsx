@@ -184,13 +184,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="border-t border-border px-3 py-3">
 
         <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
-          <div className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-semibold">
-            {initial}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-[12.5px] font-medium text-foreground">{user?.email}</p>
-            <p className="text-[10px] text-muted-foreground">Advertiser</p>
-          </div>
+          <Link
+            to="/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex flex-1 min-w-0 items-center gap-2 rounded-md hover:bg-accent/60 transition-colors"
+          >
+            <div className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-semibold">
+              {initial}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-[12.5px] font-medium text-foreground">{user?.email}</p>
+              <p className="text-[10px] text-muted-foreground">View profile</p>
+            </div>
+          </Link>
           <button
             onClick={toggleTheme}
             className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
