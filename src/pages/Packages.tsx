@@ -740,6 +740,10 @@ export default function Packages() {
                     </div>
                   </div>
 
+                  {/* Promotional media */}
+                  <PromoMediaUpload value={promo} onChange={setPromo} />
+
+
                   {/* Payment Methods */}
                   <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">Payment Method</Label>
