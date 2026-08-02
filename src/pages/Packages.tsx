@@ -76,6 +76,7 @@ export default function Packages() {
   const [unitsText, setUnitsText] = useState<string>("500");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [links, setLinks] = useState<string[]>([""]);
+  const [promo, setPromo] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const [payMethod, setPayMethod] = useState<"wallet" | "paystack">("wallet");
   const [buying, setBuying] = useState(false);
 
