@@ -1888,6 +1888,9 @@ export type Database = {
           payment_method: string
           payment_reference: string | null
           platform: string | null
+          promo_media_path: string | null
+          promo_media_type: string | null
+          promo_media_url: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           selected_milestone_ids: string[] | null
@@ -1914,6 +1917,9 @@ export type Database = {
           payment_method: string
           payment_reference?: string | null
           platform?: string | null
+          promo_media_path?: string | null
+          promo_media_type?: string | null
+          promo_media_url?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           selected_milestone_ids?: string[] | null
@@ -1940,6 +1946,9 @@ export type Database = {
           payment_method?: string
           payment_reference?: string | null
           platform?: string | null
+          promo_media_path?: string | null
+          promo_media_type?: string | null
+          promo_media_url?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           selected_milestone_ids?: string[] | null
@@ -1971,6 +1980,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           company_name: string | null
           created_at: string
           created_by_admin: boolean
@@ -1986,6 +1996,7 @@ export type Database = {
           whatsapp_verified: boolean
         }
         Insert: {
+          avatar_url?: string | null
           company_name?: string | null
           created_at?: string
           created_by_admin?: boolean
@@ -2001,6 +2012,7 @@ export type Database = {
           whatsapp_verified?: boolean
         }
         Update: {
+          avatar_url?: string | null
           company_name?: string | null
           created_at?: string
           created_by_admin?: boolean
@@ -2607,6 +2619,14 @@ export type Database = {
         Returns: Database["public"]["Enums"]["advertiser_type"]
       }
       mark_loi_threshold_reached: { Args: { _loi_id: string }; Returns: Json }
+      maybe_complete_campaign: {
+        Args: { _campaign_id: string }
+        Returns: undefined
+      }
+      maybe_complete_package_order: {
+        Args: { _order_id: string }
+        Returns: undefined
+      }
       purchase_package_v2: {
         Args: {
           _duration_days: number
@@ -2656,6 +2676,10 @@ export type Database = {
       }
       review_package_order: {
         Args: { _approve: boolean; _notes: string; _order_id: string }
+        Returns: Json
+      }
+      set_package_order_promo: {
+        Args: { _order_id: string; _path: string; _type: string; _url: string }
         Returns: Json
       }
       submit_letter_of_intent: {
