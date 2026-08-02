@@ -36,6 +36,7 @@ const baseAdvertiserLinks: NavLink[] = [
   { to: "/offline/campaign", label: "Launch campaign", icon: Rocket, group: "Workspace", onlyForOffline: true },
   { to: "/websites", label: "Websites", icon: Globe, hideForEngagement: true, hideForOffline: true, group: "Account" },
   { to: "/wallet", label: "Wallet", icon: Wallet, group: "Account" },
+  { to: "/profile", label: "Profile", icon: UserRound, group: "Account" },
   { to: "/docs", label: "API & Docs", icon: FileText, hideForEngagement: true, hideForOffline: true, group: "Account" },
 ];
 
