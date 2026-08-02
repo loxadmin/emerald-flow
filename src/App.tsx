@@ -114,6 +114,7 @@ const App = () => (
               {/* Advertiser routes */}
               <Route path="/category-select" element={<RequireAuth><CategorySelection /></RequireAuth>} />
               <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
+              <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/ads" element={<RequireAuth><Ads /></RequireAuth>} />
               <Route path="/websites" element={<RequireAuth><Websites /></RequireAuth>} />
