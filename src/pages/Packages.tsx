@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock, Youtube, Music, Instagram, Video, Sparkles, LayoutGrid, Check } from "lucide-react";
@@ -75,6 +76,7 @@ export default function Packages() {
   const [unitsText, setUnitsText] = useState<string>("500");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [links, setLinks] = useState<string[]>([""]);
+  const [promo, setPromo] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const [payMethod, setPayMethod] = useState<"wallet" | "paystack">("wallet");
   const [buying, setBuying] = useState(false);
 
@@ -290,6 +292,11 @@ export default function Packages() {
         else {
           toast.success("Package purchased! Approval takes 3–7 business days.");
           const orderId = (data as { order_id?: string })?.order_id;
+          if (orderId && p.promo?.url) {
+            await supabase.rpc("set_package_order_promo" as any, {
+              _order_id: orderId, _url: p.promo.url, _path: p.promo.path, _type: p.promo.type,
+            });
+          }
           if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
         }
         load();
@@ -370,7 +377,13 @@ export default function Packages() {
       if (error) return toast.error(error.message);
       toast.success("Package purchased! Approval takes 3–7 business days.");
       const orderId = (data as { order_id?: string })?.order_id;
+      if (orderId && promo.url) {
+        await supabase.rpc("set_package_order_promo" as any, {
+          _order_id: orderId, _url: promo.url, _path: promo.path, _type: promo.type,
+        });
+      }
       if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
+      setPromo({ url: null, path: null, type: null });
       setSelected(null); load();
       return;
     }
@@ -385,7 +398,7 @@ export default function Packages() {
 
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({
       package_id: selected.id, units, duration: needsDuration ? duration : null,
-      selected_ids: selectedIds, platform, links: cleanLinks,
+      selected_ids: selectedIds, platform, links: cleanLinks, promo,
     }));
     const { data, error } = await supabase.functions.invoke("paystack-wallet", {
       body: { action: "initialize_funding", amount: flatTotal, callback_origin: window.location.origin },
@@ -739,6 +752,10 @@ export default function Packages() {
                       )}
                     </div>
                   </div>
+
+                  {/* Promotional media */}
+                  <PromoMediaUpload value={promo} onChange={setPromo} />
+
 
                   {/* Payment Methods */}
                   <div className="space-y-1.5">
