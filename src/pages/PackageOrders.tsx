@@ -9,6 +9,7 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { Loader2, Package as PackageIcon, ArrowLeft, TrendingUp, Calendar, CreditCard, Layers, ExternalLink } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import MigrationChart from "@/components/MigrationChart";
+import DailyTargets from "@/components/DailyTargets";
 
 type Order = {
   id: string; package_name: string; unit_label: string;
