@@ -292,6 +292,11 @@ export default function Packages() {
         else {
           toast.success("Package purchased! Approval takes 3–7 business days.");
           const orderId = (data as { order_id?: string })?.order_id;
+          if (orderId && p.promo?.url) {
+            await supabase.rpc("set_package_order_promo" as any, {
+              _order_id: orderId, _url: p.promo.url, _path: p.promo.path, _type: p.promo.type,
+            }).catch(() => {});
+          }
           if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
         }
         load();
