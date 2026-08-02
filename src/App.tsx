@@ -28,6 +28,7 @@ import CategorySelection from "./pages/CategorySelection";
 import Ads from "./pages/Ads";
 import Websites from "./pages/Websites";
 import Wallet from "./pages/Wallet";
+import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCampaignDetail from "./pages/AdminCampaignDetail";
 import AdminCampaigns from "./pages/AdminCampaigns";
