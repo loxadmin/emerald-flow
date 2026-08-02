@@ -268,10 +268,32 @@ export default function PackageOrders() {
                       })}
                     </div>
 
-                    {/* User migration source flow chart */}
-                    <MigrationChart packageOrderId={o.id} />
+
                   </div>
                 )}
+
+                {/* Day-by-day target tracker (duration-based orders) */}
+                {o.status === "active" || o.status === "completed" ? (
+                  <>
+                    {o.duration_days > 0 && o.starts_at && (
+                      <DailyTargets
+                        startsAt={o.starts_at}
+                        durationDays={o.duration_days}
+                        dailyTarget={o.units}
+                        deliveredByDate={deliveries
+                          .filter((d) => d.order_id === o.id)
+                          .reduce<Record<string, number>>((acc, d) => {
+                            const k = String(d.delivery_date).slice(0, 10);
+                            acc[k] = Math.max(acc[k] || 0, d.users_delivered || 0);
+                            return acc;
+                          }, {})}
+                      />
+                    )}
+
+                    {/* User migration source flow chart — always available */}
+                    <MigrationChart packageOrderId={o.id} />
+                  </>
+                ) : null}
 
                 {o.admin_notes && (
                   <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4.5 text-xs text-amber-500 space-y-1">
