@@ -398,7 +398,7 @@ export default function Packages() {
 
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({
       package_id: selected.id, units, duration: needsDuration ? duration : null,
-      selected_ids: selectedIds, platform, links: cleanLinks,
+      selected_ids: selectedIds, platform, links: cleanLinks, promo,
     }));
     const { data, error } = await supabase.functions.invoke("paystack-wallet", {
       body: { action: "initialize_funding", amount: flatTotal, callback_origin: window.location.origin },
