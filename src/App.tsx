@@ -11,6 +11,10 @@ import { toast } from "sonner";
 
 import { ThemeProvider } from "@/lib/theme";
 import MetaPixelTracker from "@/components/MetaPixelTracker";
+import AffiliateRefCapture from "@/components/AffiliateRefCapture";
+import Affiliates from "./pages/Affiliates";
+import AffiliateDashboard from "./pages/AffiliateDashboard";
+import AdminAffiliates from "./pages/AdminAffiliates";
 
 
 import Index from "./pages/Index";
