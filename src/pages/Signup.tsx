@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AuthSplitShell from "@/components/auth/AuthSplitShell";
+import { getStoredAffiliateRef } from "@/components/AffiliateRefCapture";
 
 const PUBLIC_EMAIL_DOMAINS = [
   "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "live.com",
@@ -178,6 +179,7 @@ export default function Signup() {
             website: websiteValue,
             advertiser_subtype: subtype,
             terms_accepted_at: new Date().toISOString(),
+            affiliate_ref: getStoredAffiliateRef() || undefined,
           },
           emailRedirectTo: window.location.origin,
         },

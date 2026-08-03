@@ -23,6 +23,7 @@ export default function Footer({ content }: FooterProps) {
           <Link to="/learn" className="hover:text-primary transition-colors">Learn</Link>
           <Link to="/use-cases" className="hover:text-primary transition-colors">Use Cases</Link>
           <Link to="/what-is-karbali" className="hover:text-primary transition-colors">What is Karbali?</Link>
+          <Link to="/affiliates" className="hover:text-primary transition-colors">Affiliate</Link>
           <Link to="/docs" className="hover:text-primary transition-colors">Docs</Link>
           <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
         </div>
