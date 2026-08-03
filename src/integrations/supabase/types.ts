@@ -263,6 +263,220 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_earnings: {
+        Row: {
+          affiliate_id: string
+          amount_usd: number
+          created_at: string
+          description: string | null
+          id: string
+          referral_id: string | null
+          type: string
+        }
+        Insert: {
+          affiliate_id: string
+          amount_usd: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          referral_id?: string | null
+          type: string
+        }
+        Update: {
+          affiliate_id?: string
+          amount_usd?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          referral_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_earnings_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_earnings_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_referrals: {
+        Row: {
+          advertiser_email: string | null
+          advertiser_id: string
+          affiliate_id: string
+          bonus_usd: number
+          commission_usd: number
+          created_at: string
+          deadline: string
+          first_deposit_usd: number | null
+          id: string
+          qualified_at: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          advertiser_email?: string | null
+          advertiser_id: string
+          affiliate_id: string
+          bonus_usd?: number
+          commission_usd?: number
+          created_at?: string
+          deadline?: string
+          first_deposit_usd?: number | null
+          id?: string
+          qualified_at?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          advertiser_email?: string | null
+          advertiser_id?: string
+          affiliate_id?: string
+          bonus_usd?: number
+          commission_usd?: number
+          created_at?: string
+          deadline?: string
+          first_deposit_usd?: number | null
+          id?: string
+          qualified_at?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_referrals_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_withdrawals: {
+        Row: {
+          admin_notes: string | null
+          affiliate_id: string
+          amount_usd: number
+          created_at: string
+          destination: Json
+          id: string
+          method: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          affiliate_id: string
+          amount_usd: number
+          created_at?: string
+          destination?: Json
+          id?: string
+          method: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          affiliate_id?: string
+          amount_usd?: number
+          created_at?: string
+          destination?: Json
+          id?: string
+          method?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_withdrawals_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliates: {
+        Row: {
+          balance_usd: number
+          closed_at: string | null
+          code: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          payout_details: Json
+          payout_method: string | null
+          phone: string | null
+          qualified_at: string | null
+          qualify_deadline: string
+          signup_bonus_usd: number
+          status: string
+          updated_at: string
+          user_id: string
+          withdrawable: boolean
+        }
+        Insert: {
+          balance_usd?: number
+          closed_at?: string | null
+          code: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          payout_details?: Json
+          payout_method?: string | null
+          phone?: string | null
+          qualified_at?: string | null
+          qualify_deadline?: string
+          signup_bonus_usd?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+          withdrawable?: boolean
+        }
+        Update: {
+          balance_usd?: number
+          closed_at?: string | null
+          code?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          payout_details?: Json
+          payout_method?: string | null
+          phone?: string | null
+          qualified_at?: string | null
+          qualify_deadline?: string
+          signup_bonus_usd?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+          withdrawable?: boolean
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           campaign_id: string
@@ -2585,6 +2799,7 @@ export type Database = {
         Args: { _loi_id: string; _pdf_path: string }
         Returns: Json
       }
+      attach_affiliate_referral: { Args: { _code: string }; Returns: Json }
       auto_activate_pending_campaigns: { Args: never; Returns: undefined }
       charge_sale_commission: {
         Args: { _order_id: string; _sale_amount_usd: number }
@@ -2596,6 +2811,7 @@ export type Database = {
         Returns: Json
       }
       end_campaign_early: { Args: { _campaign_id: string }; Returns: Json }
+      expire_stale_affiliates: { Args: never; Returns: number }
       expire_stale_offline_orders: { Args: never; Returns: number }
       expire_stale_pending_wallet_transactions: { Args: never; Returns: number }
       fulfill_offline_order: { Args: { _order_id: string }; Returns: Json }
@@ -2646,6 +2862,10 @@ export type Database = {
         Args: { _offer_id: string; _target_link: string }
         Returns: Json
       }
+      qualify_affiliate_referral: {
+        Args: { _advertiser: string; _source_id: string; _source_type: string }
+        Returns: undefined
+      }
       record_package_delivery: {
         Args: {
           _competitor_breakdown?: Json
@@ -2662,8 +2882,16 @@ export type Database = {
         Args: { _campaign_id: string }
         Returns: number
       }
+      register_affiliate: {
+        Args: { _full_name: string; _phone: string }
+        Returns: Json
+      }
       reject_letter_of_intent: {
         Args: { _loi_id: string; _notes: string }
+        Returns: Json
+      }
+      request_affiliate_withdrawal: {
+        Args: { _amount: number; _destination: Json; _method: string }
         Returns: Json
       }
       request_withdrawal: {

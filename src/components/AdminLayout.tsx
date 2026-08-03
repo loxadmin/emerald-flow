@@ -28,6 +28,7 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
       { to: "/admin/wallets", label: "Wallets", icon: Wallet },
       { to: "/admin/messages", label: "Messages", icon: MessageSquare },
       { to: "/admin/broadcast", label: "Broadcast", icon: Send },
+      { to: "/admin/affiliates", label: "Affiliates", icon: Handshake },
     ],
   },
   {

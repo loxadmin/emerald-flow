@@ -11,6 +11,10 @@ import { toast } from "sonner";
 
 import { ThemeProvider } from "@/lib/theme";
 import MetaPixelTracker from "@/components/MetaPixelTracker";
+import AffiliateRefCapture from "@/components/AffiliateRefCapture";
+import Affiliates from "./pages/Affiliates";
+import AffiliateDashboard from "./pages/AffiliateDashboard";
+import AdminAffiliates from "./pages/AdminAffiliates";
 
 
 import Index from "./pages/Index";
@@ -103,6 +107,7 @@ const App = () => (
           <AuthProvider>
             <AiModeProvider>
             <MetaPixelTracker />
+            <AffiliateRefCapture />
             <Routes>
               <Route path="/ai" element={<RequireAuth><AiMode /></RequireAuth>} />
 
@@ -110,6 +115,9 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/r/:code" element={<ReferralRedirect />} />
+              <Route path="/affiliates" element={<Affiliates />} />
+              <Route path="/affiliate/dashboard" element={<RequireAuth><AffiliateDashboard /></RequireAuth>} />
+              <Route path="/admin/affiliates" element={<RequireAuth><RequireAdmin><AdminAffiliates /></RequireAdmin></RequireAuth>} />
               
               {/* Advertiser routes */}
               <Route path="/category-select" element={<RequireAuth><CategorySelection /></RequireAuth>} />
