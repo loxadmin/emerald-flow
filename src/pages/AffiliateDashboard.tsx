@@ -179,16 +179,16 @@ export default function AffiliateDashboard() {
             <div className="mt-3 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="text-left text-xs uppercase text-muted-foreground">
-                  <tr><th className="py-2">Advertiser</th><th>Status</th><th>First deposit</th><th>Earned</th><th>Deadline</th></tr>
+                  <tr><th className="py-2">Advertiser</th><th>Status</th><th>Campaign value</th><th>Your 10%</th><th>Joined</th></tr>
                 </thead>
                 <tbody>
                   {referrals.map((r) => (
                     <tr key={r.id} className="border-t border-border">
                       <td className="py-2">{r.advertiser_email || "—"}</td>
                       <td className="capitalize">{r.status}</td>
-                      <td>{r.first_deposit_usd ? money(r.first_deposit_usd) : "—"}</td>
-                      <td>{money(Number(r.bonus_usd) + Number(r.commission_usd))}</td>
-                      <td>{r.status === "pending" ? `${daysLeft(r.deadline)} days left` : "—"}</td>
+                      <td>{money(r.campaign_value_usd)}</td>
+                      <td>{money(r.commission_usd)}</td>
+                      <td>{new Date(r.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -213,9 +213,9 @@ export default function AffiliateDashboard() {
 
           <div className="rounded-xl border border-border bg-card p-5">
             <p className="text-sm font-semibold">Withdraw</p>
-            {!affiliate.withdrawable || closed ? (
+            {closed || Number(affiliate.balance_usd) <= 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">
-                Withdrawals unlock after your first qualified referral.
+                Nothing withdrawable yet. Commission lands here as your referred advertisers place campaigns.
               </p>
             ) : (
               <form onSubmit={withdraw} className="mt-3 space-y-3">
