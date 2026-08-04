@@ -11,10 +11,13 @@ import Logo from "@/components/Logo";
 type Affiliate = {
   id: string; code: string; full_name: string; status: string;
   balance_usd: number; withdrawable: boolean; qualify_deadline: string; closed_at: string | null;
+  locked_bonus_usd: number; bonus_program_active: boolean; cycle_end: string;
+  cycle_campaign_value_usd: number; bonus_cycles_won: number;
 };
 type Referral = {
   id: string; advertiser_email: string | null; status: string; deadline: string;
-  first_deposit_usd: number | null; bonus_usd: number; commission_usd: number; created_at: string;
+  first_deposit_usd: number | null; bonus_usd: number; commission_usd: number;
+  campaign_value_usd: number; created_at: string;
 };
 type Earning = { id: string; type: string; amount_usd: number; description: string | null; created_at: string };
 type Withdrawal = { id: string; amount_usd: number; method: string; status: string; created_at: string };
@@ -90,6 +93,9 @@ export default function AffiliateDashboard() {
 
   const qualified = referrals.filter((r) => r.status === "qualified").length;
   const closed = affiliate.status === "closed";
+  const cycleTarget = 2000;
+  const cycleValue = Number(affiliate.cycle_campaign_value_usd || 0);
+  const cyclePct = Math.min(100, (cycleValue / cycleTarget) * 100);
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,31 +113,47 @@ export default function AffiliateDashboard() {
         {closed ? (
           <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-5">
             <p className="font-semibold text-destructive">Affiliate account closed</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              No paying advertiser was referred within 30 days, so this affiliate account was closed and the welcome bonus forfeited.
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">This affiliate account is no longer active.</p>
           </div>
-        ) : !affiliate.withdrawable ? (
+        ) : affiliate.bonus_program_active ? (
           <div className="rounded-xl border border-border bg-muted/40 p-5">
-            <p className="font-semibold">Bonus locked — {daysLeft(affiliate.qualify_deadline)} days left</p>
+            <p className="font-semibold">
+              {money(affiliate.locked_bonus_usd)} bonus locked — {daysLeft(affiliate.cycle_end)} days left this cycle
+            </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Refer one advertiser who funds their wallet and gets a campaign live before the deadline to unlock your $50 and keep your account.
+              Advertisers you referred have placed {money(cycleValue)} of the {money(cycleTarget)} campaign value
+              needed to unlock it. Miss this cycle and the bonus is gone for good.
+            </p>
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-border">
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${cyclePct}%` }} />
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border bg-muted/40 p-5">
+            <p className="font-semibold">Monthly bonus ended</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              A cycle target was missed, so the $200 bonus no longer applies. You still earn 10% on every
+              campaign your referred advertisers place.
             </p>
           </div>
-        ) : null}
+        )}
 
-        <section className="grid gap-4 sm:grid-cols-3">
+        <section className="grid gap-4 sm:grid-cols-4">
           <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Balance</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Withdrawable</p>
             <p className="mt-1 text-2xl font-bold">{money(affiliate.balance_usd)}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Qualified referrals</p>
-            <p className="mt-1 text-2xl font-bold">{qualified}</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Locked bonus</p>
+            <p className="mt-1 text-2xl font-bold">{money(affiliate.locked_bonus_usd)}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Total referrals</p>
-            <p className="mt-1 text-2xl font-bold">{referrals.length}</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Cycle campaign value</p>
+            <p className="mt-1 text-2xl font-bold">{money(cycleValue)}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Referrals live / total</p>
+            <p className="mt-1 text-2xl font-bold">{qualified}/{referrals.length}</p>
           </div>
         </section>
 
@@ -157,16 +179,16 @@ export default function AffiliateDashboard() {
             <div className="mt-3 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="text-left text-xs uppercase text-muted-foreground">
-                  <tr><th className="py-2">Advertiser</th><th>Status</th><th>First deposit</th><th>Earned</th><th>Deadline</th></tr>
+                  <tr><th className="py-2">Advertiser</th><th>Status</th><th>Campaign value</th><th>Your 10%</th><th>Joined</th></tr>
                 </thead>
                 <tbody>
                   {referrals.map((r) => (
                     <tr key={r.id} className="border-t border-border">
                       <td className="py-2">{r.advertiser_email || "—"}</td>
                       <td className="capitalize">{r.status}</td>
-                      <td>{r.first_deposit_usd ? money(r.first_deposit_usd) : "—"}</td>
-                      <td>{money(Number(r.bonus_usd) + Number(r.commission_usd))}</td>
-                      <td>{r.status === "pending" ? `${daysLeft(r.deadline)} days left` : "—"}</td>
+                      <td>{money(r.campaign_value_usd)}</td>
+                      <td>{money(r.commission_usd)}</td>
+                      <td>{new Date(r.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -191,9 +213,9 @@ export default function AffiliateDashboard() {
 
           <div className="rounded-xl border border-border bg-card p-5">
             <p className="text-sm font-semibold">Withdraw</p>
-            {!affiliate.withdrawable || closed ? (
+            {closed || Number(affiliate.balance_usd) <= 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">
-                Withdrawals unlock after your first qualified referral.
+                Nothing withdrawable yet. Commission lands here as your referred advertisers place campaigns.
               </p>
             ) : (
               <form onSubmit={withdraw} className="mt-3 space-y-3">

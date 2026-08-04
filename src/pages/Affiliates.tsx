@@ -10,9 +10,9 @@ import Footer from "@/components/Footer";
 import { getStoredAffiliateRef } from "@/components/AffiliateRefCapture";
 
 const PERKS = [
-  { title: "$50 welcome bonus", body: "Credited the moment you register as an affiliate." },
-  { title: "$50 per advertiser", body: "Every advertiser you refer who goes live earns you another $50." },
-  { title: "5% of first deposit", body: "You also earn 5% of whatever that advertiser first funds their wallet with." },
+  { title: "$200 monthly bonus", body: "Held in your account each cycle, unlocked when you hit the monthly target." },
+  { title: "10% of every campaign", body: "Earn 10% of the value of every campaign, ad package or switch offer your referred advertisers place." },
+  { title: "Paid for life", body: "Commission keeps coming on every new campaign a referred advertiser runs, not just the first." },
 ];
 
 export default function Affiliates() {
@@ -55,7 +55,7 @@ export default function Affiliates() {
           _phone: phone.trim() || null,
         });
         if (error) throw error;
-        toast.success("Affiliate account created. Your $50 bonus is credited.");
+        toast.success("Affiliate account created. Your $200 bonus is held for this cycle.");
         navigate("/affiliate/dashboard");
         return;
       }
@@ -78,7 +78,7 @@ export default function Affiliates() {
         },
       });
       if (error) throw error;
-      toast.success("Account created. Verify your email, then log in to claim your $50 bonus.");
+      toast.success("Account created. Verify your email, then log in to activate your affiliate account.");
       navigate("/login");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -118,14 +118,16 @@ export default function Affiliates() {
           </div>
 
           <div className="mt-8 rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-            <p className="font-semibold text-foreground">The 30-day rule</p>
+            <p className="font-semibold text-foreground">How the $200 bonus works</p>
             <p className="mt-1">
-              Your $50 welcome bonus is locked until your first qualified referral. If you do not refer a
-              paying advertiser within 30 days of registering, your affiliate account is closed permanently.
+              $200 sits locked in your account for each 30-day cycle. To unlock it, advertisers you referred
+              must place at least $2,000 in collective campaign value inside that cycle. It can be one
+              advertiser or ten, only the total value counts.
             </p>
             <p className="mt-2">
-              A referred advertiser must fund their wallet and have a campaign, ad package or switch offer
-              approved and live within 30 days of registering for it to count.
+              Hit the target and the $200 moves to your withdrawable balance, and a fresh $200 is locked for
+              the next cycle. Miss a cycle and the bonus is removed for good, though your 10% campaign
+              commission keeps paying.
             </p>
           </div>
         </div>
