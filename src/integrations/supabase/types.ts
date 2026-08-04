@@ -314,6 +314,7 @@ export type Database = {
           advertiser_id: string
           affiliate_id: string
           bonus_usd: number
+          campaign_value_usd: number
           commission_usd: number
           created_at: string
           deadline: string
@@ -330,6 +331,7 @@ export type Database = {
           advertiser_id: string
           affiliate_id: string
           bonus_usd?: number
+          campaign_value_usd?: number
           commission_usd?: number
           created_at?: string
           deadline?: string
@@ -346,6 +348,7 @@ export type Database = {
           advertiser_id?: string
           affiliate_id?: string
           bonus_usd?: number
+          campaign_value_usd?: number
           commission_usd?: number
           created_at?: string
           deadline?: string
@@ -420,12 +423,18 @@ export type Database = {
       affiliates: {
         Row: {
           balance_usd: number
+          bonus_cycles_won: number
+          bonus_program_active: boolean
           closed_at: string | null
           code: string
           created_at: string
+          cycle_campaign_value_usd: number
+          cycle_end: string
+          cycle_start: string
           email: string
           full_name: string
           id: string
+          locked_bonus_usd: number
           payout_details: Json
           payout_method: string | null
           phone: string | null
@@ -439,12 +448,18 @@ export type Database = {
         }
         Insert: {
           balance_usd?: number
+          bonus_cycles_won?: number
+          bonus_program_active?: boolean
           closed_at?: string | null
           code: string
           created_at?: string
+          cycle_campaign_value_usd?: number
+          cycle_end?: string
+          cycle_start?: string
           email?: string
           full_name?: string
           id?: string
+          locked_bonus_usd?: number
           payout_details?: Json
           payout_method?: string | null
           phone?: string | null
@@ -458,12 +473,18 @@ export type Database = {
         }
         Update: {
           balance_usd?: number
+          bonus_cycles_won?: number
+          bonus_program_active?: boolean
           closed_at?: string | null
           code?: string
           created_at?: string
+          cycle_campaign_value_usd?: number
+          cycle_end?: string
+          cycle_start?: string
           email?: string
           full_name?: string
           id?: string
+          locked_bonus_usd?: number
           payout_details?: Json
           payout_method?: string | null
           phone?: string | null
@@ -2810,7 +2831,17 @@ export type Database = {
         Args: { _notes: string; _order_id: string }
         Returns: Json
       }
+      credit_affiliate_campaign: {
+        Args: {
+          _advertiser: string
+          _source_id: string
+          _source_type: string
+          _value: number
+        }
+        Returns: undefined
+      }
       end_campaign_early: { Args: { _campaign_id: string }; Returns: Json }
+      evaluate_affiliate_bonus_cycles: { Args: never; Returns: number }
       expire_stale_affiliates: { Args: never; Returns: number }
       expire_stale_offline_orders: { Args: never; Returns: number }
       expire_stale_pending_wallet_transactions: { Args: never; Returns: number }
