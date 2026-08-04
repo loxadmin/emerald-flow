@@ -11,10 +11,13 @@ import Logo from "@/components/Logo";
 type Affiliate = {
   id: string; code: string; full_name: string; status: string;
   balance_usd: number; withdrawable: boolean; qualify_deadline: string; closed_at: string | null;
+  locked_bonus_usd: number; bonus_program_active: boolean; cycle_end: string;
+  cycle_campaign_value_usd: number; bonus_cycles_won: number;
 };
 type Referral = {
   id: string; advertiser_email: string | null; status: string; deadline: string;
-  first_deposit_usd: number | null; bonus_usd: number; commission_usd: number; created_at: string;
+  first_deposit_usd: number | null; bonus_usd: number; commission_usd: number;
+  campaign_value_usd: number; created_at: string;
 };
 type Earning = { id: string; type: string; amount_usd: number; description: string | null; created_at: string };
 type Withdrawal = { id: string; amount_usd: number; method: string; status: string; created_at: string };
