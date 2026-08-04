@@ -10,9 +10,9 @@ import Footer from "@/components/Footer";
 import { getStoredAffiliateRef } from "@/components/AffiliateRefCapture";
 
 const PERKS = [
-  { title: "$50 welcome bonus", body: "Credited the moment you register as an affiliate." },
-  { title: "$50 per advertiser", body: "Every advertiser you refer who goes live earns you another $50." },
-  { title: "5% of first deposit", body: "You also earn 5% of whatever that advertiser first funds their wallet with." },
+  { title: "$200 monthly bonus", body: "Held in your account each cycle, unlocked when you hit the monthly target." },
+  { title: "10% of every campaign", body: "Earn 10% of the value of every campaign, ad package or switch offer your referred advertisers place." },
+  { title: "Paid for life", body: "Commission keeps coming on every new campaign a referred advertiser runs, not just the first." },
 ];
 
 export default function Affiliates() {
