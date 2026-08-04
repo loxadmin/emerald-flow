@@ -7,6 +7,8 @@ import { GlassButton } from "@/components/ui/glass-button";
 type Affiliate = {
   id: string; code: string; full_name: string; email: string; status: string;
   balance_usd: number; withdrawable: boolean; qualify_deadline: string; created_at: string;
+  locked_bonus_usd: number; bonus_program_active: boolean; cycle_end: string;
+  cycle_campaign_value_usd: number; bonus_cycles_won: number;
 };
 type Withdrawal = {
   id: string; affiliate_id: string; amount_usd: number; method: string;
