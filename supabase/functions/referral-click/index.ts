@@ -87,15 +87,62 @@ Deno.serve(async (req) => {
       }
     }
 
-    let redirectUrl = referral.redirect_url;
+    const normalize = (value?: string | null) => {
+      const raw = String(value || "").trim();
+      if (!raw) return null;
+      return /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, "")}`;
+    };
+
+    let redirectUrl = normalize(referral.redirect_url);
+
     if (!redirectUrl) {
       const { data: sources } = await supabase
         .from("campaign_sources")
         .select("url")
         .eq("campaign_id", referral.campaign_id)
         .limit(1);
-      redirectUrl = sources?.[0]?.url || null;
+      redirectUrl = normalize(sources?.[0]?.url);
     }
+
+    const { data: campaign } = !redirectUrl
+      ? await supabase
+          .from("campaigns")
+          .select("advertiser_id, website_id, app_link")
+          .eq("id", referral.campaign_id)
+          .maybeSingle()
+      : { data: null };
+
+    if (!redirectUrl && campaign?.website_id) {
+      const { data: site } = await supabase
+        .from("advertiser_websites")
+        .select("domain")
+        .eq("id", campaign.website_id)
+        .maybeSingle();
+      redirectUrl = normalize(site?.domain);
+    }
+
+    if (!redirectUrl && campaign?.app_link) redirectUrl = normalize(campaign.app_link);
+
+    if (!redirectUrl && campaign?.advertiser_id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("website")
+        .eq("id", campaign.advertiser_id)
+        .maybeSingle();
+      redirectUrl = normalize(profile?.website);
+    }
+
+    if (redirectUrl && redirectUrl !== referral.redirect_url) {
+      await supabase.from("referrals").update({ redirect_url: redirectUrl }).eq("id", referral.id);
+    }
+
+    if (!redirectUrl) {
+      return new Response(
+        JSON.stringify({ error: "This referral link has no destination URL configured yet." }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
 
     return new Response(
       JSON.stringify({ redirect_url: redirectUrl, referral_id: referral.id, client_id: clientId || null }),
