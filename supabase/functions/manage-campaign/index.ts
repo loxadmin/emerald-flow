@@ -265,7 +265,7 @@ Deno.serve(async (req) => {
 
       const { data: campaign } = await supabase
         .from("campaigns")
-        .select("advertiser_id")
+        .select("advertiser_id, website_id, app_link")
         .eq("id", campaign_id)
         .maybeSingle();
 
@@ -273,20 +273,51 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Forbidden" }, 403);
       }
 
+      const normalize = (value?: string | null) => {
+        const raw = String(value || "").trim();
+        if (!raw) return null;
+        return /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, "")}`;
+      };
+
       const { data: sources } = await supabase
         .from("campaign_sources")
         .select("url")
         .eq("campaign_id", campaign_id)
         .limit(1);
 
-      const redirect_url = sources?.[0]?.url || null;
+      let redirect_url = normalize(sources?.[0]?.url);
+
+      if (!redirect_url && campaign.website_id) {
+        const { data: site } = await supabase
+          .from("advertiser_websites")
+          .select("domain")
+          .eq("id", campaign.website_id)
+          .maybeSingle();
+        redirect_url = normalize(site?.domain);
+      }
+
+      if (!redirect_url) redirect_url = normalize(campaign.app_link);
+
+      if (!redirect_url) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("website")
+          .eq("id", campaign.advertiser_id)
+          .maybeSingle();
+        redirect_url = normalize(profile?.website);
+      }
+
+      if (!redirect_url) {
+        return jsonResponse({ error: "This campaign has no website or app link yet. Add a destination URL before generating a referral link." }, 400);
+      }
 
       const { error } = await supabase
         .from("referrals")
         .insert({ campaign_id, code, redirect_url });
       if (error) throw error;
-      return jsonResponse({ success: true, code });
+      return jsonResponse({ success: true, code, redirect_url });
     }
+
 
     if (action === "generate_questions") {
       if (!campaign_id) return jsonResponse({ error: "Missing campaign_id" }, 400);
