@@ -220,8 +220,10 @@ export default function AdminCampaignDetail() {
   const generateReferral = async () => {
     if (!id) return;
     const code = `ref_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
-    const { error } = await supabase.functions.invoke("manage-campaign", { body: { action: "create_referral", campaign_id: id, code } });
-    if (error) toast.error("Failed to create referral"); else { toast.success("Referral link created!"); fetchData(); }
+    const { data, error } = await supabase.functions.invoke("manage-campaign", { body: { action: "create_referral", campaign_id: id, code } });
+    const apiError = (data as { error?: string } | null)?.error;
+    if (error || apiError) toast.error(apiError || "Failed to create referral"); else { toast.success("Referral link created!"); fetchData(); }
+
   };
 
   const handleRecordManualEvents = async () => {
