@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Loader2, Zap, ArrowRight, Wallet as WalletIcon, ClipboardList, Sparkles, Check } from "lucide-react";
 import MigrationChart from "@/components/MigrationChart";
 import SwitchStoryCard from "@/components/SwitchStoryCard";
+import SwitchMetricsPanel from "@/components/SwitchMetricsPanel";
 
 /** Turns "https://www.cabally.com" into "Cabally" so offers read personally. */
 function brandFrom(website?: string | null, companyName?: string | null, email?: string | null): string {
@@ -230,6 +231,12 @@ export default function SwitchOffers() {
                           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${Math.min(100, (o.users_delivered / o.batch_size) * 100)}%` }} />
                         </div>
                       </div>
+
+                      <SwitchMetricsPanel
+                        orderId={o.id}
+                        competitorName={o.competitor_app_name}
+                        brandName={brandName}
+                      />
 
                       <MigrationChart switchOrderId={o.id} title="Real-time Migration Sources breakdown" />
                     </div>

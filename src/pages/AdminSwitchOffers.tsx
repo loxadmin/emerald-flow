@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Pencil, Building2, Zap, ClipboardList, ExternalLink } from "lucide-react";
 import CompetitorLogoUpload from "@/components/CompetitorLogoUpload";
 import AdminMigrationEntry from "@/components/AdminMigrationEntry";
+import { parseTxnCsv, sumTxn, type TxnRow } from "@/lib/txn-csv";
 
 const SUBTYPES = [
   "musician","youtuber","social_media_creator",
@@ -64,6 +65,24 @@ export default function AdminSwitchOffers() {
 
   const [ordEdit, setOrdEdit] = useState<Order | null>(null);
   const [ordForm, setOrdForm] = useState({ users_delivered: 0, status: "active", notes: "" });
+  const [metricForm, setMetricForm] = useState({
+    users_switched: 0, signups: 0, kyc_completed: 0, profiles_created: 0, deposits_count: 0,
+  });
+  const [txnRows, setTxnRows] = useState<TxnRow[]>([]);
+  const [csvError, setCsvError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const onCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const { rows, errors } = parseTxnCsv(text);
+    setTxnRows(rows);
+    setCsvError(errors.length ? errors.slice(0, 3).join(" · ") : null);
+    if (rows.length && !metricForm.deposits_count) {
+      setMetricForm((f) => ({ ...f, deposits_count: rows.length }));
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -160,20 +179,53 @@ export default function AdminSwitchOffers() {
   };
 
   // Fulfillment
-  const openOrd = (o: Order) => {
+  const openOrd = async (o: Order) => {
     setOrdEdit(o);
     setOrdForm({ users_delivered: o.users_delivered, status: o.status, notes: o.admin_notes || "" });
+    setCsvError(null);
+    setTxnRows([]);
+    setMetricForm({ users_switched: o.users_delivered, signups: 0, kyc_completed: 0, profiles_created: 0, deposits_count: 0 });
+    const { data } = await supabase
+      .from("switch_order_metrics" as any).select("*").eq("order_id", o.id).maybeSingle();
+    const m: any = data;
+    if (m) {
+      setMetricForm({
+        users_switched: m.users_switched, signups: m.signups, kyc_completed: m.kyc_completed,
+        profiles_created: m.profiles_created, deposits_count: m.deposits_count,
+      });
+      setTxnRows((m.txn_rows as TxnRow[]) || []);
+    }
   };
   const saveOrd = async () => {
     if (!ordEdit) return;
-    const { error } = await supabase.rpc("update_switch_order_delivery" as any, {
+    if (metricForm.deposits_count > 0 && txnRows.length === 0) {
+      return toast.error("Upload a transaction CSV to back the deposit count");
+    }
+    if (txnRows.length > 0 && txnRows.length < metricForm.deposits_count) {
+      return toast.error(`CSV has ${txnRows.length} rows but you reported ${metricForm.deposits_count} deposits`);
+    }
+    setSaving(true);
+    const { error } = await supabase.rpc("record_switch_metrics" as any, {
       _order_id: ordEdit.id,
-      _users_delivered: Number(ordForm.users_delivered),
+      _users_switched: Number(metricForm.users_switched),
+      _signups: Number(metricForm.signups),
+      _kyc_completed: Number(metricForm.kyc_completed),
+      _profiles_created: Number(metricForm.profiles_created),
+      _deposits_count: Number(metricForm.deposits_count),
+      _txn_rows: txnRows.length ? txnRows : null,
+      _notes: ordForm.notes || null,
+    });
+    if (error) { setSaving(false); return toast.error(error.message); }
+
+    const { error: sErr } = await supabase.rpc("update_switch_order_delivery" as any, {
+      _order_id: ordEdit.id,
+      _users_delivered: Number(metricForm.users_switched),
       _status: ordForm.status,
       _notes: ordForm.notes || null,
     });
-    if (error) return toast.error(error.message);
-    toast.success("Updated");
+    setSaving(false);
+    if (sErr) return toast.error(sErr.message);
+    toast.success("Delivery metrics saved");
     setOrdEdit(null); load();
   };
 
@@ -379,13 +431,23 @@ export default function AdminSwitchOffers() {
       {/* Order fulfillment */}
       <Dialog open={!!ordEdit} onOpenChange={(v) => !v && setOrdEdit(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Update delivery</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Deliver switch cohort</DialogTitle></DialogHeader>
           {ordEdit && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">{ordEdit.offer_title}</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div><Label>Users delivered</Label><Input type="number" min={0} value={ordForm.users_delivered} onChange={(e) => setOrdForm({ ...ordForm, users_delivered: Number(e.target.value) })} /></div>
-                <div><Label>Status</Label>
+              <div className="rounded-lg border bg-secondary/30 p-3">
+                <p className="text-sm font-medium">{ordEdit.offer_title}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {ordEdit.batch_size.toLocaleString()} users from {ordEdit.competitor_app_name || "competitor"} · ${Number(ordEdit.flat_price_usd).toFixed(2)}
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div><Label className="text-xs">Users switched</Label><Input type="number" min={0} value={metricForm.users_switched} onChange={(e) => setMetricForm({ ...metricForm, users_switched: Number(e.target.value) })} /></div>
+                <div><Label className="text-xs">Signed up</Label><Input type="number" min={0} value={metricForm.signups} onChange={(e) => setMetricForm({ ...metricForm, signups: Number(e.target.value) })} /></div>
+                <div><Label className="text-xs">KYC completed</Label><Input type="number" min={0} value={metricForm.kyc_completed} onChange={(e) => setMetricForm({ ...metricForm, kyc_completed: Number(e.target.value) })} /></div>
+                <div><Label className="text-xs">Profiles created</Label><Input type="number" min={0} value={metricForm.profiles_created} onChange={(e) => setMetricForm({ ...metricForm, profiles_created: Number(e.target.value) })} /></div>
+                <div><Label className="text-xs">Deposited / transacted</Label><Input type="number" min={0} value={metricForm.deposits_count} onChange={(e) => setMetricForm({ ...metricForm, deposits_count: Number(e.target.value) })} /></div>
+                <div><Label className="text-xs">Status</Label>
                   <Select value={ordForm.status} onValueChange={(v) => setOrdForm({ ...ordForm, status: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -397,14 +459,47 @@ export default function AdminSwitchOffers() {
                   </Select>
                 </div>
               </div>
-              <div><Label>Notes</Label><Textarea rows={2} value={ordForm.notes} onChange={(e) => setOrdForm({ ...ordForm, notes: e.target.value })} /></div>
+
+              <div className="rounded-lg border p-3 space-y-2">
+                <Label className="text-xs">Transaction proof CSV (required when deposits &gt; 0)</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Columns: transaction_id, amount. Headers optional.
+                </p>
+                <Input type="file" accept=".csv,text/csv" onChange={onCsv} />
+                {csvError && <p className="text-[11px] text-destructive">{csvError}</p>}
+                {txnRows.length > 0 && (
+                  <div className="text-[11px] text-muted-foreground">
+                    <span className="font-semibold text-foreground">{txnRows.length.toLocaleString()}</span> transactions ·
+                    total <span className="font-semibold text-foreground">${sumTxn(txnRows).toFixed(2)}</span>
+                    <div className="mt-2 max-h-32 overflow-auto rounded border">
+                      <table className="w-full text-left text-[10px]">
+                        <tbody>
+                          {txnRows.slice(0, 25).map((t, i) => (
+                            <tr key={i} className="border-t">
+                              <td className="px-2 py-1 font-mono">{t.txn_id}</td>
+                              <td className="px-2 py-1 text-right tabular-nums">${t.amount_usd.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div><Label className="text-xs">Notes</Label><Textarea rows={2} value={ordForm.notes} onChange={(e) => setOrdForm({ ...ordForm, notes: e.target.value })} /></div>
               <AdminMigrationEntry
                 advertiserId={ordEdit.advertiser_id}
                 switchOrderId={ordEdit.id}
               />
             </div>
           )}
-          <DialogFooter><Button variant="outline" onClick={() => setOrdEdit(null)}>Cancel</Button><Button onClick={saveOrd}>Save</Button></DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOrdEdit(null)}>Cancel</Button>
+            <Button onClick={saveOrd} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}Save delivery
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AdminLayout>
