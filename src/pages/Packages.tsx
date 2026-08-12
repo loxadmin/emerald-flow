@@ -431,25 +431,30 @@ export default function Packages() {
   return (
     <DashboardLayout>
       <MotionWrapper>
-        {/* Dynamic Header */}
-        <div className="mb-8 flex items-center justify-between flex-wrap gap-4 border-b border-border pb-6">
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">Ad Packages</h1>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Ready to run</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-[2rem] font-semibold leading-tight tracking-tight text-foreground md:text-[2.5rem]">
+                Your ad packages
+              </h1>
               {mySubtype && (
-                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-500 border border-emerald-500/20">
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground">
                   {subtypeLabel(mySubtype)}
                 </span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-1.5">Premium tailored, fully-integrated campaigns ready to go live in clicks.</p>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Each package is wrapped for your category. Pick your milestones, set your volume, and go live without building a campaign.
+            </p>
           </div>
           <Link to="/packages/orders">
-            <Button variant="outline" size="sm" className="gap-2 font-semibold shadow-sm hover:bg-accent hover:-translate-y-0.5 transition-all">
-              <ClipboardList className="h-4 w-4 text-primary" /> My Orders
+            <Button variant="outline" size="sm" className="gap-2 rounded-full px-4 font-semibold">
+              <ClipboardList className="h-4 w-4 text-primary" /> My orders
             </Button>
           </Link>
         </div>
+
 
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
