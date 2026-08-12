@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { AuthError, requireInternalOrUser } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,9 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action: string = body.action || "digest";
+
+    // Only the scheduled digest may run without a caller identity
+    if (action !== "digest") await requireInternalOrUser(req);
 
     // ============ APPROVAL NOTIFICATION ============
     if (action === "approval") {
@@ -219,6 +223,7 @@ Deno.serve(async (req) => {
 
     return json({ error: "Unknown action" }, 400);
   } catch (err: any) {
+    if (err instanceof AuthError) return json({ error: err.message }, err.status);
     console.error("send-campaign-notification error", err);
     return json({ error: err?.message || "Internal error" }, 500);
   }
