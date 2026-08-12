@@ -12,19 +12,21 @@ const RIBBONS = Array.from({ length: 22 });
  * "You've got a package" reveal: a wrapped gift shakes, pops open and throws a
  * ribbon burst, then invites the advertiser into the ad packages page.
  */
-export default function GiftReveal({ count }: { count: number }) {
+export default function GiftReveal({ count, userId }: { count: number; userId?: string }) {
   const [show, setShow] = useState(false);
   const [opened, setOpened] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem(SEEN_KEY)) return;
-    const t = setTimeout(() => setShow(true), 500);
+    const seenKey = userId ? `${SEEN_KEY}_${userId}` : SEEN_KEY;
+    if (sessionStorage.getItem(seenKey)) return;
+    const t = setTimeout(() => setShow(true), 80);
     return () => clearTimeout(t);
-  }, []);
+  }, [userId]);
 
   const close = () => {
-    sessionStorage.setItem(SEEN_KEY, "1");
+    const seenKey = userId ? `${SEEN_KEY}_${userId}` : SEEN_KEY;
+    sessionStorage.setItem(seenKey, "1");
     setShow(false);
   };
 

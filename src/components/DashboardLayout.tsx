@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/lib/auth";
@@ -14,6 +14,8 @@ import {
 import Logo from "@/components/Logo";
 import KarbaliAssistant from "@/components/KarbaliAssistant";
 import KarbaliPersonaIcon from "@/components/KarbaliPersonaIcon";
+import GiftBox from "@/components/GiftBox";
+import { supabase } from "@/integrations/supabase/client";
 
 type NavLink = {
   to: string;
@@ -56,6 +58,31 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [availablePackageCount, setAvailablePackageCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id || isOffline) {
+      setAvailablePackageCount(0);
+      return;
+    }
+    let active = true;
+    (async () => {
+      const { data: category } = await supabase
+        .from("advertiser_categories")
+        .select("advertiser_subtype")
+        .eq("advertiser_id", user.id)
+        .maybeSingle();
+      const subtype = (category as { advertiser_subtype?: string } | null)?.advertiser_subtype;
+      if (!subtype || !active) return;
+      const { count } = await supabase
+        .from("ad_packages")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true)
+        .contains("advertiser_subtypes", [subtype]);
+      if (active) setAvailablePackageCount(count || 0);
+    })();
+    return () => { active = false; };
+  }, [user?.id, isOffline]);
 
   const enableAiMode = () => {
     setAiMode(true);
@@ -237,6 +264,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <span className="text-sm font-semibold tracking-tight">Karbali</span>
         </Link>
         <div className="flex items-center gap-1">
+          {availablePackageCount > 0 && (
+            <Link
+              to="/packages"
+              className="relative flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent transition-colors"
+              aria-label={`${availablePackageCount} ad packages available`}
+              title={`${availablePackageCount} ad packages available`}
+            >
+              <GiftBox size={22} shake />
+              <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-primary-foreground">
+                {availablePackageCount}
+              </span>
+            </Link>
+          )}
           <button
             onClick={enableAiMode}
             className="rounded-md p-2 text-primary hover:bg-accent transition-colors"
@@ -291,6 +331,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </span>
           </nav>
           <div className="flex items-center gap-2">
+            {availablePackageCount > 0 && (
+              <Link
+                to="/packages"
+                className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card hover:bg-accent transition-colors"
+                aria-label={`${availablePackageCount} ad packages available`}
+                title={`${availablePackageCount} ad packages available`}
+              >
+                <GiftBox size={22} shake />
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-primary-foreground">
+                  {availablePackageCount}
+                </span>
+              </Link>
+            )}
             <button
               onClick={enableAiMode}
               className="inline-flex items-center gap-1.5 rounded-md border border-primary bg-primary text-primary-foreground px-2.5 py-1.5 text-xs font-medium hover:bg-primary/90 transition-colors"
