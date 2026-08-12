@@ -15,12 +15,12 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   // Abuse protection for this public endpoint. Fails open if the limiter is down.
   const limited = await enforceRateLimit(req, "offerwall", RateLimits.publicRead);
   if (limited) return limited;
-    return new Response(null, { headers: corsHeaders });
-  }
 
   try {
     const supabase = createClient(
