@@ -8,13 +8,11 @@ import { Button } from "@/components/ui/button";
 import MotionWrapper from "@/components/MotionWrapper";
 import Sparkline from "@/components/Sparkline";
 import AnimatedDonut from "@/components/AnimatedDonut";
-import GiftBox from "@/components/GiftBox";
 import GiftReveal from "@/components/GiftReveal";
 import AiModePrompt from "@/components/AiModePrompt";
-import SwitchStoryCard from "@/components/SwitchStoryCard";
 import {
   Plus, BarChart3, Tag, ArrowUpRight, ArrowRight, RefreshCw,
-  Sparkles, Repeat2, Wallet, Lock, Package as PackageIcon,
+  Sparkles, Wallet, Lock,
   TrendingUp, Activity, MousePointer, CreditCard, Layers, ArrowDownRight
 } from "lucide-react";
 import {
@@ -37,14 +35,16 @@ const STATUS_STYLES: Record<string, string> = {
 
 /** Turns "https://www.cabally.com" into "Cabally" so offers can be personalised. */
 function brandFromProfile(website?: string | null, companyName?: string | null): string {
+  if (companyName?.trim() && companyName.trim().toLowerCase() !== "karbali") {
+    return companyName.trim();
+  }
   const raw = (website || "").trim().toLowerCase();
   if (raw) {
     const host = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
     const label = host.split(".")[0];
-    if (label) return label.charAt(0).toUpperCase() + label.slice(1);
+    if (label && label !== "karbali") return label.charAt(0).toUpperCase() + label.slice(1);
   }
-  if (companyName && companyName.trim()) return companyName.trim();
-  return "your platform";
+  return "your business";
 }
 
 /** Buckets timestamps into an N-day series ending today. */
@@ -92,8 +92,8 @@ export default function Dashboard() {
   const [packageCount, setPackageCount] = useState(0);
   const [packageOrders, setPackageOrders] = useState<any[]>([]);
   const [switchOffers, setSwitchOffers] = useState<any[]>([]);
-  const [brandName, setBrandName] = useState<string>("your platform");
-  const [brandLogo, setBrandLogo] = useState<string | null>(null);
+  const [brandName, setBrandName] = useState<string>("your business");
+  const [walletBalance, setWalletBalance] = useState(0);
   const [eventSeries, setEventSeries] = useState<number[]>([]);
   const [clickSeries, setClickSeries] = useState<number[]>([]);
   const [spendSeries, setSpendSeries] = useState<number[]>([]);
@@ -119,8 +119,18 @@ export default function Dashboard() {
         .select("website, company_name, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
-      setBrandName(brandFromProfile((profile as any)?.website, (profile as any)?.company_name));
-      setBrandLogo((profile as any)?.avatar_url || null);
+      const profileBrand = brandFromProfile((profile as any)?.website, (profile as any)?.company_name);
+      const safeBrand = profileBrand === "your business"
+        ? (user.email?.split("@")[0] || profileBrand)
+        : profileBrand;
+      setBrandName(safeBrand);
+
+      const { data: wallet } = await supabase
+        .from("wallets")
+        .select("balance")
+        .eq("advertiser_id", user.id)
+        .maybeSingle();
+      setWalletBalance(Number((wallet as { balance?: number } | null)?.balance || 0));
 
       if (subtype) {
         const { data: pkgs } = await supabase
@@ -252,6 +262,7 @@ export default function Dashboard() {
   const fallback = (arr: number[]) => (arr.length ? arr : new Array(14).fill(0));
 
   const statCards = [
+    { label: "Wallet balance", value: `$${walletBalance.toFixed(2)}`, hint: "Available balance", delta: null, to: "/wallet", icon: Wallet },
     { label: "Total events", value: stats.totalEvents.toLocaleString(), hint: "All tracked activity", delta: pctDelta(eventSeries), to: "/ads", icon: TrendingUp },
     { label: "Users delivered", value: stats.delivered.toLocaleString(), hint: "From ad packages", delta: pctDelta(deliverySeries), to: "/packages/orders", icon: Layers },
     { label: "Clicks", value: stats.totalClicks.toLocaleString(), hint: "Verified clicks", delta: pctDelta(clickSeries), to: "/ads", icon: MousePointer },
@@ -261,7 +272,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      {!needsActivation && packageCount > 0 && <GiftReveal count={packageCount} />}
+      {!needsActivation && packageCount > 0 && <GiftReveal count={packageCount} userId={user?.id} />}
       <AiModePrompt />
 
       <div className="mx-auto w-full max-w-[1400px] space-y-6">
@@ -322,7 +333,7 @@ export default function Dashboard() {
 
         {/* Stat strip */}
         <MotionWrapper delay={0.05}>
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3 xl:grid-cols-6">
             {statCards.map((s) => {
               const Icon = s.icon;
               return (
@@ -349,33 +360,6 @@ export default function Dashboard() {
           </div>
         </MotionWrapper>
 
-        {/* Ad packages gift */}
-        {packageCount > 0 && (
-          <MotionWrapper delay={0.07}>
-            <Link to="/packages" className="group block">
-              <div className="relative flex flex-col items-start gap-5 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-lg sm:flex-row sm:items-center">
-                <div className="flex h-24 w-24 shrink-0 items-end justify-center rounded-2xl bg-primary/5">
-                  <div className="pb-3">
-                    <GiftBox size={64} shake />
-                  </div>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">A gift for your brand</p>
-                  <p className="mt-1.5 text-xl font-semibold tracking-tight text-foreground">
-                    {packageCount} ready-made ad {packageCount === 1 ? "package" : "packages"} wrapped for {brandName}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Pick your milestones, set your volume and go live without building a campaign.
-                  </p>
-                </div>
-                <Button className="shrink-0 gap-2 rounded-full px-5 font-semibold">
-                  Unwrap <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </div>
-            </Link>
-          </MotionWrapper>
-        )}
-
         {/* Switch offers — migration stories */}
         {switchOffers.length > 0 && (
           <MotionWrapper delay={0.09}>
@@ -393,20 +377,28 @@ export default function Dashboard() {
                   View all <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="overflow-hidden rounded-xl border border-border bg-card divide-y divide-border">
                 {switchOffers.map((o) => (
-                  <SwitchStoryCard
-                    key={o.id}
-                    competitorName={o.competitor_name || "Competitor"}
-                    competitorLogo={o.competitor_logo}
-                    brandName={brandName}
-                    brandLogo={brandLogo}
-                    count={Number(o.batch_size)}
-                    price={Number(o.flat_price_usd)}
-                    platform={o.platform}
-                    note={o.title}
-                    onAction={() => { window.location.href = "/switch-offers"; }}
-                  />
+                  <Link key={o.id} to="/switch-offers" className="flex items-center gap-3 p-4 transition-colors hover:bg-accent/60 sm:gap-4">
+                    {o.competitor_logo ? (
+                      <img src={o.competitor_logo} alt={o.competitor_name || "Competitor"} className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
+                    ) : (
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-xs font-semibold text-foreground">
+                        {(o.competitor_name || "CO").slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground">
+                        {Number(o.batch_size).toLocaleString()} {o.competitor_name || "competitor"} users can switch to {brandName}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{o.title}</p>
+                    </div>
+                    <div className="hidden text-right sm:block">
+                      <p className="text-sm font-semibold tabular-nums text-foreground">${Number(o.flat_price_usd).toFixed(2)}</p>
+                      <p className="text-xs capitalize text-muted-foreground">{o.platform}</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
+                  </Link>
                 ))}
               </div>
             </section>
@@ -418,8 +410,8 @@ export default function Dashboard() {
         <MotionWrapper delay={0.1}>
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Main chart section (Sales/Events Overview theme) */}
-            <div className="rounded-xl border border-border bg-card/40 backdrop-blur-md overflow-hidden lg:col-span-2 premium-shadow flex flex-col">
-              <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4.5 border-b border-border bg-card/20">
+            <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card lg:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4.5">
                 <div>
                   <h3 className="text-base font-bold tracking-tight">Performance vs Benchmarks</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Live aggregated system-wide conversions and events</p>
@@ -493,8 +485,8 @@ export default function Dashboard() {
             </div>
 
             {/* Side breakdown / campaign mix */}
-            <div className="rounded-xl border border-border bg-card/40 backdrop-blur-md flex flex-col premium-shadow">
-              <div className="border-b border-border px-5 py-4 bg-card/20">
+            <div className="flex flex-col rounded-xl border border-border bg-card">
+              <div className="border-b border-border px-5 py-4">
                 <h3 className="text-base font-bold tracking-tight">Portfolio Allocation</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">Campaign status distribution</p>
               </div>
@@ -515,8 +507,8 @@ export default function Dashboard() {
 
         {/* Live campaigns table with animated graph lines */}
         <MotionWrapper delay={0.12}>
-          <div className="rounded-xl border border-border bg-card/40 backdrop-blur-md overflow-hidden premium-shadow">
-            <div className="flex items-center justify-between gap-3 px-6 py-4.5 border-b border-border bg-card/20">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-6 py-4.5">
               <h3 className="text-base font-bold tracking-tight">Live Campaign Metrics</h3>
               <Link to="/ads" className="inline-flex items-center gap-1 text-xs text-primary hover:underline transition-colors font-semibold">
                 View detailed list <ArrowRight className="h-3.5 w-3.5" />

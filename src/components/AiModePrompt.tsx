@@ -19,7 +19,9 @@ export default function AiModePrompt() {
     if (aiMode) return;
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem(ASK_KEY)) return;
-    const t = setTimeout(() => setShow(true), 900);
+    // The package reveal is the first login moment. Ask about AI only after it
+    // has had enough time to be opened or dismissed.
+    const t = setTimeout(() => setShow(true), 4500);
     return () => clearTimeout(t);
   }, [aiMode]);
 

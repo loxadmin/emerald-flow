@@ -472,94 +472,26 @@ export default function Packages() {
             )}
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {packages.map((p) => {
               const ms = pkgMs[p.id] || [];
-              const flatRows = ms.filter((r) => r.pricing_type === "flat");
-              const cheapest = flatRows.reduce<number | null>((min, r) => {
-                const v = r.price_usd || 0;
-                return min === null || v < min ? v : min;
-              }, null);
-              const fullPrice = flatRows.reduce((s, r) => s + (r.price_usd || 0), 0);
-              const hasCommission = ms.some((r) => r.pricing_type === "commission_pct");
-              const anyDurational = ms.some((r) => {
-                const mm = milestones.find((x) => x.id === r.milestone_id);
-                return mm?.requires_duration;
-              });
               return (
                 <div
                   key={p.id}
-                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+                  className="group relative flex h-full min-h-[280px] flex-col items-center overflow-hidden rounded-xl border border-border bg-card p-6 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                 >
-                  {/* ribbon */}
-                  <span className="pointer-events-none absolute right-[-38px] top-[18px] w-[140px] rotate-45 bg-primary py-1 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-primary-foreground">
-                    Package
-                  </span>
-
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-[70px] w-[70px] shrink-0 items-end justify-center rounded-2xl bg-primary/5">
-                      <div className="pb-2">
-                        <GiftBox size={46} />
-                      </div>
-                    </div>
-                    <div className="min-w-0 pt-1">
-                      <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">{p.name}</h3>
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {(p.platform_support || []).map((pl) => (
-                          <span key={pl} className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium capitalize text-muted-foreground">
-                            {pl}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="flex h-28 items-end justify-center">
+                    <GiftBox size={76} shake />
                   </div>
-
-                  {p.description && (
-                    <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{p.description}</p>
-                  )}
-
-                  <div className="mt-5 grid grid-cols-2 gap-4 rounded-xl bg-secondary/50 p-4">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">From</p>
-                      <p className="mt-0.5 text-lg font-semibold tabular-nums tracking-tight text-foreground">
-                        ${cheapest != null ? cheapest.toFixed(2) : "0.00"}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-medium text-muted-foreground">Volume</p>
-                      <p className="mt-0.5 text-lg font-semibold tabular-nums tracking-tight text-foreground">
-                        {p.min_units.toLocaleString()}–{p.max_units.toLocaleString()}
-                      </p>
-                    </div>
+                  <div className="mt-5 min-w-0 w-full">
+                    <p className="text-xs font-medium text-primary">Ready-made ad package</p>
+                    <h3 className="mt-1 truncate text-lg font-semibold text-foreground">{p.name}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">Open to view milestones, pricing and delivery options</p>
                   </div>
-
-                  {ms.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-xs font-medium text-muted-foreground">What is inside</p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {ms.map((rm) => {
-                          const m = milestones.find((x) => x.id === rm.milestone_id);
-                          return (
-                            <span key={rm.milestone_id} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground">
-                              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                              {m?.name || "Goal"}
-                              <span className="text-muted-foreground">
-                                {rm.pricing_type === "commission_pct" ? `${rm.commission_pct}%` : `$${(rm.price_usd || 0).toFixed(2)}`}
-                              </span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
-                    <p className="text-xs text-muted-foreground">
-                      {hasCommission ? "Includes commission-based sales" : anyDurational ? "Duration based delivery" : "One-off delivery"}
-                    </p>
+                  <div className="mt-auto w-full pt-5">
                     <Button
                       size="sm"
-                      className="shrink-0 gap-1.5 rounded-full px-4 font-semibold"
+                      className="w-full gap-1.5 font-semibold"
                       onClick={() => openBuy(p)}
                       disabled={ms.length === 0}
                     >
@@ -598,6 +530,11 @@ export default function Packages() {
                 </DialogHeader>
 
                 <div className="space-y-5">
+                  {selected.description && (
+                    <p className="rounded-lg border border-border bg-secondary/40 p-3 text-sm text-muted-foreground">
+                      {selected.description}
+                    </p>
+                  )}
                   {/* Platform selection - Compact grid */}
                   <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80 block">Campaign Destination</Label>

@@ -17,15 +17,17 @@ import MigrationChart from "@/components/MigrationChart";
 import SwitchStoryCard from "@/components/SwitchStoryCard";
 
 /** Turns "https://www.cabally.com" into "Cabally" so offers read personally. */
-function brandFrom(website?: string | null, companyName?: string | null): string {
+function brandFrom(website?: string | null, companyName?: string | null, email?: string | null): string {
+  if (companyName && companyName.trim() && companyName.trim().toLowerCase() !== "karbali") return companyName.trim();
   const raw = (website || "").trim().toLowerCase();
   if (raw) {
     const host = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
     const label = host.split(".")[0];
-    if (label) return label.charAt(0).toUpperCase() + label.slice(1);
+    if (label && label !== "karbali") return label.charAt(0).toUpperCase() + label.slice(1);
   }
-  if (companyName && companyName.trim()) return companyName.trim();
-  return "your brand";
+  const emailBrand = (email || "").split("@")[0].trim();
+  if (emailBrand) return emailBrand.charAt(0).toUpperCase() + emailBrand.slice(1);
+  return "your business";
 }
 
 type Offer = {
@@ -57,7 +59,7 @@ export default function SwitchOffers() {
     (async () => {
       const { data } = await supabase
         .from("profiles").select("website, company_name, avatar_url").eq("id", user.id).maybeSingle();
-      setBrandName(brandFrom((data as any)?.website, (data as any)?.company_name));
+      setBrandName(brandFrom((data as any)?.website, (data as any)?.company_name, user.email));
       setBrandLogo((data as any)?.avatar_url || null);
     })();
   }, [user?.id]);
