@@ -277,19 +277,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </span>
             </Link>
           )}
-          {availableSwitchOfferCount > 0 && (
-            <Link
-              to="/switch-offers"
-              className="relative flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent transition-colors"
-              aria-label={`${availableSwitchOfferCount} switch offers available`}
-              title={`${availableSwitchOfferCount} switch offers available`}
-            >
-              <GiftBox size={22} shake />
-              <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-destructive-foreground">
-                {availableSwitchOfferCount}
-              </span>
-            </Link>
-          )}
           <button
             onClick={enableAiMode}
             className="rounded-md p-2 text-primary hover:bg-accent transition-colors"
