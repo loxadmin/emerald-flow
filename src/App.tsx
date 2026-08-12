@@ -5,81 +5,105 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, RequireAuth, RequireAdmin, useAuth } from "@/lib/auth";
 import { AiModeProvider } from "@/lib/ai-mode";
-import AiMode from "@/pages/AiMode";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, Suspense, lazy, useEffect } from "react";
 import { toast } from "sonner";
 
 import { ThemeProvider } from "@/lib/theme";
 import MetaPixelTracker from "@/components/MetaPixelTracker";
 import AffiliateRefCapture from "@/components/AffiliateRefCapture";
-import Affiliates from "./pages/Affiliates";
-import AffiliateDashboard from "./pages/AffiliateDashboard";
-import AdminAffiliates from "./pages/AdminAffiliates";
+import { PageSkeleton } from "@/components/skeletons";
 
-
+// The landing page is the LCP route for most visitors, so it stays in the
+// initial chunk. Everything else is code-split: three.js, recharts, jszip and
+// the whole admin panel no longer ship to a first-time visitor.
 import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
-import CampaignRouter from "./pages/CampaignRouter";
-import CreateCampaign from "./pages/CreateCampaign";
-import CreateEngagementCampaign from "./pages/CreateEngagementCampaign";
-import CreateCommerceCampaign from "./pages/CreateCommerceCampaign";
-import CreateManualCampaign from "./pages/CreateManualCampaign";
-import CampaignDetail from "./pages/CampaignDetail";
-import CategorySelection from "./pages/CategorySelection";
 
-import Ads from "./pages/Ads";
-import Websites from "./pages/Websites";
-import Wallet from "./pages/Wallet";
-import Profile from "./pages/Profile";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminCampaignDetail from "./pages/AdminCampaignDetail";
-import AdminCampaigns from "./pages/AdminCampaigns";
-import AdminOrders from "./pages/AdminOrders";
-import AdminAnalytics from "./pages/AdminAnalytics";
-import AdminSettings from "./pages/AdminSettings";
-import AdminBlogs from "./pages/AdminBlogs";
-import AdminContent from "./pages/AdminContent";
-import AdminDesign from "./pages/AdminDesign";
-import AdminCategories from "./pages/AdminCategories";
-import AdminAdvertisers from "./pages/AdminAdvertisers";
-import AdminWallets from "./pages/AdminWallets";
-import AdminPartnerships from "./pages/AdminPartnerships";
-import AdminMessages from "./pages/AdminMessages";
-import AdminBroadcast from "./pages/AdminBroadcast";
-import AdminExtension from "./pages/AdminExtension";
-import AdminOfferwall from "./pages/AdminOfferwall";
-import AdminLettersOfIntent from "./pages/AdminLettersOfIntent";
-import AdminCompanySignature from "./pages/AdminCompanySignature";
-import AdminMigrationOpportunities from "./pages/AdminMigrationOpportunities";
-import AdminPackages from "./pages/AdminPackages";
-import AdminPackageDelivery from "./pages/AdminPackageDelivery";
-import AdminMilestones from "./pages/AdminMilestones";
+const AiMode = lazy(() => import("./pages/AiMode"));
+const Affiliates = lazy(() => import("./pages/Affiliates"));
+const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
+const AdminAffiliates = lazy(() => import("./pages/AdminAffiliates"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const CampaignRouter = lazy(() => import("./pages/CampaignRouter"));
+const CreateCampaign = lazy(() => import("./pages/CreateCampaign"));
+const CreateEngagementCampaign = lazy(() => import("./pages/CreateEngagementCampaign"));
+const CreateCommerceCampaign = lazy(() => import("./pages/CreateCommerceCampaign"));
+const CreateManualCampaign = lazy(() => import("./pages/CreateManualCampaign"));
+const CampaignDetail = lazy(() => import("./pages/CampaignDetail"));
+const CategorySelection = lazy(() => import("./pages/CategorySelection"));
+const Ads = lazy(() => import("./pages/Ads"));
+const Websites = lazy(() => import("./pages/Websites"));
+const Wallet = lazy(() => import("./pages/Wallet"));
+const Profile = lazy(() => import("./pages/Profile"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminCampaignDetail = lazy(() => import("./pages/AdminCampaignDetail"));
+const AdminCampaigns = lazy(() => import("./pages/AdminCampaigns"));
+const AdminOrders = lazy(() => import("./pages/AdminOrders"));
+const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
+const AdminSettings = lazy(() => import("./pages/AdminSettings"));
+const AdminBlogs = lazy(() => import("./pages/AdminBlogs"));
+const AdminContent = lazy(() => import("./pages/AdminContent"));
+const AdminDesign = lazy(() => import("./pages/AdminDesign"));
+const AdminCategories = lazy(() => import("./pages/AdminCategories"));
+const AdminAdvertisers = lazy(() => import("./pages/AdminAdvertisers"));
+const AdminWallets = lazy(() => import("./pages/AdminWallets"));
+const AdminPartnerships = lazy(() => import("./pages/AdminPartnerships"));
+const AdminMessages = lazy(() => import("./pages/AdminMessages"));
+const AdminBroadcast = lazy(() => import("./pages/AdminBroadcast"));
+const AdminExtension = lazy(() => import("./pages/AdminExtension"));
+const AdminOfferwall = lazy(() => import("./pages/AdminOfferwall"));
+const AdminLettersOfIntent = lazy(() => import("./pages/AdminLettersOfIntent"));
+const AdminCompanySignature = lazy(() => import("./pages/AdminCompanySignature"));
+const AdminMigrationOpportunities = lazy(() => import("./pages/AdminMigrationOpportunities"));
+const AdminPackages = lazy(() => import("./pages/AdminPackages"));
+const AdminPackageDelivery = lazy(() => import("./pages/AdminPackageDelivery"));
+const AdminMilestones = lazy(() => import("./pages/AdminMilestones"));
+const Packages = lazy(() => import("./pages/Packages"));
+const PackageOrders = lazy(() => import("./pages/PackageOrders"));
+const SwitchOffers = lazy(() => import("./pages/SwitchOffers"));
+const AdminSwitchOffers = lazy(() => import("./pages/AdminSwitchOffers"));
+const OfflineLOI = lazy(() => import("./pages/OfflineLOI"));
+const OfflineLOIStatus = lazy(() => import("./pages/OfflineLOIStatus"));
+const OfflineCampaignLaunch = lazy(() => import("./pages/OfflineCampaignLaunch"));
+const Admin2FA = lazy(() => import("./pages/Admin2FA"));
+const About = lazy(() => import("./pages/About"));
+const Docs = lazy(() => import("./pages/Docs"));
+const Terms = lazy(() => import("./pages/Terms"));
+const BlogList = lazy(() => import("./pages/BlogList"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const WhatIsKarbali = lazy(() => import("./pages/WhatIsKarbali"));
+const UseCases = lazy(() => import("./pages/UseCases"));
+const Comparison = lazy(() => import("./pages/Comparison"));
+const ProblemSolution = lazy(() => import("./pages/ProblemSolution"));
+const ReferralRedirect = lazy(() => import("./pages/ReferralRedirect"));
+const LearnHub = lazy(() => import("./pages/LearnHub"));
+const LearnArticle = lazy(() => import("./pages/LearnArticle"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-import Packages from "./pages/Packages";
-import PackageOrders from "./pages/PackageOrders";
-import SwitchOffers from "./pages/SwitchOffers";
-import AdminSwitchOffers from "./pages/AdminSwitchOffers";
-import OfflineLOI from "./pages/OfflineLOI";
-import OfflineLOIStatus from "./pages/OfflineLOIStatus";
-import OfflineCampaignLaunch from "./pages/OfflineCampaignLaunch";
-import Admin2FA from "./pages/Admin2FA";
-import About from "./pages/About";
-import Docs from "./pages/Docs";
-import Terms from "./pages/Terms";
-import BlogList from "./pages/BlogList";
-import BlogPost from "./pages/BlogPost";
-import WhatIsKarbali from "./pages/WhatIsKarbali";
-import UseCases from "./pages/UseCases";
-import Comparison from "./pages/Comparison";
-import ProblemSolution from "./pages/ProblemSolution";
-import ReferralRedirect from "./pages/ReferralRedirect";
-import LearnHub from "./pages/LearnHub";
-import LearnArticle from "./pages/LearnArticle";
-import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
+// Client-side server-state defaults.
+//  - staleTime > 0 stops React 18 StrictMode double-mounts and route revisits
+//    from re-hitting Postgres for data that has not changed.
+//  - refetchOnWindowFocus off by default; hooks that need it opt back in.
+//  - bounded, backed-off retries so a Supabase blip does not turn into a
+//    self-inflicted request storm.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 10 * 60_000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      retry: (failureCount, error) => {
+        const status = (error as { status?: number })?.status;
+        if (status && status >= 400 && status < 500) return false; // never retry auth/validation errors
+        return failureCount < 2;
+      },
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    },
+    mutations: { retry: 0 },
+  },
+});
 
 // Blocks direct navigation to a create-campaign page that doesn't match the
 // advertiser's approved category. Redirects back to the router with a toast.
@@ -109,6 +133,7 @@ const App = () => (
             <AiModeProvider>
             <MetaPixelTracker />
             <AffiliateRefCapture />
+            <Suspense fallback={<PageSkeleton />}>
             <Routes>
               <Route path="/ai" element={<RequireAuth><AiMode /></RequireAuth>} />
 
@@ -192,6 +217,7 @@ const App = () => (
 
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
             </AiModeProvider>
           </AuthProvider>
         </BrowserRouter>
