@@ -230,7 +230,8 @@ export default function AdminCampaigns() {
 
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
