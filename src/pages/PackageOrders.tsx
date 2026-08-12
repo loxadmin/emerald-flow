@@ -11,6 +11,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import MigrationChart from "@/components/MigrationChart";
 import DailyTargets from "@/components/DailyTargets";
 import PackageMetricsPanel from "@/components/PackageMetricsPanel";
+import { ChartSkeleton, StatsSkeleton } from "@/components/skeletons";
 
 type Order = {
   id: string; package_name: string; unit_label: string;
@@ -89,7 +90,7 @@ export default function PackageOrders() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          <div className="space-y-4"><StatsSkeleton count={3} /><ChartSkeleton /></div>
         ) : orders.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground bg-card/20 backdrop-blur-md">
             <PackageIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40 animate-bounce" />

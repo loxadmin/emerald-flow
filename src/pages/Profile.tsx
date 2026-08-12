@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Upload, LogOut, User as UserIcon, Trash2 } from "lucide-react";
+import { FormSkeleton } from "@/components/skeletons";
 
 const MAX_BYTES = 3 * 1024 * 1024;
 
@@ -105,7 +106,7 @@ export default function Profile() {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+            <FormSkeleton fields={6} />
           ) : (
             <>
               {/* Logo */}

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { CheckCircle, XCircle, BarChart3, DollarSign, Users, RefreshCw, MousePointerClick, Activity, TrendingUp } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from "recharts";
+import { ListSkeleton } from "@/components/skeletons";
 
 type CampaignWithProfile = Tables<"campaigns"> & {
   profiles: { email: string; full_name: string | null } | null;
@@ -333,7 +334,7 @@ export default function AdminDashboard() {
             </div>
             <div className="px-5 pb-5">
               {loading ? (
-                <div className="flex justify-center py-6"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+                <ListSkeleton rows={3} />
               ) : pendingCampaigns.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">No pending campaigns</p>
               ) : (

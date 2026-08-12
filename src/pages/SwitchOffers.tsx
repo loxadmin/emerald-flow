@@ -16,6 +16,7 @@ import { Loader2, Zap, ArrowRight, Wallet as WalletIcon, ClipboardList, Sparkles
 import MigrationChart from "@/components/MigrationChart";
 import SwitchStoryCard from "@/components/SwitchStoryCard";
 import SwitchMetricsPanel from "@/components/SwitchMetricsPanel";
+import { CardGridSkeleton } from "@/components/skeletons";
 
 /** Turns "https://www.cabally.com" into "Cabally" so offers read personally. */
 function brandFrom(website?: string | null, companyName?: string | null, email?: string | null): string {
@@ -142,7 +143,7 @@ export default function SwitchOffers() {
 
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          <CardGridSkeleton count={4} columns={2} />
         ) : (
           <>
             {!subtype ? (

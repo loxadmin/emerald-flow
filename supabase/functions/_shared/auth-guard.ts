@@ -19,10 +19,14 @@ export async function requireInternalOrUser(
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+  const token = authHeader.replace("Bearer ", "").trim();
+
+  // Service-role callers (other edge functions / webhooks) are trusted internal traffic
+  if (serviceKey && token === serviceKey) return { isInternal: true };
+
   const anonClient = createClient(supabaseUrl, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const token = authHeader.replace("Bearer ", "").trim();
   const { data, error } = await anonClient.auth.getUser(token);
   if (error || !data.user) throw new AuthError("Invalid token", 401);
 

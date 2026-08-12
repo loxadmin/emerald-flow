@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import { GlassButton } from "@/components/ui/glass-button";
 import { useTheme } from "@/lib/theme";
 import { Sun, Moon } from "lucide-react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/components/Seo";
 
 export default function WhatIsKarbali() {
   const { theme, toggleTheme } = useTheme();

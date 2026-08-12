@@ -9,6 +9,7 @@ import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWra
 import Sparkline from "@/components/Sparkline";
 import { Plus, BarChart3, ArrowRight, FileEdit, Clock, CheckCircle, XCircle, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ListSkeleton } from "@/components/skeletons";
 
 interface Campaign {
   id: string; name: string; status: string; budget_remaining: number; created_at: string;
@@ -163,7 +164,7 @@ export default function AdsPage() {
           <div className="rounded-xl border border-border bg-card">
             <div className="px-5 py-4">
               {loading ? (
-                <div className="flex justify-center py-12"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+                <ListSkeleton rows={5} />
               ) : filtered.length === 0 ? (
                 <div className="py-12 text-center">
                   <BarChart3 className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />

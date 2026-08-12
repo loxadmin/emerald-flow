@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/components/Seo";
 import { Sun, Moon, BookOpen, GraduationCap, ArrowRight, Search } from "lucide-react";
 import { useState } from "react";
 import FluidCanvas from "@/components/FluidCanvas";

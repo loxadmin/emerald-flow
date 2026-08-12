@@ -5,6 +5,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Loader2, Search, ArrowUpRight, Megaphone } from "lucide-react";
+import { ListSkeleton } from "@/components/skeletons";
 
 type Row = {
   id: string; name: string; status: string; created_at: string;
@@ -102,7 +103,7 @@ export default function AdminCampaigns() {
 
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           {loading ? (
-            <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            <ListSkeleton rows={6} />
           ) : filtered.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <Megaphone className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />

@@ -9,7 +9,7 @@ import { BarChart3, Shield, Zap, DollarSign, Sun, Moon, ArrowRight, Send, Termin
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
 import { useTheme } from "@/lib/theme";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/components/Seo";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingVariant1 from "@/components/landing/LandingVariant1";
 import LandingVariant2 from "@/components/landing/LandingVariant2";
