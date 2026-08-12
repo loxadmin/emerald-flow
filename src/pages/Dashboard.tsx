@@ -302,12 +302,33 @@ export default function Dashboard() {
               </div>
             </div>
             {!needsActivation && (
-              <Link to="/campaigns/create" className="self-start lg:self-auto">
-                <Button size="lg" className="gap-2 rounded-full px-5 font-semibold">
-                  <Plus className="h-4 w-4" /> New campaign
-                </Button>
-              </Link>
+              <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+                {switchOffers.length > 0 && (
+                  <Link to="/switch-offers">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="gap-2 rounded-full border-primary/40 px-5 font-semibold text-primary hover:bg-primary/10 hover:text-primary"
+                    >
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                      </span>
+                      {switchOffers
+                        .reduce((sum, o) => sum + Number(o.batch_size || 0), 0)
+                        .toLocaleString()}{" "}
+                      users ready to switch
+                    </Button>
+                  </Link>
+                )}
+                <Link to="/campaigns/create">
+                  <Button size="lg" className="gap-2 rounded-full px-5 font-semibold">
+                    <Plus className="h-4 w-4" /> New campaign
+                  </Button>
+                </Link>
+              </div>
             )}
+
           </div>
         </MotionWrapper>
 
