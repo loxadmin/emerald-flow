@@ -188,6 +188,7 @@ export default function AdminCampaigns() {
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
                     <th className="px-5 py-2.5 font-normal">Campaign</th>
                     <th className="px-3 py-2.5 font-normal">Advertiser</th>
+                    <th className="px-3 py-2.5 font-normal">Source</th>
                     <th className="px-3 py-2.5 font-normal">Type</th>
                     <th className="px-3 py-2.5 font-normal">Status</th>
                     <th className="px-3 py-2.5 font-normal text-right">Budget</th>
@@ -196,10 +197,12 @@ export default function AdminCampaigns() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((r) => (
-                    <tr key={r.id} className="border-b border-border last:border-0 transition-colors hover:bg-accent/40">
+                  {filtered.map((r) => {
+                    const href = r.source === "normal" ? `/admin/campaigns/${r.id}` : "/admin/orders";
+                    return (
+                    <tr key={`${r.source}-${r.id}`} className="border-b border-border last:border-0 transition-colors hover:bg-accent/40">
                       <td className="px-5 py-3">
-                        <Link to={`/admin/campaigns/${r.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                        <Link to={href} className="font-medium text-foreground hover:text-primary transition-colors">
                           {r.name}
                         </Link>
                         {r.target_users ? (
@@ -207,12 +210,13 @@ export default function AdminCampaigns() {
                         ) : null}
                       </td>
                       <td className="px-3 py-3 text-xs text-muted-foreground">{emails[r.advertiser_id] || "—"}</td>
+                      <td className="px-3 py-3 text-xs text-muted-foreground">{SOURCE_LABEL[r.source]}</td>
                       <td className="px-3 py-3 text-xs capitalize text-muted-foreground">{r.integration_type || "—"}</td>
                       <td className="px-3 py-3">
                         <Badge variant="outline" className={`px-1.5 py-0 text-[10px] font-medium ${
                           r.is_draft ? "bg-muted text-muted-foreground border-border" : STATUS_STYLES[r.status] || "bg-muted text-muted-foreground border-border"
                         }`}>
-                          {r.is_draft ? "draft" : r.status}
+                          {r.is_draft ? "draft" : r.status.replace(/_/g, " ")}
                         </Badge>
                       </td>
                       <td className="px-3 py-3 text-right text-xs tabular-nums text-muted-foreground">
@@ -222,7 +226,8 @@ export default function AdminCampaigns() {
                         {new Date(r.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <Link to={`/admin/campaigns/${r.id}`}><ArrowUpRight className="h-4 w-4 text-muted-foreground/50" /></Link>
+                        <Link to={href}><ArrowUpRight className="h-4 w-4 text-muted-foreground/50" /></Link>
+
                       </td>
                     </tr>
                   ))}
