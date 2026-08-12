@@ -50,9 +50,10 @@ async function getAdminEmail(supabase: ReturnType<typeof createClient>): Promise
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    await requireInternalOrUser(req);
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { event, payload = {} } = await req.json();
+    // Public contact form is the only anonymous-allowed event
+    if (event !== "support_message") await requireInternalOrUser(req);
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const admin = await getAdminEmail(supabase);
 
     switch (event) {
