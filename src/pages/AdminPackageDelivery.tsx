@@ -167,21 +167,55 @@ export default function AdminPackageDelivery() {
         </div>
       </div>
 
+      {/* Escrow tracker */}
+      <div className="mb-5 grid gap-3 sm:grid-cols-4 rounded-lg border bg-card p-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Escrow funded</p>
+          <p className="text-lg font-semibold font-mono">${Number(order.total_amount_usd || 0).toFixed(2)}</p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Spent on delivery</p>
+          <p className="text-lg font-semibold font-mono">${Number(order.escrow_spent_usd || 0).toFixed(2)}</p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Remaining</p>
+          <p className="text-lg font-semibold font-mono text-primary">
+            ${Math.max(Number(order.total_amount_usd || 0) - Number(order.escrow_spent_usd || 0), 0).toFixed(2)}
+          </p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Refunded</p>
+          <p className="text-lg font-semibold font-mono">
+            {order.refunded_at ? `$${Number(order.refunded_usd || 0).toFixed(2)}` : "—"}
+          </p>
+        </div>
+        <p className="sm:col-span-4 text-[11px] text-muted-foreground">
+          Each delivery you record deducts its cost from this escrow. Whatever is left when the package ends is refunded to the advertiser wallet automatically.
+        </p>
+      </div>
+
       <div className="grid gap-4">
         {selectedMs.map((m) => {
           const f: FormState = forms[m.id] || EMPTY_FORM();
           const isTxn = m.slug === "transaction" || m.slug === "sale";
           const isSwitch = SWITCH_SLUGS.has(m.slug);
+          const isEngagement = m.requires_duration && !isTxn;
           const dv = deliveries.filter((d) => d.milestone_id === m.id);
           const totalUsers = dv.reduce((s, d) => s + (d.users_delivered || 0), 0);
           const txnSum = dv.reduce((s, d) => s + (Number(d.total_txn_amount) || 0), 0);
+          const chargedSum = dv.reduce((s, d) => s + (Number(d.charged_usd) || 0), 0);
+          const unitPrice = Number(
+            (Array.isArray(order.milestone_breakdown) ? order.milestone_breakdown : [])
+              .find((b: any) => b.milestone_id === m.id && (b.pricing_type || "flat") === "flat")?.price_usd || 0
+          );
           return (
             <div key={m.id} className="rounded-lg border bg-card p-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <h3 className="font-semibold">{m.name}</h3>
                 {m.requires_duration ? <Badge variant="secondary" className="text-[10px]">Per day</Badge> : <Badge variant="outline" className="text-[10px]">One-off total</Badge>}
+                {unitPrice > 0 && <Badge variant="outline" className="text-[10px]">${unitPrice.toFixed(2)} / user</Badge>}
                 <span className="ml-auto text-xs text-muted-foreground">
-                  Delivered: {totalUsers.toLocaleString()} users{isTxn && txnSum > 0 ? ` · $${txnSum.toFixed(2)}` : ""}
+                  Delivered: {totalUsers.toLocaleString()} users{isTxn && txnSum > 0 ? ` · $${txnSum.toFixed(2)}` : ""} · charged ${chargedSum.toFixed(2)}
                 </span>
               </div>
 
@@ -195,8 +229,41 @@ export default function AdminPackageDelivery() {
                 <div>
                   <Label>Users delivered</Label>
                   <Input type="number" min={0} value={f.users} onChange={(e) => setForm(m.id, { users: e.target.value })} />
+                  {unitPrice > 0 && Number(f.users) > 0 && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Will deduct ${(Number(f.users) * unitPrice).toFixed(2)} from escrow.
+                    </p>
+                  )}
                 </div>
+                {isSwitch && (
+                  <div>
+                    <Label>Fresh users (not from a competitor)</Label>
+                    <Input type="number" min={0} value={f.fresh} onChange={(e) => setForm(m.id, { fresh: e.target.value })} />
+                  </div>
+                )}
               </div>
+
+              {isEngagement && (
+                <div className="mt-3 rounded-md border border-dashed p-3">
+                  <Label className="text-xs">Engagement metrics for this day (optional)</Label>
+                  <div className="grid gap-3 sm:grid-cols-3 mt-2">
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">Opened the app</Label>
+                      <Input type="number" min={0} value={f.opens} onChange={(e) => setForm(m.id, { opens: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">Actively used the app</Label>
+                      <Input type="number" min={0} value={f.actives} onChange={(e) => setForm(m.id, { actives: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">Posted / created content</Label>
+                      <Input type="number" min={0} value={f.posts} onChange={(e) => setForm(m.id, { posts: e.target.value })} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
 
               {isTxn && (
                 <div className="mt-3">
