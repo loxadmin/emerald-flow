@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { resolveApiKey } from "../_shared/api-key.ts";
+import { enforceRateLimit, RateLimits } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +24,11 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Heartbeat endpoint is public; cap per-IP volume. Fails open.
+  const limited = await enforceRateLimit(req, "track-ping", RateLimits.tracking);
+  if (limited) return limited;
+
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -34,17 +41,15 @@ Deno.serve(async (req) => {
       return json({ error: "Missing api_key or domain" }, 400);
     }
 
-    const { data: keyData, error: keyError } = await supabase
-      .from("api_keys")
-      .select("campaign_id")
-      .eq("key", api_key)
-      .maybeSingle();
+    // Cached lookup: api_keys by key is the hottest read in the database and
+    // the mapping is static for the life of the key (60s TTL).
+    const resolvedKey = await resolveApiKey(supabase, api_key);
 
-    if (keyError || !keyData) {
+    if (!resolvedKey.campaignId) {
       return json({ error: "Invalid API key" }, 401);
     }
 
-    const campaignId = keyData.campaign_id;
+    const campaignId = resolvedKey.campaignId;
     if (campaign_id && campaign_id !== campaignId) {
       return json({ error: "campaign_id does not match api_key" }, 400);
     }

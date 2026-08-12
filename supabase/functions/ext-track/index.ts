@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { enforceRateLimit, RateLimits } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,10 @@ const json = (body: unknown, status = 200) =>
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Abuse protection for this public endpoint. Fails open if the limiter is down.
+  const limited = await enforceRateLimit(req, "ext-track", RateLimits.tracking);
+  if (limited) return limited;
 
   try {
     const supabase = createClient(

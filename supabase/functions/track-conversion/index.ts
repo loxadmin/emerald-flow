@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { enforceRateLimit, RateLimits } from "../_shared/rate-limit.ts";
+import { resolveApiKey } from "../_shared/api-key.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +17,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Abuse protection for this public endpoint. Fails open if the limiter is down.
+  const limited = await enforceRateLimit(req, "track-conversion", RateLimits.tracking);
+  if (limited) return limited;
 
   try {
     const supabase = createClient(
@@ -42,17 +48,15 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid event_type. Must be: signup, purchase, or download" }, 400);
     }
 
-    const { data: keyData, error: keyError } = await supabase
-      .from("api_keys")
-      .select("campaign_id")
-      .eq("key", apiKey)
-      .maybeSingle();
+    // Cached lookup: api_keys by key is the hottest read in the database and
+    // the mapping is static for the life of the key (60s TTL).
+    const resolvedKey = await resolveApiKey(supabase, apiKey);
 
-    if (keyError || !keyData) {
+    if (!resolvedKey.campaignId) {
       return json({ error: "Invalid API key" }, 401);
     }
 
-    const campaignId = keyData.campaign_id;
+    const campaignId = resolvedKey.campaignId;
 
     let trackingSession:
       | { tid: string; referral_id: string | null; referral_code: string | null }

@@ -2318,6 +2318,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          count: number
+          key: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          updated_at?: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           campaign_id: string
@@ -2903,6 +2924,10 @@ export type Database = {
       complete_expired_package_orders: { Args: never; Returns: number }
       confirm_offline_order: {
         Args: { _notes: string; _order_id: string }
+        Returns: Json
+      }
+      consume_rate_limit: {
+        Args: { _key: string; _limit: number; _window_seconds: number }
         Returns: Json
       }
       credit_affiliate_campaign: {
