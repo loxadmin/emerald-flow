@@ -85,7 +85,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
-  const [hasPackages, setHasPackages] = useState(false);
+  const [packageCount, setPackageCount] = useState(0);
   const [packageOrders, setPackageOrders] = useState<any[]>([]);
   const [switchOffers, setSwitchOffers] = useState<any[]>([]);
   const [brandName, setBrandName] = useState<string>("your platform");
@@ -122,8 +122,8 @@ export default function Dashboard() {
           .select("id")
           .eq("is_active", true)
           .contains("advertiser_subtypes", [subtype])
-          .limit(1);
-        setHasPackages(!!(pkgs && pkgs.length > 0));
+          .limit(12);
+        setPackageCount((pkgs || []).length);
 
         const { data: offers } = await supabase
           .from("switch_offers" as any)
