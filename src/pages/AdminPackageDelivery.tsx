@@ -18,11 +18,16 @@ type Order = {
   starts_at: string | null; ends_at: string | null;
   selected_milestone_ids: string[] | null;
   app_links: string[];
+  escrow_spent_usd: number | null;
+  refunded_usd: number | null;
+  refunded_at: string | null;
+  milestone_breakdown: any;
 };
 type Milestone = { id: string; name: string; slug: string; requires_duration: boolean };
 type Delivery = {
   id: string; milestone_id: string; delivery_date: string;
   users_delivered: number; txn_rows: any; total_txn_amount: number | null;
+  charged_usd: number | null; fresh_users: number | null; engagement_metrics: any;
 };
 
 type Competitor = { id: string; name: string; is_active: boolean };
@@ -35,9 +40,19 @@ type FormState = {
   txnCsv: string;
   notes: string;
   competitors: CompetitorRow[];
+  fresh: string;
+  opens: string;
+  actives: string;
+  posts: string;
 };
 
+const EMPTY_FORM = (): FormState => ({
+  users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "",
+  competitors: [], fresh: "", opens: "", actives: "", posts: "",
+});
+
 const SWITCH_SLUGS = new Set(["app_install", "signup", "kyc", "deposit"]);
+
 
 function parseTxnCsv(csv: string): { user_ref: string; txn_id: string; amount_usd: number }[] {
   const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -88,11 +103,11 @@ export default function AdminPackageDelivery() {
   }, [order, milestones]);
 
   const setForm = (mid: string, patch: Partial<FormState>) =>
-    setForms((f) => ({ ...f, [mid]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [], ...(f[mid] || {}), ...patch } }));
+    setForms((f) => ({ ...f, [mid]: { ...EMPTY_FORM(), ...(f[mid] || {}), ...patch } }));
 
   const submit = async (m: Milestone) => {
     if (!order) return;
-    const f: FormState = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] };
+    const f: FormState = forms[m.id] || EMPTY_FORM();
     const users = Number(f.users) || 0;
     const isTxn = m.slug === "transaction" || m.slug === "sale";
     let txnRows: any = null;
@@ -109,6 +124,10 @@ export default function AdminPackageDelivery() {
       ? (f.competitors || []).filter((c) => c.competitor_app_id && Number(c.users_count) > 0)
           .map((c) => ({ competitor_app_id: c.competitor_app_id, users_count: Number(c.users_count) }))
       : null;
+    const engagement: Record<string, number> = {};
+    if (Number(f.opens) > 0) engagement.opens = Number(f.opens);
+    if (Number(f.actives) > 0) engagement.active_users = Number(f.actives);
+    if (Number(f.posts) > 0) engagement.posts = Number(f.posts);
     const { error } = await supabase.rpc("record_package_delivery" as any, {
       _order_id: order.id,
       _milestone_id: m.id,
@@ -117,13 +136,16 @@ export default function AdminPackageDelivery() {
       _txn_rows: txnRows,
       _notes: f.notes || null,
       _competitor_breakdown: breakdown && breakdown.length > 0 ? breakdown : null,
+      _engagement_metrics: Object.keys(engagement).length ? engagement : null,
+      _fresh_users: Number(f.fresh) || 0,
     });
     setSaving(null);
     if (error) return toast.error(error.message);
-    toast.success("Delivery recorded");
-    setForms((s) => ({ ...s, [m.id]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] } }));
+    toast.success("Delivery recorded — escrow updated");
+    setForms((s) => ({ ...s, [m.id]: EMPTY_FORM() }));
     load();
   };
+
 
   const onCsvFile = async (mid: string, file: File) => {
     const text = await file.text();
@@ -145,21 +167,55 @@ export default function AdminPackageDelivery() {
         </div>
       </div>
 
+      {/* Escrow tracker */}
+      <div className="mb-5 grid gap-3 sm:grid-cols-4 rounded-lg border bg-card p-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Escrow funded</p>
+          <p className="text-lg font-semibold font-mono">${Number(order.total_amount_usd || 0).toFixed(2)}</p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Spent on delivery</p>
+          <p className="text-lg font-semibold font-mono">${Number(order.escrow_spent_usd || 0).toFixed(2)}</p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Remaining</p>
+          <p className="text-lg font-semibold font-mono text-primary">
+            ${Math.max(Number(order.total_amount_usd || 0) - Number(order.escrow_spent_usd || 0), 0).toFixed(2)}
+          </p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Refunded</p>
+          <p className="text-lg font-semibold font-mono">
+            {order.refunded_at ? `$${Number(order.refunded_usd || 0).toFixed(2)}` : "—"}
+          </p>
+        </div>
+        <p className="sm:col-span-4 text-[11px] text-muted-foreground">
+          Each delivery you record deducts its cost from this escrow. Whatever is left when the package ends is refunded to the advertiser wallet automatically.
+        </p>
+      </div>
+
       <div className="grid gap-4">
         {selectedMs.map((m) => {
-          const f: FormState = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] };
+          const f: FormState = forms[m.id] || EMPTY_FORM();
           const isTxn = m.slug === "transaction" || m.slug === "sale";
           const isSwitch = SWITCH_SLUGS.has(m.slug);
+          const isEngagement = m.requires_duration && !isTxn;
           const dv = deliveries.filter((d) => d.milestone_id === m.id);
           const totalUsers = dv.reduce((s, d) => s + (d.users_delivered || 0), 0);
           const txnSum = dv.reduce((s, d) => s + (Number(d.total_txn_amount) || 0), 0);
+          const chargedSum = dv.reduce((s, d) => s + (Number(d.charged_usd) || 0), 0);
+          const unitPrice = Number(
+            (Array.isArray(order.milestone_breakdown) ? order.milestone_breakdown : [])
+              .find((b: any) => b.milestone_id === m.id && (b.pricing_type || "flat") === "flat")?.price_usd || 0
+          );
           return (
             <div key={m.id} className="rounded-lg border bg-card p-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <h3 className="font-semibold">{m.name}</h3>
                 {m.requires_duration ? <Badge variant="secondary" className="text-[10px]">Per day</Badge> : <Badge variant="outline" className="text-[10px]">One-off total</Badge>}
+                {unitPrice > 0 && <Badge variant="outline" className="text-[10px]">${unitPrice.toFixed(2)} / user</Badge>}
                 <span className="ml-auto text-xs text-muted-foreground">
-                  Delivered: {totalUsers.toLocaleString()} users{isTxn && txnSum > 0 ? ` · $${txnSum.toFixed(2)}` : ""}
+                  Delivered: {totalUsers.toLocaleString()} users{isTxn && txnSum > 0 ? ` · $${txnSum.toFixed(2)}` : ""} · charged ${chargedSum.toFixed(2)}
                 </span>
               </div>
 
@@ -173,8 +229,41 @@ export default function AdminPackageDelivery() {
                 <div>
                   <Label>Users delivered</Label>
                   <Input type="number" min={0} value={f.users} onChange={(e) => setForm(m.id, { users: e.target.value })} />
+                  {unitPrice > 0 && Number(f.users) > 0 && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Will deduct ${(Number(f.users) * unitPrice).toFixed(2)} from escrow.
+                    </p>
+                  )}
                 </div>
+                {isSwitch && (
+                  <div>
+                    <Label>Fresh users (not from a competitor)</Label>
+                    <Input type="number" min={0} value={f.fresh} onChange={(e) => setForm(m.id, { fresh: e.target.value })} />
+                  </div>
+                )}
               </div>
+
+              {isEngagement && (
+                <div className="mt-3 rounded-md border border-dashed p-3">
+                  <Label className="text-xs">Engagement metrics for this day (optional)</Label>
+                  <div className="grid gap-3 sm:grid-cols-3 mt-2">
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">Opened the app</Label>
+                      <Input type="number" min={0} value={f.opens} onChange={(e) => setForm(m.id, { opens: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">Actively used the app</Label>
+                      <Input type="number" min={0} value={f.actives} onChange={(e) => setForm(m.id, { actives: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">Posted / created content</Label>
+                      <Input type="number" min={0} value={f.posts} onChange={(e) => setForm(m.id, { posts: e.target.value })} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
 
               {isTxn && (
                 <div className="mt-3">
@@ -243,7 +332,12 @@ export default function AdminPackageDelivery() {
                   <div className="max-h-48 overflow-y-auto">
                     <table className="w-full text-xs">
                       <thead className="text-muted-foreground">
-                        <tr><th className="text-left py-1">Date</th><th className="text-left py-1">Users</th>{isTxn && <th className="text-right py-1">Txn total</th>}</tr>
+                        <tr>
+                          <th className="text-left py-1">Date</th>
+                          <th className="text-left py-1">Users</th>
+                          {isTxn && <th className="text-right py-1">Txn total</th>}
+                          <th className="text-right py-1">Charged</th>
+                        </tr>
                       </thead>
                       <tbody>
                         {dv.map((d) => (
@@ -251,9 +345,11 @@ export default function AdminPackageDelivery() {
                             <td className="py-1">{new Date(d.delivery_date).toLocaleDateString()}</td>
                             <td className="py-1">{d.users_delivered}</td>
                             {isTxn && <td className="py-1 text-right">${Number(d.total_txn_amount || 0).toFixed(2)}</td>}
+                            <td className="py-1 text-right font-mono">${Number(d.charged_usd || 0).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
+
                     </table>
                   </div>
                 </div>

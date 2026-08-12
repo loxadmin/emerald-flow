@@ -10,6 +10,7 @@ import { Loader2, Package as PackageIcon, ArrowLeft, TrendingUp, Calendar, Credi
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import MigrationChart from "@/components/MigrationChart";
 import DailyTargets from "@/components/DailyTargets";
+import PackageMetricsPanel from "@/components/PackageMetricsPanel";
 
 type Order = {
   id: string; package_name: string; unit_label: string;
@@ -17,13 +18,17 @@ type Order = {
   app_links: string[]; payment_method: string; status: string;
   admin_notes: string | null; created_at: string; starts_at: string | null; ends_at: string | null;
   platform: string | null; selected_milestone_ids: string[] | null; milestone_breakdown: any;
+  escrow_spent_usd: number | null; refunded_usd: number | null; refunded_at: string | null;
 };
 type Milestone = { id: string; name: string; slug: string; requires_duration: boolean };
 type Delivery = {
   id: string; order_id: string; milestone_id: string;
   delivery_date: string; users_delivered: number;
   txn_rows: any; total_txn_amount: number | null; notes: string | null;
+  charged_usd: number | null; fresh_users: number | null;
+  engagement_metrics: any; competitor_breakdown: any;
 };
+
 
 const STATUS: Record<string, string> = {
   pending_payment: "bg-amber-500/10 text-amber-500 border-amber-500/20",
@@ -276,7 +281,10 @@ export default function PackageOrders() {
                 {/* Day-by-day target tracker (duration-based orders) */}
                 {o.status === "active" || o.status === "completed" ? (
                   <>
+                    <PackageMetricsPanel order={o} milestones={milestones} deliveries={deliveries} />
+
                     {o.duration_days > 0 && o.starts_at && (
+
                       <DailyTargets
                         startsAt={o.starts_at}
                         durationDays={o.duration_days}
