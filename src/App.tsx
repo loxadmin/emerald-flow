@@ -36,6 +36,7 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCampaignDetail from "./pages/AdminCampaignDetail";
 import AdminCampaigns from "./pages/AdminCampaigns";
+import AdminOrders from "./pages/AdminOrders";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSettings from "./pages/AdminSettings";
 import AdminBlogs from "./pages/AdminBlogs";
