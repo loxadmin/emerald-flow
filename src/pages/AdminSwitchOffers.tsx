@@ -64,6 +64,24 @@ export default function AdminSwitchOffers() {
 
   const [ordEdit, setOrdEdit] = useState<Order | null>(null);
   const [ordForm, setOrdForm] = useState({ users_delivered: 0, status: "active", notes: "" });
+  const [metricForm, setMetricForm] = useState({
+    users_switched: 0, signups: 0, kyc_completed: 0, profiles_created: 0, deposits_count: 0,
+  });
+  const [txnRows, setTxnRows] = useState<TxnRow[]>([]);
+  const [csvError, setCsvError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const onCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const { rows, errors } = parseTxnCsv(text);
+    setTxnRows(rows);
+    setCsvError(errors.length ? errors.slice(0, 3).join(" · ") : null);
+    if (rows.length && !metricForm.deposits_count) {
+      setMetricForm((f) => ({ ...f, deposits_count: rows.length }));
+    }
+  };
 
   const load = async () => {
     setLoading(true);
