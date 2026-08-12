@@ -5,7 +5,7 @@ import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import {
   Shield, BarChart3, Settings, LogOut, Sun, Moon, PenSquare, Users, Layers,
-  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap, FileSignature, PenTool, GitBranch, Megaphone,
+  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap, FileSignature, PenTool, GitBranch, Megaphone, Inbox,
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
@@ -16,6 +16,8 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
     links: [
       { to: "/admin", label: "Dashboard", icon: Shield },
       { to: "/admin/campaigns", label: "Campaigns", icon: Megaphone },
+      { to: "/admin/orders", label: "Orders", icon: Inbox },
+
       { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     ],
   },

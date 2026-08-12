@@ -11,32 +11,84 @@ type Row = {
   id: string; name: string; status: string; created_at: string;
   advertiser_id: string; total_cost: number | null; budget_remaining: number | null;
   target_users: number | null; integration_type: string | null; is_draft: boolean;
+  source: "normal" | "package" | "switch";
 };
 
 const TABS = ["all", "pending", "active", "rejected", "draft"] as const;
 type Tab = typeof TABS[number];
 
+const SOURCES = [
+  { key: "all", label: "All campaigns" },
+  { key: "normal", label: "Normal" },
+  { key: "package", label: "Ad package" },
+  { key: "switch", label: "Switch offer" },
+] as const;
+type SourceKey = typeof SOURCES[number]["key"];
+
+const SOURCE_LABEL: Record<Row["source"], string> = {
+  normal: "Normal",
+  package: "Ad package",
+  switch: "Switch offer",
+};
+
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-primary/10 text-primary border-primary/20",
   pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+  pending_review: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
 };
+
 
 export default function AdminCampaigns() {
   const [rows, setRows] = useState<Row[]>([]);
   const [emails, setEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("all");
+  const [source, setSource] = useState<SourceKey>("all");
   const [q, setQ] = useState("");
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("campaigns")
-        .select("id,name,status,created_at,advertiser_id,total_cost,budget_remaining,target_users,integration_type,is_draft")
-        .order("created_at", { ascending: false })
-        .limit(500);
-      const list = (data as Row[]) || [];
+      const [camps, pkgs, sws] = await Promise.all([
+        supabase
+          .from("campaigns")
+          .select("id,name,status,created_at,advertiser_id,total_cost,budget_remaining,target_users,integration_type,is_draft")
+          .order("created_at", { ascending: false })
+          .limit(500),
+        supabase.from("package_orders" as any).select("*").order("created_at", { ascending: false }).limit(300),
+        supabase.from("switch_offer_orders" as any).select("*").order("created_at", { ascending: false }).limit(300),
+      ]);
+
+      const list: Row[] = [
+        ...(((camps.data as any[]) || []).map((c) => ({ ...c, source: "normal" as const }))),
+        ...(((pkgs.data as any[]) || []).map((o) => ({
+          id: o.id,
+          name: o.package_name || "Ad package campaign",
+          status: o.status === "pending_review" ? "pending" : o.status,
+          created_at: o.created_at,
+          advertiser_id: o.advertiser_id,
+          total_cost: Number(o.total_amount_usd || 0),
+          budget_remaining: null,
+          target_users: o.units || null,
+          integration_type: o.platform || null,
+          is_draft: false,
+          source: "package" as const,
+        }))),
+        ...(((sws.data as any[]) || []).map((o) => ({
+          id: o.id,
+          name: o.offer_title || "Switch offer campaign",
+          status: o.status,
+          created_at: o.created_at,
+          advertiser_id: o.advertiser_id,
+          total_cost: Number(o.flat_price_usd || 0),
+          budget_remaining: null,
+          target_users: o.batch_size || null,
+          integration_type: o.competitor_app_name || null,
+          is_draft: false,
+          source: "switch" as const,
+        }))),
+      ].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+
       setRows(list);
 
       const ids = [...new Set(list.map((r) => r.advertiser_id).filter(Boolean))];
@@ -50,15 +102,21 @@ export default function AdminCampaigns() {
     })();
   }, []);
 
-  const counts = useMemo(() => ({
-    all: rows.length,
-    pending: rows.filter((r) => r.status === "pending" && !r.is_draft).length,
-    active: rows.filter((r) => r.status === "active").length,
-    rejected: rows.filter((r) => r.status === "rejected").length,
-    draft: rows.filter((r) => r.is_draft).length,
-  }), [rows]);
+  const inSource = (r: Row) => source === "all" || r.source === source;
+
+  const counts = useMemo(() => {
+    const base = rows.filter(inSource);
+    return {
+      all: base.length,
+      pending: base.filter((r) => r.status === "pending" && !r.is_draft).length,
+      active: base.filter((r) => r.status === "active").length,
+      rejected: base.filter((r) => r.status === "rejected").length,
+      draft: base.filter((r) => r.is_draft).length,
+    };
+  }, [rows, source]);
 
   const filtered = useMemo(() => rows.filter((r) => {
+    if (!inSource(r)) return false;
     const matchTab =
       tab === "all" ? true :
       tab === "draft" ? r.is_draft :
@@ -67,7 +125,8 @@ export default function AdminCampaigns() {
     if (!q.trim()) return true;
     const hay = `${r.name} ${emails[r.advertiser_id] || ""}`.toLowerCase();
     return hay.includes(q.trim().toLowerCase());
-  }), [rows, tab, q, emails]);
+  }), [rows, tab, q, emails, source]);
+
 
   return (
     <AdminLayout>
@@ -101,6 +160,19 @@ export default function AdminCampaigns() {
           ))}
         </div>
 
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {SOURCES.map((s) => (
+            <button
+              key={s.key} onClick={() => setSource(s.key)}
+              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                source === s.key ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           {loading ? (
             <ListSkeleton rows={6} />
@@ -116,6 +188,7 @@ export default function AdminCampaigns() {
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
                     <th className="px-5 py-2.5 font-normal">Campaign</th>
                     <th className="px-3 py-2.5 font-normal">Advertiser</th>
+                    <th className="px-3 py-2.5 font-normal">Source</th>
                     <th className="px-3 py-2.5 font-normal">Type</th>
                     <th className="px-3 py-2.5 font-normal">Status</th>
                     <th className="px-3 py-2.5 font-normal text-right">Budget</th>
@@ -124,10 +197,12 @@ export default function AdminCampaigns() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((r) => (
-                    <tr key={r.id} className="border-b border-border last:border-0 transition-colors hover:bg-accent/40">
+                  {filtered.map((r) => {
+                    const href = r.source === "normal" ? `/admin/campaigns/${r.id}` : "/admin/orders";
+                    return (
+                    <tr key={`${r.source}-${r.id}`} className="border-b border-border last:border-0 transition-colors hover:bg-accent/40">
                       <td className="px-5 py-3">
-                        <Link to={`/admin/campaigns/${r.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                        <Link to={href} className="font-medium text-foreground hover:text-primary transition-colors">
                           {r.name}
                         </Link>
                         {r.target_users ? (
@@ -135,12 +210,13 @@ export default function AdminCampaigns() {
                         ) : null}
                       </td>
                       <td className="px-3 py-3 text-xs text-muted-foreground">{emails[r.advertiser_id] || "—"}</td>
+                      <td className="px-3 py-3 text-xs text-muted-foreground">{SOURCE_LABEL[r.source]}</td>
                       <td className="px-3 py-3 text-xs capitalize text-muted-foreground">{r.integration_type || "—"}</td>
                       <td className="px-3 py-3">
                         <Badge variant="outline" className={`px-1.5 py-0 text-[10px] font-medium ${
                           r.is_draft ? "bg-muted text-muted-foreground border-border" : STATUS_STYLES[r.status] || "bg-muted text-muted-foreground border-border"
                         }`}>
-                          {r.is_draft ? "draft" : r.status}
+                          {r.is_draft ? "draft" : r.status.replace(/_/g, " ")}
                         </Badge>
                       </td>
                       <td className="px-3 py-3 text-right text-xs tabular-nums text-muted-foreground">
@@ -150,10 +226,12 @@ export default function AdminCampaigns() {
                         {new Date(r.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <Link to={`/admin/campaigns/${r.id}`}><ArrowUpRight className="h-4 w-4 text-muted-foreground/50" /></Link>
+                        <Link to={href}><ArrowUpRight className="h-4 w-4 text-muted-foreground/50" /></Link>
+
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
