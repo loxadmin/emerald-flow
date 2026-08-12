@@ -59,10 +59,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [availablePackageCount, setAvailablePackageCount] = useState(0);
+  const [availableSwitchOfferCount, setAvailableSwitchOfferCount] = useState(0);
 
   useEffect(() => {
     if (!user?.id || isOffline) {
       setAvailablePackageCount(0);
+      setAvailableSwitchOfferCount(0);
       return;
     }
     let active = true;
@@ -74,12 +76,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         .maybeSingle();
       const subtype = (category as { advertiser_subtype?: string } | null)?.advertiser_subtype;
       if (!subtype || !active) return;
-      const { count } = await supabase
-        .from("ad_packages")
-        .select("id", { count: "exact", head: true })
-        .eq("is_active", true)
-        .contains("advertiser_subtypes", [subtype]);
-      if (active) setAvailablePackageCount(count || 0);
+      const [{ count: pkgCount }, { count: switchCount }] = await Promise.all([
+        supabase
+          .from("ad_packages")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .contains("advertiser_subtypes", [subtype]),
+        supabase
+          .from("switch_offers" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .contains("advertiser_subtypes", [subtype]),
+      ]);
+      if (active) {
+        setAvailablePackageCount(pkgCount || 0);
+        setAvailableSwitchOfferCount(switchCount || 0);
+      }
     })();
     return () => { active = false; };
   }, [user?.id, isOffline]);
