@@ -240,6 +240,7 @@ export default function SwitchOffers() {
                       competitorName={c?.name || "Competitor"}
                       competitorLogo={c?.logo_url}
                       brandName={brandName}
+                      brandLogo={brandLogo}
                       count={o.batch_size}
                       price={Number(o.flat_price_usd)}
                       platform={o.platform}
