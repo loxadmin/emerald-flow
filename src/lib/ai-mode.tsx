@@ -1,11 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 const STORAGE_KEY = "karbali_ai_mode";
 const REDIRECT_KEY = "karbali_ai_mode_redirected";
 
 type Ctx = { aiMode: boolean; setAiMode: (v: boolean) => void; toggle: () => void };
-const AiModeContext = createContext<Ctx>({ aiMode: true, setAiMode: () => {}, toggle: () => {} });
+const AiModeContext = createContext<Ctx>({ aiMode: false, setAiMode: () => {}, toggle: () => {} });
 
 export const useAiMode = () => useContext(AiModeContext);
 
