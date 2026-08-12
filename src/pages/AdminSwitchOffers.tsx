@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Pencil, Building2, Zap, ClipboardList, ExternalLink } from "lucide-react";
 import CompetitorLogoUpload from "@/components/CompetitorLogoUpload";
 import AdminMigrationEntry from "@/components/AdminMigrationEntry";
+import { parseTxnCsv, sumTxn, type TxnRow } from "@/lib/txn-csv";
 
 const SUBTYPES = [
   "musician","youtuber","social_media_creator",
