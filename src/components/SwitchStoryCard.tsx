@@ -9,6 +9,7 @@ export default function SwitchStoryCard({
   competitorName,
   competitorLogo,
   brandName,
+  brandLogo,
   count,
   price,
   platform,
@@ -19,6 +20,7 @@ export default function SwitchStoryCard({
   competitorName: string;
   competitorLogo?: string | null;
   brandName: string;
+  brandLogo?: string | null;
   count: number;
   price: number;
   platform?: string | null;
@@ -45,10 +47,15 @@ export default function SwitchStoryCard({
           <ArrowRight className="h-4 w-4 text-primary" />
         </div>
 
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
-          {brandName.slice(0, 2).toUpperCase()}
-        </div>
+        {brandLogo ? (
+          <img src={brandLogo} alt={brandName} className="h-11 w-11 rounded-xl border border-primary/30 object-cover" />
+        ) : (
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
+            {brandName.slice(0, 2).toUpperCase()}
+          </div>
+        )}
       </div>
+
 
       <p className="mt-4 text-lg font-semibold leading-snug tracking-tight text-foreground">
         {count.toLocaleString()} {competitorName} users are ready to switch to {brandName}

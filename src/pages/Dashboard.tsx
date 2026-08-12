@@ -93,6 +93,7 @@ export default function Dashboard() {
   const [packageOrders, setPackageOrders] = useState<any[]>([]);
   const [switchOffers, setSwitchOffers] = useState<any[]>([]);
   const [brandName, setBrandName] = useState<string>("your platform");
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [eventSeries, setEventSeries] = useState<number[]>([]);
   const [clickSeries, setClickSeries] = useState<number[]>([]);
   const [spendSeries, setSpendSeries] = useState<number[]>([]);
@@ -115,10 +116,11 @@ export default function Dashboard() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("website, company_name")
+        .select("website, company_name, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
       setBrandName(brandFromProfile((profile as any)?.website, (profile as any)?.company_name));
+      setBrandLogo((profile as any)?.avatar_url || null);
 
       if (subtype) {
         const { data: pkgs } = await supabase
@@ -398,6 +400,7 @@ export default function Dashboard() {
                     competitorName={o.competitor_name || "Competitor"}
                     competitorLogo={o.competitor_logo}
                     brandName={brandName}
+                    brandLogo={brandLogo}
                     count={Number(o.batch_size)}
                     price={Number(o.flat_price_usd)}
                     platform={o.platform}

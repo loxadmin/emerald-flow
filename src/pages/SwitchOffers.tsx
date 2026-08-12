@@ -50,13 +50,15 @@ export default function SwitchOffers() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [brandName, setBrandName] = useState("your brand");
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
       const { data } = await supabase
-        .from("profiles").select("website, company_name").eq("id", user.id).maybeSingle();
+        .from("profiles").select("website, company_name, avatar_url").eq("id", user.id).maybeSingle();
       setBrandName(brandFrom((data as any)?.website, (data as any)?.company_name));
+      setBrandLogo((data as any)?.avatar_url || null);
     })();
   }, [user?.id]);
 
@@ -238,6 +240,7 @@ export default function SwitchOffers() {
                       competitorName={c?.name || "Competitor"}
                       competitorLogo={c?.logo_url}
                       brandName={brandName}
+                      brandLogo={brandLogo}
                       count={o.batch_size}
                       price={Number(o.flat_price_usd)}
                       platform={o.platform}
