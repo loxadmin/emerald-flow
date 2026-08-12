@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { resolveApiKey } from "../_shared/api-key.ts";
+import { enforceRateLimit, RateLimits } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +21,10 @@ const isMissingRelation = (error: { code?: string; message?: string } | null) =>
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
+
+  // Heartbeat endpoint is public; cap per-IP volume. Fails open.
+  const limited = await enforceRateLimit(req, "track-ping", RateLimits.tracking);
+  if (limited) return limited;
     return new Response(null, { headers: corsHeaders });
   }
 
