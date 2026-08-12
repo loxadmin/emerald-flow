@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { enforceRateLimit, RateLimits } from "../_shared/rate-limit.ts";
+import { resolveApiKey } from "../_shared/api-key.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,15 +46,11 @@ Deno.serve(async (req) => {
     let advertiserId = String(body.advertiser_id || "").trim() || null;
 
     if (apiKey) {
-      const { data: keyData } = await supabase
-        .from("api_keys")
-        .select("campaign_id, campaigns(advertiser_id)")
-        .eq("key", apiKey)
-        .maybeSingle();
-
-      if (keyData?.campaign_id) {
-        campaignId = keyData.campaign_id;
-        advertiserId = (keyData.campaigns as { advertiser_id?: string } | null)?.advertiser_id || advertiserId;
+      // Cached lookup (60s): static key -> campaign/advertiser mapping.
+      const resolvedKey = await resolveApiKey(supabase, apiKey);
+      if (resolvedKey.campaignId) {
+        campaignId = resolvedKey.campaignId;
+        advertiserId = resolvedKey.advertiserId || advertiserId;
       }
     }
 
