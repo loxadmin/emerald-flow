@@ -70,55 +70,8 @@ export default function SwitchOffers() {
 
   useEffect(() => {
     (async () => {
-      if (!user) {
-        // Mock fallback for presentation and visual verification
-        setSubtype("fintech");
-        setBalance(4250.00);
-        const mockComps: Record<string, Competitor> = {
-          "comp-1": { id: "comp-1", name: "Apex Pay", logo_url: null },
-          "comp-2": { id: "comp-2", name: "Sovereign Bank", logo_url: null }
-        };
-        setCompetitors(mockComps);
-        setOffers([
-          {
-            id: "off-1",
-            title: "Acquire Apex Pay Active Base",
-            description: "Directly target high-frequency mobile banking clients currently active on Apex Pay platform and incentivize them to switch.",
-            competitor_app_id: "comp-1",
-            advertiser_subtypes: ["fintech"],
-            platform: "mobile",
-            batch_size: 2500,
-            flat_price_usd: 1200.00,
-            target_link_required: true,
-            is_active: true
-          },
-          {
-            id: "off-2",
-            title: "Sovereign Migrations Group",
-            description: "Acquire validated credit card holders and investment users from Sovereign Bank with premium onboarding incentives.",
-            competitor_app_id: "comp-2",
-            advertiser_subtypes: ["fintech"],
-            platform: "web",
-            batch_size: 1500,
-            flat_price_usd: 850.00,
-            target_link_required: false,
-            is_active: true
-          }
-        ]);
-        setOrders([
-          {
-            id: "ord-1",
-            offer_title: "Apex Pay Transition Cohort Alpha",
-            competitor_app_name: "Apex Pay",
-            batch_size: 2500,
-            flat_price_usd: 1200.00,
-            target_link: "https://yourbrand.com/welcome",
-            status: "migrating",
-            users_delivered: 1850,
-            created_at: new Date().toISOString()
-          }
-        ]);
-        setLoading(false);
+      if (!user?.id) {
+        setOffers([]); setOrders([]); setCompetitors({}); setLoading(false);
         return;
       }
 
@@ -129,49 +82,17 @@ export default function SwitchOffers() {
         supabase.from("switch_offers" as any).select("*").eq("is_active", true).order("created_at", { ascending: false }),
         supabase.from("switch_offer_orders" as any).select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false }),
       ]);
-      setSubtype((cat as any)?.advertiser_subtype || "fintech");
-      setBalance(Number((w as any)?.balance || 4250));
+      setSubtype((cat as any)?.advertiser_subtype || null);
+      setBalance(Number((w as any)?.balance || 0));
       const cmap: Record<string, Competitor> = {};
       ((comps as any) || []).forEach((c: Competitor) => { cmap[c.id] = c; });
-      if (Object.keys(cmap).length === 0) {
-        cmap["comp-1"] = { id: "comp-1", name: "Apex Pay", logo_url: null };
-        cmap["comp-2"] = { id: "comp-2", name: "Sovereign Bank", logo_url: null };
-      }
       setCompetitors(cmap);
-
-      const resolvedOffs = (offs as any)?.length ? (offs as any) : [
-        {
-          id: "off-1",
-          title: "Acquire Apex Pay Active Base",
-          description: "Directly target high-frequency mobile banking clients currently active on Apex Pay platform and incentivize them to switch.",
-          competitor_app_id: "comp-1",
-          advertiser_subtypes: ["fintech"],
-          platform: "mobile",
-          batch_size: 2500,
-          flat_price_usd: 1200.00,
-          target_link_required: true,
-          is_active: true
-        }
-      ];
-      setOffers(resolvedOffs);
-
-      const resolvedOrds = (ord as any)?.length ? (ord as any) : [
-        {
-          id: "ord-1",
-          offer_title: "Apex Pay Transition Cohort Alpha",
-          competitor_app_name: "Apex Pay",
-          batch_size: 2500,
-          flat_price_usd: 1200.00,
-          target_link: "https://yourbrand.com/welcome",
-          status: "migrating",
-          users_delivered: 1850,
-          created_at: new Date().toISOString()
-        }
-      ];
-      setOrders(resolvedOrds);
+      setOffers(((offs as any) || []) as Offer[]);
+      setOrders(((ord as any) || []) as Order[]);
       setLoading(false);
     })();
   }, [user?.id]);
+
 
   const visible = useMemo(() =>
     subtype ? offers.filter((o) => (o.advertiser_subtypes || []).includes(subtype)) : [],
