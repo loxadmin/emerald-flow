@@ -83,6 +83,10 @@
     --pastel-sky:      205 70% 96%;
     --pastel-blush:    10 60% 97%;
     --ink: 220 18% 9%;
+    --navy: 222 47% 11%;
+    --navy-foreground: 210 40% 98%;
+    --navy-muted: 220 25% 65%;
+    --navy-border: 220 30% 22%;
   }
 
   .dark {
@@ -147,6 +151,10 @@
     --pastel-sky:      210 28% 10%;
     --pastel-blush:    8 22% 10%;
     --ink: 210 20% 98%;
+    --navy: 222 47% 11%;
+    --navy-foreground: 210 40% 98%;
+    --navy-muted: 220 20% 55%;
+    --navy-border: 220 30% 22%;
   }
 }
 
