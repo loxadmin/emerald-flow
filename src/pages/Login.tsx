@@ -41,7 +41,7 @@ export default function Login() {
 
           if (rolesError) console.error("Role lookup failed:", rolesError);
           const hasAdminRole = (rolesData || []).some((role) => role.role === "admin");
-          navigate(hasAdminRole ? "/admin" : "/dashboard", { replace: true });
+          navigate(hasAdminRole ? "/ella" : "/dashboard", { replace: true });
         } else {
           navigate("/dashboard", { replace: true });
         }

@@ -379,7 +379,7 @@ export default function AdminDashboard() {
                 <h3 className="text-sm font-medium text-foreground">Pending Package Orders</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">Ad packages awaiting review</p>
               </div>
-              <Link to="/admin/packages" className="text-xs text-primary hover:underline">Open packages →</Link>
+              <Link to="/ella/packages" className="text-xs text-primary hover:underline">Open packages →</Link>
             </div>
             <div className="px-5 pb-5">
               {pendingPackageOrders.length === 0 ? (
@@ -387,7 +387,7 @@ export default function AdminDashboard() {
               ) : (
                 <div className="divide-y divide-border">
                   {pendingPackageOrders.map((o) => (
-                    <Link key={o.id} to="/admin/packages" className="flex items-center justify-between gap-3 py-3.5 group">
+                    <Link key={o.id} to="/ella/packages" className="flex items-center justify-between gap-3 py-3.5 group">
                       <div>
                         <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{o.package_name}</p>
                         <p className="text-xs text-muted-foreground">{o.advertiser_email} • {o.units} units • ${Number(o.total_amount_usd || 0).toFixed(2)}</p>
@@ -411,7 +411,7 @@ export default function AdminDashboard() {
             </div>
             <div className="px-5 pb-5 divide-y divide-border">
               {campaigns.map((c) => (
-                <Link key={c.id} to={`/admin/campaigns/${c.id}`} className="flex items-center justify-between py-3 group">
+                <Link key={c.id} to={`/ella/campaigns/${c.id}`} className="flex items-center justify-between py-3 group">
                   <div>
                     <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{c.name}</p>
                     <p className="text-xs text-muted-foreground">{c.profiles?.email || "Unknown"} • ${Number(c.budget_remaining).toFixed(2)}</p>
