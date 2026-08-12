@@ -1,6 +1,7 @@
 // Daily activation reminder emails to advertisers with un-activated wallets.
 // Personalised by ad subtype (youtuber, musician, app, website, ecommerce, etc.).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireInternalOrUser, AuthError } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
