@@ -160,11 +160,13 @@ export default function Dashboard() {
             .in("id", compIds);
           ((comps as any[]) || []).forEach((c) => { compMap[c.id] = { name: c.name, logo_url: c.logo_url }; });
         }
-        setSwitchOffers(offerList.map((o) => ({
-          ...o,
-          competitor_name: compMap[o.competitor_app_id]?.name || null,
-          competitor_logo: compMap[o.competitor_app_id]?.logo_url || null,
-        })));
+        setSwitchOffers(offerList
+          .filter((o) => Boolean(o.competitor_app_id && compMap[o.competitor_app_id]))
+          .map((o) => ({
+            ...o,
+            competitor_name: compMap[o.competitor_app_id].name,
+            competitor_logo: compMap[o.competitor_app_id].logo_url,
+          })));
       }
 
       const { data: campaignsData } = await supabase
