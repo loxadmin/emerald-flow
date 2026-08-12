@@ -255,25 +255,28 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
+      {!needsActivation && packageCount > 0 && <GiftReveal count={packageCount} />}
+      <AiModePrompt />
+
       <div className="mx-auto w-full max-w-[1400px] space-y-6">
-        {/* Workspace Topbar Header */}
+        {/* Greeting */}
         <MotionWrapper>
-          <div className="flex flex-col gap-4 border-b border-border pb-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Workspace</p>
+              <h1 className="text-[2rem] font-semibold leading-tight tracking-tight text-foreground md:text-[2.6rem]">
                 Welcome back, {firstName}
               </h1>
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <span>Workspace performance overview and campaign metrics.</span>
+                <span>Here is how your migrations are going.</span>
                 {categoryName && (
                   <>
-                    <span className="text-border">·</span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-0.5 text-xs font-semibold text-foreground bg-accent/40">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
                       <Tag className="h-3 w-3 text-primary" />
                       {categoryName}
                     </span>
-                    <Link to="/category-select" className="inline-flex items-center gap-1 text-xs text-primary hover:underline transition-colors ml-1 font-medium">
-                      <RefreshCw className="h-3 w-3 animate-spin-slow" /> change
+                    <Link to="/category-select" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                      <RefreshCw className="h-3 w-3" /> change
                     </Link>
                   </>
                 )}
@@ -281,8 +284,8 @@ export default function Dashboard() {
             </div>
             {!needsActivation && (
               <Link to="/campaigns/create" className="self-start lg:self-auto">
-                <Button size="default" className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 scale-100 hover:scale-[1.02] transition-transform duration-200">
-                  <Plus className="h-4.5 w-4.5" /> New campaign
+                <Button size="lg" className="gap-2 rounded-full px-5 font-semibold">
+                  <Plus className="h-4 w-4" /> New campaign
                 </Button>
               </Link>
             )}
@@ -292,18 +295,18 @@ export default function Dashboard() {
         {/* Activation notice */}
         {needsActivation && (
           <MotionWrapper delay={0.03}>
-            <div className="rounded-xl border border-border bg-card/60 backdrop-blur-xl p-5 flex flex-col gap-4 sm:flex-row sm:items-center premium-shadow">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 sm:flex-row sm:items-center">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Lock className="h-5 w-5" />
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">Your account is not activated yet</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-sm text-muted-foreground">
                   Explore freely. Deposit $25 into your wallet to unlock campaigns, ad packages and switch offers.
                 </p>
               </div>
               <Link to="/wallet" className="shrink-0">
-                <Button size="sm" className="w-full gap-1.5 sm:w-auto font-semibold">
+                <Button size="sm" className="w-full gap-1.5 rounded-full font-semibold sm:w-auto">
                   <Wallet className="h-4 w-4" /> Activate with $25
                 </Button>
               </Link>
@@ -311,103 +314,98 @@ export default function Dashboard() {
           </MotionWrapper>
         )}
 
-        {/* Dynamic Switch Offers banner row */}
-        {switchOffers.length > 0 && (
-          <MotionWrapper delay={0.04}>
-            <section className="rounded-xl border border-border bg-card/50 backdrop-blur-md premium-shadow overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Repeat2 className="h-5 w-5 text-primary shrink-0" />
-                  <h2 className="text-base font-bold tracking-tight">Users ready to switch to {brandName}</h2>
-                </div>
-                <Link to="/switch-offers" className="inline-flex items-center gap-1 text-xs text-primary hover:underline transition-colors font-semibold">
-                  View all <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-              <ul className="divide-y divide-border">
-                {switchOffers.map((o) => (
-                  <li key={o.id} className="flex flex-wrap items-center gap-4 px-5 py-4 hover:bg-accent/20 transition-colors">
-                    {o.competitor_logo ? (
-                      <img src={o.competitor_logo} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover border border-border shadow-sm" />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground border border-border">
-                        <Repeat2 className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-foreground">
-                        {Number(o.batch_size).toLocaleString()} {o.competitor_name || ""} users ready to migrate
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{o.title}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold tabular-nums text-foreground">${Number(o.flat_price_usd).toFixed(2)}</p>
-                      <p className="text-[11px] text-muted-foreground">flat rate</p>
-                    </div>
-                    <Link to="/switch-offers" className="shrink-0">
-                      <Button size="sm" variant="outline" className="gap-1 bg-background hover:bg-accent hover:-translate-y-0.5 transition-all">
-                        Migrate <ArrowRight className="h-3.5 w-3.5" />
-                      </Button>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </MotionWrapper>
-        )}
-
-        {/* Ad packages suggestion */}
-        {hasPackages && (
-          <MotionWrapper delay={0.06}>
-            <Link to="/packages" className="group block">
-              <div className="flex items-center gap-4 rounded-xl border border-border bg-card/40 backdrop-blur-md p-5 transition-all duration-300 hover:border-primary/40 hover:bg-card/70 hover:translate-y-[-2px] premium-shadow">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                  <PackageIcon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-foreground">Ready-to-run ad packages for your category</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">Pick your milestones, set your volume and go live without building a campaign.</p>
-                </div>
-                <ArrowRight className="h-4.5 w-4.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
-              </div>
-            </Link>
-          </MotionWrapper>
-        )}
-
-        {/* Premium Fintech Metric Cards */}
-        <MotionWrapper delay={0.08}>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {statCards.map((s, idx) => {
+        {/* Stat strip */}
+        <MotionWrapper delay={0.05}>
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3 lg:grid-cols-5">
+            {statCards.map((s) => {
               const Icon = s.icon;
               return (
-                <Link
-                  key={s.label}
-                  to={s.to}
-                  className="group relative overflow-hidden rounded-xl border border-border bg-card/40 backdrop-blur-md p-5 transition-all duration-300 hover:bg-card hover:-translate-y-1 hover:border-primary/30 premium-shadow"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</p>
-                    <div className="rounded-lg bg-accent/30 p-1.5 text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors">
-                      <Icon className="h-4 w-4" />
-                    </div>
+                <Link key={s.label} to={s.to} className="group bg-card p-5 transition-colors hover:bg-accent/40">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Icon className="h-4 w-4" />
+                    <p className="text-xs font-medium">{s.label}</p>
                   </div>
-                  <p className="mt-4 text-3xl font-bold tracking-tight tabular-nums text-foreground group-hover:text-primary-foreground/95 transition-colors">
+                  <p className="mt-3 text-[1.75rem] font-semibold leading-none tabular-nums tracking-tight text-foreground">
                     {s.value}
                   </p>
-                  <div className="mt-2 flex items-center gap-1.5 text-xs">
-                    {s.delta !== null ? (
-                      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${s.delta >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                  <div className="mt-2 flex items-center gap-1.5">
+                    {s.delta !== null && (
+                      <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${s.delta >= 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-500"}`}>
                         {s.delta >= 0 ? <TrendingUp className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                         {Math.abs(s.delta).toFixed(1)}%
                       </span>
-                    ) : null}
-                    <span className="text-muted-foreground truncate">{s.hint}</span>
+                    )}
+                    <span className="truncate text-xs text-muted-foreground">{s.hint}</span>
                   </div>
                 </Link>
               );
             })}
           </div>
         </MotionWrapper>
+
+        {/* Ad packages gift */}
+        {packageCount > 0 && (
+          <MotionWrapper delay={0.07}>
+            <Link to="/packages" className="group block">
+              <div className="relative flex flex-col items-start gap-5 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-lg sm:flex-row sm:items-center">
+                <div className="flex h-24 w-24 shrink-0 items-end justify-center rounded-2xl bg-primary/5">
+                  <div className="pb-3">
+                    <GiftBox size={64} shake />
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">A gift for your brand</p>
+                  <p className="mt-1.5 text-xl font-semibold tracking-tight text-foreground">
+                    {packageCount} ready-made ad {packageCount === 1 ? "package" : "packages"} wrapped for {brandName}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Pick your milestones, set your volume and go live without building a campaign.
+                  </p>
+                </div>
+                <Button className="shrink-0 gap-2 rounded-full px-5 font-semibold">
+                  Unwrap <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </div>
+            </Link>
+          </MotionWrapper>
+        )}
+
+        {/* Switch offers — migration stories */}
+        {switchOffers.length > 0 && (
+          <MotionWrapper delay={0.09}>
+            <section className="space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                    Users ready to switch to {brandName}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Real cohorts leaving competing brands. Claim them before someone else does.
+                  </p>
+                </div>
+                <Link to="/switch-offers" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+                  View all <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {switchOffers.map((o) => (
+                  <SwitchStoryCard
+                    key={o.id}
+                    competitorName={o.competitor_name || "Competitor"}
+                    competitorLogo={o.competitor_logo}
+                    brandName={brandName}
+                    count={Number(o.batch_size)}
+                    price={Number(o.flat_price_usd)}
+                    platform={o.platform}
+                    note={o.title}
+                    onAction={() => { window.location.href = "/switch-offers"; }}
+                  />
+                ))}
+              </div>
+            </section>
+          </MotionWrapper>
+        )}
+
 
         {/* Premium Analytics display based on provided samples */}
         <MotionWrapper delay={0.1}>
