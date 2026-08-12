@@ -10,6 +10,8 @@ import Sparkline from "@/components/Sparkline";
 import AnimatedDonut from "@/components/AnimatedDonut";
 import GiftReveal from "@/components/GiftReveal";
 import AiModePrompt from "@/components/AiModePrompt";
+import SwitchOfferSlider from "@/components/SwitchOfferSlider";
+
 import {
   Plus, BarChart3, Tag, ArrowUpRight, ArrowRight, RefreshCw,
   Sparkles, Wallet, Lock,
