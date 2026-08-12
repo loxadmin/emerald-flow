@@ -9,6 +9,7 @@ export default function SwitchStoryCard({
   competitorName,
   competitorLogo,
   brandName,
+  brandLogo,
   count,
   price,
   platform,
@@ -19,6 +20,7 @@ export default function SwitchStoryCard({
   competitorName: string;
   competitorLogo?: string | null;
   brandName: string;
+  brandLogo?: string | null;
   count: number;
   price: number;
   platform?: string | null;
