@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /ella
 Disallow: /dashboard
 Disallow: /wallet
 Disallow: /api/
