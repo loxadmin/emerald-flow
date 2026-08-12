@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import MotionWrapper from "@/components/MotionWrapper";
 import Sparkline from "@/components/Sparkline";
 import AnimatedDonut from "@/components/AnimatedDonut";
+import GiftBox from "@/components/GiftBox";
+import GiftReveal from "@/components/GiftReveal";
+import AiModePrompt from "@/components/AiModePrompt";
+import SwitchStoryCard from "@/components/SwitchStoryCard";
 import {
   Plus, BarChart3, Tag, ArrowUpRight, ArrowRight, RefreshCw,
   Sparkles, Repeat2, Wallet, Lock, Package as PackageIcon,
