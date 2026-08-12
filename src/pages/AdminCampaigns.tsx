@@ -44,16 +44,51 @@ export default function AdminCampaigns() {
   const [emails, setEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("all");
+  const [source, setSource] = useState<SourceKey>("all");
   const [q, setQ] = useState("");
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("campaigns")
-        .select("id,name,status,created_at,advertiser_id,total_cost,budget_remaining,target_users,integration_type,is_draft")
-        .order("created_at", { ascending: false })
-        .limit(500);
-      const list = (data as Row[]) || [];
+      const [camps, pkgs, sws] = await Promise.all([
+        supabase
+          .from("campaigns")
+          .select("id,name,status,created_at,advertiser_id,total_cost,budget_remaining,target_users,integration_type,is_draft")
+          .order("created_at", { ascending: false })
+          .limit(500),
+        supabase.from("package_orders" as any).select("*").order("created_at", { ascending: false }).limit(300),
+        supabase.from("switch_offer_orders" as any).select("*").order("created_at", { ascending: false }).limit(300),
+      ]);
+
+      const list: Row[] = [
+        ...(((camps.data as any[]) || []).map((c) => ({ ...c, source: "normal" as const }))),
+        ...(((pkgs.data as any[]) || []).map((o) => ({
+          id: o.id,
+          name: o.package_name || "Ad package campaign",
+          status: o.status === "pending_review" ? "pending" : o.status,
+          created_at: o.created_at,
+          advertiser_id: o.advertiser_id,
+          total_cost: Number(o.total_amount_usd || 0),
+          budget_remaining: null,
+          target_users: o.units || null,
+          integration_type: o.platform || null,
+          is_draft: false,
+          source: "package" as const,
+        }))),
+        ...(((sws.data as any[]) || []).map((o) => ({
+          id: o.id,
+          name: o.offer_title || "Switch offer campaign",
+          status: o.status,
+          created_at: o.created_at,
+          advertiser_id: o.advertiser_id,
+          total_cost: Number(o.flat_price_usd || 0),
+          budget_remaining: null,
+          target_users: o.batch_size || null,
+          integration_type: o.competitor_app_name || null,
+          is_draft: false,
+          source: "switch" as const,
+        }))),
+      ].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+
       setRows(list);
 
       const ids = [...new Set(list.map((r) => r.advertiser_id).filter(Boolean))];
@@ -67,15 +102,21 @@ export default function AdminCampaigns() {
     })();
   }, []);
 
-  const counts = useMemo(() => ({
-    all: rows.length,
-    pending: rows.filter((r) => r.status === "pending" && !r.is_draft).length,
-    active: rows.filter((r) => r.status === "active").length,
-    rejected: rows.filter((r) => r.status === "rejected").length,
-    draft: rows.filter((r) => r.is_draft).length,
-  }), [rows]);
+  const inSource = (r: Row) => source === "all" || r.source === source;
+
+  const counts = useMemo(() => {
+    const base = rows.filter(inSource);
+    return {
+      all: base.length,
+      pending: base.filter((r) => r.status === "pending" && !r.is_draft).length,
+      active: base.filter((r) => r.status === "active").length,
+      rejected: base.filter((r) => r.status === "rejected").length,
+      draft: base.filter((r) => r.is_draft).length,
+    };
+  }, [rows, source]);
 
   const filtered = useMemo(() => rows.filter((r) => {
+    if (!inSource(r)) return false;
     const matchTab =
       tab === "all" ? true :
       tab === "draft" ? r.is_draft :
@@ -84,7 +125,8 @@ export default function AdminCampaigns() {
     if (!q.trim()) return true;
     const hay = `${r.name} ${emails[r.advertiser_id] || ""}`.toLowerCase();
     return hay.includes(q.trim().toLowerCase());
-  }), [rows, tab, q, emails]);
+  }), [rows, tab, q, emails, source]);
+
 
   return (
     <AdminLayout>
