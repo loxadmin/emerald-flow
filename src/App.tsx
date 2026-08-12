@@ -59,6 +59,8 @@ const AdminMigrationOpportunities = lazy(() => import("./pages/AdminMigrationOpp
 const AdminPackages = lazy(() => import("./pages/AdminPackages"));
 const AdminPackageDelivery = lazy(() => import("./pages/AdminPackageDelivery"));
 const AdminMilestones = lazy(() => import("./pages/AdminMilestones"));
+const AdminSecurity = lazy(() => import("./pages/AdminSecurity"));
+const AdminHoneypot = lazy(() => import("./pages/AdminHoneypot"));
 const Packages = lazy(() => import("./pages/Packages"));
 const PackageOrders = lazy(() => import("./pages/PackageOrders"));
 const SwitchOffers = lazy(() => import("./pages/SwitchOffers"));
