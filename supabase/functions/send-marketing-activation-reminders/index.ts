@@ -1,6 +1,7 @@
 // Second daily reminder: marketer-style, category-tailored pitch to advertisers
 // whose wallets are still inactive. Runs in addition to send-activation-reminders.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireInternalOrUser, AuthError } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,6 +92,18 @@ async function sendEmail(to: string, subject: string, body: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    await requireInternalOrUser(req, { requireAdmin: true });
+  } catch (e) {
+    const status = (e as AuthError).status || 401;
+    return new Response(JSON.stringify({ error: (e as Error).message }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
   const today = new Date().toISOString().slice(0, 10);
