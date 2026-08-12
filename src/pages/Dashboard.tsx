@@ -383,12 +383,6 @@ export default function Dashboard() {
           </div>
         </MotionWrapper>
 
-        {/* Switch offers — attention-grabbing slider */}
-        {switchOffers.length > 0 && (
-          <MotionWrapper delay={0.09}>
-            <SwitchOfferSlider offers={switchOffers} brandName={brandName} />
-          </MotionWrapper>
-        )}
 
 
 
