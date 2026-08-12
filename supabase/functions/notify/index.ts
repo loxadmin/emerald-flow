@@ -2,6 +2,7 @@
 // Events: wallet_activated, wallet_funded, campaign_submitted, campaign_rejected,
 //         support_message, package_created, package_order_submitted, withdrawal_requested
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { AuthError, requireInternalOrUser } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,6 +50,7 @@ async function getAdminEmail(supabase: ReturnType<typeof createClient>): Promise
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    await requireInternalOrUser(req);
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { event, payload = {} } = await req.json();
     const admin = await getAdminEmail(supabase);
@@ -221,6 +223,7 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     console.error("notify error", err);
+    if (err instanceof AuthError) return json({ error: err.message }, err.status);
     return json({ error: err instanceof Error ? err.message : "server error" }, 500);
   }
 });
