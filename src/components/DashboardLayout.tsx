@@ -59,12 +59,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [availablePackageCount, setAvailablePackageCount] = useState(0);
-  const [availableSwitchOfferCount, setAvailableSwitchOfferCount] = useState(0);
 
   useEffect(() => {
     if (!user?.id || isOffline) {
       setAvailablePackageCount(0);
-      setAvailableSwitchOfferCount(0);
       return;
     }
     let active = true;
@@ -76,22 +74,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         .maybeSingle();
       const subtype = (category as { advertiser_subtype?: string } | null)?.advertiser_subtype;
       if (!subtype || !active) return;
-      const [{ count: pkgCount }, { count: switchCount }] = await Promise.all([
-        supabase
-          .from("ad_packages")
-          .select("id", { count: "exact", head: true })
-          .eq("is_active", true)
-          .contains("advertiser_subtypes", [subtype]),
-        supabase
-          .from("switch_offers" as any)
-          .select("id", { count: "exact", head: true })
-          .eq("is_active", true)
-          .contains("advertiser_subtypes", [subtype]),
-      ]);
-      if (active) {
-        setAvailablePackageCount(pkgCount || 0);
-        setAvailableSwitchOfferCount(switchCount || 0);
-      }
+      const { count } = await supabase
+        .from("ad_packages")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true)
+        .contains("advertiser_subtypes", [subtype]);
+      if (active) setAvailablePackageCount(count || 0);
     })();
     return () => { active = false; };
   }, [user?.id, isOffline]);
@@ -289,19 +277,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </span>
             </Link>
           )}
-          {availableSwitchOfferCount > 0 && (
-            <Link
-              to="/switch-offers"
-              className="relative flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent transition-colors"
-              aria-label={`${availableSwitchOfferCount} switch offers available`}
-              title={`${availableSwitchOfferCount} switch offers available`}
-            >
-              <GiftBox size={22} shake />
-              <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-destructive-foreground">
-                {availableSwitchOfferCount}
-              </span>
-            </Link>
-          )}
           <button
             onClick={enableAiMode}
             className="rounded-md p-2 text-primary hover:bg-accent transition-colors"
@@ -366,19 +341,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <GiftBox size={22} shake />
                 <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-destructive-foreground">
                   {availablePackageCount}
-                </span>
-              </Link>
-            )}
-            {availableSwitchOfferCount > 0 && (
-              <Link
-                to="/switch-offers"
-                className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card hover:bg-accent transition-colors"
-                aria-label={`${availableSwitchOfferCount} switch offers available`}
-                title={`${availableSwitchOfferCount} switch offers available`}
-              >
-                <GiftBox size={22} shake />
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-destructive-foreground">
-                  {availableSwitchOfferCount}
                 </span>
               </Link>
             )}
