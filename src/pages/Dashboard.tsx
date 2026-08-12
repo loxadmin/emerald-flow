@@ -93,6 +93,7 @@ export default function Dashboard() {
   const [packageOrders, setPackageOrders] = useState<any[]>([]);
   const [switchOffers, setSwitchOffers] = useState<any[]>([]);
   const [brandName, setBrandName] = useState<string>("your platform");
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [eventSeries, setEventSeries] = useState<number[]>([]);
   const [clickSeries, setClickSeries] = useState<number[]>([]);
   const [spendSeries, setSpendSeries] = useState<number[]>([]);
