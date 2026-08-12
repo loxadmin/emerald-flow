@@ -5,7 +5,7 @@ import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import {
   Shield, BarChart3, Settings, LogOut, Sun, Moon, PenSquare, Users, Layers,
-  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap, FileSignature, PenTool, GitBranch, Megaphone, Inbox,
+  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap, FileSignature, PenTool, GitBranch, Megaphone, Inbox, ShieldAlert,
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
@@ -14,46 +14,47 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
   {
     label: "Overview",
     links: [
-      { to: "/admin", label: "Dashboard", icon: Shield },
-      { to: "/admin/campaigns", label: "Campaigns", icon: Megaphone },
-      { to: "/admin/orders", label: "Orders", icon: Inbox },
+      { to: "/ella", label: "Dashboard", icon: Shield },
+      { to: "/ella/campaigns", label: "Campaigns", icon: Megaphone },
+      { to: "/ella/orders", label: "Orders", icon: Inbox },
 
-      { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+      { to: "/ella/analytics", label: "Analytics", icon: BarChart3 },
     ],
   },
   {
     label: "Manage",
     links: [
-      { to: "/admin/advertisers", label: "Advertisers", icon: Users },
-      { to: "/admin/categories", label: "Categories", icon: Layers },
-      { to: "/admin/partnerships", label: "Partnerships", icon: Handshake },
-      { to: "/admin/wallets", label: "Wallets", icon: Wallet },
-      { to: "/admin/messages", label: "Messages", icon: MessageSquare },
-      { to: "/admin/broadcast", label: "Broadcast", icon: Send },
-      { to: "/admin/affiliates", label: "Affiliates", icon: Handshake },
+      { to: "/ella/advertisers", label: "Advertisers", icon: Users },
+      { to: "/ella/categories", label: "Categories", icon: Layers },
+      { to: "/ella/partnerships", label: "Partnerships", icon: Handshake },
+      { to: "/ella/wallets", label: "Wallets", icon: Wallet },
+      { to: "/ella/messages", label: "Messages", icon: MessageSquare },
+      { to: "/ella/broadcast", label: "Broadcast", icon: Send },
+      { to: "/ella/affiliates", label: "Affiliates", icon: Handshake },
     ],
   },
   {
     label: "Content",
     links: [
-      { to: "/admin/blogs", label: "Blogs", icon: PenSquare },
-      { to: "/admin/content", label: "Site Content", icon: Layout },
-      { to: "/admin/design", label: "Page Design", icon: Layers },
+      { to: "/ella/blogs", label: "Blogs", icon: PenSquare },
+      { to: "/ella/content", label: "Site Content", icon: Layout },
+      { to: "/ella/design", label: "Page Design", icon: Layers },
     ],
   },
   {
     label: "Products",
     links: [
-      { to: "/admin/offerwall", label: "Offerwall", icon: Gamepad2 },
-      { to: "/admin/loi", label: "Letters of Intent", icon: FileSignature },
-      { to: "/admin/migration-opportunities", label: "Migration Opps", icon: GitBranch },
-      { to: "/admin/signature", label: "Company Signature", icon: PenTool },
-      { to: "/admin/packages", label: "Ad Packages", icon: Package },
-      { to: "/admin/switch-offers", label: "Switch Offers", icon: Zap },
-      { to: "/admin/milestones", label: "Milestones", icon: Flag },
+      { to: "/ella/offerwall", label: "Offerwall", icon: Gamepad2 },
+      { to: "/ella/loi", label: "Letters of Intent", icon: FileSignature },
+      { to: "/ella/migration-opportunities", label: "Migration Opps", icon: GitBranch },
+      { to: "/ella/signature", label: "Company Signature", icon: PenTool },
+      { to: "/ella/packages", label: "Ad Packages", icon: Package },
+      { to: "/ella/switch-offers", label: "Switch Offers", icon: Zap },
+      { to: "/ella/milestones", label: "Milestones", icon: Flag },
 
-      { to: "/admin/extension", label: "Extension", icon: Chrome },
-      { to: "/admin/settings", label: "Settings", icon: Settings },
+      { to: "/ella/extension", label: "Extension", icon: Chrome },
+      { to: "/ella/security", label: "Security", icon: ShieldAlert },
+      { to: "/ella/settings", label: "Settings", icon: Settings },
     ],
   },
 ];
@@ -70,7 +71,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const sidebar = (
     <>
       <div className="flex h-14 items-center justify-between border-b border-border px-5">
-        <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <Link to="/ella" className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <Logo size={20} />
           <span>Karbali</span>
           <span className="ml-1 text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">Admin</span>
@@ -145,7 +146,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-40 flex lg:hidden h-12 items-center justify-between px-4 bg-card border-b border-border">
-        <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold">
+        <Link to="/ella" className="flex items-center gap-2 text-sm font-semibold">
           <Logo size={18} />
           <span>Karbali</span>
           <span className="ml-1 text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">Admin</span>

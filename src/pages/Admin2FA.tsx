@@ -24,7 +24,7 @@ export default function Admin2FA() {
     if (!user) { navigate("/login", { replace: true }); return; }
     if (!isAdmin) { navigate("/dashboard", { replace: true }); return; }
     if (isAdmin2FAVerified(user.id)) {
-      navigate("/admin", { replace: true });
+      navigate("/ella", { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isAdmin, isLoading]);
@@ -51,7 +51,7 @@ export default function Admin2FA() {
     if (error || data?.error) { toast.error(data?.error || error?.message || "Verification failed"); return; }
     markAdmin2FAVerified(user!.id);
     toast.success("Verified");
-    navigate("/admin", { replace: true });
+    navigate("/ella", { replace: true });
   };
 
   return (

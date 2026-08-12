@@ -59,6 +59,8 @@ const AdminMigrationOpportunities = lazy(() => import("./pages/AdminMigrationOpp
 const AdminPackages = lazy(() => import("./pages/AdminPackages"));
 const AdminPackageDelivery = lazy(() => import("./pages/AdminPackageDelivery"));
 const AdminMilestones = lazy(() => import("./pages/AdminMilestones"));
+const AdminSecurity = lazy(() => import("./pages/AdminSecurity"));
+const AdminHoneypot = lazy(() => import("./pages/AdminHoneypot"));
 const Packages = lazy(() => import("./pages/Packages"));
 const PackageOrders = lazy(() => import("./pages/PackageOrders"));
 const SwitchOffers = lazy(() => import("./pages/SwitchOffers"));
@@ -143,7 +145,7 @@ const App = () => (
               <Route path="/r/:code" element={<ReferralRedirect />} />
               <Route path="/affiliates" element={<Affiliates />} />
               <Route path="/affiliate/dashboard" element={<RequireAuth><AffiliateDashboard /></RequireAuth>} />
-              <Route path="/admin/affiliates" element={<RequireAuth><RequireAdmin><AdminAffiliates /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/affiliates" element={<RequireAuth><RequireAdmin><AdminAffiliates /></RequireAdmin></RequireAuth>} />
               
               {/* Advertiser routes */}
               <Route path="/category-select" element={<RequireAuth><CategorySelection /></RequireAuth>} />
@@ -155,7 +157,7 @@ const App = () => (
               <Route path="/packages" element={<RequireAuth><Packages /></RequireAuth>} />
               <Route path="/packages/orders" element={<RequireAuth><PackageOrders /></RequireAuth>} />
               <Route path="/switch-offers" element={<RequireAuth><SwitchOffers /></RequireAuth>} />
-              <Route path="/admin/switch-offers" element={<RequireAuth><RequireAdmin><AdminSwitchOffers /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/switch-offers" element={<RequireAuth><RequireAdmin><AdminSwitchOffers /></RequireAdmin></RequireAuth>} />
 
               {/* Offline Ads */}
               <Route path="/offline/loi" element={<RequireAuth><OfflineLOI /></RequireAuth>} />
@@ -187,32 +189,37 @@ const App = () => (
               <Route path="/how-to-get-first-100-customers" element={<ProblemSolution />} />
               <Route path="/customer-acquisition-for-startups" element={<ProblemSolution />} />
 
-              {/* Admin routes (separate panel) */}
-              <Route path="/admin/2fa" element={<RequireAuth><Admin2FA /></RequireAuth>} />
-              <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/campaigns" element={<RequireAuth><RequireAdmin><AdminCampaigns /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/orders" element={<RequireAuth><RequireAdmin><AdminOrders /></RequireAdmin></RequireAuth>} />
+              {/* Decoy: the legacy /admin path logs the visitor's IP and shows "Invalid" */}
+              <Route path="/admin" element={<AdminHoneypot />} />
+              <Route path="/admin/*" element={<AdminHoneypot />} />
 
-              <Route path="/admin/campaigns/:id" element={<RequireAuth><RequireAdmin><AdminCampaignDetail /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/analytics" element={<RequireAuth><RequireAdmin><AdminAnalytics /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/settings" element={<RequireAuth><RequireAdmin><AdminSettings /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/blogs" element={<RequireAuth><RequireAdmin><AdminBlogs /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/content" element={<RequireAuth><RequireAdmin><AdminContent /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/design" element={<RequireAuth><RequireAdmin><AdminDesign /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/categories" element={<RequireAuth><RequireAdmin><AdminCategories /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/partnerships" element={<RequireAuth><RequireAdmin><AdminPartnerships /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/advertisers" element={<RequireAuth><RequireAdmin><AdminAdvertisers /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/wallets" element={<RequireAuth><RequireAdmin><AdminWallets /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/messages" element={<RequireAuth><RequireAdmin><AdminMessages /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/broadcast" element={<RequireAuth><RequireAdmin><AdminBroadcast /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/extension" element={<RequireAuth><RequireAdmin><AdminExtension /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/offerwall" element={<RequireAuth><RequireAdmin><AdminOfferwall /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/loi" element={<RequireAuth><RequireAdmin><AdminLettersOfIntent /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/signature" element={<RequireAuth><RequireAdmin><AdminCompanySignature /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/migration-opportunities" element={<RequireAuth><RequireAdmin><AdminMigrationOpportunities /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/packages" element={<RequireAuth><RequireAdmin><AdminPackages /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/packages/orders/:orderId/deliver" element={<RequireAuth><RequireAdmin><AdminPackageDelivery /></RequireAdmin></RequireAuth>} />
-              <Route path="/admin/milestones" element={<RequireAuth><RequireAdmin><AdminMilestones /></RequireAdmin></RequireAuth>} />
+              {/* Admin routes (separate panel) */}
+              <Route path="/ella/2fa" element={<RequireAuth><Admin2FA /></RequireAuth>} />
+              <Route path="/ella" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/security" element={<RequireAuth><RequireAdmin><AdminSecurity /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/campaigns" element={<RequireAuth><RequireAdmin><AdminCampaigns /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/orders" element={<RequireAuth><RequireAdmin><AdminOrders /></RequireAdmin></RequireAuth>} />
+
+              <Route path="/ella/campaigns/:id" element={<RequireAuth><RequireAdmin><AdminCampaignDetail /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/analytics" element={<RequireAuth><RequireAdmin><AdminAnalytics /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/settings" element={<RequireAuth><RequireAdmin><AdminSettings /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/blogs" element={<RequireAuth><RequireAdmin><AdminBlogs /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/content" element={<RequireAuth><RequireAdmin><AdminContent /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/design" element={<RequireAuth><RequireAdmin><AdminDesign /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/categories" element={<RequireAuth><RequireAdmin><AdminCategories /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/partnerships" element={<RequireAuth><RequireAdmin><AdminPartnerships /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/advertisers" element={<RequireAuth><RequireAdmin><AdminAdvertisers /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/wallets" element={<RequireAuth><RequireAdmin><AdminWallets /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/messages" element={<RequireAuth><RequireAdmin><AdminMessages /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/broadcast" element={<RequireAuth><RequireAdmin><AdminBroadcast /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/extension" element={<RequireAuth><RequireAdmin><AdminExtension /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/offerwall" element={<RequireAuth><RequireAdmin><AdminOfferwall /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/loi" element={<RequireAuth><RequireAdmin><AdminLettersOfIntent /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/signature" element={<RequireAuth><RequireAdmin><AdminCompanySignature /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/migration-opportunities" element={<RequireAuth><RequireAdmin><AdminMigrationOpportunities /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/packages" element={<RequireAuth><RequireAdmin><AdminPackages /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/packages/orders/:orderId/deliver" element={<RequireAuth><RequireAdmin><AdminPackageDelivery /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/milestones" element={<RequireAuth><RequireAdmin><AdminMilestones /></RequireAdmin></RequireAuth>} />
 
 
               <Route path="*" element={<NotFound />} />

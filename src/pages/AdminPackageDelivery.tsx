@@ -158,7 +158,7 @@ export default function AdminPackageDelivery() {
   return (
     <AdminLayout>
       <div className="mb-4 flex items-center gap-3">
-        <Link to="/admin/packages"><Button variant="ghost" size="sm"><ArrowLeft className="mr-2 h-4 w-4" /> Packages</Button></Link>
+        <Link to="/ella/packages"><Button variant="ghost" size="sm"><ArrowLeft className="mr-2 h-4 w-4" /> Packages</Button></Link>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Deliver: {order.package_name}</h1>
           <p className="text-sm text-muted-foreground">

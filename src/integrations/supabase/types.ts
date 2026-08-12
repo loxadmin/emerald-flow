@@ -161,6 +161,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_probe_log: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          path: string
+          referer: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          path?: string
+          referer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          path?: string
+          referer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       admin_settings: {
         Row: {
           description: string | null

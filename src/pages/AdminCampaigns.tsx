@@ -198,7 +198,7 @@ export default function AdminCampaigns() {
                 </thead>
                 <tbody>
                   {filtered.map((r) => {
-                    const href = r.source === "normal" ? `/admin/campaigns/${r.id}` : "/admin/orders";
+                    const href = r.source === "normal" ? `/ella/campaigns/${r.id}` : "/ella/orders";
                     return (
                     <tr key={`${r.source}-${r.id}`} className="border-b border-border last:border-0 transition-colors hover:bg-accent/40">
                       <td className="px-5 py-3">

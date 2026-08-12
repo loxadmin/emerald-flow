@@ -397,10 +397,10 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
     // Email OTP 2FA gate for admins — persisted per user with a TTL.
     if (
       !isLoading && session && isAdmin &&
-      location.pathname !== "/admin/2fa" &&
+      location.pathname !== "/ella/2fa" &&
       !verified
     ) {
-      navigate("/admin/2fa", { replace: true });
+      navigate("/ella/2fa", { replace: true });
     }
   }, [session, isAdmin, isLoading, verified, navigate, location.pathname]);
 

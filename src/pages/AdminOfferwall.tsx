@@ -122,7 +122,7 @@ export default function AdminOfferwall() {
               ) : (
                 <div className="space-y-2">
                   {campaigns.map((c) => (
-                    <Link key={c.id} to={`/admin/campaigns/${c.id}`} className="block rounded-xl border border-border/50 p-4 hover:bg-accent/30 transition-colors">
+                    <Link key={c.id} to={`/ella/campaigns/${c.id}`} className="block rounded-xl border border-border/50 p-4 hover:bg-accent/30 transition-colors">
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
