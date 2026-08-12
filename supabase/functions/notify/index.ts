@@ -2,6 +2,7 @@
 // Events: wallet_activated, wallet_funded, campaign_submitted, campaign_rejected,
 //         support_message, package_created, package_order_submitted, withdrawal_requested
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { AuthError, requireInternalOrUser } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
