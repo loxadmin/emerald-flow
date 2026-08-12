@@ -160,6 +160,19 @@ export default function AdminCampaigns() {
           ))}
         </div>
 
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {SOURCES.map((s) => (
+            <button
+              key={s.key} onClick={() => setSource(s.key)}
+              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                source === s.key ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           {loading ? (
             <ListSkeleton rows={6} />
