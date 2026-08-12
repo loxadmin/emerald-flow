@@ -223,6 +223,7 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     console.error("notify error", err);
+    if (err instanceof AuthError) return json({ error: err.message }, err.status);
     return json({ error: err instanceof Error ? err.message : "server error" }, 500);
   }
 });
