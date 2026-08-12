@@ -354,7 +354,15 @@ export default function Dashboard() {
           </MotionWrapper>
         )}
 
+        {/* Switch offers — attention-grabbing slider */}
+        {switchOffers.length > 0 && (
+          <MotionWrapper delay={0.04}>
+            <SwitchOfferSlider offers={switchOffers} brandName={brandName} />
+          </MotionWrapper>
+        )}
+
         {/* Stat strip */}
+
         <MotionWrapper delay={0.05}>
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3 xl:grid-cols-6">
             {statCards.map((s) => {
