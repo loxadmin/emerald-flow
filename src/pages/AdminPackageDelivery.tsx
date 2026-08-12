@@ -103,11 +103,11 @@ export default function AdminPackageDelivery() {
   }, [order, milestones]);
 
   const setForm = (mid: string, patch: Partial<FormState>) =>
-    setForms((f) => ({ ...f, [mid]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [], ...(f[mid] || {}), ...patch } }));
+    setForms((f) => ({ ...f, [mid]: { ...EMPTY_FORM(), ...(f[mid] || {}), ...patch } }));
 
   const submit = async (m: Milestone) => {
     if (!order) return;
-    const f: FormState = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] };
+    const f: FormState = forms[m.id] || EMPTY_FORM();
     const users = Number(f.users) || 0;
     const isTxn = m.slug === "transaction" || m.slug === "sale";
     let txnRows: any = null;
@@ -124,6 +124,10 @@ export default function AdminPackageDelivery() {
       ? (f.competitors || []).filter((c) => c.competitor_app_id && Number(c.users_count) > 0)
           .map((c) => ({ competitor_app_id: c.competitor_app_id, users_count: Number(c.users_count) }))
       : null;
+    const engagement: Record<string, number> = {};
+    if (Number(f.opens) > 0) engagement.opens = Number(f.opens);
+    if (Number(f.actives) > 0) engagement.active_users = Number(f.actives);
+    if (Number(f.posts) > 0) engagement.posts = Number(f.posts);
     const { error } = await supabase.rpc("record_package_delivery" as any, {
       _order_id: order.id,
       _milestone_id: m.id,
@@ -132,13 +136,16 @@ export default function AdminPackageDelivery() {
       _txn_rows: txnRows,
       _notes: f.notes || null,
       _competitor_breakdown: breakdown && breakdown.length > 0 ? breakdown : null,
+      _engagement_metrics: Object.keys(engagement).length ? engagement : null,
+      _fresh_users: Number(f.fresh) || 0,
     });
     setSaving(null);
     if (error) return toast.error(error.message);
-    toast.success("Delivery recorded");
-    setForms((s) => ({ ...s, [m.id]: { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] } }));
+    toast.success("Delivery recorded — escrow updated");
+    setForms((s) => ({ ...s, [m.id]: EMPTY_FORM() }));
     load();
   };
+
 
   const onCsvFile = async (mid: string, file: File) => {
     const text = await file.text();
