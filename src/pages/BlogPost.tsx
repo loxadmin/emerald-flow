@@ -10,7 +10,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { useTheme } from "@/lib/theme";
 import { Sun, Moon } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/components/Seo";
 
 interface Blog {
   id: string;

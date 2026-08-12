@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/components/Seo";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
 import { ArrowLeft } from "lucide-react";
