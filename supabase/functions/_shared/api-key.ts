@@ -17,15 +17,10 @@ export type ResolvedApiKey = {
   advertiserId: string | null;
 };
 
-type MinimalClient = {
-  from: (table: string) => {
-    select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
-      };
-    };
-  };
-};
+// Structurally typed so any Supabase client (typed or untyped) can be passed
+// without dragging the generated Database types into shared code.
+// deno-lint-ignore no-explicit-any
+type MinimalClient = { from: (table: string) => any };
 
 /**
  * Resolve an API key to its campaign (and owning advertiser).
