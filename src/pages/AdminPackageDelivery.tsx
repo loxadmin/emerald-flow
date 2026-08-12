@@ -332,7 +332,12 @@ export default function AdminPackageDelivery() {
                   <div className="max-h-48 overflow-y-auto">
                     <table className="w-full text-xs">
                       <thead className="text-muted-foreground">
-                        <tr><th className="text-left py-1">Date</th><th className="text-left py-1">Users</th>{isTxn && <th className="text-right py-1">Txn total</th>}</tr>
+                        <tr>
+                          <th className="text-left py-1">Date</th>
+                          <th className="text-left py-1">Users</th>
+                          {isTxn && <th className="text-right py-1">Txn total</th>}
+                          <th className="text-right py-1">Charged</th>
+                        </tr>
                       </thead>
                       <tbody>
                         {dv.map((d) => (
@@ -340,9 +345,11 @@ export default function AdminPackageDelivery() {
                             <td className="py-1">{new Date(d.delivery_date).toLocaleDateString()}</td>
                             <td className="py-1">{d.users_delivered}</td>
                             {isTxn && <td className="py-1 text-right">${Number(d.total_txn_amount || 0).toFixed(2)}</td>}
+                            <td className="py-1 text-right font-mono">${Number(d.charged_usd || 0).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
+
                     </table>
                   </div>
                 </div>
