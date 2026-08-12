@@ -14,6 +14,19 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Loader2, Zap, ArrowRight, Wallet as WalletIcon, ClipboardList, Sparkles, Check } from "lucide-react";
 import MigrationChart from "@/components/MigrationChart";
+import SwitchStoryCard from "@/components/SwitchStoryCard";
+
+/** Turns "https://www.cabally.com" into "Cabally" so offers read personally. */
+function brandFrom(website?: string | null, companyName?: string | null): string {
+  const raw = (website || "").trim().toLowerCase();
+  if (raw) {
+    const host = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+    const label = host.split(".")[0];
+    if (label) return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  if (companyName && companyName.trim()) return companyName.trim();
+  return "your brand";
+}
 
 type Offer = {
   id: string; title: string; description: string | null;
@@ -36,6 +49,16 @@ export default function SwitchOffers() {
   const [balance, setBalance] = useState(0);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [brandName, setBrandName] = useState("your brand");
+
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles").select("website, company_name").eq("id", user.id).maybeSingle();
+      setBrandName(brandFrom((data as any)?.website, (data as any)?.company_name));
+    })();
+  }, [user?.id]);
 
   const [selected, setSelected] = useState<Offer | null>(null);
   const [link, setLink] = useState("");
@@ -173,16 +196,22 @@ export default function SwitchOffers() {
     <DashboardLayout>
       <MotionWrapper>
         {/* Page Topbar Header */}
-        <div className="mb-8 flex items-center justify-between gap-4 flex-wrap border-b border-border pb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">Switch Offers</h1>
-            <p className="text-sm text-muted-foreground mt-1.5">Acquire active user cohorts ready to migrate from direct competitors to your brand.</p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Migration desk</p>
+            <h1 className="text-[2rem] font-semibold leading-tight tracking-tight text-foreground md:text-[2.5rem]">
+              Users ready to leave your competitors
+            </h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Each cohort below is a group of real users on a competing brand who are open to switching to {brandName}. Claim a cohort and we deliver them.
+            </p>
           </div>
-          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs font-bold text-foreground flex items-center gap-2 shadow-sm">
-            <WalletIcon className="h-4 w-4 text-primary animate-pulse" />
-            <span>Corporate Balance: <span className="text-primary tabular-nums text-sm font-extrabold ml-1">${balance.toFixed(2)}</span></span>
+          <div className="rounded-2xl border border-border bg-card px-4 py-3">
+            <p className="text-xs font-medium text-muted-foreground">Wallet balance</p>
+            <p className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight text-foreground">${balance.toFixed(2)}</p>
           </div>
         </div>
+
 
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
@@ -200,74 +229,25 @@ export default function SwitchOffers() {
                 <p className="text-xs mt-1 text-muted-foreground">Our operations team updates competitor user pools daily.</p>
               </div>
             ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {visible.map((o) => {
                   const c = o.competitor_app_id ? competitors[o.competitor_app_id] : null;
                   return (
-                    <div key={o.id} className="group relative rounded-xl border border-border/50 bg-card/40 backdrop-blur-md p-5 flex flex-col justify-between hover:bg-card/70 hover:border-primary/40 transition-all duration-300 shadow-sm hover:shadow-md">
-                      {/* Top Header Section - Inspiration-style */}
-                      <div className="flex items-center justify-between gap-4 border-b border-border/20 pb-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {c?.logo_url ? (
-                            <img src={c.logo_url} alt="" className="h-10 w-10 rounded-lg object-cover border border-border/40 shadow-sm shrink-0" />
-                          ) : (
-                            <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-sm shrink-0">
-                              <Zap className="h-4 w-4" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm text-foreground leading-tight group-hover:text-primary transition-colors truncate">{o.title}</p>
-                            {c && (
-                              <p className="text-[10px] font-medium text-muted-foreground mt-1">
-                                Pool: <span className="font-semibold text-foreground">{c.name}</span>
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="shrink-0 font-semibold text-xs border-primary/30 text-primary hover:bg-primary/10 hover:text-primary transition-all rounded-full px-4 h-8"
-                          onClick={() => { setSelected(o); setLink(""); }}
-                        >
-                          Initiate
-                        </Button>
-                      </div>
-
-                      {o.description && (
-                        <p className="mt-4 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2 min-h-[2.5rem]">
-                          {o.description}
-                        </p>
-                      )}
-
-                      {/* Precise grid containers (Loud Pro & Biomarkers inspired) */}
-                      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/20 pt-3">
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Cohort Batch</p>
-                          <p className="font-semibold text-xs text-foreground font-mono">{o.batch_size.toLocaleString()} users</p>
-                        </div>
-                        <div className="space-y-0.5 text-right">
-                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Acquisition Cost</p>
-                          <p className="font-semibold text-xs text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</p>
-                        </div>
-                      </div>
-
-                      {/* Clean highlights badge row */}
-                      <div className="mt-4 pt-3 border-t border-border/10 flex flex-wrap gap-1.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-secondary/60 text-muted-foreground border border-border/30">
-                          Guaranteed Switch
-                        </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-secondary/60 text-muted-foreground border border-border/30">
-                          Webhook Sync
-                        </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                          {o.platform}
-                        </span>
-                      </div>
-                    </div>
+                    <SwitchStoryCard
+                      key={o.id}
+                      competitorName={c?.name || "Competitor"}
+                      competitorLogo={c?.logo_url}
+                      brandName={brandName}
+                      count={o.batch_size}
+                      price={Number(o.flat_price_usd)}
+                      platform={o.platform}
+                      note={o.description || o.title}
+                      onAction={() => { setSelected(o); setLink(""); }}
+                    />
                   );
                 })}
               </div>
+
             )}
 
             {/* Premium "My Switch Orders" and charts section */}
@@ -295,12 +275,12 @@ export default function SwitchOffers() {
                               </span>
                             )}
                             <span className="text-border/40">•</span>
-                            <span>Acquisition Price: <span className="font-semibold text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</span></span>
+                            <span>Acquisition Price: <span className="font-semibold text-foreground">${Number(o.flat_price_usd).toFixed(2)}</span></span>
                             <span className="text-border/40">•</span>
-                            <span>Migration Cohort: <span className="font-semibold text-foreground font-mono">{o.batch_size.toLocaleString()} users</span></span>
+                            <span>Migration Cohort: <span className="font-semibold text-foreground">{o.batch_size.toLocaleString()} users</span></span>
                           </div>
                           {o.target_link && (
-                            <p className="text-[10px] font-mono text-muted-foreground truncate max-w-xl mt-2 bg-secondary/35 border border-border/30 rounded px-2.5 py-1 inline-block">
+                            <p className="text-[10px] text-muted-foreground truncate max-w-xl mt-2 bg-secondary/35 border border-border/30 rounded px-2.5 py-1 inline-block">
                               Target App Link: <a href={o.target_link} target="_blank" rel="noreferrer" className="text-primary hover:underline font-semibold">{o.target_link}</a>
                             </p>
                           )}
@@ -313,7 +293,7 @@ export default function SwitchOffers() {
                       <div className="bg-secondary/15 rounded-lg border border-border/20 p-3.5">
                         <div className="flex items-center justify-between mb-2 text-xs">
                           <span className="font-medium text-muted-foreground">Migration Progress</span>
-                          <span className="font-semibold text-foreground font-mono">
+                          <span className="font-semibold text-foreground">
                             {o.users_delivered.toLocaleString()} / {o.batch_size.toLocaleString()} ({Math.min(100, Math.round((o.users_delivered / o.batch_size) * 100))}% completed)
                           </span>
                         </div>
@@ -355,11 +335,11 @@ export default function SwitchOffers() {
               <div className="rounded-lg border border-border/30 bg-secondary/20 p-3.5 space-y-2 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground font-semibold">Switch Target Batch</span>
-                  <span className="font-semibold text-foreground font-mono">{selected.batch_size.toLocaleString()} users</span>
+                  <span className="font-semibold text-foreground">{selected.batch_size.toLocaleString()} users</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-border/10">
                   <span className="text-muted-foreground font-semibold">Total Acquisition Price</span>
-                  <span className="font-semibold text-foreground font-mono">${Number(selected.flat_price_usd).toFixed(2)}</span>
+                  <span className="font-semibold text-foreground">${Number(selected.flat_price_usd).toFixed(2)}</span>
                 </div>
               </div>
 

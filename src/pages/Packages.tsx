@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
 import MotionWrapper from "@/components/MotionWrapper";
+import GiftBox from "@/components/GiftBox";
 import { toast } from "sonner";
 import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock, Youtube, Music, Instagram, Video, Sparkles, LayoutGrid, Check } from "lucide-react";
 
@@ -431,25 +432,30 @@ export default function Packages() {
   return (
     <DashboardLayout>
       <MotionWrapper>
-        {/* Dynamic Header */}
-        <div className="mb-8 flex items-center justify-between flex-wrap gap-4 border-b border-border pb-6">
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">Ad Packages</h1>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Ready to run</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-[2rem] font-semibold leading-tight tracking-tight text-foreground md:text-[2.5rem]">
+                Your ad packages
+              </h1>
               {mySubtype && (
-                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-500 border border-emerald-500/20">
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground">
                   {subtypeLabel(mySubtype)}
                 </span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-1.5">Premium tailored, fully-integrated campaigns ready to go live in clicks.</p>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Each package is wrapped for your category. Pick your milestones, set your volume, and go live without building a campaign.
+            </p>
           </div>
           <Link to="/packages/orders">
-            <Button variant="outline" size="sm" className="gap-2 font-semibold shadow-sm hover:bg-accent hover:-translate-y-0.5 transition-all">
-              <ClipboardList className="h-4 w-4 text-primary" /> My Orders
+            <Button variant="outline" size="sm" className="gap-2 rounded-full px-4 font-semibold">
+              <ClipboardList className="h-4 w-4 text-primary" /> My orders
             </Button>
           </Link>
         </div>
+
 
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
@@ -481,72 +487,64 @@ export default function Packages() {
                 return mm?.requires_duration;
               });
               return (
-                <div key={p.id} className="group relative rounded-xl border border-border/50 bg-card/40 backdrop-blur-md p-5 flex flex-col justify-between hover:bg-card/70 hover:border-primary/40 transition-all duration-300 shadow-sm hover:shadow-md">
-                  {/* Top horizontal header alignment - inspiration-style */}
-                  <div className="flex items-center justify-between gap-4 border-b border-border/20 pb-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="shrink-0 bg-primary/10 text-primary border border-primary/20 rounded-lg p-2.5">
-                        <PackageIcon className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-sm text-foreground tracking-tight group-hover:text-primary transition-colors truncate">
-                          {p.name}
-                        </h3>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {(p.platform_support || []).map((pl) => (
-                            <span key={pl} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-secondary/80 text-muted-foreground border border-border/30">
-                              {pl}
-                            </span>
-                          ))}
-                        </div>
+                <div
+                  key={p.id}
+                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+                >
+                  {/* ribbon */}
+                  <span className="pointer-events-none absolute right-[-38px] top-[18px] w-[140px] rotate-45 bg-primary py-1 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-primary-foreground">
+                    Package
+                  </span>
+
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-[70px] w-[70px] shrink-0 items-end justify-center rounded-2xl bg-primary/5">
+                      <div className="pb-2">
+                        <GiftBox size={46} />
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="shrink-0 font-semibold text-xs border-primary/30 text-primary hover:bg-primary/10 hover:text-primary transition-all rounded-full px-4 h-8"
-                      onClick={() => openBuy(p)}
-                      disabled={ms.length === 0}
-                    >
-                      {ms.length === 0 ? "Configuring" : "Deploy"}
-                    </Button>
+                    <div className="min-w-0 pt-1">
+                      <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">{p.name}</h3>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {(p.platform_support || []).map((pl) => (
+                          <span key={pl} className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium capitalize text-muted-foreground">
+                            {pl}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   {p.description && (
-                    <p className="mt-4 text-xs text-muted-foreground/80 leading-relaxed line-clamp-2 min-h-[2.5rem]">
-                      {p.description}
-                    </p>
+                    <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{p.description}</p>
                   )}
 
-                  {/* Horizontally aligned metrics - Clean & minimal, no overwhelming text */}
-                  <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-border/20">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Price Range</span>
-                      <span className="font-semibold text-xs text-foreground font-mono">
-                        ${cheapest != null ? cheapest.toFixed(2) : "0.00"} – ${fullPrice.toFixed(2)}
-                      </span>
+                  <div className="mt-5 grid grid-cols-2 gap-4 rounded-xl bg-secondary/50 p-4">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">From</p>
+                      <p className="mt-0.5 text-lg font-semibold tabular-nums tracking-tight text-foreground">
+                        ${cheapest != null ? cheapest.toFixed(2) : "0.00"}
+                      </p>
                     </div>
-                    <div className="space-y-0.5 text-right">
-                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Target Volume</span>
-                      <span className="font-semibold text-xs text-foreground font-mono">
-                        {p.min_units.toLocaleString()} – {p.max_units.toLocaleString()}
-                      </span>
+                    <div className="text-right">
+                      <p className="text-xs font-medium text-muted-foreground">Volume</p>
+                      <p className="mt-0.5 text-lg font-semibold tabular-nums tracking-tight text-foreground">
+                        {p.min_units.toLocaleString()}–{p.max_units.toLocaleString()}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Milestones row as elegant inline badges instead of heavy list */}
                   {ms.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-border/10">
-                      <span className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-widest block mb-2">Funnel Goals</span>
-                      <div className="flex flex-wrap gap-1.5">
+                    <div className="mt-4">
+                      <p className="text-xs font-medium text-muted-foreground">What is inside</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
                         {ms.map((rm) => {
                           const m = milestones.find((x) => x.id === rm.milestone_id);
                           return (
-                            <span key={rm.milestone_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-secondary/50 text-foreground border border-border/30">
+                            <span key={rm.milestone_id} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground">
                               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                              <span>{m?.name || "Goal"}</span>
-                              <span className="text-[9px] text-muted-foreground font-mono font-semibold">
-                                ({rm.pricing_type === "commission_pct" ? `${rm.commission_pct}%` : `$${(rm.price_usd || 0).toFixed(1)}`})
+                              {m?.name || "Goal"}
+                              <span className="text-muted-foreground">
+                                {rm.pricing_type === "commission_pct" ? `${rm.commission_pct}%` : `$${(rm.price_usd || 0).toFixed(2)}`}
                               </span>
                             </span>
                           );
@@ -554,7 +552,22 @@ export default function Packages() {
                       </div>
                     </div>
                   )}
+
+                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
+                    <p className="text-xs text-muted-foreground">
+                      {hasCommission ? "Includes commission-based sales" : anyDurational ? "Duration based delivery" : "One-off delivery"}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="shrink-0 gap-1.5 rounded-full px-4 font-semibold"
+                      onClick={() => openBuy(p)}
+                      disabled={ms.length === 0}
+                    >
+                      {ms.length === 0 ? "Configuring" : "Unwrap"}
+                    </Button>
+                  </div>
                 </div>
+
               );
             })}
           </div>
@@ -648,7 +661,7 @@ export default function Packages() {
                               </div>
                               {locked && <Lock className="h-3 w-3 text-muted-foreground/60 shrink-0" />}
                             </div>
-                            <span className="shrink-0 text-xs font-semibold text-foreground/90 font-mono">
+                            <span className="shrink-0 text-xs font-semibold text-foreground/90">
                               {r.pricing_type === "commission_pct"
                                 ? `${r.commission_pct}% commission`
                                 : `+$${(r.price_usd || 0).toFixed(2)} / ${m?.requires_duration ? "day" : "user"}`}
@@ -684,7 +697,7 @@ export default function Packages() {
                           setUnitsText(String(clamped));
                         }}
                       />
-                      <p className="text-[9px] text-muted-foreground font-mono">Limits: {selected.min_units.toLocaleString()} - {selected.max_units.toLocaleString()}</p>
+                      <p className="text-[9px] text-muted-foreground">Limits: {selected.min_units.toLocaleString()} - {selected.max_units.toLocaleString()}</p>
                     </div>
 
                     {needsDuration ? (
@@ -698,7 +711,7 @@ export default function Packages() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <p className="text-[9px] text-muted-foreground font-mono">Total users: {(units * duration).toLocaleString()}</p>
+                        <p className="text-[9px] text-muted-foreground">Total users: {(units * duration).toLocaleString()}</p>
                       </div>
                     ) : (
                       <div className="space-y-1.5 opacity-50 select-none">
@@ -706,7 +719,7 @@ export default function Packages() {
                         <div className="rounded-lg border border-border/20 bg-secondary/5 h-9 flex items-center px-3 text-xs text-muted-foreground font-semibold">
                           Continuous delivery
                         </div>
-                        <p className="text-[9px] text-muted-foreground font-mono">No minimum duration</p>
+                        <p className="text-[9px] text-muted-foreground">No minimum duration</p>
                       </div>
                     )}
                   </div>
@@ -801,7 +814,7 @@ export default function Packages() {
                   <div className="rounded-lg border border-border/30 bg-secondary/20 p-3.5 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-muted-foreground">Upfront Funding Required</span>
-                      <span className="text-lg font-bold text-foreground font-mono">${flatTotal.toFixed(2)}</span>
+                      <span className="text-lg font-bold text-foreground">${flatTotal.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-border/10 pt-2">
                       <p className="text-[10px] leading-relaxed text-muted-foreground">
