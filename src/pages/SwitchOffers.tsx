@@ -14,6 +14,19 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Loader2, Zap, ArrowRight, Wallet as WalletIcon, ClipboardList, Sparkles, Check } from "lucide-react";
 import MigrationChart from "@/components/MigrationChart";
+import SwitchStoryCard from "@/components/SwitchStoryCard";
+
+/** Turns "https://www.cabally.com" into "Cabally" so offers read personally. */
+function brandFrom(website?: string | null, companyName?: string | null): string {
+  const raw = (website || "").trim().toLowerCase();
+  if (raw) {
+    const host = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+    const label = host.split(".")[0];
+    if (label) return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  if (companyName && companyName.trim()) return companyName.trim();
+  return "your brand";
+}
 
 type Offer = {
   id: string; title: string; description: string | null;
@@ -173,16 +186,22 @@ export default function SwitchOffers() {
     <DashboardLayout>
       <MotionWrapper>
         {/* Page Topbar Header */}
-        <div className="mb-8 flex items-center justify-between gap-4 flex-wrap border-b border-border pb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">Switch Offers</h1>
-            <p className="text-sm text-muted-foreground mt-1.5">Acquire active user cohorts ready to migrate from direct competitors to your brand.</p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Migration desk</p>
+            <h1 className="text-[2rem] font-semibold leading-tight tracking-tight text-foreground md:text-[2.5rem]">
+              Users ready to leave your competitors
+            </h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Each cohort below is a group of real users on a competing brand who are open to switching to {brandName}. Claim a cohort and we deliver them.
+            </p>
           </div>
-          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs font-bold text-foreground flex items-center gap-2 shadow-sm">
-            <WalletIcon className="h-4 w-4 text-primary animate-pulse" />
-            <span>Corporate Balance: <span className="text-primary tabular-nums text-sm font-extrabold ml-1">${balance.toFixed(2)}</span></span>
+          <div className="rounded-2xl border border-border bg-card px-4 py-3">
+            <p className="text-xs font-medium text-muted-foreground">Wallet balance</p>
+            <p className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight text-foreground">${balance.toFixed(2)}</p>
           </div>
         </div>
+
 
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
