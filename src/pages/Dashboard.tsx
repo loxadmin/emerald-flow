@@ -10,6 +10,8 @@ import Sparkline from "@/components/Sparkline";
 import AnimatedDonut from "@/components/AnimatedDonut";
 import GiftReveal from "@/components/GiftReveal";
 import AiModePrompt from "@/components/AiModePrompt";
+import SwitchOfferSlider from "@/components/SwitchOfferSlider";
+
 import {
   Plus, BarChart3, Tag, ArrowUpRight, ArrowRight, RefreshCw,
   Sparkles, Wallet, Lock,
@@ -300,12 +302,33 @@ export default function Dashboard() {
               </div>
             </div>
             {!needsActivation && (
-              <Link to="/campaigns/create" className="self-start lg:self-auto">
-                <Button size="lg" className="gap-2 rounded-full px-5 font-semibold">
-                  <Plus className="h-4 w-4" /> New campaign
-                </Button>
-              </Link>
+              <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+                {switchOffers.length > 0 && (
+                  <Link to="/switch-offers">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="gap-2 rounded-full border-primary/40 px-5 font-semibold text-primary hover:bg-primary/10 hover:text-primary"
+                    >
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                      </span>
+                      {switchOffers
+                        .reduce((sum, o) => sum + Number(o.batch_size || 0), 0)
+                        .toLocaleString()}{" "}
+                      users ready to switch
+                    </Button>
+                  </Link>
+                )}
+                <Link to="/campaigns/create">
+                  <Button size="lg" className="gap-2 rounded-full px-5 font-semibold">
+                    <Plus className="h-4 w-4" /> New campaign
+                  </Button>
+                </Link>
+              </div>
             )}
+
           </div>
         </MotionWrapper>
 
@@ -331,7 +354,15 @@ export default function Dashboard() {
           </MotionWrapper>
         )}
 
+        {/* Switch offers — attention-grabbing slider */}
+        {switchOffers.length > 0 && (
+          <MotionWrapper delay={0.04}>
+            <SwitchOfferSlider offers={switchOffers} brandName={brandName} />
+          </MotionWrapper>
+        )}
+
         {/* Stat strip */}
+
         <MotionWrapper delay={0.05}>
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3 xl:grid-cols-6">
             {statCards.map((s) => {
@@ -360,50 +391,7 @@ export default function Dashboard() {
           </div>
         </MotionWrapper>
 
-        {/* Switch offers — migration stories */}
-        {switchOffers.length > 0 && (
-          <MotionWrapper delay={0.09}>
-            <section className="space-y-4">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                    Users ready to switch to {brandName}
-                  </h2>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Real cohorts leaving competing brands. Claim them before someone else does.
-                  </p>
-                </div>
-                <Link to="/switch-offers" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                  View all <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-              <div className="overflow-hidden rounded-xl border border-border bg-card divide-y divide-border">
-                {switchOffers.map((o) => (
-                  <Link key={o.id} to="/switch-offers" className="flex items-center gap-3 p-4 transition-colors hover:bg-accent/60 sm:gap-4">
-                    {o.competitor_logo ? (
-                      <img src={o.competitor_logo} alt={o.competitor_name || "Competitor"} className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-xs font-semibold text-foreground">
-                        {(o.competitor_name || "CO").slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground">
-                        {Number(o.batch_size).toLocaleString()} {o.competitor_name || "competitor"} users can switch to {brandName}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{o.title}</p>
-                    </div>
-                    <div className="hidden text-right sm:block">
-                      <p className="text-sm font-semibold tabular-nums text-foreground">${Number(o.flat_price_usd).toFixed(2)}</p>
-                      <p className="text-xs capitalize text-muted-foreground">{o.platform}</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
-                  </Link>
-                ))}
-              </div>
-            </section>
-          </MotionWrapper>
-        )}
+
 
 
         {/* Premium Analytics display based on provided samples */}
