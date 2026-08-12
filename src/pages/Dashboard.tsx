@@ -410,8 +410,8 @@ export default function Dashboard() {
         <MotionWrapper delay={0.1}>
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Main chart section (Sales/Events Overview theme) */}
-            <div className="rounded-xl border border-border bg-card/40 backdrop-blur-md overflow-hidden lg:col-span-2 premium-shadow flex flex-col">
-              <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4.5 border-b border-border bg-card/20">
+            <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card lg:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4.5">
                 <div>
                   <h3 className="text-base font-bold tracking-tight">Performance vs Benchmarks</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Live aggregated system-wide conversions and events</p>
@@ -485,8 +485,8 @@ export default function Dashboard() {
             </div>
 
             {/* Side breakdown / campaign mix */}
-            <div className="rounded-xl border border-border bg-card/40 backdrop-blur-md flex flex-col premium-shadow">
-              <div className="border-b border-border px-5 py-4 bg-card/20">
+            <div className="flex flex-col rounded-xl border border-border bg-card">
+              <div className="border-b border-border px-5 py-4">
                 <h3 className="text-base font-bold tracking-tight">Portfolio Allocation</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">Campaign status distribution</p>
               </div>
@@ -507,8 +507,8 @@ export default function Dashboard() {
 
         {/* Live campaigns table with animated graph lines */}
         <MotionWrapper delay={0.12}>
-          <div className="rounded-xl border border-border bg-card/40 backdrop-blur-md overflow-hidden premium-shadow">
-            <div className="flex items-center justify-between gap-3 px-6 py-4.5 border-b border-border bg-card/20">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-6 py-4.5">
               <h3 className="text-base font-bold tracking-tight">Live Campaign Metrics</h3>
               <Link to="/ads" className="inline-flex items-center gap-1 text-xs text-primary hover:underline transition-colors font-semibold">
                 View detailed list <ArrowRight className="h-3.5 w-3.5" />
