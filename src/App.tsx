@@ -187,9 +187,14 @@ const App = () => (
               <Route path="/how-to-get-first-100-customers" element={<ProblemSolution />} />
               <Route path="/customer-acquisition-for-startups" element={<ProblemSolution />} />
 
+              {/* Decoy: the legacy /admin path logs the visitor's IP and shows "Invalid" */}
+              <Route path="/admin" element={<AdminHoneypot />} />
+              <Route path="/admin/*" element={<AdminHoneypot />} />
+
               {/* Admin routes (separate panel) */}
               <Route path="/ella/2fa" element={<RequireAuth><Admin2FA /></RequireAuth>} />
               <Route path="/ella" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/security" element={<RequireAuth><RequireAdmin><AdminSecurity /></RequireAdmin></RequireAuth>} />
               <Route path="/ella/campaigns" element={<RequireAuth><RequireAdmin><AdminCampaigns /></RequireAdmin></RequireAuth>} />
               <Route path="/ella/orders" element={<RequireAuth><RequireAdmin><AdminOrders /></RequireAdmin></RequireAuth>} />
 
