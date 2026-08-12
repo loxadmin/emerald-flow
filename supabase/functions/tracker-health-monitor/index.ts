@@ -20,6 +20,12 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await requireInternalOrUser(req, { requireAdmin: true });
+  } catch (e) {
+    return json({ error: (e as Error).message }, (e as AuthError).status || 401);
+  }
+
+  try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
