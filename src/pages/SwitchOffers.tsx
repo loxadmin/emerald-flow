@@ -275,12 +275,12 @@ export default function SwitchOffers() {
                               </span>
                             )}
                             <span className="text-border/40">•</span>
-                            <span>Acquisition Price: <span className="font-semibold text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</span></span>
+                            <span>Acquisition Price: <span className="font-semibold text-foreground">${Number(o.flat_price_usd).toFixed(2)}</span></span>
                             <span className="text-border/40">•</span>
-                            <span>Migration Cohort: <span className="font-semibold text-foreground font-mono">{o.batch_size.toLocaleString()} users</span></span>
+                            <span>Migration Cohort: <span className="font-semibold text-foreground">{o.batch_size.toLocaleString()} users</span></span>
                           </div>
                           {o.target_link && (
-                            <p className="text-[10px] font-mono text-muted-foreground truncate max-w-xl mt-2 bg-secondary/35 border border-border/30 rounded px-2.5 py-1 inline-block">
+                            <p className="text-[10px] text-muted-foreground truncate max-w-xl mt-2 bg-secondary/35 border border-border/30 rounded px-2.5 py-1 inline-block">
                               Target App Link: <a href={o.target_link} target="_blank" rel="noreferrer" className="text-primary hover:underline font-semibold">{o.target_link}</a>
                             </p>
                           )}
@@ -293,7 +293,7 @@ export default function SwitchOffers() {
                       <div className="bg-secondary/15 rounded-lg border border-border/20 p-3.5">
                         <div className="flex items-center justify-between mb-2 text-xs">
                           <span className="font-medium text-muted-foreground">Migration Progress</span>
-                          <span className="font-semibold text-foreground font-mono">
+                          <span className="font-semibold text-foreground">
                             {o.users_delivered.toLocaleString()} / {o.batch_size.toLocaleString()} ({Math.min(100, Math.round((o.users_delivered / o.batch_size) * 100))}% completed)
                           </span>
                         </div>
@@ -335,11 +335,11 @@ export default function SwitchOffers() {
               <div className="rounded-lg border border-border/30 bg-secondary/20 p-3.5 space-y-2 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground font-semibold">Switch Target Batch</span>
-                  <span className="font-semibold text-foreground font-mono">{selected.batch_size.toLocaleString()} users</span>
+                  <span className="font-semibold text-foreground">{selected.batch_size.toLocaleString()} users</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-border/10">
                   <span className="text-muted-foreground font-semibold">Total Acquisition Price</span>
-                  <span className="font-semibold text-foreground font-mono">${Number(selected.flat_price_usd).toFixed(2)}</span>
+                  <span className="font-semibold text-foreground">${Number(selected.flat_price_usd).toFixed(2)}</span>
                 </div>
               </div>
 

@@ -522,13 +522,13 @@ export default function Packages() {
                   <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-border/20">
                     <div className="space-y-0.5">
                       <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Price Range</span>
-                      <span className="font-semibold text-xs text-foreground font-mono">
+                      <span className="font-semibold text-xs text-foreground">
                         ${cheapest != null ? cheapest.toFixed(2) : "0.00"} – ${fullPrice.toFixed(2)}
                       </span>
                     </div>
                     <div className="space-y-0.5 text-right">
                       <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Target Volume</span>
-                      <span className="font-semibold text-xs text-foreground font-mono">
+                      <span className="font-semibold text-xs text-foreground">
                         {p.min_units.toLocaleString()} – {p.max_units.toLocaleString()}
                       </span>
                     </div>
@@ -545,7 +545,7 @@ export default function Packages() {
                             <span key={rm.milestone_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-secondary/50 text-foreground border border-border/30">
                               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                               <span>{m?.name || "Goal"}</span>
-                              <span className="text-[9px] text-muted-foreground font-mono font-semibold">
+                              <span className="text-[9px] text-muted-foreground font-semibold">
                                 ({rm.pricing_type === "commission_pct" ? `${rm.commission_pct}%` : `$${(rm.price_usd || 0).toFixed(1)}`})
                               </span>
                             </span>
@@ -648,7 +648,7 @@ export default function Packages() {
                               </div>
                               {locked && <Lock className="h-3 w-3 text-muted-foreground/60 shrink-0" />}
                             </div>
-                            <span className="shrink-0 text-xs font-semibold text-foreground/90 font-mono">
+                            <span className="shrink-0 text-xs font-semibold text-foreground/90">
                               {r.pricing_type === "commission_pct"
                                 ? `${r.commission_pct}% commission`
                                 : `+$${(r.price_usd || 0).toFixed(2)} / ${m?.requires_duration ? "day" : "user"}`}
@@ -684,7 +684,7 @@ export default function Packages() {
                           setUnitsText(String(clamped));
                         }}
                       />
-                      <p className="text-[9px] text-muted-foreground font-mono">Limits: {selected.min_units.toLocaleString()} - {selected.max_units.toLocaleString()}</p>
+                      <p className="text-[9px] text-muted-foreground">Limits: {selected.min_units.toLocaleString()} - {selected.max_units.toLocaleString()}</p>
                     </div>
 
                     {needsDuration ? (
@@ -698,7 +698,7 @@ export default function Packages() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <p className="text-[9px] text-muted-foreground font-mono">Total users: {(units * duration).toLocaleString()}</p>
+                        <p className="text-[9px] text-muted-foreground">Total users: {(units * duration).toLocaleString()}</p>
                       </div>
                     ) : (
                       <div className="space-y-1.5 opacity-50 select-none">
@@ -706,7 +706,7 @@ export default function Packages() {
                         <div className="rounded-lg border border-border/20 bg-secondary/5 h-9 flex items-center px-3 text-xs text-muted-foreground font-semibold">
                           Continuous delivery
                         </div>
-                        <p className="text-[9px] text-muted-foreground font-mono">No minimum duration</p>
+                        <p className="text-[9px] text-muted-foreground">No minimum duration</p>
                       </div>
                     )}
                   </div>
@@ -801,7 +801,7 @@ export default function Packages() {
                   <div className="rounded-lg border border-border/30 bg-secondary/20 p-3.5 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-muted-foreground">Upfront Funding Required</span>
-                      <span className="text-lg font-bold text-foreground font-mono">${flatTotal.toFixed(2)}</span>
+                      <span className="text-lg font-bold text-foreground">${flatTotal.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-border/10 pt-2">
                       <p className="text-[10px] leading-relaxed text-muted-foreground">
