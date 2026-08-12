@@ -115,10 +115,11 @@ export default function Dashboard() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("website, company_name")
+        .select("website, company_name, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
       setBrandName(brandFromProfile((profile as any)?.website, (profile as any)?.company_name));
+      setBrandLogo((profile as any)?.avatar_url || null);
 
       if (subtype) {
         const { data: pkgs } = await supabase
