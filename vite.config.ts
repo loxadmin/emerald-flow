@@ -29,5 +29,21 @@ export default defineConfig(({ mode }) => ({
         toplevel: true,
       },
     },
+    // Heavy libraries get their own long-lived chunks so a route that never
+    // touches 3D or charting never downloads them, and an app-code deploy does
+    // not invalidate the vendor cache entries.
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-query": ["@tanstack/react-query"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-charts": ["recharts"],
+          "vendor-three": ["three", "@react-three/fiber", "@react-three/drei"],
+          "vendor-motion": ["framer-motion", "motion"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 900,
   },
 }));
