@@ -11,16 +11,33 @@ type Row = {
   id: string; name: string; status: string; created_at: string;
   advertiser_id: string; total_cost: number | null; budget_remaining: number | null;
   target_users: number | null; integration_type: string | null; is_draft: boolean;
+  source: "normal" | "package" | "switch";
 };
 
 const TABS = ["all", "pending", "active", "rejected", "draft"] as const;
 type Tab = typeof TABS[number];
 
+const SOURCES = [
+  { key: "all", label: "All campaigns" },
+  { key: "normal", label: "Normal" },
+  { key: "package", label: "Ad package" },
+  { key: "switch", label: "Switch offer" },
+] as const;
+type SourceKey = typeof SOURCES[number]["key"];
+
+const SOURCE_LABEL: Record<Row["source"], string> = {
+  normal: "Normal",
+  package: "Ad package",
+  switch: "Switch offer",
+};
+
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-primary/10 text-primary border-primary/20",
   pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+  pending_review: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
 };
+
 
 export default function AdminCampaigns() {
   const [rows, setRows] = useState<Row[]>([]);
