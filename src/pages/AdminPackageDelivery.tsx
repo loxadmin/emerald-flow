@@ -18,11 +18,16 @@ type Order = {
   starts_at: string | null; ends_at: string | null;
   selected_milestone_ids: string[] | null;
   app_links: string[];
+  escrow_spent_usd: number | null;
+  refunded_usd: number | null;
+  refunded_at: string | null;
+  milestone_breakdown: any;
 };
 type Milestone = { id: string; name: string; slug: string; requires_duration: boolean };
 type Delivery = {
   id: string; milestone_id: string; delivery_date: string;
   users_delivered: number; txn_rows: any; total_txn_amount: number | null;
+  charged_usd: number | null; fresh_users: number | null; engagement_metrics: any;
 };
 
 type Competitor = { id: string; name: string; is_active: boolean };
@@ -35,9 +40,19 @@ type FormState = {
   txnCsv: string;
   notes: string;
   competitors: CompetitorRow[];
+  fresh: string;
+  opens: string;
+  actives: string;
+  posts: string;
 };
 
+const EMPTY_FORM = (): FormState => ({
+  users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "",
+  competitors: [], fresh: "", opens: "", actives: "", posts: "",
+});
+
 const SWITCH_SLUGS = new Set(["app_install", "signup", "kyc", "deposit"]);
+
 
 function parseTxnCsv(csv: string): { user_ref: string; txn_id: string; amount_usd: number }[] {
   const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
