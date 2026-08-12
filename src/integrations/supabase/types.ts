@@ -2501,6 +2501,62 @@ export type Database = {
           },
         ]
       }
+      switch_order_metrics: {
+        Row: {
+          created_at: string
+          delivered_by: string | null
+          deposits_count: number
+          id: string
+          kyc_completed: number
+          notes: string | null
+          order_id: string
+          profiles_created: number
+          signups: number
+          total_txn_amount: number
+          txn_rows: Json | null
+          updated_at: string
+          users_switched: number
+        }
+        Insert: {
+          created_at?: string
+          delivered_by?: string | null
+          deposits_count?: number
+          id?: string
+          kyc_completed?: number
+          notes?: string | null
+          order_id: string
+          profiles_created?: number
+          signups?: number
+          total_txn_amount?: number
+          txn_rows?: Json | null
+          updated_at?: string
+          users_switched?: number
+        }
+        Update: {
+          created_at?: string
+          delivered_by?: string | null
+          deposits_count?: number
+          id?: string
+          kyc_completed?: number
+          notes?: string | null
+          order_id?: string
+          profiles_created?: number
+          signups?: number
+          total_txn_amount?: number
+          txn_rows?: Json | null
+          updated_at?: string
+          users_switched?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "switch_order_metrics_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "switch_offer_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tracker_releases: {
         Row: {
           bundle_path: string
@@ -2947,6 +3003,19 @@ export type Database = {
             }
             Returns: Json
           }
+      record_switch_metrics: {
+        Args: {
+          _deposits_count: number
+          _kyc_completed: number
+          _notes: string
+          _order_id: string
+          _profiles_created: number
+          _signups: number
+          _txn_rows: Json
+          _users_switched: number
+        }
+        Returns: Json
+      }
       refund_campaign_escrow: {
         Args: { _campaign_id: string }
         Returns: number
