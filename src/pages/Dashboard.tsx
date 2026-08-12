@@ -360,50 +360,13 @@ export default function Dashboard() {
           </div>
         </MotionWrapper>
 
-        {/* Switch offers — migration stories */}
+        {/* Switch offers — attention-grabbing slider */}
         {switchOffers.length > 0 && (
           <MotionWrapper delay={0.09}>
-            <section className="space-y-4">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                    Users ready to switch to {brandName}
-                  </h2>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Real cohorts leaving competing brands. Claim them before someone else does.
-                  </p>
-                </div>
-                <Link to="/switch-offers" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                  View all <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-              <div className="overflow-hidden rounded-xl border border-border bg-card divide-y divide-border">
-                {switchOffers.map((o) => (
-                  <Link key={o.id} to="/switch-offers" className="flex items-center gap-3 p-4 transition-colors hover:bg-accent/60 sm:gap-4">
-                    {o.competitor_logo ? (
-                      <img src={o.competitor_logo} alt={o.competitor_name || "Competitor"} className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-xs font-semibold text-foreground">
-                        {(o.competitor_name || "CO").slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground">
-                        {Number(o.batch_size).toLocaleString()} {o.competitor_name || "competitor"} users can switch to {brandName}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{o.title}</p>
-                    </div>
-                    <div className="hidden text-right sm:block">
-                      <p className="text-sm font-semibold tabular-nums text-foreground">${Number(o.flat_price_usd).toFixed(2)}</p>
-                      <p className="text-xs capitalize text-muted-foreground">{o.platform}</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
-                  </Link>
-                ))}
-              </div>
-            </section>
+            <SwitchOfferSlider offers={switchOffers} brandName={brandName} />
           </MotionWrapper>
         )}
+
 
 
         {/* Premium Analytics display based on provided samples */}
