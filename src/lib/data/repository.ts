@@ -41,7 +41,7 @@ async function unwrap<T>(p: PromiseLike<{ data: T | null; error: { message: stri
 /* ------------------------------------------------------------------ profile */
 
 export const PROFILE_COLUMNS =
-  "id, email, full_name, company_name, phone, country, avatar_url, created_at";
+  "id, email, full_name, company_name, website, avatar_url, is_blocked, created_at";
 
 export function fetchProfile(userId: string) {
   return unwrap(
@@ -52,7 +52,7 @@ export function fetchProfile(userId: string) {
 /* ------------------------------------------------------------------- wallet */
 
 export const WALLET_COLUMNS =
-  "id, advertiser_id, balance, currency, activated, activation_amount, created_at, updated_at";
+  "id, advertiser_id, balance, currency, is_activated, created_at, updated_at";
 
 export function fetchWallet(userId: string) {
   return unwrap(
@@ -80,7 +80,7 @@ export async function fetchWalletTransactions(
 /* ---------------------------------------------------------------- campaigns */
 
 export const CAMPAIGN_LIST_COLUMNS =
-  "id, name, status, campaign_mode, target_users, cost_per_user, budget, spent, created_at, advertiser_id";
+  "id, name, status, campaign_mode, ad_type, target_users, total_cost, budget_remaining, is_draft, created_at, advertiser_id";
 
 export async function fetchCampaigns(userId: string, page = 0, pageSize = DEFAULT_PAGE_SIZE) {
   const { from, to, size } = range(page, pageSize);
@@ -122,11 +122,13 @@ export function fetchAdminSetting(key: string) {
 }
 
 export function fetchSiteContent() {
-  return unwrap(supabase.from("site_content").select("key, value, updated_at").limit(200));
+  return unwrap(supabase.from("site_content").select("id, section_key, title, subtitle, content, is_visible, sort_order")
+      .eq("is_visible", true)
+      .order("sort_order", { ascending: true }).limit(200));
 }
 
 export function fetchCategoryGroups() {
   return unwrap(
-    supabase.from("category_groups").select("id, slug, name, description").limit(100),
+    supabase.from("category_groups").select("id, slug, name, description, display_order").order("display_order", { ascending: true }).limit(100),
   );
 }
