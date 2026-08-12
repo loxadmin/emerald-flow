@@ -2050,10 +2050,13 @@ export type Database = {
       }
       package_order_deliveries: {
         Row: {
+          charged_usd: number
           competitor_breakdown: Json | null
           created_at: string
           delivered_by: string | null
           delivery_date: string
+          engagement_metrics: Json | null
+          fresh_users: number
           id: string
           milestone_id: string
           notes: string | null
@@ -2064,10 +2067,13 @@ export type Database = {
           users_delivered: number
         }
         Insert: {
+          charged_usd?: number
           competitor_breakdown?: Json | null
           created_at?: string
           delivered_by?: string | null
           delivery_date?: string
+          engagement_metrics?: Json | null
+          fresh_users?: number
           id?: string
           milestone_id: string
           notes?: string | null
@@ -2078,10 +2084,13 @@ export type Database = {
           users_delivered?: number
         }
         Update: {
+          charged_usd?: number
           competitor_breakdown?: Json | null
           created_at?: string
           delivered_by?: string | null
           delivery_date?: string
+          engagement_metrics?: Json | null
+          fresh_users?: number
           id?: string
           milestone_id?: string
           notes?: string | null
@@ -2116,6 +2125,7 @@ export type Database = {
           created_at: string
           duration_days: number
           ends_at: string | null
+          escrow_spent_usd: number
           id: string
           milestone_breakdown: Json | null
           package_id: string | null
@@ -2126,6 +2136,8 @@ export type Database = {
           promo_media_path: string | null
           promo_media_type: string | null
           promo_media_url: string | null
+          refunded_at: string | null
+          refunded_usd: number
           reviewed_at: string | null
           reviewed_by: string | null
           selected_milestone_ids: string[] | null
@@ -2145,6 +2157,7 @@ export type Database = {
           created_at?: string
           duration_days: number
           ends_at?: string | null
+          escrow_spent_usd?: number
           id?: string
           milestone_breakdown?: Json | null
           package_id?: string | null
@@ -2155,6 +2168,8 @@ export type Database = {
           promo_media_path?: string | null
           promo_media_type?: string | null
           promo_media_url?: string | null
+          refunded_at?: string | null
+          refunded_usd?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
           selected_milestone_ids?: string[] | null
@@ -2174,6 +2189,7 @@ export type Database = {
           created_at?: string
           duration_days?: number
           ends_at?: string | null
+          escrow_spent_usd?: number
           id?: string
           milestone_breakdown?: Json | null
           package_id?: string | null
@@ -2184,6 +2200,8 @@ export type Database = {
           promo_media_path?: string | null
           promo_media_type?: string | null
           promo_media_url?: string | null
+          refunded_at?: string | null
+          refunded_usd?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
           selected_milestone_ids?: string[] | null
@@ -2845,6 +2863,7 @@ export type Database = {
       expire_stale_affiliates: { Args: never; Returns: number }
       expire_stale_offline_orders: { Args: never; Returns: number }
       expire_stale_pending_wallet_transactions: { Args: never; Returns: number }
+      finalize_package_order: { Args: { _order_id: string }; Returns: number }
       fulfill_offline_order: { Args: { _order_id: string }; Returns: Json }
       has_role: {
         Args: {
@@ -2874,6 +2893,10 @@ export type Database = {
         Args: { _order_id: string }
         Returns: undefined
       }
+      package_order_milestone_price: {
+        Args: { _milestone_id: string; _order_id: string }
+        Returns: number
+      }
       purchase_package_v2: {
         Args: {
           _duration_days: number
@@ -2897,18 +2920,33 @@ export type Database = {
         Args: { _advertiser: string; _source_id: string; _source_type: string }
         Returns: undefined
       }
-      record_package_delivery: {
-        Args: {
-          _competitor_breakdown?: Json
-          _delivery_date: string
-          _milestone_id: string
-          _notes: string
-          _order_id: string
-          _txn_rows: Json
-          _users_delivered: number
-        }
-        Returns: Json
-      }
+      record_package_delivery:
+        | {
+            Args: {
+              _competitor_breakdown?: Json
+              _delivery_date: string
+              _milestone_id: string
+              _notes: string
+              _order_id: string
+              _txn_rows: Json
+              _users_delivered: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _competitor_breakdown?: Json
+              _delivery_date: string
+              _engagement_metrics?: Json
+              _fresh_users?: number
+              _milestone_id: string
+              _notes: string
+              _order_id: string
+              _txn_rows: Json
+              _users_delivered: number
+            }
+            Returns: Json
+          }
       refund_campaign_escrow: {
         Args: { _campaign_id: string }
         Returns: number
