@@ -87,7 +87,9 @@ export default function SwitchOffers() {
       const cmap: Record<string, Competitor> = {};
       ((comps as any) || []).forEach((c: Competitor) => { cmap[c.id] = c; });
       setCompetitors(cmap);
-      setOffers(((offs as any) || []) as Offer[]);
+      setOffers((((offs as any) || []) as Offer[]).filter((offer) => {
+        return Boolean(offer.competitor_app_id && cmap[offer.competitor_app_id]);
+      }));
       setOrders(((ord as any) || []) as Order[]);
       setLoading(false);
     })();
@@ -157,11 +159,12 @@ export default function SwitchOffers() {
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {visible.map((o) => {
                   const c = o.competitor_app_id ? competitors[o.competitor_app_id] : null;
+                  if (!c) return null;
                   return (
                     <SwitchStoryCard
                       key={o.id}
-                      competitorName={c?.name || "Competitor"}
-                      competitorLogo={c?.logo_url}
+                      competitorName={c.name}
+                      competitorLogo={c.logo_url}
                       brandName={brandName}
                       brandLogo={brandLogo}
                       count={o.batch_size}
