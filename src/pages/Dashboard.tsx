@@ -10,10 +10,9 @@ import Sparkline from "@/components/Sparkline";
 import AnimatedDonut from "@/components/AnimatedDonut";
 import GiftReveal from "@/components/GiftReveal";
 import AiModePrompt from "@/components/AiModePrompt";
-import SwitchStoryCard from "@/components/SwitchStoryCard";
 import {
   Plus, BarChart3, Tag, ArrowUpRight, ArrowRight, RefreshCw,
-  Sparkles, Repeat2, Wallet, Lock, Package as PackageIcon,
+  Sparkles, Wallet, Lock,
   TrendingUp, Activity, MousePointer, CreditCard, Layers, ArrowDownRight
 } from "lucide-react";
 import {
@@ -36,14 +35,16 @@ const STATUS_STYLES: Record<string, string> = {
 
 /** Turns "https://www.cabally.com" into "Cabally" so offers can be personalised. */
 function brandFromProfile(website?: string | null, companyName?: string | null): string {
+  if (companyName?.trim() && companyName.trim().toLowerCase() !== "karbali") {
+    return companyName.trim();
+  }
   const raw = (website || "").trim().toLowerCase();
   if (raw) {
     const host = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
     const label = host.split(".")[0];
-    if (label) return label.charAt(0).toUpperCase() + label.slice(1);
+    if (label && label !== "karbali") return label.charAt(0).toUpperCase() + label.slice(1);
   }
-  if (companyName && companyName.trim()) return companyName.trim();
-  return "your platform";
+  return "your business";
 }
 
 /** Buckets timestamps into an N-day series ending today. */
@@ -92,7 +93,6 @@ export default function Dashboard() {
   const [packageOrders, setPackageOrders] = useState<any[]>([]);
   const [switchOffers, setSwitchOffers] = useState<any[]>([]);
   const [brandName, setBrandName] = useState<string>("your business");
-  const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [eventSeries, setEventSeries] = useState<number[]>([]);
   const [clickSeries, setClickSeries] = useState<number[]>([]);
@@ -120,11 +120,10 @@ export default function Dashboard() {
         .eq("id", user.id)
         .maybeSingle();
       const profileBrand = brandFromProfile((profile as any)?.website, (profile as any)?.company_name);
-      const safeBrand = profileBrand.toLowerCase() === "karbali"
-        ? (user.email?.split("@")[0] || "your business")
+      const safeBrand = profileBrand === "your business"
+        ? (user.email?.split("@")[0] || profileBrand)
         : profileBrand;
       setBrandName(safeBrand);
-      setBrandLogo((profile as any)?.avatar_url || null);
 
       const { data: wallet } = await supabase
         .from("wallets")
