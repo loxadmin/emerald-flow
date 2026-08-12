@@ -53,6 +53,7 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
       { to: "/ella/milestones", label: "Milestones", icon: Flag },
 
       { to: "/ella/extension", label: "Extension", icon: Chrome },
+      { to: "/ella/security", label: "Security", icon: ShieldAlert },
       { to: "/ella/settings", label: "Settings", icon: Settings },
     ],
   },
