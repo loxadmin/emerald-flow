@@ -484,3 +484,47 @@
     offset-distance: 100%;
   }
 }
+
+/* ---- Gift reveal + switch migration motion ---- */
+@keyframes gift-shake {
+  0%, 62%, 100% { transform: rotate(0deg) translateY(0); }
+  66% { transform: rotate(-6deg) translateY(-2px); }
+  72% { transform: rotate(6deg) translateY(-4px); }
+  78% { transform: rotate(-5deg) translateY(-2px); }
+  84% { transform: rotate(4deg) translateY(-3px); }
+  90% { transform: rotate(0deg) translateY(0); }
+}
+.gift-shake { animation: gift-shake 2.4s ease-in-out infinite; }
+
+@keyframes gift-lid-open {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(-62px) rotate(-14deg); }
+}
+.gift-lid-open { animation: gift-lid-open 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+@keyframes ribbon-fall {
+  0% { transform: translateY(-10%) rotate(0deg); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateY(420px) rotate(540deg); opacity: 0; }
+}
+.ribbon-piece {
+  position: absolute;
+  top: 12%;
+  width: 6px;
+  height: 14px;
+  border-radius: 2px;
+  animation: ribbon-fall 1.9s ease-in forwards;
+}
+
+@keyframes switch-dot {
+  0%, 100% { opacity: 0.2; transform: translateX(0); }
+  50% { opacity: 1; transform: translateX(3px); }
+}
+.switch-dot {
+  display: block;
+  height: 5px;
+  width: 5px;
+  border-radius: 9999px;
+  background: hsl(var(--primary));
+  animation: switch-dot 1.6s ease-in-out infinite;
+}
