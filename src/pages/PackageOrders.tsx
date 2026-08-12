@@ -281,7 +281,10 @@ export default function PackageOrders() {
                 {/* Day-by-day target tracker (duration-based orders) */}
                 {o.status === "active" || o.status === "completed" ? (
                   <>
+                    <PackageMetricsPanel order={o} milestones={milestones} deliveries={deliveries} />
+
                     {o.duration_days > 0 && o.starts_at && (
+
                       <DailyTargets
                         startsAt={o.starts_at}
                         durationDays={o.duration_days}
