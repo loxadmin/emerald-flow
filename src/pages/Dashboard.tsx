@@ -400,6 +400,7 @@ export default function Dashboard() {
                     competitorName={o.competitor_name || "Competitor"}
                     competitorLogo={o.competitor_logo}
                     brandName={brandName}
+                    brandLogo={brandLogo}
                     count={Number(o.batch_size)}
                     price={Number(o.flat_price_usd)}
                     platform={o.platform}
