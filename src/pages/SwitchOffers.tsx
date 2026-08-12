@@ -49,6 +49,16 @@ export default function SwitchOffers() {
   const [balance, setBalance] = useState(0);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [brandName, setBrandName] = useState("your brand");
+
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles").select("website, company_name").eq("id", user.id).maybeSingle();
+      setBrandName(brandFrom((data as any)?.website, (data as any)?.company_name));
+    })();
+  }, [user?.id]);
 
   const [selected, setSelected] = useState<Offer | null>(null);
   const [link, setLink] = useState("");
