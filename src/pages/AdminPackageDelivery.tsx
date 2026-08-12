@@ -169,7 +169,7 @@ export default function AdminPackageDelivery() {
 
       <div className="grid gap-4">
         {selectedMs.map((m) => {
-          const f: FormState = forms[m.id] || { users: "", date: new Date().toISOString().slice(0, 10), txnCsv: "", notes: "", competitors: [] };
+          const f: FormState = forms[m.id] || EMPTY_FORM();
           const isTxn = m.slug === "transaction" || m.slug === "sale";
           const isSwitch = SWITCH_SLUGS.has(m.slug);
           const dv = deliveries.filter((d) => d.milestone_id === m.id);
