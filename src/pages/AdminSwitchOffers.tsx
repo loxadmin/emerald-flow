@@ -179,20 +179,53 @@ export default function AdminSwitchOffers() {
   };
 
   // Fulfillment
-  const openOrd = (o: Order) => {
+  const openOrd = async (o: Order) => {
     setOrdEdit(o);
     setOrdForm({ users_delivered: o.users_delivered, status: o.status, notes: o.admin_notes || "" });
+    setCsvError(null);
+    setTxnRows([]);
+    setMetricForm({ users_switched: o.users_delivered, signups: 0, kyc_completed: 0, profiles_created: 0, deposits_count: 0 });
+    const { data } = await supabase
+      .from("switch_order_metrics" as any).select("*").eq("order_id", o.id).maybeSingle();
+    const m: any = data;
+    if (m) {
+      setMetricForm({
+        users_switched: m.users_switched, signups: m.signups, kyc_completed: m.kyc_completed,
+        profiles_created: m.profiles_created, deposits_count: m.deposits_count,
+      });
+      setTxnRows((m.txn_rows as TxnRow[]) || []);
+    }
   };
   const saveOrd = async () => {
     if (!ordEdit) return;
-    const { error } = await supabase.rpc("update_switch_order_delivery" as any, {
+    if (metricForm.deposits_count > 0 && txnRows.length === 0) {
+      return toast.error("Upload a transaction CSV to back the deposit count");
+    }
+    if (txnRows.length > 0 && txnRows.length < metricForm.deposits_count) {
+      return toast.error(`CSV has ${txnRows.length} rows but you reported ${metricForm.deposits_count} deposits`);
+    }
+    setSaving(true);
+    const { error } = await supabase.rpc("record_switch_metrics" as any, {
       _order_id: ordEdit.id,
-      _users_delivered: Number(ordForm.users_delivered),
+      _users_switched: Number(metricForm.users_switched),
+      _signups: Number(metricForm.signups),
+      _kyc_completed: Number(metricForm.kyc_completed),
+      _profiles_created: Number(metricForm.profiles_created),
+      _deposits_count: Number(metricForm.deposits_count),
+      _txn_rows: txnRows.length ? txnRows : null,
+      _notes: ordForm.notes || null,
+    });
+    if (error) { setSaving(false); return toast.error(error.message); }
+
+    const { error: sErr } = await supabase.rpc("update_switch_order_delivery" as any, {
+      _order_id: ordEdit.id,
+      _users_delivered: Number(metricForm.users_switched),
       _status: ordForm.status,
       _notes: ordForm.notes || null,
     });
-    if (error) return toast.error(error.message);
-    toast.success("Updated");
+    setSaving(false);
+    if (sErr) return toast.error(sErr.message);
+    toast.success("Delivery metrics saved");
     setOrdEdit(null); load();
   };
 
