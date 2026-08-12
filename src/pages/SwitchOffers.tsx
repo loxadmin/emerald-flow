@@ -231,6 +231,12 @@ export default function SwitchOffers() {
                         </div>
                       </div>
 
+                      <SwitchMetricsPanel
+                        orderId={o.id}
+                        competitorName={o.competitor_app_name}
+                        brandName={brandName}
+                      />
+
                       <MigrationChart switchOrderId={o.id} title="Real-time Migration Sources breakdown" />
                     </div>
                   ))}
