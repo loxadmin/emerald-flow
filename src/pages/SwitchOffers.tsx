@@ -200,74 +200,25 @@ export default function SwitchOffers() {
                 <p className="text-xs mt-1 text-muted-foreground">Our operations team updates competitor user pools daily.</p>
               </div>
             ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {visible.map((o) => {
                   const c = o.competitor_app_id ? competitors[o.competitor_app_id] : null;
                   return (
-                    <div key={o.id} className="group relative rounded-xl border border-border/50 bg-card/40 backdrop-blur-md p-5 flex flex-col justify-between hover:bg-card/70 hover:border-primary/40 transition-all duration-300 shadow-sm hover:shadow-md">
-                      {/* Top Header Section - Inspiration-style */}
-                      <div className="flex items-center justify-between gap-4 border-b border-border/20 pb-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {c?.logo_url ? (
-                            <img src={c.logo_url} alt="" className="h-10 w-10 rounded-lg object-cover border border-border/40 shadow-sm shrink-0" />
-                          ) : (
-                            <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-sm shrink-0">
-                              <Zap className="h-4 w-4" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm text-foreground leading-tight group-hover:text-primary transition-colors truncate">{o.title}</p>
-                            {c && (
-                              <p className="text-[10px] font-medium text-muted-foreground mt-1">
-                                Pool: <span className="font-semibold text-foreground">{c.name}</span>
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="shrink-0 font-semibold text-xs border-primary/30 text-primary hover:bg-primary/10 hover:text-primary transition-all rounded-full px-4 h-8"
-                          onClick={() => { setSelected(o); setLink(""); }}
-                        >
-                          Initiate
-                        </Button>
-                      </div>
-
-                      {o.description && (
-                        <p className="mt-4 text-xs leading-relaxed text-muted-foreground/80 line-clamp-2 min-h-[2.5rem]">
-                          {o.description}
-                        </p>
-                      )}
-
-                      {/* Precise grid containers (Loud Pro & Biomarkers inspired) */}
-                      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/20 pt-3">
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Cohort Batch</p>
-                          <p className="font-semibold text-xs text-foreground font-mono">{o.batch_size.toLocaleString()} users</p>
-                        </div>
-                        <div className="space-y-0.5 text-right">
-                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Acquisition Cost</p>
-                          <p className="font-semibold text-xs text-foreground font-mono">${Number(o.flat_price_usd).toFixed(2)}</p>
-                        </div>
-                      </div>
-
-                      {/* Clean highlights badge row */}
-                      <div className="mt-4 pt-3 border-t border-border/10 flex flex-wrap gap-1.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-secondary/60 text-muted-foreground border border-border/30">
-                          Guaranteed Switch
-                        </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-secondary/60 text-muted-foreground border border-border/30">
-                          Webhook Sync
-                        </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                          {o.platform}
-                        </span>
-                      </div>
-                    </div>
+                    <SwitchStoryCard
+                      key={o.id}
+                      competitorName={c?.name || "Competitor"}
+                      competitorLogo={c?.logo_url}
+                      brandName={brandName}
+                      count={o.batch_size}
+                      price={Number(o.flat_price_usd)}
+                      platform={o.platform}
+                      note={o.description || o.title}
+                      onAction={() => { setSelected(o); setLink(""); }}
+                    />
                   );
                 })}
               </div>
+
             )}
 
             {/* Premium "My Switch Orders" and charts section */}
