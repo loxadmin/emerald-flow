@@ -29,6 +29,7 @@ import {
   Send,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ListSkeleton, StatsSkeleton } from "@/components/skeletons";
 
 interface WalletData {
   id: string; balance: number; currency: string; is_activated: boolean;
@@ -256,7 +257,7 @@ export default function WalletPage() {
         </MotionWrapper>
 
         {loading ? (
-          <div className="flex justify-center py-12"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+          <div className="space-y-4"><StatsSkeleton count={3} /><ListSkeleton rows={5} className="rounded-xl border border-border bg-card" /></div>
         ) : (
           <>
             {/* Balance Card — embossed fintech surface */}

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
 import { getStoredAffiliateRef } from "@/components/AffiliateRefCapture";
+import { FormSkeleton } from "@/components/skeletons";
 
 const PERKS = [
   { title: "$200 monthly bonus", body: "Held in your account each cycle, unlocked when you hit the monthly target." },
@@ -139,7 +140,7 @@ export default function Affiliates() {
               {userId ? "Confirm your details to activate your affiliate account." : "Register and verify your email to get started."}
             </p>
             {checking ? (
-              <div className="mt-6 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="mt-5"><FormSkeleton fields={3} /></div>
             ) : (
               <form onSubmit={handleRegister} className="mt-5 space-y-3">
                 <div className="space-y-1.5">

@@ -15,6 +15,7 @@ import MotionWrapper from "@/components/MotionWrapper";
 import GiftBox from "@/components/GiftBox";
 import { toast } from "sonner";
 import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock, Youtube, Music, Instagram, Video, Sparkles, LayoutGrid, Check } from "lucide-react";
+import { CardGridSkeleton } from "@/components/skeletons";
 
 const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; placeholder: string }> = {
   mobile:    { label: "Mobile App", sub: "Up to 2 app store/play store links", Icon: Smartphone, placeholder: "https://play.google.com/..." },
@@ -458,7 +459,7 @@ export default function Packages() {
 
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          <CardGridSkeleton count={6} />
         ) : packages.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground bg-card/20 backdrop-blur-md">
             <PackageIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />

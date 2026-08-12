@@ -11,6 +11,7 @@ import AnimatedDonut from "@/components/AnimatedDonut";
 import GiftReveal from "@/components/GiftReveal";
 import AiModePrompt from "@/components/AiModePrompt";
 import SwitchOfferSlider from "@/components/SwitchOfferSlider";
+import { ListSkeleton } from "@/components/skeletons";
 
 import {
   Plus, BarChart3, Tag, ArrowUpRight, ArrowRight, RefreshCw,
@@ -506,9 +507,7 @@ export default function Dashboard() {
             </div>
 
             {loading ? (
-              <div className="flex justify-center py-14">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              </div>
+              <ListSkeleton rows={4} />
             ) : campaigns.length === 0 && packageOrders.length === 0 ? (
               <div className="px-6 py-14 text-center">
                 <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-primary/15 border border-primary/20">
