@@ -21,12 +21,13 @@ const isMissingRelation = (error: { code?: string; message?: string } | null) =>
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   // Heartbeat endpoint is public; cap per-IP volume. Fails open.
   const limited = await enforceRateLimit(req, "track-ping", RateLimits.tracking);
   if (limited) return limited;
-    return new Response(null, { headers: corsHeaders });
-  }
+
 
   try {
     const supabase = createClient(
