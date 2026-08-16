@@ -2,8 +2,26 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://dvkoafztquswcqniwcyf.supabase.co";
+const ORIGIN_URL = "https://dvkoafztquswcqniwcyf.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2a29hZnp0cXVzd2Nxbml3Y3lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMzc3ODcsImV4cCI6MjA4OTkxMzc4N30.tisSwPAmALxSQx1tJ5TFcGfLVZWyhQXCfsfWBzIPiQM";
+
+/**
+ * Transport masking (Phase 0).
+ *
+ * On hosts that serve the `vercel.json` rewrite layer (the production custom
+ * domains), all provider traffic is routed through our own first-party path
+ * `/api/db/*`, which proxies 1:1 to the Supabase origin. Same protocol, same
+ * paths, same auth — only the hostname in DevTools changes.
+ *
+ * Anywhere the rewrite does not exist (Lovable preview, local dev), we fall
+ * back to the origin URL so behaviour is identical.
+ */
+const PROXY_HOSTS = new Set(["advertiser.karbali.com", "www.karbali.com", "karbali.com"]);
+
+const SUPABASE_URL =
+  typeof window !== "undefined" && PROXY_HOSTS.has(window.location.hostname)
+    ? `${window.location.origin}/api/db`
+    : ORIGIN_URL;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
