@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/site",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/site-bootstrap"
+    },
+    {
       "source": "/api/db/:path*",
       "destination": "https://dvkoafztquswcqniwcyf.supabase.co/:path*"
     },
