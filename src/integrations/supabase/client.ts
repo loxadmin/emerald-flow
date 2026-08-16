@@ -23,6 +23,45 @@ const SUPABASE_URL =
     ? `${window.location.origin}/api/db`
     : ORIGIN_URL;
 
+const GATEWAY_ENDPOINT =
+  typeof window !== "undefined" && PROXY_HOSTS.has(window.location.hostname)
+    ? `${window.location.origin}/api/gw`
+    : `${ORIGIN_URL}/functions/v1/gw`;
+
+const MASKED_PREFIXES = ["/rest/v1/", "/storage/v1/", "/functions/v1/"];
+
+function encodePath(path: string): string {
+  return btoa(unescape(encodeURIComponent(path)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+/**
+ * Opaque transport. Any data-plane request (tables, RPCs, storage, functions)
+ * is sent to a single first-party endpoint with its real path encoded, so
+ * DevTools never shows table names, RPC names or provider paths. Auth and
+ * realtime keep the base transport because they carry no schema information.
+ */
+const maskedFetch: typeof fetch = (input, init) => {
+  const raw =
+    typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+
+  const marker = MASKED_PREFIXES.find((p) => raw.includes(p));
+  if (!marker || raw.startsWith(GATEWAY_ENDPOINT)) return fetch(input, init);
+
+  const idx = raw.indexOf(marker);
+  const path = raw.slice(idx);
+  if (path.startsWith("/functions/v1/gw")) return fetch(input, init);
+
+  const target = `${GATEWAY_ENDPOINT}?k=${encodePath(path)}`;
+
+  if (typeof input === "string" || input instanceof URL) {
+    return fetch(target, init);
+  }
+  return fetch(new Request(target, input), init);
+};
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
@@ -31,5 +70,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+  },
+  global: {
+    fetch: maskedFetch,
   }
 });
