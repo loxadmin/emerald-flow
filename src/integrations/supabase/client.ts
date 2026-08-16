@@ -30,8 +30,18 @@ const GATEWAY_ENDPOINT =
 
 const MASKED_PREFIXES = ["/rest/v1/", "/storage/v1/", "/functions/v1/"];
 
+const MASK_KEY = "k7pQ2xVr9Lm4Zt";
+
+function scramble(value: string): string {
+  let out = "";
+  for (let i = 0; i < value.length; i++) {
+    out += String.fromCharCode(value.charCodeAt(i) ^ MASK_KEY.charCodeAt(i % MASK_KEY.length));
+  }
+  return out;
+}
+
 function encodePath(path: string): string {
-  return btoa(unescape(encodeURIComponent(path)))
+  return btoa(scramble(unescape(encodeURIComponent(path))))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");

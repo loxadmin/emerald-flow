@@ -30,11 +30,21 @@ const FORWARD_RES_HEADERS = [
   'x-total-count',
 ]
 
+const MASK_KEY = 'k7pQ2xVr9Lm4Zt'
+
+function scramble(value: string): string {
+  let out = ''
+  for (let i = 0; i < value.length; i++) {
+    out += String.fromCharCode(value.charCodeAt(i) ^ MASK_KEY.charCodeAt(i % MASK_KEY.length))
+  }
+  return out
+}
+
 function decodePath(token: string): string | null {
   try {
     const b64 = token.replace(/-/g, '+').replace(/_/g, '/')
     const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : ''
-    return decodeURIComponent(escape(atob(b64 + pad)))
+    return decodeURIComponent(escape(scramble(atob(b64 + pad))))
   } catch {
     return null
   }
