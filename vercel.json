@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/db/:path*",
+      "destination": "https://dvkoafztquswcqniwcyf.supabase.co/:path*"
+    },
+    {
       "source": "/api/track",
       "destination": "https://dvkoafztquswcqniwcyf.supabase.co/functions/v1/track"
     },
