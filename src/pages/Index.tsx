@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchSiteBootstrap, submitContactMessage } from "@/lib/public-api";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Button } from "@/components/ui/button";
 import FluidCanvas from "@/components/FluidCanvas";
