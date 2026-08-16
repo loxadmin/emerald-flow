@@ -67,28 +67,19 @@ export default function Index() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: contentData } = await supabase.from("site_content").select("section_key, title, subtitle, content, is_visible");
-        if (contentData) {
+        const boot = await fetchSiteBootstrap();
+        if (boot.content?.length) {
           const mapped: Record<string, SiteContent> = { ...defaultContent };
-          contentData.forEach((item: SiteContent) => { mapped[item.section_key] = item; });
+          boot.content.forEach((item) => { mapped[item.section_key] = item as SiteContent; });
           setContent(mapped);
         }
-      } catch (e) { console.log("Supabase error (using defaults):", e); }
-
-      try {
-        const { data: designData } = await supabase.from("admin_settings").select("value").eq("key", "landing_design").maybeSingle();
-        setHeroDesign(typeof designData?.value === "string" ? designData.value : "default");
-      } catch (e) { console.log("Design setting error:", e); }
-
-      try {
-        const [advRes, campRes, eventRes] = await Promise.all([
-          supabase.from("profiles").select("id", { count: "exact", head: true }),
-          supabase.from("campaigns").select("id", { count: "exact", head: true }),
-          supabase.from("events").select("id", { count: "exact", head: true })
-        ]);
-        setMetrics({ advertisers: advRes.count || 0, campaigns: campRes.count || 0, events: eventRes.count || 0 });
-      } catch (error) { console.error("Error fetching metrics:", error); }
-      finally { setMetricsLoading(false); }
+        setHeroDesign(boot.design || "default");
+        setMetrics(boot.metrics);
+      } catch (e) {
+        console.log("Bootstrap error (using defaults):", e);
+      } finally {
+        setMetricsLoading(false);
+      }
     };
     fetchData();
   }, []);
@@ -99,15 +90,21 @@ export default function Index() {
       toast.error("Please fill in all fields"); return;
     }
     setContactSending(true);
-    const { data: inserted, error } = await supabase.from("contact_messages" as never).insert({ name: contactName.trim(), email: contactEmail.trim(), message: contactMessage.trim() } as never).select("id").single();
-    setContactSending(false);
-    if (error) { toast.error("Failed to send message. Please try again."); }
-    else {
+    try {
+      await submitContactMessage({
+        name: contactName.trim(),
+        email: contactEmail.trim(),
+        message: contactMessage.trim(),
+      });
       toast.success("Message sent! We'll get back to you soon.");
       setContactName(""); setContactEmail(""); setContactMessage("");
-      supabase.functions.invoke("notify", { body: { event: "support_message", payload: { message_id: (inserted as { id: string })?.id } } }).catch(() => {});
+    } catch {
+      toast.error("Failed to send message. Please try again.");
+    } finally {
+      setContactSending(false);
     }
   };
+
 
   const s = (key: string) => content[key] || defaultContent[key];
 
