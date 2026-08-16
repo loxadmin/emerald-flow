@@ -1,63 +1,95 @@
-# Offline LOI & Consumer Demand Reservation System
+# Compatibility Audit — Provider Isolation (no code changed)
 
-Replaces the current Offline verification/offers flow with a Letter of Intent–based reservation system. Advertisers reserve future customers, sign a digital LOI, wait for Karbali to reach their threshold, then launch campaigns targeting real migration opportunities.
+No files were modified. This is the audit and migration design you asked for.
 
-## 1. Database changes (single migration)
+## A. Actual architecture today
 
-New tables:
-- `company_signature` (singleton, admin-only): signature_path, company_name, rep_name, rep_position
-- `letters_of_intent`: advertiser_id, agreement_id (unique, e.g. `KRB-LOI-000123`), company_name, website, business_email, contact_person, job_title, phone, country, products (text[]), customer_goal (int), duration_days, custom_duration_text, campaign_goal, custom_goal_text, notes, advertiser_signature_path, karbali_signature_path_snapshot, karbali_rep_name_snapshot, karbali_rep_position_snapshot, pdf_path, status enum (`pending_admin_approval` → `approved` → `threshold_reached` → `campaign_launched`; plus `rejected`), current_progress (int, default 0), threshold_reached_at, admin_notes, generated_at, approved_at
-- `migration_opportunities`: current_brand, target_brand, current_brand_logo_path, target_brand_logo_path, eligible_users (int), completion_rate (numeric), estimated_duration_days (int), estimated_cost_usd, is_active — admin-managed, shown at campaign-creation step
+```text
+Browser (Vite SPA, React 18, TanStack Query partially adopted)
+  ├─ @supabase/supabase-js  → https://dvkoafztquswcqniwcyf.supabase.co
+  │     ├─ PostgREST  (direct table reads/writes, RLS enforced)
+  │     ├─ Auth       (password login, session in localStorage)
+  │     ├─ Storage    (avatars, campaign-media — upload + signed URLs)
+  │     └─ Functions  (34 edge functions via functions.invoke)
+  └─ advertiser.karbali.com/api/*  → Vercel rewrite → edge functions (tracking only)
+```
 
-Extend `advertiser_categories.advertiser_type` to keep `offline` but skip wallet activation gating for offline users in app code (no schema change needed there).
+There is **no application server**. "Backend" in this project means Supabase Edge Functions (Deno). Any `/api/*` boundary must be edge functions fronted by the existing Vercel rewrite layer.
 
-New storage bucket `loi-documents` (private) for advertiser signatures, transparent signatures, and generated PDFs.
+## B. Frontend Supabase surface (measured)
 
-RLS:
-- Advertisers: select/insert own LOI, no update once submitted; select own signature files.
-- Admins: full access to LOIs, migration_opportunities, company_signature.
-- Public: none.
+| Surface | Count | Notes |
+| --- | --- | --- |
+| Files importing the client | 70 | every page + 10 components |
+| Distinct tables queried from the browser | 52 | top: campaigns 30, admin_settings 26, profiles 22, events 17, wallets 15 |
+| SECURITY DEFINER RPCs called | 20 | escrow, purchases, withdrawals, LOI, deliveries |
+| Storage call sites | 13 | avatars, campaign-media, LOI PDFs, signatures |
+| `supabase.auth.*` call sites | 25 | signUp, signInWithPassword, getSession, onAuthStateChange, signOut |
+| Realtime subscriptions | **0** | nothing to preserve here — removes the biggest risk |
 
-RPCs:
-- `submit_letter_of_intent(...)` — inserts LOI in `pending_admin_approval` (advertiser cannot download PDF yet).
-- `approve_letter_of_intent(_loi_id)` — admin-only, sets `approved`, timestamps.
-- `mark_threshold_reached(_loi_id)` — admin-only, flips status and triggers notification.
-- `update_loi_progress(_loi_id, _current)` — admin-only manual bump.
+## C. Paystack — already isolated
 
-## 2. Edge functions
+The browser never talks to the Paystack API. All of it runs server-side in `paystack-wallet`, `paystack-verify`, `paystack-webhook`. The client only calls `functions.invoke("paystack-wallet")` and redirects to the Paystack-hosted checkout URL (that redirect is required by Paystack and cannot be proxied). `PAYSTACK_SECRET_KEY` is not in the bundle. **Nothing to migrate.**
 
-- `process-signature`: accepts uploaded signature file, removes near-white background (server-side pixel threshold via a small canvas polyfill or pure PNG parse using `deno-canvas`), returns transparent PNG stored in `loi-documents/{advertiser_id}/signatures/`.
-- `generate-loi-pdf`: uses `pdf-lib` (Deno esm) to render LOI with Karbali logo, company signature (from `company_signature` snapshot), agreement ID, all fields, and advertiser signature. Stores at `loi-documents/{advertiser_id}/loi/{agreement_id}.pdf`. Called after admin approval; also re-called if signatures change.
-- `notify` reused: add `loi_submitted`, `loi_approved`, `threshold_reached` templates.
+## D. Authentication
 
-## 3. Admin UI
+Supabase Auth, password grant, session persisted in `localStorage`, refreshed by the SDK, admin role read from `user_roles` via RLS, plus a separate admin 2FA flag. Every PostgREST call and every edge function authorises off that JWT.
 
-- `AdminCompanySignature.tsx` (`/admin/signature`) — upload signature PNG, set company name/rep/position (writes singleton row).
-- Replace `AdminOffline.tsx` with `AdminLettersOfIntent.tsx` (`/admin/loi`):
-  - Metrics: Total LOIs, Pending, Completed, Reserved demand (sum customer_goal), Thresholds reached.
-  - Table: company, products, requested users, campaign goal, status, agreement ID, actions (approve, view PDF, mark threshold reached, edit progress).
-- `AdminMigrationOpportunities.tsx` (`/admin/migration-opportunities`) — CRUD for migration pool cards used at campaign creation.
+Removing Supabase Auth from the browser means minting and refreshing our own session cookie and re-signing a Supabase JWT server-side for every request. That is a rewrite of the security core, and it risks logging out every existing user. **Recommendation: do not move auth.**
 
-## 4. Advertiser UI
+## E. What is actually exposed in DevTools
 
-- Replace `OfflineVerification.tsx` + `OfflineOffers.tsx` + `OfflineOrders.tsx` with:
-  - `OfflineLOI.tsx` (`/offline/loi`) — multi-step form: company info (with domain-vs-email validator), products (chip input), customer goal, duration (30/60/90/custom), campaign goal (options + custom), notes, signature upload panel with instructions. On submit → calls `process-signature` → `submit_letter_of_intent` → shows "pending approval" state.
-  - `OfflineLOIStatus.tsx` (`/offline/loi/status`) — timeline: Generated → Approved → Threshold Reached → Campaign Launched, live progress bar, PDF download button (disabled until admin approves).
-  - `OfflineCampaignLaunch.tsx` (`/offline/campaign`) — visible only when status = `threshold_reached`; renders migration opportunity cards from `migration_opportunities`, multi-select, then routes into campaign creation prefilled with the selected migrations.
+- Supabase origin and table names in request URLs (`profiles?select=id`, `admin_settings?...`).
+- `vendor-supabase-*.js` chunk (comes from the `manualChunks` entry in `vite.config.ts`).
+- Publishable anon key — public by design; RLS is the protection.
 
-## 5. Routing/auth changes
+Not exposed: service-role key, Paystack secret, Resend key, `INTERNAL_TASK_SECRET`, database URL. Data-level exposure is already governed by RLS plus the `guard_*_privileged_columns` triggers, so hiding table names is **obfuscation, not an authorisation fix**.
 
-- `App.tsx`: remove `/offline/verify`, `/offline/offers`, `/offline/orders` in favor of `/offline/loi`, `/offline/loi/status`, `/offline/campaign`; add admin routes.
-- Update `RequireCampaignType` and offline redirects to point to `/offline/loi`.
-- Offline advertisers: skip $25 wallet activation gating (auth/dashboard gates check `advertiserType === 'offline'` and bypass wallet check until threshold reached).
+## F. Risk classification
 
-## 6. Cleanup
+| Item | Risk | Why |
+| --- | --- | --- |
+| Domain masking of Supabase calls via `/api/*` proxy | LOW | pure transport change |
+| Public/read-only reads (site_content, blogs, categories, packages) behind an endpoint | LOW | no auth coupling |
+| Authenticated reads (profile, wallet, campaigns, orders) behind endpoints | MEDIUM | needs an adapter per shape; 70 call sites |
+| Admin pages (30+ pages, ad-hoc queries and joins) behind `/api/admin/*` | MEDIUM-HIGH | each page has bespoke selects; high regression surface |
+| Storage uploads/signed URLs through the backend | MEDIUM-HIGH | streams multi-MB files through a Deno isolate; latency and size limits |
+| Moving Supabase Auth behind our own session | **HIGH** | logs users out, rewrites session refresh, admin 2FA and every RLS assumption |
+| Dropping `@supabase/supabase-js` from the bundle | **HIGH** | only possible after auth + storage + all 52 tables are migrated |
 
-Keep legacy tables (`business_verifications`, `offline_offers`, `offline_orders`) intact to avoid data loss but remove UI entry points and nav links. A follow-up migration can drop them after user confirms.
+## G. Honest assessment
 
-## Technical notes
+Full provider isolation as specified requires reimplementing ~52 tables' worth of queries, 20 RPCs, storage and auth as REST endpoints — effectively touching all 70 frontend files, with no application server to host them. The security gain over the current RLS + trigger + definer-RPC model is mostly obfuscation, and the regression risk to wallets, escrow and admin flows is real.
 
-- Signature background removal: `process-signature` reads the image with `Image` from `https://deno.land/x/imagescript`, walks pixels, sets alpha=0 where R,G,B > 235. Works for PNG/JPEG; PDFs are rejected with a clear message (or first-page rasterized via `pdf-lib` render — v2).
-- PDF: `pdf-lib` with Helvetica; embed logo from `public/favicon.svg` rasterized, embed both signature PNGs. Store agreement_id as `KRB-LOI-` + zero-padded sequence from a Postgres sequence.
-- Email domain check: extract host from website, ensure business_email endsWith the registrable domain (strip `www.`); reject free providers list (`gmail.com`, `yahoo.com`, `outlook.com`, `hotmail.com`, `icloud.com`, `protonmail.com`).
-- Migration opportunities are admin-curated for v1 (auto-growth from user preferences deferred).
+## H. Proposed migration (smallest safe path)
+
+**Phase 0 — transport masking (LOW risk, big visible win).**
+Point the Supabase client's URL at `https://advertiser.karbali.com/api/db` via Vercel rewrites, rename the vendor chunk, and keep the SDK. DevTools then shows first-party URLs instead of `*.supabase.co`. Zero behaviour change, zero query rewrites.
+
+**Phase 1 — read consolidation.** Move public and dashboard reads into a small set of edge endpoints (`/api/content`, `/api/dashboard`, `/api/wallet`) that return exactly the shapes the pages already expect, wired through the existing `repository.ts` seam so pages don't change.
+
+**Phase 2 — admin reads.** `/api/admin/*` endpoints per admin page, one page at a time, verified before the next.
+
+**Phase 3 — writes and RPCs.** Wrap the 20 definer RPCs behind endpoints (they already carry the business logic server-side, so this is a call-site swap).
+
+**Phase 4 — storage.** Backend-issued signed upload URLs; the browser still PUTs the bytes directly (avoids proxying large files).
+
+**Phase 5 — auth.** Only if you still want it after 0–4, and only with a staged cutover plan.
+
+Phases 2–5 remove direct table names; Phase 5 is what finally removes the SDK. Each phase is independently shippable and independently revertible.
+
+## I. Files that would change (Phase 0 only)
+
+- `vite.config.ts` (chunk name)
+- `vercel.json` (one rewrite)
+- `src/integrations/supabase/client.ts` (base URL)
+
+## J. Files that must not be touched
+
+`supabase/functions/paystack-*`, `manage-campaign`, all `guard_*` triggers and definer RPCs, `src/lib/auth.tsx` (until Phase 5), all migrations.
+
+## K. Recommendation
+
+Approve **Phase 0** now — it eliminates the visible `supabase.co`/`vendor-supabase` footprint you objected to, with no functional risk. Then decide whether Phases 1–4 are worth their regression cost, and treat Phase 5 as a separate project.
+
+No code will be written until you approve.
