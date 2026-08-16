@@ -43,7 +43,14 @@ function decodePath(token: string): string | null {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
-      headers: { ...corsHeaders, 'Access-Control-Expose-Headers': '*' },
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Headers':
+          req.headers.get('access-control-request-headers') ?? FORWARD_REQ_HEADERS.join(', '),
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS',
+        'Access-Control-Max-Age': '86400',
+        'Access-Control-Expose-Headers': '*',
+      },
     })
   }
 
