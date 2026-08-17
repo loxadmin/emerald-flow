@@ -42,6 +42,24 @@ export default function AdminAffiliates() {
 
   useEffect(() => { load(); }, [load]);
 
+  const invite = async (action: "invite" | "resend", email: string, fullName = "") => {
+    setInviting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("affiliate-invite", {
+        body: { action, email: email.trim(), full_name: fullName.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(action === "resend" ? "New code sent" : "Affiliate invited — setup code emailed");
+      if (action === "invite") { setInviteEmail(""); setInviteName(""); }
+      await load();
+    } catch (e) {
+      toast.error(await functionError(e));
+    } finally {
+      setInviting(false);
+    }
+  };
+
   const review = async (w: Withdrawal, approve: boolean) => {
     const { error } = await supabase
       .from("affiliate_withdrawals")
