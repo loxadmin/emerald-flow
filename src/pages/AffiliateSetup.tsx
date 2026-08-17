@@ -50,10 +50,14 @@ export default function AffiliateSetup() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-16">
-      <Seo
-        title="Affiliate setup — Karbali Ads"
-        description="Redeem your one-time affiliate code and set a password for your Karbali affiliate dashboard."
-      />
+      <Seo>
+        <title>Affiliate setup | Karbali Ads</title>
+        <meta
+          name="description"
+          content="Redeem your one-time affiliate code and set a password for your Karbali affiliate dashboard."
+        />
+        <meta name="robots" content="noindex" />
+      </Seo>
       <div className="mx-auto w-full max-w-md">
         <Logo />
         <div className="mt-8 rounded-2xl border border-border bg-card p-6">
