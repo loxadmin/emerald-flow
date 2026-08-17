@@ -147,6 +147,7 @@ const App = () => (
               <Route path="/r/:code" element={<ReferralRedirect />} />
               <Route path="/affiliates" element={<Affiliates />} />
               <Route path="/affiliate/dashboard" element={<RequireAuth><AffiliateDashboard /></RequireAuth>} />
+              <Route path="/affiliate/setup" element={<AffiliateSetup />} />
               <Route path="/ella/affiliates" element={<RequireAuth><RequireAdmin><AdminAffiliates /></RequireAdmin></RequireAuth>} />
               
               {/* Advertiser routes */}
