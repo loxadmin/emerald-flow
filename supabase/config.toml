@@ -51,3 +51,6 @@ verify_jwt = false
 
 [functions.site-bootstrap]
 verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = false

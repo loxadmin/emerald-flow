@@ -11,8 +11,15 @@ type Probe = {
   path: string;
   referer: string | null;
   country: string | null;
+  city: string | null;
+  region: string | null;
+  device_type: string | null;
+  device_os: string | null;
+  browser: string | null;
+  device_id: string | null;
   created_at: string;
 };
+
 
 export default function AdminSecurity() {
   const [rows, setRows] = useState<Probe[]>([]);
@@ -75,7 +82,9 @@ export default function AdminSecurity() {
                   <tr>
                     <th className="px-4 py-3">When</th>
                     <th className="px-4 py-3">IP</th>
-                    <th className="px-4 py-3">Country</th>
+                    <th className="px-4 py-3">Location</th>
+                    <th className="px-4 py-3">Device</th>
+                    <th className="px-4 py-3">Device ID</th>
                     <th className="px-4 py-3">Path</th>
                     <th className="px-4 py-3">User agent</th>
                   </tr>
@@ -87,13 +96,28 @@ export default function AdminSecurity() {
                         {new Date(r.created_at).toLocaleString()}
                       </td>
                       <td className="px-4 py-3 font-mono">{r.ip_address || "unknown"}</td>
-                      <td className="px-4 py-3">{r.country || "—"}</td>
+                      <td className="px-4 py-3">
+                        <p>{r.country || "Unknown"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {[r.city, r.region].filter(Boolean).join(", ") || "-"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="capitalize">{r.device_type || "unknown"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {[r.device_os, r.browser].filter(Boolean).join(" · ") || "-"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs max-w-[160px] truncate">
+                        {r.device_id || "-"}
+                      </td>
                       <td className="px-4 py-3 font-mono text-xs">{r.path}</td>
-                      <td className="px-4 py-3 max-w-[320px] truncate text-xs text-muted-foreground">
-                        {r.user_agent || "—"}
+                      <td className="px-4 py-3 max-w-[280px] truncate text-xs text-muted-foreground">
+                        {r.user_agent || "-"}
                       </td>
                     </tr>
                   ))}
+
                 </tbody>
               </table>
             </div>

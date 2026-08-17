@@ -13,10 +13,21 @@ export default function AdminHoneypot() {
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
+    let deviceId = "";
+    try {
+      deviceId = localStorage.getItem("kb_did") || "";
+      if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem("kb_did", deviceId);
+      }
+    } catch {
+      deviceId = "";
+    }
     supabase.functions
-      .invoke("log-admin-probe", { body: { path: location.pathname } })
+      .invoke("log-admin-probe", { body: { path: location.pathname, device_id: deviceId } })
       .catch(() => {});
   }, [location.pathname]);
+
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
