@@ -11,8 +11,15 @@ type Probe = {
   path: string;
   referer: string | null;
   country: string | null;
+  city: string | null;
+  region: string | null;
+  device_type: string | null;
+  device_os: string | null;
+  browser: string | null;
+  device_id: string | null;
   created_at: string;
 };
+
 
 export default function AdminSecurity() {
   const [rows, setRows] = useState<Probe[]>([]);
