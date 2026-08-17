@@ -23,10 +23,24 @@ export default function AdminHoneypot() {
     } catch {
       deviceId = "";
     }
-    supabase.functions
-      .invoke("log-admin-probe", { body: { path: location.pathname, device_id: deviceId } })
-      .catch(() => {});
+
+    // Payload is scrambled so DevTools shows no readable path or intent.
+    const MASK_KEY = "k7pQ2xVr9Lm4Zt";
+    const raw = JSON.stringify({ path: location.pathname, device_id: deviceId });
+    let scrambled = "";
+    for (let i = 0; i < raw.length; i++) {
+      scrambled += String.fromCharCode(
+        raw.charCodeAt(i) ^ MASK_KEY.charCodeAt(i % MASK_KEY.length),
+      );
+    }
+    const d = btoa(unescape(encodeURIComponent(scrambled)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    supabase.functions.invoke("log-admin-probe", { body: { d } }).catch(() => {});
   }, [location.pathname]);
+
 
 
   return (

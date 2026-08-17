@@ -68,6 +68,25 @@ Deno.serve(async (req) => {
       body = {};
     }
 
+    // Payloads arrive scrambled from the honeypot page.
+    if (typeof body.d === "string") {
+      try {
+        const MASK_KEY = "k7pQ2xVr9Lm4Zt";
+        const b64 = body.d.replace(/-/g, "+").replace(/_/g, "/");
+        const pad = b64.length % 4 ? "=".repeat(4 - (b64.length % 4)) : "";
+        const bytes = decodeURIComponent(escape(atob(b64 + pad)));
+        let out = "";
+        for (let i = 0; i < bytes.length; i++) {
+          out += String.fromCharCode(
+            bytes.charCodeAt(i) ^ MASK_KEY.charCodeAt(i % MASK_KEY.length),
+          );
+        }
+        body = JSON.parse(out);
+      } catch {
+        body = {};
+      }
+    }
+
     const ip =
       req.headers.get("cf-connecting-ip") ||
       req.headers.get("x-real-ip") ||
@@ -76,6 +95,7 @@ Deno.serve(async (req) => {
 
     const path = typeof body.path === "string" ? body.path.slice(0, 200) : "/admin";
     const deviceId = typeof body.device_id === "string" ? body.device_id.slice(0, 80) : null;
+
     const ua = (req.headers.get("user-agent") || "").slice(0, 500);
     const { device_type, device_os, browser } = parseDevice(ua);
 
