@@ -163,32 +163,50 @@ export type Database = {
       }
       admin_probe_log: {
         Row: {
+          browser: string | null
+          city: string | null
           country: string | null
           created_at: string
+          device_id: string | null
+          device_os: string | null
+          device_type: string | null
           id: string
           ip_address: string | null
           path: string
           referer: string | null
+          region: string | null
           user_agent: string | null
           user_id: string | null
         }
         Insert: {
+          browser?: string | null
+          city?: string | null
           country?: string | null
           created_at?: string
+          device_id?: string | null
+          device_os?: string | null
+          device_type?: string | null
           id?: string
           ip_address?: string | null
           path?: string
           referer?: string | null
+          region?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
         Update: {
+          browser?: string | null
+          city?: string | null
           country?: string | null
           created_at?: string
+          device_id?: string | null
+          device_os?: string | null
+          device_type?: string | null
           id?: string
           ip_address?: string | null
           path?: string
           referer?: string | null
+          region?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
@@ -3164,7 +3182,7 @@ export type Database = {
         | "household_items"
         | "telecom"
       advertiser_type: "engagement" | "performance" | "commerce" | "offline"
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "super_admin"
       campaign_status:
         | "pending"
         | "active"
@@ -3334,7 +3352,7 @@ export const Constants = {
         "telecom",
       ],
       advertiser_type: ["engagement", "performance", "commerce", "offline"],
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "super_admin"],
       campaign_status: [
         "pending",
         "active",
