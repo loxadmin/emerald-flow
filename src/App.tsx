@@ -21,6 +21,7 @@ import Index from "./pages/Index";
 const AiMode = lazy(() => import("./pages/AiMode"));
 const Affiliates = lazy(() => import("./pages/Affiliates"));
 const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
+const AffiliateSetup = lazy(() => import("./pages/AffiliateSetup"));
 const AdminAffiliates = lazy(() => import("./pages/AdminAffiliates"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
