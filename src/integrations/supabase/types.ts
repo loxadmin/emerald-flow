@@ -3004,6 +3004,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       karbali_normalize_subtype: {
         Args: { _subtype: string }
         Returns: Database["public"]["Enums"]["advertiser_subtype"]
