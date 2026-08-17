@@ -60,6 +60,7 @@ const AdminPackages = lazy(() => import("./pages/AdminPackages"));
 const AdminPackageDelivery = lazy(() => import("./pages/AdminPackageDelivery"));
 const AdminMilestones = lazy(() => import("./pages/AdminMilestones"));
 const AdminSecurity = lazy(() => import("./pages/AdminSecurity"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminHoneypot = lazy(() => import("./pages/AdminHoneypot"));
 const Packages = lazy(() => import("./pages/Packages"));
 const PackageOrders = lazy(() => import("./pages/PackageOrders"));
@@ -196,6 +197,7 @@ const App = () => (
               {/* Admin routes (separate panel) */}
               <Route path="/ella/2fa" element={<RequireAuth><Admin2FA /></RequireAuth>} />
               <Route path="/ella" element={<RequireAuth><RequireAdmin><AdminDashboard /></RequireAdmin></RequireAuth>} />
+              <Route path="/ella/admins" element={<RequireAuth><RequireAdmin><AdminUsers /></RequireAdmin></RequireAuth>} />
               <Route path="/ella/security" element={<RequireAuth><RequireAdmin><AdminSecurity /></RequireAdmin></RequireAuth>} />
               <Route path="/ella/campaigns" element={<RequireAuth><RequireAdmin><AdminCampaigns /></RequireAdmin></RequireAuth>} />
               <Route path="/ella/orders" element={<RequireAuth><RequireAdmin><AdminOrders /></RequireAdmin></RequireAuth>} />

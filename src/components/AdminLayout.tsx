@@ -5,7 +5,7 @@ import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import {
   Shield, BarChart3, Settings, LogOut, Sun, Moon, PenSquare, Users, Layers,
-  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap, FileSignature, PenTool, GitBranch, Megaphone, Inbox, ShieldAlert,
+  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap, FileSignature, PenTool, GitBranch, Megaphone, Inbox, ShieldAlert, UserCog,
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
@@ -54,6 +54,7 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
 
       { to: "/ella/extension", label: "Extension", icon: Chrome },
       { to: "/ella/security", label: "Security", icon: ShieldAlert },
+      { to: "/ella/admins", label: "Users & Admins", icon: UserCog },
       { to: "/ella/settings", label: "Settings", icon: Settings },
     ],
   },
