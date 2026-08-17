@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign, Eye, UserPlus, Plus, Trash2 } from "lucide-react";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
-import { friendlyError } from "@/lib/errors";
+import { friendlyError, functionError } from "@/lib/errors";
 
 type MediaType = "music" | "video";
 type EventType = "viewer" | "subscriber";
@@ -23,19 +23,7 @@ const VIDEO_SUBSCRIBER_RATE = 0.15;
 const PLACEMENT_FEE = 10;
 const MIN_INTERACTIONS = 200;
 
-const functionErrorMessage = async (error: unknown, fallback: string) => {
-  const context = (error as { context?: { text?: () => Promise<string> } } | null)?.context;
-  if (context?.text) {
-    try {
-      const body = await context.text();
-      const parsed = JSON.parse(body);
-      return parsed?.error || parsed?.message || body || fallback;
-    } catch {
-      return (error as Error)?.message || fallback;
-    }
-  }
-  return (error as Error)?.message || fallback;
-};
+const functionErrorMessage = (error: unknown, fallback: string) => functionError(error, fallback);
 
 export default function CreateEngagementCampaign() {
   const navigate = useNavigate();

@@ -13,7 +13,7 @@ import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, Shoppi
 import JSZip from "jszip";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
-import { friendlyError } from "@/lib/errors";
+import { friendlyError, functionError } from "@/lib/errors";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
 
@@ -21,19 +21,7 @@ const SALE_COMMISSION_RATE = 0.10;
 const MIN_WALLET_BALANCE = 200;
 const COMMISSION_BUFFER = 100; // Extra escrow held to cover unknown 10% commission on purchases
 
-const functionErrorMessage = async (error: unknown, fallback: string) => {
-  const context = (error as { context?: { text?: () => Promise<string> } } | null)?.context;
-  if (context?.text) {
-    try {
-      const body = await context.text();
-      const parsed = JSON.parse(body);
-      return parsed?.error || parsed?.message || body || fallback;
-    } catch {
-      return (error as Error)?.message || fallback;
-    }
-  }
-  return (error as Error)?.message || fallback;
-};
+const functionErrorMessage = (error: unknown, fallback: string) => functionError(error, fallback);
 
 export default function CreateCommerceCampaign() {
   const navigate = useNavigate();

@@ -208,7 +208,7 @@ export default function Signup() {
         navigate("/login");
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error("Oops! Something went wrong!");
     } finally {
       setLoading(false);
     }
