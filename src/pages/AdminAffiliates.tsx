@@ -3,13 +3,17 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
 import { GlassButton } from "@/components/ui/glass-button";
-import { friendlyError } from "@/lib/errors";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { UserPlus, Send } from "lucide-react";
+import { friendlyError, functionError } from "@/lib/errors";
 
 type Affiliate = {
   id: string; code: string; full_name: string; email: string; status: string;
   balance_usd: number; withdrawable: boolean; qualify_deadline: string; created_at: string;
   locked_bonus_usd: number; bonus_program_active: boolean; cycle_end: string;
   cycle_campaign_value_usd: number; bonus_cycles_won: number;
+  setup_code_used_at: string | null; setup_code_expires_at: string | null;
 };
 type Withdrawal = {
   id: string; affiliate_id: string; amount_usd: number; method: string;
