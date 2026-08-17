@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Rocket, TrendingUp } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 type Opp = {
   id: string;
@@ -63,7 +64,7 @@ export default function OfflineCampaignLaunch() {
       .from("letters_of_intent" as any)
       .update({ status: "campaign_launched", campaign_launched_at: new Date().toISOString() })
       .eq("id", loi.id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Campaign launched from your reserved audience");
     navigate("/offline/loi/status");
   };

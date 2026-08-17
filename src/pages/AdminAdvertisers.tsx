@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { UserPlus, Loader2, Eye, Pencil, Ban, CheckCircle2, Wallet as WalletIcon } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 interface Advertiser {
   id: string; email: string; full_name: string | null; company_name: string | null;
@@ -90,7 +91,7 @@ export default function AdminAdvertisers() {
     });
     setSubmitting(false);
     if (error || (data as any)?.error) {
-      toast.error((data as any)?.error || error?.message || "Something went wrong");
+      toast.error((data as any)?.error || friendlyError(error, "Something went wrong"));
       return;
     }
     toast.success("Advertiser invited! Magic link sent.");
@@ -115,7 +116,7 @@ export default function AdminAdvertisers() {
       website: editWebsite.trim() || null,
     }).eq("id", editing.id);
     setSubmitting(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Profile updated");
     setEditing(null);
     fetchAll();
@@ -125,7 +126,7 @@ export default function AdminAdvertisers() {
     const next = !adv.is_blocked;
     if (next && !confirm(`Block ${adv.email}? They will not be able to access the platform.`)) return;
     const { error } = await supabase.from("profiles").update({ is_blocked: next }).eq("id", adv.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(next ? "Advertiser blocked" : "Advertiser unblocked");
     fetchAll();
   };
@@ -140,7 +141,7 @@ export default function AdminAdvertisers() {
     });
     setSubmitting(false);
     if (error || (data as any)?.error) {
-      toast.error((data as any)?.error || error?.message || "Top-up failed");
+      toast.error((data as any)?.error || friendlyError(error, "Top-up failed"));
       return;
     }
     toast.success(`Added $${amt.toFixed(2)}`);

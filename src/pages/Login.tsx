@@ -7,6 +7,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AuthSplitShell from "@/components/auth/AuthSplitShell";
+import { friendlyError } from "@/lib/errors";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ export default function Login() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) {
-        toast.error(error.message);
+        toast.error(friendlyError(error));
       } else {
         toast.success("Logged in successfully");
         localStorage.setItem("karbali-ads-last-activity", String(Date.now()));
@@ -48,7 +49,7 @@ export default function Login() {
       }
     } catch (err) {
       console.error("Login exception:", err);
-      toast.error("An unexpected error occurred");
+      toast.error("Oops! Something went wrong!");
     } finally {
       setLoading(false);
     }

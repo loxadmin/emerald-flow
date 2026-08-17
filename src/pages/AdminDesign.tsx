@@ -6,6 +6,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Check, Layout } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 const designs = [
   { id: "default", name: "Default", desc: "Left-aligned hero with bottom copy, cinematic fade" },
@@ -41,7 +42,7 @@ export default function AdminDesign() {
       .upsert({ key: "landing_design", value: id, description: "Landing page hero design variant", updated_at: new Date().toISOString() }, { onConflict: "key" });
     setSaving(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
     } else {
       setCurrent(id);
       toast.success(`Design changed to "${designs.find(d => d.id === id)?.name}"`);

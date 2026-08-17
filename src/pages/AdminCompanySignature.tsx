@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import SignaturePad from "@/components/SignaturePad";
+import { friendlyError } from "@/lib/errors";
 
 type Sig = {
   id: string;
@@ -90,7 +91,7 @@ export default function AdminCompanySignature() {
       setSigData(null);
       load();
     } catch (e: any) {
-      toast.error(e.message || "Failed to save");
+      toast.error(friendlyError(e, "Failed to save"));
     } finally {
       setSaving(false);
     }

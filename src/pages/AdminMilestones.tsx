@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, Flag } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 type Milestone = {
   id: string;
@@ -66,7 +67,7 @@ export default function AdminMilestones() {
       ? await supabase.from("milestones" as any).update(payload).eq("id", editing.id)
       : await supabase.from("milestones" as any).insert(payload);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success(editing ? "Milestone updated" : "Milestone created");
     setOpen(false); load();
   };
@@ -78,7 +79,7 @@ export default function AdminMilestones() {
   const remove = async (m: Milestone) => {
     if (!confirm(`Delete milestone "${m.name}"? Packages using it will fail.`)) return;
     const { error } = await supabase.from("milestones" as any).delete().eq("id", m.id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     load();
   };
 

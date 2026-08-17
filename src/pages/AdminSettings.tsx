@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Save, CreditCard, Settings2, ToggleLeft, ToggleRight, Construction, Sparkles } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 interface Setting { id: string; key: string; value: string; description: string | null; }
 
@@ -35,7 +36,7 @@ export default function AdminSettings() {
     setSaving(true);
     const { error } = await supabase.from("admin_settings").update({ value: editValues[key], updated_at: new Date().toISOString() }).eq("key", key);
     setSaving(false);
-    if (error) toast.error(error.message); else toast.success(`${key} updated`);
+    if (error) toast.error(friendlyError(error)); else toast.success(`${key} updated`);
   };
 
   const activeGateway = editValues["active_payment_gateway"] || "paystack";
@@ -46,20 +47,20 @@ export default function AdminSettings() {
     const newVal = isMaintenanceOn ? "false" : "true";
     setEditValues({ ...editValues, maintenance_mode: newVal });
     const { error } = await supabase.from("admin_settings").update({ value: newVal, updated_at: new Date().toISOString() }).eq("key", "maintenance_mode");
-    if (error) toast.error(error.message); else toast.success(`Maintenance mode ${newVal === "true" ? "enabled" : "disabled"}`);
+    if (error) toast.error(friendlyError(error)); else toast.success(`Maintenance mode ${newVal === "true" ? "enabled" : "disabled"}`);
   };
 
   const setActiveGateway = async (gateway: string) => {
     setEditValues({ ...editValues, active_payment_gateway: gateway });
     const { error } = await supabase.from("admin_settings").update({ value: gateway, updated_at: new Date().toISOString() }).eq("key", "active_payment_gateway");
-    if (error) toast.error(error.message); else toast.success(`Payment gateway switched to ${gateway}`);
+    if (error) toast.error(friendlyError(error)); else toast.success(`Payment gateway switched to ${gateway}`);
   };
 
   const toggleManualMode = async () => {
     const newVal = isManualModeOn ? "false" : "true";
     setEditValues({ ...editValues, manual_mode_enabled: newVal });
     const { error } = await supabase.from("admin_settings").update({ value: newVal, updated_at: new Date().toISOString() }).eq("key", "manual_mode_enabled");
-    if (error) toast.error(error.message); else toast.success(newVal === "true" ? "Switched to Simple mode" : "Switched to Advance mode");
+    if (error) toast.error(friendlyError(error)); else toast.success(newVal === "true" ? "Switched to Simple mode" : "Switched to Advance mode");
   };
 
   const aiProvider = editValues["ai_provider"] || "lovable";

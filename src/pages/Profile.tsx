@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Upload, LogOut, User as UserIcon, Trash2 } from "lucide-react";
 import { FormSkeleton } from "@/components/skeletons";
+import { friendlyError } from "@/lib/errors";
 
 const MAX_BYTES = 3 * 1024 * 1024;
 
@@ -67,7 +68,7 @@ export default function Profile() {
       setAvatarUrl(await signPath(path));
       toast.success("Profile logo updated");
     } catch (err) {
-      toast.error((err as Error).message || "Upload failed");
+      toast.error(friendlyError(err, "Upload failed"));
     } finally {
       setUploading(false);
     }
@@ -90,7 +91,7 @@ export default function Profile() {
       .update({ full_name: fullName, company_name: company || null, website: website || null } as any)
       .eq("id", user.id);
     setSaving(false);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else toast.success("Profile saved");
   };
 

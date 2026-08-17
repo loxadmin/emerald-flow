@@ -27,6 +27,7 @@ const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; pla
 };
 
 import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
+import { friendlyError, functionError } from "@/lib/errors";
 
 type Pkg = {
   id: string; name: string; description: string | null;
@@ -46,19 +47,7 @@ type WalletInfo = { id?: string; balance: number; is_activated: boolean };
 
 const PENDING_KEY = "karbali_pending_package_purchase";
 
-const functionErrorMessage = async (error: unknown, fallback: string) => {
-  const context = (error as { context?: { text?: () => Promise<string> } } | null)?.context;
-  if (context?.text) {
-    try {
-      const body = await context.text();
-      const parsed = JSON.parse(body);
-      return parsed?.error || parsed?.message || body || fallback;
-    } catch {
-      return (error as Error)?.message || fallback;
-    }
-  }
-  return (error as Error)?.message || fallback;
-};
+const functionErrorMessage = (error: unknown, fallback: string) => functionError(error, fallback);
 
 export default function Packages() {
   const { user } = useAuth();
@@ -376,7 +365,7 @@ export default function Packages() {
       if ((wallet?.balance || 0) < flatTotal) { setBuying(false); return toast.error("Insufficient wallet balance"); }
       const { data, error } = await supabase.rpc("purchase_package_v2" as any, args);
       setBuying(false);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(friendlyError(error));
       toast.success("Package purchased! Approval takes 3–7 business days.");
       const orderId = (data as { order_id?: string })?.order_id;
       if (orderId && promo.url) {

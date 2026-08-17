@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { FileText, Download, CheckCircle2, XCircle, Target, TrendingUp } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 type LOI = {
   id: string;
@@ -47,7 +48,7 @@ export default function AdminLettersOfIntent() {
       .from("letters_of_intent" as any)
       .select("*")
       .order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     setRows((data as any) || []);
     setLoading(false);
   };
@@ -79,7 +80,7 @@ export default function AdminLettersOfIntent() {
       toast.success("LOI approved and PDF generated");
       load();
     } catch (e: any) {
-      toast.error(e.message || "Failed to approve");
+      toast.error(friendlyError(e, "Failed to approve"));
     }
   };
 
@@ -89,7 +90,7 @@ export default function AdminLettersOfIntent() {
       _loi_id: loi.id,
       _notes: notes,
     });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("LOI rejected");
     load();
   };
@@ -97,7 +98,7 @@ export default function AdminLettersOfIntent() {
   const markReached = async (loi: LOI) => {
     if (!confirm(`Mark threshold reached for ${loi.company_name}? Advertiser will be notified.`)) return;
     const { error } = await supabase.rpc("mark_loi_threshold_reached" as any, { _loi_id: loi.id });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     supabase.functions.invoke("notify", { body: { event: "loi_threshold_reached", payload: { loi_id: loi.id } } }).catch(() => {});
     toast.success("Threshold reached — advertiser notified");
     load();
@@ -116,7 +117,7 @@ export default function AdminLettersOfIntent() {
       _loi_id: progressLoi.id,
       _current: Math.floor(n),
     });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Progress updated");
     setProgressOpen(false);
     load();

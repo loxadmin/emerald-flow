@@ -7,6 +7,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Logo from "@/components/Logo";
+import { friendlyError } from "@/lib/errors";
 
 type Affiliate = {
   id: string; code: string; full_name: string; status: string;
@@ -80,7 +81,7 @@ export default function AffiliateDashboard() {
       setAmount(""); setDetails("");
       load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Withdrawal failed");
+      toast.error(friendlyError(err, "Withdrawal failed"));
     } finally {
       setSubmitting(false);
     }

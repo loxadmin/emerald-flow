@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { CheckCircle, Handshake, XCircle } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 interface ReferralProgram {
   id: string;
@@ -47,7 +48,7 @@ export default function AdminPartnerships() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       setLoading(false);
       return;
     }
@@ -100,7 +101,7 @@ export default function AdminPartnerships() {
     setSavingId(null);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return;
     }
 

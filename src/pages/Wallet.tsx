@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ListSkeleton, StatsSkeleton } from "@/components/skeletons";
+import { friendlyError } from "@/lib/errors";
 
 interface WalletData {
   id: string; balance: number; currency: string; is_activated: boolean;
@@ -116,7 +117,7 @@ export default function WalletPage() {
     const destination = { bank: withdrawBank.trim(), account_number: withdrawAccount.trim(), account_name: withdrawName.trim() };
     const { data, error } = await supabase.rpc("request_withdrawal" as never, { _amount: amt, _method: withdrawMethod, _destination: destination } as never);
     setWithdrawing(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Withdrawal request submitted. Our team will process it shortly.");
     const reqId = (data as { id?: string })?.id;
     if (reqId) supabase.functions.invoke("notify", { body: { event: "withdrawal_requested", payload: { request_id: reqId } } }).catch(() => {});
@@ -197,7 +198,7 @@ export default function WalletPage() {
       const payload = parseResponse(data);
       if (payload?.authorization_url) { window.location.href = payload.authorization_url; return; }
       throw new Error(payload?.error || payload?.details?.message || "Payment gateway error");
-    } catch (err: unknown) { toast.error((err as Error).message || "Failed to initialize activation"); } finally { setActivating(false); }
+    } catch (err: unknown) { toast.error(friendlyError(err, "Failed to initialize activation")); } finally { setActivating(false); }
   };
 
   const handleFund = async () => {
@@ -210,7 +211,7 @@ export default function WalletPage() {
       const payload = parseResponse(data);
       if (payload?.authorization_url) { window.location.href = payload.authorization_url; setFundAmount(""); return; }
       throw new Error(payload?.error || payload?.details?.message || "Payment gateway error");
-    } catch (err: unknown) { toast.error((err as Error).message || "Failed to initialize funding"); } finally { setFunding(false); }
+    } catch (err: unknown) { toast.error(friendlyError(err, "Failed to initialize funding")); } finally { setFunding(false); }
   };
 
   const copy = async (label: string, value: string) => {

@@ -15,24 +15,13 @@ import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertC
 import JSZip from "jszip";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
+import { friendlyError, functionError } from "@/lib/errors";
 
 interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
 interface Website { id: string; domain: string; is_verified: boolean; }
 type PlatformType = "website" | "mobile_app";
 
-const functionErrorMessage = async (error: unknown, fallback: string) => {
-  const context = (error as { context?: { text?: () => Promise<string> } } | null)?.context;
-  if (context?.text) {
-    try {
-      const body = await context.text();
-      const parsed = JSON.parse(body);
-      return parsed?.error || parsed?.message || body || fallback;
-    } catch {
-      return (error as Error)?.message || fallback;
-    }
-  }
-  return (error as Error)?.message || fallback;
-};
+const functionErrorMessage = (error: unknown, fallback: string) => functionError(error, fallback);
 
 export default function CreateCampaign() {
   const navigate = useNavigate();
@@ -288,7 +277,7 @@ export default function CreateCampaign() {
       platform_type: platformType,
       app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
     } as any).select().single();
-    if (error) { toast.error(error.message); setLoading(false); return; }
+    if (error) { toast.error(friendlyError(error)); setLoading(false); return; }
     const key = `kb_${crypto.randomUUID().replace(/-/g, "")}`;
     const { error: keyError } = await supabase.functions.invoke("manage-campaign", {
       body: { action: "create_api_key", campaign_id: campaign.id, api_key: key },
@@ -316,7 +305,7 @@ export default function CreateCampaign() {
         await saveDraft({ integration_verified: true });
         goToStep(3, campaignId);
       } else toast.error(payload?.error || "Verification failed");
-    } catch (err: unknown) { toast.error((err as Error).message || "Verification failed"); }
+    } catch (err: unknown) { toast.error(friendlyError(err, "Verification failed")); }
     finally { setVerifying(false); }
   };
 
@@ -345,7 +334,7 @@ export default function CreateCampaign() {
         platform_type: platformType,
         app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
       } as any).select().single();
-      if (error) { toast.error(error.message); setLoading(false); return; }
+      if (error) { toast.error(friendlyError(error)); setLoading(false); return; }
       cId = campaign.id;
       setCampaignId(cId);
     }
@@ -364,7 +353,7 @@ export default function CreateCampaign() {
       promo_media_path: promoMedia.path,
       promo_media_type: promoMedia.type,
     } as any).eq("id", cId);
-    if (error) { toast.error(error.message); setLoading(false); return; }
+    if (error) { toast.error(friendlyError(error)); setLoading(false); return; }
 
     // Server-side escrow: deduct wallet → fund campaign escrow atomically
     const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -399,14 +388,14 @@ export default function CreateCampaign() {
       advertiser_id: user.id, name: `External Referral - ${campaignName || "Draft"}`, budget_remaining: 0,
       integration_type: "external_referral", is_draft: true, website_id: selectedWebsiteId,
     } as any).select().single();
-    if (cErr) { toast.error(cErr.message); setLoading(false); return; }
+    if (cErr) { toast.error(friendlyError(cErr)); setLoading(false); return; }
 
     const { error: extErr } = await supabase.from("external_referral_programs" as any).insert({
       campaign_id: campaign.id, advertiser_id: user.id,
       referral_guide: referralGuide.trim(), compensation_structure: compensationStructure.trim(),
       registration_link: registrationLink.trim(), status: "pending",
     } as any);
-    if (extErr) { toast.error(extErr.message); setLoading(false); return; }
+    if (extErr) { toast.error(friendlyError(extErr)); setLoading(false); return; }
 
     setCampaignId(campaign.id);
     toast.success("External referral program submitted for admin review!");

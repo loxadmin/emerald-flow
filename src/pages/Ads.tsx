@@ -10,6 +10,7 @@ import Sparkline from "@/components/Sparkline";
 import { Plus, BarChart3, ArrowRight, FileEdit, Clock, CheckCircle, XCircle, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ListSkeleton } from "@/components/skeletons";
+import { friendlyError } from "@/lib/errors";
 
 interface Campaign {
   id: string; name: string; status: string; budget_remaining: number; created_at: string;
@@ -85,7 +86,7 @@ export default function AdsPage() {
     await supabase.from("campaign_sources").delete().eq("campaign_id", campaign.id);
     await supabase.from("referrals").delete().eq("campaign_id", campaign.id);
     const { error } = await supabase.from("campaigns").delete().eq("id", campaign.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success(refundedAmount > 0 ? `Campaign deleted. $${refundedAmount.toFixed(2)} refunded.` : `${campaign.is_draft ? "Draft" : "Campaign"} deleted`); fetchCampaigns(); }
     setDeleting(null);
   };

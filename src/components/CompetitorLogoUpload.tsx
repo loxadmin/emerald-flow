@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Upload, X, Loader2 } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 type Props = {
   value: { url: string | null; path: string | null };
@@ -34,7 +35,7 @@ export default function CompetitorLogoUpload({ value, onChange }: Props) {
       onChange({ url: signed.signedUrl, path });
       toast.success("Logo uploaded");
     } catch (err) {
-      toast.error((err as Error).message || "Upload failed");
+      toast.error(friendlyError(err, "Upload failed"));
     } finally {
       setUploading(false);
     }

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Loader2, Trash2 } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 type Target = {
   advertiserId: string;
@@ -55,7 +56,7 @@ export default function AdminMigrationEntry(props: Target) {
     };
     const { error } = await supabase.from("campaign_migrations" as any).insert(payload);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     setSource(""); setUsers(0);
     load();
   };
@@ -63,7 +64,7 @@ export default function AdminMigrationEntry(props: Target) {
   const del = async (id: string) => {
     if (!confirm("Delete this migration entry?")) return;
     const { error } = await supabase.from("campaign_migrations" as any).delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     load();
   };
 

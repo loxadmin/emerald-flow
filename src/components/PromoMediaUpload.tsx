@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Upload, Image as ImageIcon, Film, X, Loader2 } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime";
@@ -48,7 +49,7 @@ export default function PromoMediaUpload({
       onChange({ url: signed.signedUrl, path, type: file.type });
       toast.success("Promo media uploaded");
     } catch (err) {
-      toast.error((err as Error).message || "Upload failed");
+      toast.error(friendlyError(err, "Upload failed"));
     } finally {
       setUploading(false);
     }

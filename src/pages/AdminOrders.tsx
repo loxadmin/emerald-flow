@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { ListSkeleton } from "@/components/skeletons";
 import { toast } from "sonner";
 import { Search, Package, Zap, Store, Inbox, ArrowUpRight } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 type Source = "package" | "switch" | "offline";
 
@@ -165,7 +166,7 @@ export default function AdminOrders() {
       error = res.error;
     }
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success(approve ? "Order accepted" : "Order rejected");
     setView(null);
     setNotes("");

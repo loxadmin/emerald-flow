@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { GlassButton } from "@/components/ui/glass-button";
 import { toast } from "sonner";
 import { CalendarClock, Save } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 // Convert ISO/timestamptz string to value usable by <input type="datetime-local">
 function toLocalInputValue(iso: string): string {
@@ -37,7 +38,7 @@ export default function AutoActivationEditor({ campaignId, value, onSaved }: Pro
       .eq("id", campaignId);
     setSaving(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return;
     }
     toast.success("Auto-activation date updated");

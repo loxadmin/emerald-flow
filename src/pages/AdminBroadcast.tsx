@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Send, Search, Users, FileText, Save, Trash2, Plus, Beaker } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 interface EmailTemplate {
   id: string;
@@ -86,7 +87,7 @@ export default function AdminBroadcast() {
       ? await supabase.from("email_templates").update(payload).eq("id", existing.id)
       : await supabase.from("email_templates").insert(payload);
     setSavingTemplate(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(existing ? "Template updated" : "Template saved");
     await loadTemplates();
   };
@@ -95,7 +96,7 @@ export default function AdminBroadcast() {
     if (!selectedTemplateId) return;
     if (!confirm("Delete this template?")) return;
     const { error } = await supabase.from("email_templates").delete().eq("id", selectedTemplateId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Template deleted");
     setSelectedTemplateId(""); setTemplateName("");
     await loadTemplates();
@@ -148,7 +149,7 @@ export default function AdminBroadcast() {
       },
     });
     setSendingTest(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     const r = data as { sent?: number; failed?: number };
     if (r?.sent) toast.success("Test email sent");
     else toast.error("Test email failed to send");
@@ -178,7 +179,7 @@ export default function AdminBroadcast() {
     setSending(false);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return;
     }
     const r = data as { sent?: number; failed?: number };

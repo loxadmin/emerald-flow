@@ -9,6 +9,7 @@ import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
 import { getStoredAffiliateRef } from "@/components/AffiliateRefCapture";
 import { FormSkeleton } from "@/components/skeletons";
+import { friendlyError } from "@/lib/errors";
 
 const PERKS = [
   { title: "$200 monthly bonus", body: "Held in your account each cycle, unlocked when you hit the monthly target." },
@@ -82,7 +83,7 @@ export default function Affiliates() {
       toast.success("Account created. Verify your email, then log in to activate your affiliate account.");
       navigate("/login");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
+      toast.error(friendlyError(err, "Something went wrong"));
     } finally {
       setLoading(false);
     }

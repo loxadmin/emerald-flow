@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Save } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 interface SiteContent {
   id: string;
@@ -56,7 +57,7 @@ export default function AdminContent() {
       })
       .eq("id", section.id);
     setSaving(null);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else toast.success(`${section.section_key} updated`);
   };
 
