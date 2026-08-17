@@ -29,11 +29,24 @@ export default function Admin2FA() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isAdmin, isLoading]);
 
+  const readError = async (error: unknown): Promise<string | null> => {
+    const ctx = (error as { context?: Response })?.context;
+    if (ctx && typeof ctx.text === "function") {
+      try {
+        const body = await ctx.clone().text();
+        const parsed = JSON.parse(body);
+        if (parsed?.error) return String(parsed.error);
+      } catch { /* not json */ }
+    }
+    return (error as { message?: string })?.message || null;
+  };
+
   const sendCode = async () => {
     setSending(true);
     const { data, error } = await supabase.functions.invoke("admin-2fa", { body: { action: "send" } });
     setSending(false);
-    if (error || data?.error) { toast.error(data?.error || error?.message || "Failed to send code"); return; }
+    if (error) { toast.error((await readError(error)) || "Failed to send code"); return; }
+    if (data?.error) { toast.error(data.error); return; }
     setSentOnce(true);
     if (data?.email_sent) {
       toast.success("Code sent to your email");
@@ -48,11 +61,13 @@ export default function Admin2FA() {
     setVerifying(true);
     const { data, error } = await supabase.functions.invoke("admin-2fa", { body: { action: "verify", code } });
     setVerifying(false);
-    if (error || data?.error) { toast.error(data?.error || error?.message || "Verification failed"); return; }
+    if (error) { toast.error((await readError(error)) || "Verification failed"); return; }
+    if (data?.error) { toast.error(data.error); return; }
     markAdmin2FAVerified(user!.id);
     toast.success("Verified");
     navigate("/ella", { replace: true });
   };
+
 
   return (
     <AuthSplitShell
