@@ -131,7 +131,7 @@ export default function AdminAffiliates() {
               <p className="text-sm font-semibold">All affiliates</p>
               <table className="mt-3 w-full text-sm">
                 <thead className="text-left text-xs uppercase text-muted-foreground">
-                  <tr><th className="py-2">Name</th><th>Email</th><th>Code</th><th>Status</th><th>Balance</th><th>Locked bonus</th><th>Cycle value</th><th>Cycles won</th></tr>
+                  <tr><th className="py-2">Name</th><th>Email</th><th>Code</th><th>Status</th><th>Balance</th><th>Locked bonus</th><th>Cycle value</th><th>Cycles won</th><th>Access</th></tr>
                 </thead>
                 <tbody>
                   {affiliates.map((a) => (
@@ -144,6 +144,16 @@ export default function AdminAffiliates() {
                       <td>{a.bonus_program_active ? money(a.locked_bonus_usd) : "Forfeited"}</td>
                       <td>{money(a.cycle_campaign_value_usd)} / $2000.00</td>
                       <td>{a.bonus_cycles_won}</td>
+                      <td className="whitespace-nowrap">
+                        {a.setup_code_used_at ? (
+                          <span className="text-xs text-muted-foreground">Password set</span>
+                        ) : (
+                          <Button size="sm" variant="outline" disabled={inviting}
+                            onClick={() => invite("resend", a.email)}>
+                            <Send className="mr-1.5 h-3.5 w-3.5" /> Resend code
+                          </Button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
