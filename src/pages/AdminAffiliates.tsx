@@ -92,6 +92,23 @@ export default function AdminAffiliates() {
         ) : (
           <>
             <section className="rounded-xl border border-border bg-card p-5">
+              <p className="text-sm font-semibold">Add an affiliate</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                We email a one-time code they use once at /affiliate/setup to set a password.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Input placeholder="Full name (optional)" value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)} className="sm:max-w-xs" />
+                <Input type="email" placeholder="affiliate@email.com" value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)} className="sm:max-w-sm" />
+                <Button disabled={inviting || !inviteEmail.trim()}
+                  onClick={() => invite("invite", inviteEmail, inviteName)}>
+                  <UserPlus className="mr-2 h-4 w-4" /> Add affiliate
+                </Button>
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-border bg-card p-5">
               <p className="text-sm font-semibold">Pending withdrawals</p>
               {withdrawals.filter((w) => w.status === "pending").length === 0 ? (
                 <p className="mt-3 text-sm text-muted-foreground">None pending.</p>
