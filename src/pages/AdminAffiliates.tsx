@@ -26,6 +26,9 @@ export default function AdminAffiliates() {
   const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviting, setInviting] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: affs }, { data: wds }] = await Promise.all([
