@@ -3,13 +3,17 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
 import { GlassButton } from "@/components/ui/glass-button";
-import { friendlyError } from "@/lib/errors";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { UserPlus, Send } from "lucide-react";
+import { friendlyError, functionError } from "@/lib/errors";
 
 type Affiliate = {
   id: string; code: string; full_name: string; email: string; status: string;
   balance_usd: number; withdrawable: boolean; qualify_deadline: string; created_at: string;
   locked_bonus_usd: number; bonus_program_active: boolean; cycle_end: string;
   cycle_campaign_value_usd: number; bonus_cycles_won: number;
+  setup_code_used_at: string | null; setup_code_expires_at: string | null;
 };
 type Withdrawal = {
   id: string; affiliate_id: string; amount_usd: number; method: string;
@@ -22,6 +26,9 @@ export default function AdminAffiliates() {
   const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviting, setInviting] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: affs }, { data: wds }] = await Promise.all([
@@ -34,6 +41,24 @@ export default function AdminAffiliates() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const invite = async (action: "invite" | "resend", email: string, fullName = "") => {
+    setInviting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("affiliate-invite", {
+        body: { action, email: email.trim(), full_name: fullName.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(action === "resend" ? "New code sent" : "Affiliate invited — setup code emailed");
+      if (action === "invite") { setInviteEmail(""); setInviteName(""); }
+      await load();
+    } catch (e) {
+      toast.error(await functionError(e));
+    } finally {
+      setInviting(false);
+    }
+  };
 
   const review = async (w: Withdrawal, approve: boolean) => {
     const { error } = await supabase
@@ -67,6 +92,23 @@ export default function AdminAffiliates() {
         ) : (
           <>
             <section className="rounded-xl border border-border bg-card p-5">
+              <p className="text-sm font-semibold">Add an affiliate</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                We email a one-time code they use once at /affiliate/setup to set a password.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Input placeholder="Full name (optional)" value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)} className="sm:max-w-xs" />
+                <Input type="email" placeholder="affiliate@email.com" value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)} className="sm:max-w-sm" />
+                <Button disabled={inviting || !inviteEmail.trim()}
+                  onClick={() => invite("invite", inviteEmail, inviteName)}>
+                  <UserPlus className="mr-2 h-4 w-4" /> Add affiliate
+                </Button>
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-border bg-card p-5">
               <p className="text-sm font-semibold">Pending withdrawals</p>
               {withdrawals.filter((w) => w.status === "pending").length === 0 ? (
                 <p className="mt-3 text-sm text-muted-foreground">None pending.</p>
@@ -89,7 +131,7 @@ export default function AdminAffiliates() {
               <p className="text-sm font-semibold">All affiliates</p>
               <table className="mt-3 w-full text-sm">
                 <thead className="text-left text-xs uppercase text-muted-foreground">
-                  <tr><th className="py-2">Name</th><th>Email</th><th>Code</th><th>Status</th><th>Balance</th><th>Locked bonus</th><th>Cycle value</th><th>Cycles won</th></tr>
+                  <tr><th className="py-2">Name</th><th>Email</th><th>Code</th><th>Status</th><th>Balance</th><th>Locked bonus</th><th>Cycle value</th><th>Cycles won</th><th>Access</th></tr>
                 </thead>
                 <tbody>
                   {affiliates.map((a) => (
@@ -102,6 +144,16 @@ export default function AdminAffiliates() {
                       <td>{a.bonus_program_active ? money(a.locked_bonus_usd) : "Forfeited"}</td>
                       <td>{money(a.cycle_campaign_value_usd)} / $2000.00</td>
                       <td>{a.bonus_cycles_won}</td>
+                      <td className="whitespace-nowrap">
+                        {a.setup_code_used_at ? (
+                          <span className="text-xs text-muted-foreground">Password set</span>
+                        ) : (
+                          <Button size="sm" variant="outline" disabled={inviting}
+                            onClick={() => invite("resend", a.email)}>
+                            <Send className="mr-1.5 h-3.5 w-3.5" /> Resend code
+                          </Button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
