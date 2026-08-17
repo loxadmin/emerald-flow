@@ -485,12 +485,16 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          invited_by: string | null
           locked_bonus_usd: number
           payout_details: Json
           payout_method: string | null
           phone: string | null
           qualified_at: string | null
           qualify_deadline: string
+          setup_code: string | null
+          setup_code_expires_at: string | null
+          setup_code_used_at: string | null
           signup_bonus_usd: number
           status: string
           updated_at: string
@@ -510,12 +514,16 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          invited_by?: string | null
           locked_bonus_usd?: number
           payout_details?: Json
           payout_method?: string | null
           phone?: string | null
           qualified_at?: string | null
           qualify_deadline?: string
+          setup_code?: string | null
+          setup_code_expires_at?: string | null
+          setup_code_used_at?: string | null
           signup_bonus_usd?: number
           status?: string
           updated_at?: string
@@ -535,12 +543,16 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          invited_by?: string | null
           locked_bonus_usd?: number
           payout_details?: Json
           payout_method?: string | null
           phone?: string | null
           qualified_at?: string | null
           qualify_deadline?: string
+          setup_code?: string | null
+          setup_code_expires_at?: string | null
+          setup_code_used_at?: string | null
           signup_bonus_usd?: number
           status?: string
           updated_at?: string
