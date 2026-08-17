@@ -5,6 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// NOTE: handled errors are returned with HTTP 200 and an `error` field so the
+// supabase-js client can surface a readable message instead of the opaque
+// "Edge Function returned a non-2xx status code".
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -71,16 +74,16 @@ Deno.serve(async (req) => {
     });
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader) return json({ error: "Your session expired. Sign in again." });
     const { data: { user }, error: authError } = await userClient.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
-    if (authError || !user) return json({ error: "Invalid token" }, 401);
+    if (authError || !user) return json({ error: "Your session expired. Sign in again." });
 
     // Must be admin
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", user.id);
     if (!(roles || []).some((r) => r.role === "admin")) {
-      return json({ error: "Admin only" }, 403);
+      return json({ error: "Admin only" });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -100,7 +103,7 @@ Deno.serve(async (req) => {
       const { error: insErr } = await admin.from("admin_2fa_codes").insert({
         user_id: user.id, code_hash, expires_at,
       });
-      if (insErr) return json({ error: insErr.message }, 500);
+      if (insErr) return json({ error: insErr.message });
 
       const result = await sendEmailViaResend(user.email!, code);
       return json({ success: true, email_sent: result.sent, email_error: result.sent ? undefined : result.error });
@@ -108,7 +111,7 @@ Deno.serve(async (req) => {
 
     if (action === "verify") {
       const code = String(body?.code || "").trim();
-      if (!/^\d{6}$/.test(code)) return json({ error: "Invalid code format" }, 400);
+      if (!/^\d{6}$/.test(code)) return json({ error: "Invalid code format" });
       const code_hash = await sha256Hex(code);
 
       const { data: row } = await admin
@@ -121,7 +124,7 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false })
         .maybeSingle();
 
-      if (!row) return json({ error: "Invalid or expired code" }, 400);
+      if (!row) return json({ error: "That code is invalid, already used or expired. Tap Resend code." });
 
       await admin
         .from("admin_2fa_codes")
@@ -131,7 +134,7 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-    return json({ error: "Unknown action" }, 400);
+    return json({ error: "Unknown action" });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Server error" }, 500);
   }
