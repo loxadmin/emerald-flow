@@ -14,6 +14,7 @@ import {
   UtensilsCrossed, Package, Radio,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { friendlyError } from "@/lib/errors";
 
 // ============================================================
 // New taxonomy
@@ -243,7 +244,7 @@ export default function CategorySelection() {
         reason: changeReason.trim(),
         status: "pending",
       } as any);
-      if (error) { toast.error(error.message); setSubmitting(false); return; }
+      if (error) { toast.error(friendlyError(error)); setSubmitting(false); return; }
       toast.success("Category change request submitted for admin review!");
       navigate("/dashboard");
       setSubmitting(false);
@@ -260,7 +261,7 @@ export default function CategorySelection() {
     } as any);
     if (error) {
       if (error.code === "23505") toast.error("You have already selected a category");
-      else toast.error(error.message);
+      else toast.error(friendlyError(error));
       setSubmitting(false);
       return;
     }

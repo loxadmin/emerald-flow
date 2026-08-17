@@ -17,6 +17,7 @@ import MigrationChart from "@/components/MigrationChart";
 import SwitchStoryCard from "@/components/SwitchStoryCard";
 import SwitchMetricsPanel from "@/components/SwitchMetricsPanel";
 import { CardGridSkeleton } from "@/components/skeletons";
+import { friendlyError } from "@/lib/errors";
 
 /** Turns "https://www.cabally.com" into "Cabally" so offers read personally. */
 function brandFrom(website?: string | null, companyName?: string | null, email?: string | null): string {
@@ -111,7 +112,7 @@ export default function SwitchOffers() {
       _offer_id: selected.id, _target_link: link.trim() || null,
     });
     setBuying(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Offer purchased — delivery starting");
     setSelected(null); setLink("");
     // reload

@@ -16,6 +16,7 @@ import { CheckCircle, XCircle, Copy, Link as LinkIcon, Plus, Loader2, HelpCircle
 import { Textarea } from "@/components/ui/textarea";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { friendlyError } from "@/lib/errors";
 
 interface DailyData {
   date: string;
@@ -189,7 +190,7 @@ export default function AdminCampaignDetail() {
   const updateStatus = async (status: "active" | "pending" | "rejected") => {
     if (!id) return;
     const { error } = await supabase.from("campaigns").update({ status }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`Campaign ${status}`);
     if (status === "active") {
       // Auto-create referral link
@@ -266,7 +267,7 @@ export default function AdminCampaignDetail() {
       setManualNotes("");
       fetchData();
     } catch (err: any) {
-      toast.error(err.message || "Failed to record events");
+      toast.error(friendlyError(err, "Failed to record events"));
     } finally {
       setRecordingEvent(false);
     }
@@ -275,7 +276,7 @@ export default function AdminCampaignDetail() {
   const handleDeleteQuestion = async (qid: string) => {
     if (!confirm("Delete this question?")) return;
     const { error } = await supabase.from("campaign_questions").delete().eq("id", qid);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Question deleted");
     fetchData();
   };
@@ -310,7 +311,7 @@ export default function AdminCampaignDetail() {
       setManualNotes("");
       fetchData();
     } catch (err: any) {
-      toast.error(err.message || "Failed to record engagement interactions");
+      toast.error(friendlyError(err, "Failed to record engagement interactions"));
     } finally {
       setRecordingInteraction(false);
     }
@@ -320,7 +321,7 @@ export default function AdminCampaignDetail() {
     const { error } = await supabase.from("quiz_change_requests" as any).update({
       status, admin_notes: notes || null, updated_at: new Date().toISOString(),
     }).eq("id", reqId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`Request ${status}`);
     fetchData();
   };
@@ -337,7 +338,7 @@ export default function AdminCampaignDetail() {
       toast.success("Questions regenerated");
       fetchData();
     } catch (err: any) {
-      toast.error(err.message || "Failed to regenerate");
+      toast.error(friendlyError(err, "Failed to regenerate"));
     } finally {
       setGeneratingQuestions(false);
     }

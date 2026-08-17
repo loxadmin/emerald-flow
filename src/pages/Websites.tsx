@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Globe, Plus, CheckCircle, AlertCircle, Loader2, Mail, ShieldCheck } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 interface Website {
   id: string; domain: string; is_verified: boolean; created_at: string;
@@ -46,7 +47,7 @@ export default function WebsitesPage() {
     } as any);
     if (error) {
       if (error.code === "23505") toast.error("This domain is already registered on the platform by another account");
-      else toast.error(error.message);
+      else toast.error(friendlyError(error));
     } else {
       toast.success("Website added. Please verify it.");
       setNewDomain("");
@@ -70,7 +71,7 @@ export default function WebsitesPage() {
       } else {
         toast.error(payload?.error || "Failed to send OTP");
       }
-    } catch (err: any) { toast.error(err.message || "Failed to send OTP"); }
+    } catch (err: any) { toast.error(friendlyError(err, "Failed to send OTP")); }
     finally { setSendingOtp(null); }
   };
 
@@ -91,7 +92,7 @@ export default function WebsitesPage() {
       } else {
         toast.error(payload?.error || "Invalid or expired OTP");
       }
-    } catch (err: any) { toast.error(err.message || "Verification failed"); }
+    } catch (err: any) { toast.error(friendlyError(err, "Verification failed")); }
     finally { setSendingOtp(null); }
   };
 

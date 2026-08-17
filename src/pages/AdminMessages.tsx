@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Mail, MailOpen, Send, Clock } from "lucide-react";
 import { format } from "date-fns";
+import { friendlyError } from "@/lib/errors";
 
 interface ContactMessage {
   id: string;
@@ -42,7 +43,7 @@ export default function AdminMessages() {
     if (!reply.trim()) return;
     setSending(true);
     const { error } = await supabase.from("contact_messages").update({ admin_reply: reply.trim(), replied_at: new Date().toISOString(), is_read: true } as never).eq("id", msg.id);
-    if (error) { toast.error(error.message); } else {
+    if (error) { toast.error(friendlyError(error)); } else {
       toast.success(`Reply saved for ${msg.email}`);
       setReply("");
       setSelectedId(null);

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 type Opp = {
   id: string;
@@ -62,10 +63,10 @@ export default function AdminMigrationOpportunities() {
     };
     if (form.id) {
       const { error } = await supabase.from("migration_opportunities" as any).update(payload).eq("id", form.id);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(friendlyError(error));
     } else {
       const { error } = await supabase.from("migration_opportunities" as any).insert(payload);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(friendlyError(error));
     }
     toast.success("Saved");
     setOpen(false);
@@ -76,7 +77,7 @@ export default function AdminMigrationOpportunities() {
   const del = async (id: string) => {
     if (!confirm("Delete opportunity?")) return;
     const { error } = await supabase.from("migration_opportunities" as any).delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     load();
   };
 

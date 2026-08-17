@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { X, Upload, ShieldCheck } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
+import { friendlyError } from "@/lib/errors";
 
 const FREE_EMAIL = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "protonmail.com", "aol.com", "live.com", "googlemail.com", "yahoo.co.uk", "msn.com"];
 
@@ -154,7 +155,7 @@ export default function OfflineLOI() {
       toast.success("Letter of Intent submitted");
       navigate("/offline/loi/status", { replace: true });
     } catch (e: any) {
-      toast.error(e.message || "Failed to submit");
+      toast.error(friendlyError(e, "Failed to submit"));
     } finally {
       setSubmitting(false);
     }

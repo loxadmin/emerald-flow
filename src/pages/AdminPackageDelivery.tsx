@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Save, Upload } from "lucide-react";
 import AdminMigrationEntry from "@/components/AdminMigrationEntry";
+import { friendlyError } from "@/lib/errors";
 
 type Order = {
   id: string; advertiser_id: string; package_name: string;
@@ -140,7 +141,7 @@ export default function AdminPackageDelivery() {
       _fresh_users: Number(f.fresh) || 0,
     });
     setSaving(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Delivery recorded — escrow updated");
     setForms((s) => ({ ...s, [m.id]: EMPTY_FORM() }));
     load();

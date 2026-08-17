@@ -10,6 +10,7 @@ import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Save, Plus, Trash2, Edit2, X, Eye, Code } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import { friendlyError } from "@/lib/errors";
 
 interface Blog {
   id: string;
@@ -105,7 +106,7 @@ export default function AdminBlogs() {
         })
         .eq("id", editingId);
 
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else {
         toast.success("Blog updated");
         setEditingId(null);
@@ -116,7 +117,7 @@ export default function AdminBlogs() {
         .from("blogs" as any)
         .insert([formData]);
 
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else {
         toast.success("Blog created");
         setIsCreating(false);
@@ -133,7 +134,7 @@ export default function AdminBlogs() {
       .delete()
       .eq("id", id);
 
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else {
       toast.success("Blog deleted");
       fetchBlogs();

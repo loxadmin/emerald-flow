@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import AuthSplitShell from "@/components/auth/AuthSplitShell";
 import { getStoredAffiliateRef } from "@/components/AffiliateRefCapture";
+import { friendlyError } from "@/lib/errors";
 
 const PUBLIC_EMAIL_DOMAINS = [
   "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "live.com",
@@ -186,7 +187,7 @@ export default function Signup() {
       });
 
       if (error) {
-        toast.error(error.message);
+        toast.error(friendlyError(error));
       } else {
         // Best-effort: stamp terms_accepted_at on the profile after the trigger creates it.
         try {

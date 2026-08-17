@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth";
 import PendingCountdown from "@/components/PendingCountdown";
 import MigrationChart from "@/components/MigrationChart";
+import { friendlyError } from "@/lib/errors";
 
 interface DailyData {
   date: string;
@@ -73,7 +74,7 @@ export default function CampaignDetail() {
     setTopupLoading(true);
     const { data, error } = await supabase.rpc("topup_campaign_escrow" as any, { _campaign_id: id, _amount: amt });
     setTopupLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Escrow topped up");
     setTopupOpen(false);
     setTopupAmount("");
@@ -88,7 +89,7 @@ export default function CampaignDetail() {
     setEndLoading(true);
     const { data, error } = await supabase.rpc("end_campaign_early" as any, { _campaign_id: id });
     setEndLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     const result: any = data;
     toast.success(`Campaign ended. $${Number(result?.refunded || 0).toFixed(2)} refunded to wallet.`);
     setCampaign((c) => c ? ({ ...c, status: "ended", budget_remaining: 0 } as any) : c);
@@ -270,7 +271,7 @@ export default function CampaignDetail() {
       setTrackerSnippet(payload.snippet || "");
       await fetchTrackerInfo(id);
     } catch (err: any) {
-      toast.error(err.message || "Failed to regenerate script");
+      toast.error(friendlyError(err, "Failed to regenerate script"));
     } finally {
       setRegenerating(false);
     }
@@ -294,7 +295,7 @@ export default function CampaignDetail() {
       setApiKey(newKey);
       toast.success("API key regenerated. Update your integration with the new key.");
     } catch (err: any) {
-      toast.error(err.message || "Failed to regenerate API key");
+      toast.error(friendlyError(err, "Failed to regenerate API key"));
     } finally {
       setRegeneratingKey(false);
     }
@@ -600,7 +601,7 @@ export default function CampaignDetail() {
                         reason: requestReason.trim(),
                       });
                       setSubmittingRequest(false);
-                      if (error) { toast.error(error.message); return; }
+                      if (error) { toast.error(friendlyError(error)); return; }
                       toast.success("Request submitted. Admin will review shortly.");
                       setRequestQuestion(null);
                     }}

@@ -11,6 +11,7 @@ import { CheckCircle, XCircle, BarChart3, DollarSign, Users, RefreshCw, MousePoi
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from "recharts";
 import { ListSkeleton } from "@/components/skeletons";
+import { friendlyError } from "@/lib/errors";
 
 type CampaignWithProfile = Tables<"campaigns"> & {
   profiles: { email: string; full_name: string | null } | null;
@@ -162,7 +163,7 @@ export default function AdminDashboard() {
 
   const updateCampaignStatus = async (campaignId: string, status: "active" | "pending" | "rejected") => {
     const { error } = await supabase.from("campaigns").update({ status, is_draft: false }).eq("id", campaignId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`Campaign ${status}`);
     if (status === "active") {
       const code = `ref_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;

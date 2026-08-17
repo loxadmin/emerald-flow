@@ -15,6 +15,7 @@ import {
   Globe, Smartphone, CheckCircle, Send, Loader2, Settings, Download, UserPlus, ShoppingCart, AlertCircle, Lock,
 } from "lucide-react";
 import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
+import { friendlyError } from "@/lib/errors";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
 interface AdminPrices {
@@ -251,7 +252,7 @@ export default function CreateManualCampaign() {
       promo_media_type: promoMedia.type,
     } as any).select().single();
 
-    if (campErr) { toast.error(campErr.message); setLoading(false); return; }
+    if (campErr) { toast.error(friendlyError(campErr)); setLoading(false); return; }
 
     // Submit for escrow
     const token = (await supabase.auth.getSession()).data.session?.access_token;

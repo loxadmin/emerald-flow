@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
 import { GlassButton } from "@/components/ui/glass-button";
+import { friendlyError } from "@/lib/errors";
 
 type Affiliate = {
   id: string; code: string; full_name: string; email: string; status: string;
@@ -39,7 +40,7 @@ export default function AdminAffiliates() {
       .from("affiliate_withdrawals")
       .update({ status: approve ? "paid" : "rejected", reviewed_at: new Date().toISOString() })
       .eq("id", w.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
 
     if (!approve) {
       const aff = affiliates.find((a) => a.id === w.affiliate_id);

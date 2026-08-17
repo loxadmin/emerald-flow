@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, Package as PackageIcon } from "lucide-react";
 
 import { SUBTYPES, subtypesByGroup, GROUP_LABELS, subtypeLabel, type AdvertiserSubtype } from "@/lib/advertiser-subtypes";
+import { friendlyError } from "@/lib/errors";
 
 type Pkg = {
   id: string; name: string; description: string | null;
@@ -148,10 +149,10 @@ export default function AdminPackages() {
     let pkgId = editing?.id;
     if (editing) {
       const { error } = await supabase.from("ad_packages" as any).update(payload).eq("id", editing.id);
-      if (error) { setSaving(false); return toast.error(error.message); }
+      if (error) { setSaving(false); return toast.error(friendlyError(error)); }
     } else {
       const { data, error } = await supabase.from("ad_packages" as any).insert(payload).select("id").single();
-      if (error) { setSaving(false); return toast.error(error.message); }
+      if (error) { setSaving(false); return toast.error(friendlyError(error)); }
       pkgId = (data as any).id;
     }
     await supabase.from("package_milestones" as any).delete().eq("package_id", pkgId);
@@ -163,7 +164,7 @@ export default function AdminPackages() {
         commission_pct: r.pricing_type === "commission_pct" ? r.commission_pct : null,
       }));
       const { error: mErr } = await supabase.from("package_milestones" as any).insert(insertRows);
-      if (mErr) { setSaving(false); return toast.error(mErr.message); }
+      if (mErr) { setSaving(false); return toast.error(friendlyError(mErr)); }
     }
     setSaving(false);
     toast.success(editing ? "Package updated" : "Package created");
@@ -187,7 +188,7 @@ export default function AdminPackages() {
     const { error } = await supabase.rpc("review_package_order" as any, {
       _order_id: id, _approve: approve, _notes: notes,
     });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success(approve ? "Order approved" : "Order rejected & refunded");
     supabase.functions.invoke("notify", {
       body: { event: approve ? "package_order_approved" : "package_order_rejected", payload: { order_id: id, reason: notes } },

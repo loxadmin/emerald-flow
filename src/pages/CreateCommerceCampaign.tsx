@@ -13,6 +13,7 @@ import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, Shoppi
 import JSZip from "jszip";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
+import { friendlyError } from "@/lib/errors";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
 
@@ -188,7 +189,7 @@ export default function CreateCommerceCampaign() {
       website_id: selectedWebsiteId, ad_type: "commerce",
       selected_milestones: ["purchase"],
     } as any).select().single();
-    if (error) { toast.error(error.message); setLoading(false); return; }
+    if (error) { toast.error(friendlyError(error)); setLoading(false); return; }
 
     const key = `kb_${crypto.randomUUID().replace(/-/g, "")}`;
     await supabase.functions.invoke("manage-campaign", {
@@ -215,7 +216,7 @@ export default function CreateCommerceCampaign() {
         toast.success("Integration verified!");
         goToStep(3, campaignId);
       } else toast.error(payload?.error || "Verification failed");
-    } catch (err: unknown) { toast.error((err as Error).message); }
+    } catch (err: unknown) { toast.error(friendlyError(err)); }
     finally { setVerifying(false); }
   };
 

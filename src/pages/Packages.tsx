@@ -27,6 +27,7 @@ const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; pla
 };
 
 import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
+import { friendlyError } from "@/lib/errors";
 
 type Pkg = {
   id: string; name: string; description: string | null;
@@ -376,7 +377,7 @@ export default function Packages() {
       if ((wallet?.balance || 0) < flatTotal) { setBuying(false); return toast.error("Insufficient wallet balance"); }
       const { data, error } = await supabase.rpc("purchase_package_v2" as any, args);
       setBuying(false);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(friendlyError(error));
       toast.success("Package purchased! Approval takes 3–7 business days.");
       const orderId = (data as { order_id?: string })?.order_id;
       if (orderId && promo.url) {

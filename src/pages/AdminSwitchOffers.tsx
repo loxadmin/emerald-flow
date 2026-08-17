@@ -19,6 +19,7 @@ import { Loader2, Plus, Trash2, Pencil, Building2, Zap, ClipboardList, ExternalL
 import CompetitorLogoUpload from "@/components/CompetitorLogoUpload";
 import AdminMigrationEntry from "@/components/AdminMigrationEntry";
 import { parseTxnCsv, sumTxn, type TxnRow } from "@/lib/txn-csv";
+import { friendlyError } from "@/lib/errors";
 
 const SUBTYPES = [
   "musician","youtuber","social_media_creator",
@@ -120,14 +121,14 @@ export default function AdminSwitchOffers() {
     const { error } = compEdit
       ? await supabase.from("competitor_apps" as any).update(payload).eq("id", compEdit.id)
       : await supabase.from("competitor_apps" as any).insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Saved");
     setCompOpen(false); load();
   };
   const delComp = async (id: string) => {
     if (!confirm("Delete this competitor app?")) return;
     const { error } = await supabase.from("competitor_apps" as any).delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     load();
   };
 
@@ -167,14 +168,14 @@ export default function AdminSwitchOffers() {
     const { error } = offEdit
       ? await supabase.from("switch_offers" as any).update(payload).eq("id", offEdit.id)
       : await supabase.from("switch_offers" as any).insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     toast.success("Saved");
     setOffOpen(false); load();
   };
   const delOff = async (id: string) => {
     if (!confirm("Delete this offer?")) return;
     const { error } = await supabase.from("switch_offers" as any).delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyError(error));
     load();
   };
 
@@ -215,7 +216,7 @@ export default function AdminSwitchOffers() {
       _txn_rows: txnRows.length ? txnRows : null,
       _notes: ordForm.notes || null,
     });
-    if (error) { setSaving(false); return toast.error(error.message); }
+    if (error) { setSaving(false); return toast.error(friendlyError(error)); }
 
     const { error: sErr } = await supabase.rpc("update_switch_order_delivery" as any, {
       _order_id: ordEdit.id,
@@ -224,7 +225,7 @@ export default function AdminSwitchOffers() {
       _notes: ordForm.notes || null,
     });
     setSaving(false);
-    if (sErr) return toast.error(sErr.message);
+    if (sErr) return toast.error(friendlyError(sErr));
     toast.success("Delivery metrics saved");
     setOrdEdit(null); load();
   };

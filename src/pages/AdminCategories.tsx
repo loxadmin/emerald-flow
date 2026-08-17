@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
 import { Plus, Trash2, Handshake, Save, Pencil, X, Check, Layers3 } from "lucide-react";
+import { friendlyError } from "@/lib/errors";
 
 interface Category {
   id: string;
@@ -144,7 +145,7 @@ export default function AdminCategories() {
       .eq("id", editingId);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return;
     }
 
@@ -172,7 +173,7 @@ export default function AdminCategories() {
     setAdding(false);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return;
     }
 
@@ -191,7 +192,7 @@ export default function AdminCategories() {
       .from("categories")
       .update({ group_id: groupId, updated_at: new Date().toISOString() } as any)
       .eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Group updated");
     fetchCategories();
   };
@@ -201,7 +202,7 @@ export default function AdminCategories() {
       .from("categories")
       .update({ mode, updated_at: new Date().toISOString() } as any)
       .eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     fetchCategories();
   };
 
@@ -212,7 +213,7 @@ export default function AdminCategories() {
       .eq("id", id);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return;
     }
 
@@ -228,7 +229,7 @@ export default function AdminCategories() {
 
     const { error } = await supabase.from("categories").delete().eq("id", id);
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return;
     }
 
@@ -267,7 +268,7 @@ export default function AdminCategories() {
     setSavingEvents(null);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       return;
     }
 
@@ -287,7 +288,7 @@ export default function AdminCategories() {
       : supabase.from("admin_settings").insert({ key, value, description: `Wallet activation fee (USD) for ${category.name}` });
     const { error } = await op;
     setSavingFee(null);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success("Activation fee updated");
   };
 
