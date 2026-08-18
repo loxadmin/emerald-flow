@@ -48,11 +48,12 @@ Deno.serve(async (req) => {
       const [{ data: profiles }, { data: roles }] = await Promise.all([
         admin
           .from("profiles")
-          .select("id, email, full_name, company_name, is_blocked, created_at")
+          .select("id, email, full_name, company_name, is_blocked, created_at, deleted_at")
           .order("created_at", { ascending: false })
           .limit(1000),
         admin.from("user_roles").select("user_id, role").limit(5000),
       ]);
+
 
       const roleMap: Record<string, string[]> = {};
       for (const r of roles || []) {
