@@ -135,9 +135,24 @@ Deno.serve(async (req) => {
     }
 
     if (action === "delete") {
-      await admin.auth.admin.deleteUser(targetId).catch(() => {});
+      // Soft delete: never remove the account or its data permanently.
+      await admin
+        .from("profiles")
+        .update({ is_blocked: true, deleted_at: new Date().toISOString(), deleted_by: caller.id })
+        .eq("id", targetId);
+      await admin.auth.admin.updateUserById(targetId, { ban_duration: "876000h" }).catch(() => {});
       return json({ ok: true });
     }
+
+    if (action === "restore") {
+      await admin
+        .from("profiles")
+        .update({ is_blocked: false, deleted_at: null, deleted_by: null })
+        .eq("id", targetId);
+      await admin.auth.admin.updateUserById(targetId, { ban_duration: "none" }).catch(() => {});
+      return json({ ok: true });
+    }
+
 
     return json({ error: "Unknown action" });
   } catch (_e) {
