@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { functionError } from "@/lib/errors";
-import { Users, RefreshCw, ShieldCheck, Ban, Trash2, ShieldOff, Crown } from "lucide-react";
+import { Users, RefreshCw, ShieldCheck, Ban, Trash2, ShieldOff, Crown, RotateCcw } from "lucide-react";
 
 type Row = {
   id: string;
@@ -13,6 +13,7 @@ type Row = {
   full_name: string | null;
   company_name: string | null;
   is_blocked: boolean | null;
+  deleted_at: string | null;
   created_at: string;
   roles: string[];
 };
@@ -22,7 +23,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "admins">("all");
+  const [filter, setFilter] = useState<"all" | "admins" | "deleted">("all");
   const [newEmail, setNewEmail] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -66,6 +67,8 @@ export default function AdminUsers() {
 
   const visible = rows.filter((r) => {
     const isAdmin = r.roles.includes("admin") || r.roles.includes("super_admin");
+    const isDeleted = !!r.deleted_at;
+    if (filter === "deleted" ? !isDeleted : isDeleted) return false;
     if (filter === "admins" && !isAdmin) return false;
     if (!query.trim()) return true;
     const q = query.toLowerCase();
@@ -77,6 +80,8 @@ export default function AdminUsers() {
   });
 
   const adminCount = rows.filter((r) => r.roles.includes("admin") || r.roles.includes("super_admin")).length;
+  const deletedCount = rows.filter((r) => !!r.deleted_at).length;
+  const activeCount = rows.length - deletedCount;
 
   return (
     <AdminLayout>
@@ -87,7 +92,7 @@ export default function AdminUsers() {
               <Users className="h-5 w-5 text-primary" /> Users &amp; admins
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Super admin only. Create admins, revoke access, ban or delete accounts.
+              Super admin only. Create admins, revoke access, ban or deactivate accounts. Deleted accounts are archived, never erased.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -101,14 +106,18 @@ export default function AdminUsers() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-4 sm:max-w-md">
+            <div className="grid grid-cols-3 gap-4 sm:max-w-2xl">
               <div className="rounded-2xl border border-border bg-card p-4">
-                <p className="text-xs text-muted-foreground">Total users</p>
-                <p className="text-2xl font-semibold">{rows.length}</p>
+                <p className="text-xs text-muted-foreground">Active users</p>
+                <p className="text-2xl font-semibold">{activeCount}</p>
               </div>
               <div className="rounded-2xl border border-border bg-card p-4">
                 <p className="text-xs text-muted-foreground">Admins</p>
                 <p className="text-2xl font-semibold">{adminCount}</p>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <p className="text-xs text-muted-foreground">Deleted accounts</p>
+                <p className="text-2xl font-semibold">{deletedCount}</p>
               </div>
             </div>
 
@@ -151,6 +160,9 @@ export default function AdminUsers() {
                 </Button>
                 <Button variant={filter === "admins" ? "default" : "outline"} size="sm" onClick={() => setFilter("admins")}>
                   Admins only
+                </Button>
+                <Button variant={filter === "deleted" ? "default" : "outline"} size="sm" onClick={() => setFilter("deleted")}>
+                  Deleted accounts
                 </Button>
               </div>
             </div>
@@ -198,7 +210,11 @@ export default function AdminUsers() {
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              {r.is_blocked ? (
+                              {r.deleted_at ? (
+                                <span className="text-xs font-medium text-destructive">
+                                  Inactive (deleted {new Date(r.deleted_at).toLocaleDateString()})
+                                </span>
+                              ) : r.is_blocked ? (
                                 <span className="text-xs font-medium text-destructive">Banned</span>
                               ) : (
                                 <span className="text-xs text-muted-foreground">Active</span>
@@ -209,6 +225,17 @@ export default function AdminUsers() {
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex flex-wrap justify-end gap-2">
+                                {r.deleted_at ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={busy}
+                                    onClick={() => act({ action: "restore", user_id: r.id }, "Account restored")}
+                                  >
+                                    <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Restore
+                                  </Button>
+                                ) : (
+                                <>
                                 {!isAdmin && (
                                   <Button
                                     size="sm"
@@ -257,12 +284,14 @@ export default function AdminUsers() {
                                   variant="destructive"
                                   disabled={busy}
                                   onClick={() => {
-                                    if (!confirm(`Delete ${r.email}? This cannot be undone.`)) return;
+                                    if (!confirm(`Delete ${r.email}? The account is deactivated and kept in Deleted accounts.`)) return;
                                     act({ action: "delete", user_id: r.id }, "Account deleted");
                                   }}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
+                                </>
+                                )}
                               </div>
                             </td>
                           </tr>
