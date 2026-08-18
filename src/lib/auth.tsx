@@ -173,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle(),
         supabase
           .from("profiles")
-          .select("is_blocked")
+          .select("is_blocked, deleted_at")
           .eq("id", activeUser.id)
           .maybeSingle(),
         supabase
@@ -187,7 +187,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (requestId !== accessRequestIdRef.current) return;
 
-      if ((profileData as { is_blocked?: boolean } | null)?.is_blocked) {
+      const profileRow = profileData as { is_blocked?: boolean; deleted_at?: string | null } | null;
+
+      if (profileRow?.deleted_at) {
+        await supabase.auth.signOut();
+        if (typeof window !== "undefined") {
+          alert("This account has been deleted.");
+        }
+        resetAccessState();
+        return;
+      }
+
+      if (profileRow?.is_blocked) {
         await supabase.auth.signOut();
         if (typeof window !== "undefined") {
           alert("Your account has been blocked. Please contact support.");
@@ -195,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resetAccessState();
         return;
       }
+
 
       // Derive advertiserType. Prefer the stored advertiser_type; otherwise fall back
       // to the category's group slug so category-scoped UI (assistant, sidebar tabs,
