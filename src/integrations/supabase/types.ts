@@ -2976,6 +2976,10 @@ export type Database = {
     }
     Functions: {
       accept_offline_order: { Args: { _order_id: string }; Returns: Json }
+      admin_credit_wallet: {
+        Args: { _amount: number; _description: string; _wallet_id: string }
+        Returns: Json
+      }
       advertiser_can_use_package: {
         Args: { _package_id: string; _user: string }
         Returns: boolean
@@ -3131,12 +3135,20 @@ export type Database = {
         Args: { _amount: number; _destination: Json; _method: string }
         Returns: Json
       }
+      review_affiliate_withdrawal: {
+        Args: { _approve: boolean; _withdrawal_id: string }
+        Returns: Json
+      }
       review_offline_offer: {
         Args: { _approve: boolean; _notes: string; _offer_id: string }
         Returns: Json
       }
       review_package_order: {
         Args: { _approve: boolean; _notes: string; _order_id: string }
+        Returns: Json
+      }
+      review_withdrawal_request: {
+        Args: { _approve: boolean; _notes?: string; _request_id: string }
         Returns: Json
       }
       set_package_order_promo: {
