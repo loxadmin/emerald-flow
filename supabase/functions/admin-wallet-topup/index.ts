@@ -48,35 +48,22 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid wallet_id or amount' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { data: wallet, error: wErr } = await admin
-      .from('wallets')
-      .select('id, balance, is_activated')
-      .eq('id', walletId)
-      .maybeSingle();
-
-    if (wErr || !wallet) {
-      return new Response(JSON.stringify({ error: 'Wallet not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    const newBalance = Number(wallet.balance) + amount;
-    const updates: Record<string, unknown> = { balance: newBalance, updated_at: new Date().toISOString() };
-    if (!wallet.is_activated) updates.is_activated = true;
-
-    const { error: updErr } = await admin.from('wallets').update(updates).eq('id', walletId);
-    if (updErr) {
-      return new Response(JSON.stringify({ error: updErr.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    await admin.from('wallet_transactions').insert({
-      wallet_id: walletId,
-      amount,
-      type: 'admin_topup',
-      status: 'completed',
-      description,
-      reference: `admin-${userData.user.id}-${Date.now()}`,
+    // Atomic, row-locked credit + ledger entry (runs as the admin caller)
+    const { data: result, error: rpcErr } = await userClient.rpc('admin_credit_wallet', {
+      _wallet_id: walletId,
+      _amount: amount,
+      _description: description,
     });
 
-    return new Response(JSON.stringify({ success: true, new_balance: newBalance }), {
+    if (rpcErr) {
+      const notFound = /Wallet not found/i.test(rpcErr.message);
+      return new Response(JSON.stringify({ error: rpcErr.message }), {
+        status: notFound ? 404 : 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, new_balance: (result as { new_balance?: number })?.new_balance }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

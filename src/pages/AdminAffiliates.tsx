@@ -61,20 +61,11 @@ export default function AdminAffiliates() {
   };
 
   const review = async (w: Withdrawal, approve: boolean) => {
-    const { error } = await supabase
-      .from("affiliate_withdrawals")
-      .update({ status: approve ? "paid" : "rejected", reviewed_at: new Date().toISOString() })
-      .eq("id", w.id);
+    const { error } = await supabase.rpc("review_affiliate_withdrawal" as never, {
+      _withdrawal_id: w.id,
+      _approve: approve,
+    } as never);
     if (error) { toast.error(friendlyError(error)); return; }
-
-    if (!approve) {
-      const aff = affiliates.find((a) => a.id === w.affiliate_id);
-      if (aff) {
-        await supabase.from("affiliates")
-          .update({ balance_usd: Number(aff.balance_usd) + Number(w.amount_usd) })
-          .eq("id", aff.id);
-      }
-    }
     toast.success(approve ? "Marked as paid" : "Rejected and refunded");
     load();
   };
