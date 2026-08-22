@@ -1,10 +1,23 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { Buffer } from "node:buffer";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-paystack-signature, verif-hash",
 };
+
+function safeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a, "utf8");
+  const bb = Buffer.from(b, "utf8");
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -18,87 +31,97 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Determine which gateway sent this webhook
     const paystackSignature = req.headers.get("x-paystack-signature");
     const flutterwaveHash = req.headers.get("verif-hash");
 
+    let provider = "unknown";
     let reference: string | null = null;
     let metadataType: string | null = null;
+    let eventType: string | null = null;
+    let eventId: string | null = null;
+    let event: Record<string, any>;
 
     if (paystackSignature) {
-      // === PAYSTACK WEBHOOK ===
+      provider = "paystack";
       const { data: paystackSetting } = await supabase
         .from("admin_settings").select("value").eq("key", "paystack_secret_key").maybeSingle();
       const paystackSecret = paystackSetting?.value || Deno.env.get("PAYSTACK_SECRET_KEY");
       if (!paystackSecret) return new Response("Not configured", { status: 500 });
 
       const hash = createHmac("sha512", paystackSecret).update(rawBody).digest("hex");
-      if (hash !== paystackSignature) return new Response("Invalid signature", { status: 401 });
+      if (!safeEqual(hash, paystackSignature)) {
+        return new Response("Invalid signature", { status: 401 });
+      }
 
-      const event = JSON.parse(rawBody);
-      if (event.event !== "charge.success") return new Response("OK", { status: 200 });
-
-      reference = event.data?.reference;
-      metadataType = event.data?.metadata?.type;
+      event = JSON.parse(rawBody);
+      eventType = event.event;
+      eventId = String(event.data?.id ?? event.id ?? await sha256Hex(rawBody));
+      if (eventType !== "charge.success") {
+        await supabase.rpc("process_payment_webhook", {
+          _provider: provider, _event_id: eventId, _event_type: eventType,
+          _reference: null, _is_activation: false, _payload: event,
+        });
+        return new Response("OK", { status: 200 });
+      }
+      reference = event.data?.reference ?? null;
+      metadataType = event.data?.metadata?.type ?? null;
     } else if (flutterwaveHash) {
-      // === FLUTTERWAVE WEBHOOK ===
+      provider = "flutterwave";
       const { data: fwSetting } = await supabase
-        .from("admin_settings").select("value").eq("key", "flutterwave_secret_key").maybeSingle();
-      const fwHash = fwSetting?.value ? fwSetting.value.slice(-12) : null; // Simple hash verification
-      // Flutterwave uses the FLWSECK hash for verification
-      // For now, we accept the webhook if verif-hash header matches our stored hash
-      console.log("Flutterwave webhook received");
+        .from("admin_settings").select("value").eq("key", "flutterwave_webhook_hash").maybeSingle();
+      const expectedHash = fwSetting?.value || Deno.env.get("FLUTTERWAVE_WEBHOOK_HASH");
+      if (!expectedHash) return new Response("Not configured", { status: 500 });
+      if (!safeEqual(expectedHash, flutterwaveHash)) {
+        return new Response("Invalid signature", { status: 401 });
+      }
 
-      const event = JSON.parse(rawBody);
-      // Flutterwave charge.completed or transfer.completed
-      if (event.event === "charge.completed" && event.data?.status === "successful") {
-        reference = event.data?.tx_ref;
-        metadataType = event.data?.meta?.type;
-      } else if (event.event === "transfer.completed" && event.data?.status === "SUCCESSFUL") {
-        reference = event.data?.reference;
-        metadataType = "funding"; // PSA wallet funding
+      event = JSON.parse(rawBody);
+      eventType = event.event ?? null;
+      eventId = String(event.data?.id ?? event.id ?? await sha256Hex(rawBody));
+
+      if (eventType === "charge.completed" && event.data?.status === "successful") {
+        reference = event.data?.tx_ref ?? null;
+        metadataType = event.data?.meta?.type ?? null;
+      } else if (eventType === "transfer.completed" && event.data?.status === "SUCCESSFUL") {
+        reference = event.data?.reference ?? null;
+        metadataType = "funding";
       } else {
+        await supabase.rpc("process_payment_webhook", {
+          _provider: provider, _event_id: eventId, _event_type: eventType,
+          _reference: null, _is_activation: false, _payload: event,
+        });
         return new Response("OK", { status: 200 });
       }
     } else {
-      // Try parsing as generic webhook
-      const event = JSON.parse(rawBody);
-      reference = event.data?.reference || event.data?.tx_ref;
-      metadataType = event.data?.metadata?.type || event.data?.meta?.type;
+      // Unsigned callers are never trusted
+      return new Response("Invalid signature", { status: 401 });
     }
 
-    if (!reference) return new Response("OK", { status: 200 });
+    const { data, error } = await supabase.rpc("process_payment_webhook", {
+      _provider: provider,
+      _event_id: eventId,
+      _event_type: eventType,
+      _reference: reference,
+      _is_activation: metadataType === "activation",
+      _payload: event,
+    });
 
-    // Find pending transaction
-    const { data: tx } = await supabase
-      .from("wallet_transactions").select("*").eq("reference", reference).eq("status", "pending").maybeSingle();
-
-    if (!tx) return new Response("Transaction not found or already processed", { status: 200 });
-
-    await supabase.from("wallet_transactions").update({ status: "completed" }).eq("id", tx.id);
-
-    const { data: wallet } = await supabase.from("wallets").select("*").eq("id", tx.wallet_id).single();
-    if (!wallet) return new Response("Wallet not found", { status: 200 });
-
-    const newBalance = Number(wallet.balance) + Number(tx.amount);
-    const updates: Record<string, unknown> = { balance: newBalance, updated_at: new Date().toISOString() };
-
-    const wasActivation = metadataType === "activation" || tx.type === "activation";
-    if (wasActivation) {
-      updates.is_activated = true;
-      await supabase.from("advertiser_categories").update({ status: "active" }).eq("advertiser_id", wallet.advertiser_id).eq("status", "waiting_list");
+    if (error) {
+      console.error("process_payment_webhook error:", error.message);
+      return new Response("Processing error", { status: 500 });
     }
 
-    await supabase.from("wallets").update(updates).eq("id", wallet.id);
-
-    // Fire-and-forget notifications
-    try {
-      if (wasActivation) {
-        await supabase.functions.invoke("notify", { body: { event: "wallet_activated", payload: { wallet_id: wallet.id } } });
-      } else {
-        await supabase.functions.invoke("notify", { body: { event: "wallet_funded", payload: { tx_id: tx.id } } });
-      }
-    } catch (e) { console.warn("notify failed", (e as Error).message); }
+    const result = data as Record<string, unknown>;
+    if (result?.credited) {
+      try {
+        await supabase.functions.invoke("notify", {
+          body: {
+            event: result.activation ? "wallet_activated" : "wallet_funded",
+            payload: { wallet_id: result.wallet_id, tx_id: result.tx_id },
+          },
+        });
+      } catch (e) { console.warn("notify failed", (e as Error).message); }
+    }
 
     return new Response("OK", { status: 200 });
   } catch (err: unknown) {
