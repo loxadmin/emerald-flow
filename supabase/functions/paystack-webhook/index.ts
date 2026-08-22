@@ -1,23 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { Buffer } from "node:buffer";
+import { safeEqual, sha256Hex, verifyPaystackSignature } from "../_shared/webhook-verify.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-paystack-signature, verif-hash",
 };
-
-function safeEqual(a: string, b: string): boolean {
-  const ba = Buffer.from(a, "utf8");
-  const bb = Buffer.from(b, "utf8");
-  if (ba.length !== bb.length) return false;
-  return timingSafeEqual(ba, bb);
-}
-
-async function sha256Hex(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -48,8 +35,7 @@ Deno.serve(async (req) => {
       const paystackSecret = paystackSetting?.value || Deno.env.get("PAYSTACK_SECRET_KEY");
       if (!paystackSecret) return new Response("Not configured", { status: 500 });
 
-      const hash = createHmac("sha512", paystackSecret).update(rawBody).digest("hex");
-      if (!safeEqual(hash, paystackSignature)) {
+      if (!verifyPaystackSignature(rawBody, paystackSignature, paystackSecret)) {
         return new Response("Invalid signature", { status: 401 });
       }
 
