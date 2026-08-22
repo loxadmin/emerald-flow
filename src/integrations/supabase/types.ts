@@ -2928,6 +2928,48 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          created_at: string
+          error: string | null
+          event_id: string
+          event_type: string | null
+          id: string
+          payload: Json | null
+          processed_at: string | null
+          provider: string
+          reference: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event_id: string
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider: string
+          reference?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event_id?: string
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider?: string
+          reference?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       withdrawal_requests: {
         Row: {
           admin_notes: string | null
@@ -3052,6 +3094,17 @@ export type Database = {
         Args: { _milestone_id: string; _order_id: string }
         Returns: number
       }
+      process_payment_webhook: {
+        Args: {
+          _event_id: string
+          _event_type: string
+          _is_activation?: boolean
+          _payload?: Json
+          _provider: string
+          _reference: string
+        }
+        Returns: Json
+      }
       purchase_package_v2: {
         Args: {
           _duration_days: number
@@ -3074,6 +3127,45 @@ export type Database = {
       qualify_affiliate_referral: {
         Args: { _advertiser: string; _source_id: string; _source_type: string }
         Returns: undefined
+      }
+      reconcile_daily: {
+        Args: { _from?: string; _to?: string }
+        Returns: {
+          credits: number
+          day: string
+          debits: number
+          net: number
+          txn_count: number
+        }[]
+      }
+      reconcile_escrow: {
+        Args: never
+        Returns: {
+          advertiser_email: string
+          consumed: number
+          drift: number
+          entity_id: string
+          escrowed: number
+          kind: string
+          name: string
+          refunded: number
+          remaining: number
+          status: string
+        }[]
+      }
+      reconcile_wallets: {
+        Args: never
+        Returns: {
+          advertiser_id: string
+          balance: number
+          credits: number
+          debits: number
+          drift: number
+          email: string
+          ledger_balance: number
+          txn_count: number
+          wallet_id: string
+        }[]
       }
       record_package_delivery:
         | {
@@ -3151,6 +3243,7 @@ export type Database = {
         Args: { _approve: boolean; _notes?: string; _request_id: string }
         Returns: Json
       }
+      run_financial_selftest: { Args: never; Returns: Json }
       set_package_order_promo: {
         Args: { _order_id: string; _path: string; _type: string; _url: string }
         Returns: Json
@@ -3193,6 +3286,7 @@ export type Database = {
         }
         Returns: Json
       }
+      wallet_txn_direction: { Args: { _type: string }; Returns: number }
     }
     Enums: {
       advertiser_subtype:
