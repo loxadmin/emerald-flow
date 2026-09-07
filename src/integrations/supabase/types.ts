@@ -65,6 +65,7 @@ export type Database = {
           min_units: number
           mode: string
           name: string
+          package_type: string
           platform_support: string[]
           sort_order: number
           unit_label: string | null
@@ -88,6 +89,7 @@ export type Database = {
           min_units?: number
           mode?: string
           name: string
+          package_type?: string
           platform_support?: string[]
           sort_order?: number
           unit_label?: string | null
@@ -111,6 +113,7 @@ export type Database = {
           min_units?: number
           mode?: string
           name?: string
+          package_type?: string
           platform_support?: string[]
           sort_order?: number
           unit_label?: string | null
@@ -2121,9 +2124,10 @@ export type Database = {
           engagement_metrics: Json | null
           fresh_users: number
           id: string
-          milestone_id: string
+          milestone_id: string | null
           notes: string | null
           order_id: string
+          swift_action_key: string | null
           total_txn_amount: number | null
           txn_rows: Json | null
           updated_at: string
@@ -2138,9 +2142,10 @@ export type Database = {
           engagement_metrics?: Json | null
           fresh_users?: number
           id?: string
-          milestone_id: string
+          milestone_id?: string | null
           notes?: string | null
           order_id: string
+          swift_action_key?: string | null
           total_txn_amount?: number | null
           txn_rows?: Json | null
           updated_at?: string
@@ -2155,9 +2160,10 @@ export type Database = {
           engagement_metrics?: Json | null
           fresh_users?: number
           id?: string
-          milestone_id?: string
+          milestone_id?: string | null
           notes?: string | null
           order_id?: string
+          swift_action_key?: string | null
           total_txn_amount?: number | null
           txn_rows?: Json | null
           updated_at?: string
@@ -2182,6 +2188,7 @@ export type Database = {
       }
       package_orders: {
         Row: {
+          admin_edit_note: string | null
           admin_notes: string | null
           advertiser_id: string
           app_links: string[]
@@ -2193,12 +2200,15 @@ export type Database = {
           milestone_breakdown: Json | null
           package_id: string | null
           package_name: string
+          package_type: string
           payment_method: string
           payment_reference: string | null
           platform: string | null
           promo_media_path: string | null
           promo_media_type: string | null
           promo_media_url: string | null
+          proposed_actions: Json | null
+          proposed_total_usd: number | null
           refunded_at: string | null
           refunded_usd: number
           reviewed_at: string | null
@@ -2206,6 +2216,8 @@ export type Database = {
           selected_milestone_ids: string[] | null
           starts_at: string | null
           status: string
+          swift_actions: Json | null
+          swift_base_price_usd: number | null
           target_milestone_id: string | null
           total_amount_usd: number
           unit_label: string
@@ -2214,6 +2226,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_edit_note?: string | null
           admin_notes?: string | null
           advertiser_id: string
           app_links?: string[]
@@ -2225,12 +2238,15 @@ export type Database = {
           milestone_breakdown?: Json | null
           package_id?: string | null
           package_name: string
+          package_type?: string
           payment_method: string
           payment_reference?: string | null
           platform?: string | null
           promo_media_path?: string | null
           promo_media_type?: string | null
           promo_media_url?: string | null
+          proposed_actions?: Json | null
+          proposed_total_usd?: number | null
           refunded_at?: string | null
           refunded_usd?: number
           reviewed_at?: string | null
@@ -2238,6 +2254,8 @@ export type Database = {
           selected_milestone_ids?: string[] | null
           starts_at?: string | null
           status?: string
+          swift_actions?: Json | null
+          swift_base_price_usd?: number | null
           target_milestone_id?: string | null
           total_amount_usd: number
           unit_label: string
@@ -2246,6 +2264,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_edit_note?: string | null
           admin_notes?: string | null
           advertiser_id?: string
           app_links?: string[]
@@ -2257,12 +2276,15 @@ export type Database = {
           milestone_breakdown?: Json | null
           package_id?: string | null
           package_name?: string
+          package_type?: string
           payment_method?: string
           payment_reference?: string | null
           platform?: string | null
           promo_media_path?: string | null
           promo_media_type?: string | null
           promo_media_url?: string | null
+          proposed_actions?: Json | null
+          proposed_total_usd?: number | null
           refunded_at?: string | null
           refunded_usd?: number
           reviewed_at?: string | null
@@ -2270,6 +2292,8 @@ export type Database = {
           selected_milestone_ids?: string[] | null
           starts_at?: string | null
           status?: string
+          swift_actions?: Json | null
+          swift_base_price_usd?: number | null
           target_milestone_id?: string | null
           total_amount_usd?: number
           unit_label?: string
@@ -2472,6 +2496,116 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      swift_daily_actions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_per_user_per_day: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_per_user_per_day?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_per_user_per_day?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      swift_package_actions: {
+        Row: {
+          action_id: string
+          created_at: string
+          id: string
+          package_id: string
+          price_override_usd: number | null
+        }
+        Insert: {
+          action_id: string
+          created_at?: string
+          id?: string
+          package_id: string
+          price_override_usd?: number | null
+        }
+        Update: {
+          action_id?: string
+          created_at?: string
+          id?: string
+          package_id?: string
+          price_override_usd?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swift_package_actions_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "swift_daily_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "swift_package_actions_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "ad_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      swift_price_tiers: {
+        Row: {
+          created_at: string
+          id: string
+          max_units: number
+          min_units: number
+          package_id: string
+          price_per_user_usd: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_units: number
+          min_units: number
+          package_id: string
+          price_per_user_usd: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_units?: number
+          min_units?: number
+          package_id?: string
+          price_per_user_usd?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swift_price_tiers_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "ad_packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       switch_offer_orders: {
         Row: {
