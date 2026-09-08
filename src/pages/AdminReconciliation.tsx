@@ -92,7 +92,7 @@ export default function AdminReconciliation() {
     if (error) {
       toast({ title: friendlyError(error), variant: "destructive" });
     } else {
-      const payload = data as { ran_at: string; results: TestResult[] };
+      const payload = data as unknown as { ran_at: string; results: TestResult[] };
       setTests(payload?.results || []);
       setTestRanAt(payload?.ran_at || null);
     }
