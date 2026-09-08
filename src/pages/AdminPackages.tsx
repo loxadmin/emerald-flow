@@ -14,15 +14,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Loader2, Package as PackageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Package as PackageIcon, Zap } from "lucide-react";
 
 import { SUBTYPES, subtypesByGroup, GROUP_LABELS, subtypeLabel, type AdvertiserSubtype } from "@/lib/advertiser-subtypes";
 import { friendlyError } from "@/lib/errors";
+import SwiftPackageEditor from "@/components/swift/SwiftPackageEditor";
+import SwiftOrderEditDialog from "@/components/swift/SwiftOrderEditDialog";
+import {
+  type SwiftTier, type SwiftAction, type SwiftPkgAction, type SwiftOrderAction,
+  validateTiers, swiftStartingPrice, swiftMaxUnits,
+} from "@/lib/swift";
 
+type PackageType = "legacy" | "swift";
 type Pkg = {
   id: string; name: string; description: string | null;
   category_group_id: string | null; category_id: string | null;
   advertiser_subtypes: AdvertiserSubtype[] | null;
+  package_type: PackageType;
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
   is_active: boolean; sort_order: number;
@@ -42,19 +50,24 @@ type Order = {
   app_links: string[]; payment_method: string; status: string;
   platform: string | null; selected_milestone_ids: string[] | null;
   milestone_breakdown: any; admin_notes: string | null; created_at: string;
+  package_type: PackageType;
+  swift_actions: SwiftOrderAction[] | null;
+  swift_base_price_usd: number | null;
+  proposed_total_usd: number | null;
 };
 
 const DURATION_PRESETS = [7, 14, 30, 60, 90, 180, 365];
 const SUBTYPE_GROUPS = subtypesByGroup();
 const emptyForm = {
   name: "", description: "",
+  package_type: "legacy" as PackageType,
   advertiser_subtypes: [] as AdvertiserSubtype[],
   min_units: "500", max_units: "10000",
   duration_options: [30] as number[],
   platform_support: ["mobile"] as string[],
   is_active: true, sort_order: "0",
 };
-
+const emptyPreset = { id: "", name: "", slug: "", description: "", price: "0.02", is_active: true, sort_order: "0" };
 
 export default function AdminPackages() {
   const [packages, setPackages] = useState<Pkg[]>([]);
@@ -63,28 +76,41 @@ export default function AdminPackages() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [pkgMilestones, setPkgMilestones] = useState<Record<string, PkgMilestone[]>>({});
+  const [presets, setPresets] = useState<SwiftAction[]>([]);
+  const [tiersByPkg, setTiersByPkg] = useState<Record<string, SwiftTier[]>>({});
+  const [actionsByPkg, setActionsByPkg] = useState<Record<string, SwiftPkgAction[]>>({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Pkg | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [rows, setRows] = useState<PkgMilestone[]>([]);
+  const [tiers, setTiers] = useState<SwiftTier[]>([]);
+  const [pkgActions, setPkgActions] = useState<SwiftPkgAction[]>([]);
   const [saving, setSaving] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [presetOpen, setPresetOpen] = useState(false);
+  const [presetForm, setPresetForm] = useState(emptyPreset);
 
   const load = async () => {
     setLoading(true);
-    const [p, o, g, c, m, pm] = await Promise.all([
+    const [p, o, g, c, m, pm, sa, st, spa] = await Promise.all([
       supabase.from("ad_packages" as any).select("*").order("sort_order").order("created_at", { ascending: false }),
       supabase.from("package_orders" as any).select("*").order("created_at", { ascending: false }),
       supabase.from("category_groups").select("id,name,slug").order("display_order"),
       supabase.from("categories").select("id,name,group_id").order("name"),
       supabase.from("milestones" as any).select("*").eq("is_active", true).order("default_order"),
       supabase.from("package_milestones" as any).select("*"),
+      supabase.from("swift_daily_actions" as any).select("*").order("sort_order"),
+      supabase.from("swift_price_tiers" as any).select("*"),
+      supabase.from("swift_package_actions" as any).select("*"),
     ]);
     setPackages((p.data as any) || []);
     setOrders((o.data as any) || []);
     setGroups((g.data as any) || []);
     setCategories((c.data as any) || []);
     setMilestones((m.data as any) || []);
+    setPresets(((sa.data as any) || []).map((r: any) => ({ ...r, price_per_user_per_day: Number(r.price_per_user_per_day) })));
+
     const byPkg: Record<string, PkgMilestone[]> = {};
     for (const r of ((pm.data as any) || [])) {
       (byPkg[r.package_id] ||= []).push({
@@ -96,17 +122,36 @@ export default function AdminPackages() {
     }
     for (const k of Object.keys(byPkg)) byPkg[k].sort((a, b) => a.step_order - b.step_order);
     setPkgMilestones(byPkg);
+
+    const tb: Record<string, SwiftTier[]> = {};
+    for (const r of ((st.data as any) || [])) {
+      (tb[r.package_id] ||= []).push({
+        id: r.id, min_units: r.min_units, max_units: r.max_units,
+        price_per_user_usd: Number(r.price_per_user_usd),
+      });
+    }
+    setTiersByPkg(tb);
+
+    const ab: Record<string, SwiftPkgAction[]> = {};
+    for (const r of ((spa.data as any) || [])) {
+      (ab[r.package_id] ||= []).push({
+        action_id: r.action_id,
+        price_override_usd: r.price_override_usd != null ? Number(r.price_override_usd) : null,
+      });
+    }
+    setActionsByPkg(ab);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
 
   const openNew = () => {
-    setEditing(null); setForm(emptyForm); setRows([]); setOpen(true);
+    setEditing(null); setForm(emptyForm); setRows([]); setTiers([]); setPkgActions([]); setOpen(true);
   };
   const openEdit = (p: Pkg) => {
     setEditing(p);
     setForm({
       name: p.name, description: p.description || "",
+      package_type: (p.package_type || "legacy") as PackageType,
       advertiser_subtypes: (p.advertiser_subtypes || []) as AdvertiserSubtype[],
       min_units: String(p.min_units), max_units: String(p.max_units),
       duration_options: p.duration_options || [30],
@@ -114,8 +159,12 @@ export default function AdminPackages() {
       is_active: p.is_active, sort_order: String(p.sort_order),
     });
     setRows(pkgMilestones[p.id] || []);
+    setTiers(tiersByPkg[p.id] || []);
+    setPkgActions(actionsByPkg[p.id] || []);
     setOpen(true);
   };
+
+  const isSwift = form.package_type === "swift";
 
   const save = async () => {
     if (!form.name.trim()) return toast.error("Name required");
@@ -123,24 +172,35 @@ export default function AdminPackages() {
       return toast.error("Select at least one advertiser subcategory");
     if (form.duration_options.length === 0) return toast.error("Pick at least one duration");
     if (form.platform_support.length === 0) return toast.error("Pick at least one platform");
-    if (rows.length === 0) return toast.error("Add at least one milestone");
-    for (const r of rows) {
-      if (r.pricing_type === "flat" && (r.price_usd == null || r.price_usd < 0)) {
-        return toast.error("Flat milestones need a price ≥ 0");
-      }
-      if (r.pricing_type === "commission_pct" && (r.commission_pct == null || r.commission_pct < 0 || r.commission_pct > 100)) {
-        return toast.error("Commission % must be between 0 and 100");
+
+    if (isSwift) {
+      const tierErr = validateTiers(tiers);
+      if (tierErr) return toast.error(tierErr);
+      if (pkgActions.length === 0) return toast.error("Pick at least one daily action for this package");
+    } else {
+      if (rows.length === 0) return toast.error("Add at least one milestone");
+      for (const r of rows) {
+        if (r.pricing_type === "flat" && (r.price_usd == null || r.price_usd < 0)) {
+          return toast.error("Flat milestones need a price ≥ 0");
+        }
+        if (r.pricing_type === "commission_pct" && (r.commission_pct == null || r.commission_pct < 0 || r.commission_pct > 100)) {
+          return toast.error("Commission % must be between 0 and 100");
+        }
       }
     }
+
     setSaving(true);
+    const minUnits = isSwift ? Math.min(...tiers.map((t) => t.min_units)) : Number(form.min_units);
+    const maxUnits = isSwift ? swiftMaxUnits(tiers) : Number(form.max_units);
     const payload: any = {
       name: form.name.trim(),
       description: form.description.trim() || null,
+      package_type: form.package_type,
       advertiser_subtypes: form.advertiser_subtypes,
       category_group_id: null,
       category_id: null,
-      min_units: Number(form.min_units),
-      max_units: Number(form.max_units),
+      min_units: minUnits,
+      max_units: maxUnits,
       duration_options: form.duration_options,
       platform_support: form.platform_support,
       is_active: form.is_active,
@@ -155,17 +215,40 @@ export default function AdminPackages() {
       if (error) { setSaving(false); return toast.error(friendlyError(error)); }
       pkgId = (data as any).id;
     }
-    await supabase.from("package_milestones" as any).delete().eq("package_id", pkgId);
-    if (rows.length > 0) {
-      const insertRows = rows.map((r) => ({
-        package_id: pkgId, milestone_id: r.milestone_id, step_order: r.step_order,
-        pricing_type: r.pricing_type,
-        price_usd: r.pricing_type === "flat" ? r.price_usd : null,
-        commission_pct: r.pricing_type === "commission_pct" ? r.commission_pct : null,
-      }));
-      const { error: mErr } = await supabase.from("package_milestones" as any).insert(insertRows);
-      if (mErr) { setSaving(false); return toast.error(friendlyError(mErr)); }
+
+    if (isSwift) {
+      await supabase.from("package_milestones" as any).delete().eq("package_id", pkgId);
+      await supabase.from("swift_price_tiers" as any).delete().eq("package_id", pkgId);
+      const { error: tErr } = await supabase.from("swift_price_tiers" as any).insert(
+        tiers.map((t) => ({
+          package_id: pkgId, min_units: t.min_units, max_units: t.max_units,
+          price_per_user_usd: t.price_per_user_usd,
+        })),
+      );
+      if (tErr) { setSaving(false); return toast.error(friendlyError(tErr)); }
+      await supabase.from("swift_package_actions" as any).delete().eq("package_id", pkgId);
+      const { error: aErr } = await supabase.from("swift_package_actions" as any).insert(
+        pkgActions.map((a) => ({
+          package_id: pkgId, action_id: a.action_id, price_override_usd: a.price_override_usd,
+        })),
+      );
+      if (aErr) { setSaving(false); return toast.error(friendlyError(aErr)); }
+    } else {
+      await supabase.from("swift_price_tiers" as any).delete().eq("package_id", pkgId);
+      await supabase.from("swift_package_actions" as any).delete().eq("package_id", pkgId);
+      await supabase.from("package_milestones" as any).delete().eq("package_id", pkgId);
+      if (rows.length > 0) {
+        const insertRows = rows.map((r) => ({
+          package_id: pkgId, milestone_id: r.milestone_id, step_order: r.step_order,
+          pricing_type: r.pricing_type,
+          price_usd: r.pricing_type === "flat" ? r.price_usd : null,
+          commission_pct: r.pricing_type === "commission_pct" ? r.commission_pct : null,
+        }));
+        const { error: mErr } = await supabase.from("package_milestones" as any).insert(insertRows);
+        if (mErr) { setSaving(false); return toast.error(friendlyError(mErr)); }
+      }
     }
+
     setSaving(false);
     toast.success(editing ? "Package updated" : "Package created");
     if (!editing && pkgId) {
@@ -193,6 +276,32 @@ export default function AdminPackages() {
     supabase.functions.invoke("notify", {
       body: { event: approve ? "package_order_approved" : "package_order_rejected", payload: { order_id: id, reason: notes } },
     }).catch(() => {});
+    load();
+  };
+
+  const savePreset = async () => {
+    if (!presetForm.name.trim()) return toast.error("Name required");
+    const slug = (presetForm.slug || presetForm.name).trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+    const payload: any = {
+      name: presetForm.name.trim(),
+      slug,
+      description: presetForm.description.trim() || null,
+      price_per_user_per_day: Number(presetForm.price) || 0,
+      is_active: presetForm.is_active,
+      sort_order: Number(presetForm.sort_order) || 0,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = presetForm.id
+      ? await supabase.from("swift_daily_actions" as any).update(payload).eq("id", presetForm.id)
+      : await supabase.from("swift_daily_actions" as any).insert(payload);
+    if (error) return toast.error(friendlyError(error));
+    toast.success("Daily action saved");
+    setPresetOpen(false); setPresetForm(emptyPreset); load();
+  };
+  const removePreset = async (a: SwiftAction) => {
+    if (!confirm(`Delete daily action "${a.name}"?`)) return;
+    const { error } = await supabase.from("swift_daily_actions" as any).delete().eq("id", a.id);
+    if (error) return toast.error(friendlyError(error));
     load();
   };
 
@@ -250,7 +359,9 @@ export default function AdminPackages() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Ad Packages</h1>
-          <p className="text-sm text-muted-foreground">Templates with milestone-based pricing — advertisers pick which milestones to buy.</p>
+          <p className="text-sm text-muted-foreground">
+            Legacy packages price by milestone. Swift packages price per user acquired, plus daily actions.
+          </p>
         </div>
         <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" /> New package</Button>
       </div>
@@ -259,6 +370,7 @@ export default function AdminPackages() {
         <TabsList>
           <TabsTrigger value="packages">Packages ({packages.length})</TabsTrigger>
           <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
+          <TabsTrigger value="actions">Daily actions ({presets.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="packages" className="mt-4">
@@ -273,11 +385,17 @@ export default function AdminPackages() {
               {packages.map((p) => {
                 const subs = (p.advertiser_subtypes || []) as AdvertiserSubtype[];
                 const ms = pkgMilestones[p.id] || [];
+                const swift = (p.package_type || "legacy") === "swift";
+                const pTiers = tiersByPkg[p.id] || [];
+                const starting = swiftStartingPrice(pTiers);
                 return (
                   <div key={p.id} className="rounded-lg border bg-card p-4 flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium">{p.name}</p>
+                        <Badge variant={swift ? "default" : "outline"} className="gap-1">
+                          {swift && <Zap className="h-3 w-3" />}{swift ? "Swift" : "Legacy"}
+                        </Badge>
                         {subs.length === 0 ? (
                           <Badge variant="outline" className="text-destructive">No subcategory</Badge>
                         ) : (
@@ -286,16 +404,31 @@ export default function AdminPackages() {
                         {(p.platform_support || []).map((pl) => <Badge key={pl} variant="outline" className="capitalize">{pl}</Badge>)}
                         {!p.is_active && <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>}
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {p.min_units.toLocaleString()}–{p.max_units.toLocaleString()} daily users · durations {(p.duration_options || []).join(", ")}d
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {ms.length === 0 ? "No milestones set" :
-                          ms.map((r) => {
-                            const m = milestones.find((x) => x.id === r.milestone_id);
-                            return `${m?.name || "?"}: ${rowLabel(r)}`;
-                          }).join(" · ")}
-                      </p>
+                      {swift ? (
+                        <>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Get up to {swiftMaxUnits(pTiers).toLocaleString()} daily users
+                            {starting != null ? ` · starting price $${starting.toFixed(2)}` : " · no price ranges set"}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {pTiers.length} price range{pTiers.length === 1 ? "" : "s"} ·{" "}
+                            {(actionsByPkg[p.id] || []).length} daily action(s) · durations {(p.duration_options || []).join(", ")}d
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {p.min_units.toLocaleString()}–{p.max_units.toLocaleString()} daily users · durations {(p.duration_options || []).join(", ")}d
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {ms.length === 0 ? "No milestones set" :
+                              ms.map((r) => {
+                                const m = milestones.find((x) => x.id === r.milestone_id);
+                                return `${m?.name || "?"}: ${rowLabel(r)}`;
+                              }).join(" · ")}
+                          </p>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Switch checked={p.is_active} onCheckedChange={() => toggleActive(p)} />
@@ -314,60 +447,165 @@ export default function AdminPackages() {
             <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">No orders yet.</div>
           ) : (
             <div className="grid gap-3">
-              {orders.map((o) => (
-                <div key={o.id} className="rounded-lg border bg-card p-4">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium">{o.package_name}</p>
-                        <Badge variant="outline">{o.status.replace(/_/g, " ")}</Badge>
-                        <Badge variant="secondary">{o.payment_method}</Badge>
-                        {o.platform && <Badge variant="outline" className="capitalize">{o.platform}</Badge>}
-                      </div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {o.units.toLocaleString()} daily users · ${o.total_amount_usd} · {o.duration_days} days
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">Advertiser: {o.advertiser_id}</p>
-                      {Array.isArray(o.milestone_breakdown) && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {o.milestone_breakdown.map((b: any) =>
-                            b.pricing_type === "commission_pct"
-                              ? `${b.name} ${b.commission_pct}%/sale`
-                              : `${b.name} $${b.price_usd}`
-                          ).join(" · ")}
+              {orders.map((o) => {
+                const swift = (o.package_type || "legacy") === "swift";
+                return (
+                  <div key={o.id} className="rounded-lg border bg-card p-4">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium">{o.package_name}</p>
+                          {swift && <Badge className="gap-1"><Zap className="h-3 w-3" />Swift</Badge>}
+                          <Badge variant="outline">{o.status.replace(/_/g, " ")}</Badge>
+                          <Badge variant="secondary">{o.payment_method}</Badge>
+                          {o.platform && <Badge variant="outline" className="capitalize">{o.platform}</Badge>}
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {o.units.toLocaleString()} daily users · ${o.total_amount_usd} · {o.duration_days} days
                         </p>
-                      )}
-                      {o.app_links?.length > 0 && (
-                        <ul className="mt-2 text-xs space-y-0.5">
-                          {o.app_links.map((l, i) => (
-                            <li key={i} className="truncate"><a className="text-primary underline" href={l} target="_blank" rel="noreferrer">{l}</a></li>
-                          ))}
-                        </ul>
-                      )}
-                      {o.admin_notes && <p className="mt-2 text-xs text-muted-foreground">Notes: {o.admin_notes}</p>}
-                    </div>
-                    {o.status === "pending_review" ? (
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => reviewOrder(o.id, true)}>Approve</Button>
-                        <Button size="sm" variant="outline" onClick={() => reviewOrder(o.id, false)}>Reject</Button>
+                        <p className="mt-1 text-xs text-muted-foreground">Advertiser: {o.advertiser_id}</p>
+                        {swift && Array.isArray(o.swift_actions) && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {o.swift_actions.map((a) =>
+                              `${a.name} $${Number(a.price_per_user_per_day).toFixed(2)}/user/day${a.source === "custom" ? " (requested)" : ""}`
+                            ).join(" · ")}
+                          </p>
+                        )}
+                        {!swift && Array.isArray(o.milestone_breakdown) && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {o.milestone_breakdown.map((b: any) =>
+                              b.pricing_type === "commission_pct"
+                                ? `${b.name} ${b.commission_pct}%/sale`
+                                : `${b.name} $${b.price_usd}`
+                            ).join(" · ")}
+                          </p>
+                        )}
+                        {o.status === "pending_advertiser_approval" && (
+                          <p className="mt-1 text-xs text-amber-500">
+                            Waiting for advertiser to approve ${Number(o.proposed_total_usd || 0).toFixed(2)}
+                          </p>
+                        )}
+                        {o.app_links?.length > 0 && (
+                          <ul className="mt-2 text-xs space-y-0.5">
+                            {o.app_links.map((l, i) => (
+                              <li key={i} className="truncate"><a className="text-primary underline" href={l} target="_blank" rel="noreferrer">{l}</a></li>
+                            ))}
+                          </ul>
+                        )}
+                        {o.admin_notes && <p className="mt-2 text-xs text-muted-foreground">Notes: {o.admin_notes}</p>}
                       </div>
-                    ) : (o.status === "active" || o.status === "completed") ? (
-                      <Link to={`/ella/packages/orders/${o.id}/deliver`}>
-                        <Button size="sm" variant="outline">Deliver / update</Button>
-                      </Link>
-                    ) : null}
+                      {o.status === "pending_review" ? (
+                        <div className="flex gap-2">
+                          {swift && (
+                            <Button size="sm" variant="secondary" onClick={() => setEditingOrder(o)}>Edit deliverables</Button>
+                          )}
+                          <Button size="sm" onClick={() => reviewOrder(o.id, true)}>Approve</Button>
+                          <Button size="sm" variant="outline" onClick={() => reviewOrder(o.id, false)}>Reject</Button>
+                        </div>
+                      ) : (o.status === "active" || o.status === "completed") ? (
+                        <Link to={`/ella/packages/orders/${o.id}/deliver`}>
+                          <Button size="sm" variant="outline">Deliver / update</Button>
+                        </Link>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="actions" className="mt-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Daily tasks advertisers can buy on swift packages, priced per user per day.
+            </p>
+            <Button size="sm" onClick={() => { setPresetForm(emptyPreset); setPresetOpen(true); }}>
+              <Plus className="mr-1 h-4 w-4" /> New action
+            </Button>
+          </div>
+          <div className="grid gap-2">
+            {presets.map((a) => (
+              <div key={a.id} className="flex items-center justify-between rounded-lg border bg-card p-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{a.name}</p>
+                    {!a.is_active && <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    ${Number(a.price_per_user_per_day).toFixed(2)} per user per day{a.description ? ` · ${a.description}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button size="icon" variant="ghost" onClick={() => {
+                    setPresetForm({
+                      id: a.id, name: a.name, slug: a.slug, description: a.description || "",
+                      price: String(a.price_per_user_per_day), is_active: a.is_active, sort_order: String(a.sort_order),
+                    });
+                    setPresetOpen(true);
+                  }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => removePreset(a)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
       </Tabs>
+
+      <SwiftOrderEditDialog
+        order={editingOrder as any}
+        onClose={() => setEditingOrder(null)}
+        onDone={() => { setEditingOrder(null); load(); }}
+      />
+
+      <Dialog open={presetOpen} onOpenChange={setPresetOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>{presetForm.id ? "Edit daily action" : "New daily action"}</DialogTitle></DialogHeader>
+          <div className="grid gap-3">
+            <div><Label>Name</Label><Input value={presetForm.name} onChange={(e) => setPresetForm({ ...presetForm, name: e.target.value })} placeholder="e.g. Pay bills" /></div>
+            <div><Label>Description</Label><Input value={presetForm.description} onChange={(e) => setPresetForm({ ...presetForm, description: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>$ per user per day</Label><Input type="number" step="0.01" value={presetForm.price} onChange={(e) => setPresetForm({ ...presetForm, price: e.target.value })} /></div>
+              <div><Label>Sort order</Label><Input type="number" value={presetForm.sort_order} onChange={(e) => setPresetForm({ ...presetForm, sort_order: e.target.value })} /></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={presetForm.is_active} onCheckedChange={(v) => setPresetForm({ ...presetForm, is_active: v })} />
+              <Label>Active</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPresetOpen(false)}>Cancel</Button>
+            <Button onClick={savePreset}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? "Edit package" : "New package"}</DialogTitle></DialogHeader>
           <div className="grid gap-4">
+            <div>
+              <Label>Package type</Label>
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                {([
+                  { v: "legacy" as PackageType, label: "Legacy", sub: "Milestone pricing (current behaviour)" },
+                  { v: "swift" as PackageType, label: "Swift", sub: "Price per user acquired + daily actions" },
+                ]).map((t) => (
+                  <button
+                    key={t.v}
+                    type="button"
+                    onClick={() => setForm({ ...form, package_type: t.v })}
+                    className={`rounded-lg border p-3 text-left ${form.package_type === t.v ? "border-primary bg-primary/5" : "border-border"}`}
+                  >
+                    <p className="text-sm font-semibold">{t.label}</p>
+                    <p className="text-xs text-muted-foreground">{t.sub}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Fintech growth pack" /></div>
             <div><Label>Description</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
 
@@ -405,10 +643,12 @@ export default function AdminPackages() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Min daily users</Label><Input type="number" value={form.min_units} onChange={(e) => setForm({ ...form, min_units: e.target.value })} /></div>
-              <div><Label>Max daily users</Label><Input type="number" value={form.max_units} onChange={(e) => setForm({ ...form, max_units: e.target.value })} /></div>
-            </div>
+            {!isSwift && (
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Min daily users</Label><Input type="number" value={form.min_units} onChange={(e) => setForm({ ...form, min_units: e.target.value })} /></div>
+                <div><Label>Max daily users</Label><Input type="number" value={form.max_units} onChange={(e) => setForm({ ...form, max_units: e.target.value })} /></div>
+              </div>
+            )}
 
             <div>
               <Label>Durations available (days)</Label>
@@ -444,61 +684,70 @@ export default function AdminPackages() {
               </p>
             </div>
 
-            <div className="rounded-lg border p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Milestones & pricing</Label>
-                {availableMs.length > 0 && (
-                  <Select value="" onValueChange={addRow}>
-                    <SelectTrigger className="w-52"><SelectValue placeholder="+ Add milestone" /></SelectTrigger>
-                    <SelectContent>{availableMs.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
-                  </Select>
+            {isSwift ? (
+              <SwiftPackageEditor
+                tiers={tiers}
+                setTiers={setTiers}
+                presets={presets}
+                pkgActions={pkgActions}
+                setPkgActions={setPkgActions}
+              />
+            ) : (
+              <div className="rounded-lg border p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Milestones & pricing</Label>
+                  {availableMs.length > 0 && (
+                    <Select value="" onValueChange={addRow}>
+                      <SelectTrigger className="w-52"><SelectValue placeholder="+ Add milestone" /></SelectTrigger>
+                      <SelectContent>{availableMs.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Advertisers pick which milestones to buy. Flat = $/user; Commission = % per confirmed sale (charged from wallet later).
+                </p>
+                {rows.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">No milestones added.</p>
+                ) : (
+                  <div className="grid gap-2">
+                    {rows.sort((a, b) => a.step_order - b.step_order).map((r, i) => {
+                      const m = milestones.find((x) => x.id === r.milestone_id);
+                      const commissionLocked = !!m?.is_commission_based;
+                      return (
+                        <div key={r.milestone_id} className="grid grid-cols-[1fr_70px_120px_110px_36px] gap-2 items-center">
+                          <div className="text-sm truncate">{m?.name || r.milestone_id}</div>
+                          <Input type="number" value={r.step_order}
+                            onChange={(e) => updateRow(i, { step_order: Number(e.target.value) || 0 })} />
+                          <Select value={r.pricing_type}
+                            disabled={commissionLocked}
+                            onValueChange={(v: "flat" | "commission_pct") => updateRow(i, {
+                              pricing_type: v,
+                              price_usd: v === "flat" ? (r.price_usd ?? 0) : null,
+                              commission_pct: v === "commission_pct" ? (r.commission_pct ?? 5) : null,
+                            })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {!commissionLocked && <SelectItem value="flat">Flat $/user</SelectItem>}
+                              <SelectItem value="commission_pct">% per sale</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {r.pricing_type === "flat" ? (
+                            <Input type="number" step="0.01" placeholder="$/user" value={r.price_usd ?? 0}
+                              onChange={(e) => updateRow(i, { price_usd: Number(e.target.value) || 0 })} />
+                          ) : (
+                            <Input type="number" step="0.1" placeholder="%" value={r.commission_pct ?? 0}
+                              onChange={(e) => updateRow(i, { commission_pct: Number(e.target.value) || 0 })} />
+                          )}
+                          <Button variant="ghost" size="icon" onClick={() => setRows(rows.filter((x) => x.milestone_id !== r.milestone_id))}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Advertisers pick which milestones to buy. Flat = $/user; Commission = % per confirmed sale (charged from wallet later).
-              </p>
-              {rows.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">No milestones added.</p>
-              ) : (
-                <div className="grid gap-2">
-                  {rows.sort((a, b) => a.step_order - b.step_order).map((r, i) => {
-                    const m = milestones.find((x) => x.id === r.milestone_id);
-                    const commissionLocked = !!m?.is_commission_based;
-                    return (
-                      <div key={r.milestone_id} className="grid grid-cols-[1fr_70px_120px_110px_36px] gap-2 items-center">
-                        <div className="text-sm truncate">{m?.name || r.milestone_id}</div>
-                        <Input type="number" value={r.step_order}
-                          onChange={(e) => updateRow(i, { step_order: Number(e.target.value) || 0 })} />
-                        <Select value={r.pricing_type}
-                          disabled={commissionLocked}
-                          onValueChange={(v: "flat" | "commission_pct") => updateRow(i, {
-                            pricing_type: v,
-                            price_usd: v === "flat" ? (r.price_usd ?? 0) : null,
-                            commission_pct: v === "commission_pct" ? (r.commission_pct ?? 5) : null,
-                          })}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {!commissionLocked && <SelectItem value="flat">Flat $/user</SelectItem>}
-                            <SelectItem value="commission_pct">% per sale</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {r.pricing_type === "flat" ? (
-                          <Input type="number" step="0.01" placeholder="$/user" value={r.price_usd ?? 0}
-                            onChange={(e) => updateRow(i, { price_usd: Number(e.target.value) || 0 })} />
-                        ) : (
-                          <Input type="number" step="0.1" placeholder="%" value={r.commission_pct ?? 0}
-                            onChange={(e) => updateRow(i, { commission_pct: Number(e.target.value) || 0 })} />
-                        )}
-                        <Button variant="ghost" size="icon" onClick={() => setRows(rows.filter((x) => x.milestone_id !== r.milestone_id))}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-
-                </div>
-              )}
-            </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 items-end">
               <div><Label>Sort order</Label><Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} /></div>

@@ -3156,6 +3156,10 @@ export type Database = {
         Args: { _amount: number; _description: string; _wallet_id: string }
         Returns: Json
       }
+      admin_edit_swift_order: {
+        Args: { _actions: Json; _note: string; _order_id: string }
+        Returns: Json
+      }
       advertiser_can_use_package: {
         Args: { _package_id: string; _user: string }
         Returns: boolean
@@ -3252,6 +3256,18 @@ export type Database = {
       }
       purchase_package_with_wallet: {
         Args: { _links: string[]; _package_id: string; _units: number }
+        Returns: Json
+      }
+      purchase_swift_package: {
+        Args: {
+          _action_ids: string[]
+          _custom: Json
+          _duration_days: number
+          _links: string[]
+          _package_id: string
+          _platform: string
+          _units: number
+        }
         Returns: Json
       }
       purchase_switch_offer: {
@@ -3361,6 +3377,10 @@ export type Database = {
         Args: { _amount: number; _destination: Json; _method: string }
         Returns: Json
       }
+      respond_swift_order_edit: {
+        Args: { _accept: boolean; _order_id: string }
+        Returns: Json
+      }
       review_affiliate_withdrawal: {
         Args: { _approve: boolean; _withdrawal_id: string }
         Returns: Json
@@ -3403,6 +3423,11 @@ export type Database = {
         Returns: Json
       }
       submit_offline_offer: { Args: { _offer_id: string }; Returns: Json }
+      swift_actions_daily_rate: { Args: { _actions: Json }; Returns: number }
+      swift_unit_price: {
+        Args: { _package_id: string; _units: number }
+        Returns: number
+      }
       topup_campaign_escrow: {
         Args: { _amount: number; _campaign_id: string }
         Returns: Json
