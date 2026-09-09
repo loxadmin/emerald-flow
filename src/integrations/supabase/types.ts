@@ -3344,6 +3344,16 @@ export type Database = {
             }
             Returns: Json
           }
+      record_swift_delivery: {
+        Args: {
+          _action_key: string
+          _delivery_date: string
+          _notes: string
+          _order_id: string
+          _users_delivered: number
+        }
+        Returns: Json
+      }
       record_switch_metrics: {
         Args: {
           _deposits_count: number
