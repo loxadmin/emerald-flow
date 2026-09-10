@@ -28,12 +28,15 @@ const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; pla
 
 import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
 import { friendlyError, functionError } from "@/lib/errors";
+import SwiftBuyDialog from "@/components/swift/SwiftBuyDialog";
+import { swiftMaxUnits, swiftStartingPrice, type SwiftTier, type SwiftAction, type SwiftPkgAction } from "@/lib/swift";
 
 type Pkg = {
   id: string; name: string; description: string | null;
   advertiser_subtypes: AdvertiserSubtype[] | null;
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
+  package_type?: string | null;
 };
 type Milestone = { id: string; name: string; slug: string; default_order: number; requires_duration: boolean };
 type PkgMilestone = {
