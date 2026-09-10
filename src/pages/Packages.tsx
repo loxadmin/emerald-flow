@@ -28,12 +28,15 @@ const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; pla
 
 import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
 import { friendlyError, functionError } from "@/lib/errors";
+import SwiftBuyDialog from "@/components/swift/SwiftBuyDialog";
+import { swiftMaxUnits, swiftStartingPrice, type SwiftTier, type SwiftAction, type SwiftPkgAction } from "@/lib/swift";
 
 type Pkg = {
   id: string; name: string; description: string | null;
   advertiser_subtypes: AdvertiserSubtype[] | null;
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
+  package_type?: string | null;
 };
 type Milestone = { id: string; name: string; slug: string; default_order: number; requires_duration: boolean };
 type PkgMilestone = {
@@ -70,6 +73,39 @@ export default function Packages() {
   const [promo, setPromo] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const [payMethod, setPayMethod] = useState<"wallet" | "paystack">("wallet");
   const [buying, setBuying] = useState(false);
+
+  // Swift packages
+  const [swiftTiers, setSwiftTiers] = useState<Record<string, SwiftTier[]>>({});
+  const [swiftPresets, setSwiftPresets] = useState<SwiftAction[]>([]);
+  const [swiftPkgActions, setSwiftPkgActions] = useState<Record<string, SwiftPkgAction[]>>({});
+  const [swiftSelected, setSwiftSelected] = useState<Pkg | null>(null);
+
+  const loadSwift = async (ids: string[]) => {
+    if (!ids.length) { setSwiftTiers({}); setSwiftPkgActions({}); return; }
+    const [{ data: tiers }, { data: presets }, { data: pa }] = await Promise.all([
+      supabase.from("swift_price_tiers" as any).select("*").in("package_id", ids),
+      supabase.from("swift_daily_actions" as any).select("*").eq("is_active", true).order("sort_order"),
+      supabase.from("swift_package_actions" as any).select("*").in("package_id", ids),
+    ]);
+    const t: Record<string, SwiftTier[]> = {};
+    for (const r of ((tiers as any) || [])) {
+      (t[r.package_id] ||= []).push({
+        id: r.id, min_units: Number(r.min_units), max_units: Number(r.max_units),
+        price_per_user_usd: Number(r.price_per_user_usd),
+      });
+    }
+    const a: Record<string, SwiftPkgAction[]> = {};
+    for (const r of ((pa as any) || [])) {
+      (a[r.package_id] ||= []).push({
+        action_id: r.action_id,
+        price_override_usd: r.price_override_usd != null ? Number(r.price_override_usd) : null,
+      });
+    }
+    setSwiftTiers(t);
+    setSwiftPkgActions(a);
+    setSwiftPresets(((presets as any) || []).map((p: any) => ({ ...p, price_per_user_per_day: Number(p.price_per_user_per_day) })));
+  };
+
 
   const load = async () => {
     setLoading(true);
@@ -232,6 +268,7 @@ export default function Packages() {
 
     for (const k of Object.keys(byPkg)) byPkg[k].sort((a, b) => a.step_order - b.step_order);
     setPkgMs(byPkg);
+    await loadSwift(pkgs.filter((p: any) => p.package_type === "swift").map((p: any) => p.id));
     setLoading(false);
   };
 
@@ -465,6 +502,42 @@ export default function Packages() {
           <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {packages.map((p) => {
               const ms = pkgMs[p.id] || [];
+              if (p.package_type === "swift") {
+                const tiers = swiftTiers[p.id] || [];
+                const maxUsers = swiftMaxUnits(tiers);
+                const startAt = swiftStartingPrice(tiers);
+                const ready = tiers.length > 0;
+                return (
+                  <div
+                    key={p.id}
+                    className="group relative flex h-full min-h-[280px] flex-col items-center overflow-hidden rounded-xl border border-border bg-card p-6 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                  >
+                    <div className="flex h-28 items-end justify-center">
+                      <Sparkles className="h-14 w-14 text-primary" />
+                    </div>
+                    <div className="mt-5 min-w-0 w-full">
+                      <p className="text-xs font-medium text-primary">Swift package</p>
+                      <h3 className="mt-1 truncate text-lg font-semibold text-foreground">{p.name}</h3>
+                      <p className="mt-2 text-sm font-semibold text-foreground">
+                        {ready
+                          ? `Get up to ${maxUsers.toLocaleString()} daily users · starting price $${(startAt || 0).toFixed(2)}`
+                          : "Pricing is being set up"}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">Pay per user acquired, plus the daily actions you choose</p>
+                    </div>
+                    <div className="mt-auto w-full pt-5">
+                      <Button
+                        size="sm"
+                        className="w-full gap-1.5 font-semibold"
+                        onClick={() => setSwiftSelected(p)}
+                        disabled={!ready}
+                      >
+                        {ready ? "Get started" : "Configuring"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div
                   key={p.id}
@@ -494,6 +567,23 @@ export default function Packages() {
             })}
           </div>
         )}
+
+        <SwiftBuyDialog
+          pkg={swiftSelected ? {
+            id: swiftSelected.id,
+            name: swiftSelected.name,
+            description: swiftSelected.description,
+            duration_options: swiftSelected.duration_options || [30],
+            platform_support: swiftSelected.platform_support || ["mobile"],
+          } : null}
+          tiers={swiftSelected ? (swiftTiers[swiftSelected.id] || []) : []}
+          presets={swiftPresets}
+          pkgActions={swiftSelected ? (swiftPkgActions[swiftSelected.id] || []) : []}
+          websites={websites.map((w) => ({ id: w.id, domain: w.domain }))}
+          walletBalance={Number(wallet?.balance || 0)}
+          onClose={() => setSwiftSelected(null)}
+          onDone={() => { setSwiftSelected(null); load(); }}
+        />
 
         {/* Modern dialog modal revamp */}
         <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
