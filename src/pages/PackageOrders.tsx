@@ -164,6 +164,67 @@ export default function PackageOrders() {
                   </div>
                 </div>
 
+                {/* Admin-proposed change awaiting your answer */}
+                {o.status === "pending_advertiser_approval" && (() => {
+                  const proposed = (o.proposed_actions || []) as SwiftOrderAction[];
+                  const newTotal = Number(o.proposed_total_usd ?? o.total_amount_usd);
+                  const diff = Number((newTotal - Number(o.total_amount_usd)).toFixed(2));
+                  const dailyRate = swiftDailyRate(proposed);
+                  return (
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Our team proposed a change</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Review the daily deliverables below. Approving updates your order; declining cancels it and refunds you in full.
+                        </p>
+                      </div>
+                      {o.admin_edit_note && (
+                        <p className="rounded-lg border border-amber-500/20 bg-background/40 p-2.5 text-xs text-foreground/90">{o.admin_edit_note}</p>
+                      )}
+                      <div className="grid gap-1.5">
+                        {proposed.map((a) => (
+                          <div key={a.key} className="flex items-center justify-between rounded-lg border border-border/30 bg-background/40 px-3 py-2 text-xs">
+                            <span className="font-semibold text-foreground">{a.name}</span>
+                            <span className="font-mono text-foreground/90">${Number(a.price_per_user_per_day).toFixed(2)} / user / day</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-amber-500/20 pt-3 text-xs">
+                        <span className="text-muted-foreground">
+                          Daily rate ${dailyRate.toFixed(2)} per user · new total{" "}
+                          <span className="font-bold font-mono text-foreground">${newTotal.toFixed(2)}</span>
+                        </span>
+                        <span className={`font-semibold font-mono ${diff > 0 ? "text-amber-500" : diff < 0 ? "text-emerald-500" : "text-muted-foreground"}`}>
+                          {diff > 0 ? `Top up $${diff.toFixed(2)}` : diff < 0 ? `Refund $${Math.abs(diff).toFixed(2)}` : "No price change"}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="h-8 text-xs font-semibold" disabled={responding === o.id} onClick={() => respond(o.id, true)}>
+                          {responding === o.id ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null} Approve changes
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs font-semibold" disabled={responding === o.id} onClick={() => respond(o.id, false)}>
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Swift daily deliverables */}
+                {o.package_type === "swift" && (o.swift_actions || []).length > 0 && o.status !== "pending_advertiser_approval" && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Daily deliverables</p>
+                    <div className="grid gap-1.5 sm:grid-cols-2">
+                      {(o.swift_actions || []).map((a) => (
+                        <div key={a.key} className="flex items-center justify-between rounded-lg border border-border/20 bg-secondary/15 px-3 py-1.5 text-xs">
+                          <span className="font-medium text-foreground">{a.name}</span>
+                          <span className="font-mono text-muted-foreground">${Number(a.price_per_user_per_day).toFixed(2)} / user / day</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Date range details - Aligned, subtle box */}
                 {o.starts_at && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/10 border border-border/20 rounded-lg px-3.5 py-2">
