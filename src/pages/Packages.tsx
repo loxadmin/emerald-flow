@@ -74,6 +74,39 @@ export default function Packages() {
   const [payMethod, setPayMethod] = useState<"wallet" | "paystack">("wallet");
   const [buying, setBuying] = useState(false);
 
+  // Swift packages
+  const [swiftTiers, setSwiftTiers] = useState<Record<string, SwiftTier[]>>({});
+  const [swiftPresets, setSwiftPresets] = useState<SwiftAction[]>([]);
+  const [swiftPkgActions, setSwiftPkgActions] = useState<Record<string, SwiftPkgAction[]>>({});
+  const [swiftSelected, setSwiftSelected] = useState<Pkg | null>(null);
+
+  const loadSwift = async (ids: string[]) => {
+    if (!ids.length) { setSwiftTiers({}); setSwiftPkgActions({}); return; }
+    const [{ data: tiers }, { data: presets }, { data: pa }] = await Promise.all([
+      supabase.from("swift_price_tiers" as any).select("*").in("package_id", ids),
+      supabase.from("swift_daily_actions" as any).select("*").eq("is_active", true).order("sort_order"),
+      supabase.from("swift_package_actions" as any).select("*").in("package_id", ids),
+    ]);
+    const t: Record<string, SwiftTier[]> = {};
+    for (const r of ((tiers as any) || [])) {
+      (t[r.package_id] ||= []).push({
+        id: r.id, min_units: Number(r.min_units), max_units: Number(r.max_units),
+        price_per_user_usd: Number(r.price_per_user_usd),
+      });
+    }
+    const a: Record<string, SwiftPkgAction[]> = {};
+    for (const r of ((pa as any) || [])) {
+      (a[r.package_id] ||= []).push({
+        action_id: r.action_id,
+        price_override_usd: r.price_override_usd != null ? Number(r.price_override_usd) : null,
+      });
+    }
+    setSwiftTiers(t);
+    setSwiftPkgActions(a);
+    setSwiftPresets(((presets as any) || []).map((p: any) => ({ ...p, price_per_user_per_day: Number(p.price_per_user_per_day) })));
+  };
+
+
   const load = async () => {
     setLoading(true);
 
