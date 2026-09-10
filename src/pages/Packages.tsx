@@ -568,6 +568,23 @@ export default function Packages() {
           </div>
         )}
 
+        <SwiftBuyDialog
+          pkg={swiftSelected ? {
+            id: swiftSelected.id,
+            name: swiftSelected.name,
+            description: swiftSelected.description,
+            duration_options: swiftSelected.duration_options || [30],
+            platform_support: swiftSelected.platform_support || ["mobile"],
+          } : null}
+          tiers={swiftSelected ? (swiftTiers[swiftSelected.id] || []) : []}
+          presets={swiftPresets}
+          pkgActions={swiftSelected ? (swiftPkgActions[swiftSelected.id] || []) : []}
+          websites={websites.map((w) => ({ id: w.id, domain: w.domain }))}
+          walletBalance={Number(wallet?.balance || 0)}
+          onClose={() => setSwiftSelected(null)}
+          onDone={() => { setSwiftSelected(null); load(); }}
+        />
+
         {/* Modern dialog modal revamp */}
         <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
           <DialogContent className="max-w-xl max-h-[95vh] overflow-y-auto border-border/40 bg-card p-5 md:p-6 rounded-lg shadow-2xl">
