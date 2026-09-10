@@ -216,12 +216,23 @@ export default function PackageOrders() {
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Daily deliverables</p>
                     <div className="grid gap-1.5 sm:grid-cols-2">
-                      {(o.swift_actions || []).map((a) => (
-                        <div key={a.key} className="flex items-center justify-between rounded-lg border border-border/20 bg-secondary/15 px-3 py-1.5 text-xs">
-                          <span className="font-medium text-foreground">{a.name}</span>
-                          <span className="font-mono text-muted-foreground">${Number(a.price_per_user_per_day).toFixed(2)} / user / day</span>
-                        </div>
-                      ))}
+                      {[{ key: "acquisition", name: "Users acquired", price_per_user_per_day: Number(o.swift_base_price_usd || 0) } as SwiftOrderAction,
+                        ...(o.swift_actions || [])].map((a) => {
+                        const done = deliveries
+                          .filter((d) => d.order_id === o.id && d.swift_action_key === a.key)
+                          .reduce((s, d) => s + (d.users_delivered || 0), 0);
+                        return (
+                          <div key={a.key} className="flex items-center justify-between rounded-lg border border-border/20 bg-secondary/15 px-3 py-1.5 text-xs">
+                            <span className="font-medium text-foreground">
+                              {a.name}
+                              {done > 0 && <span className="ml-2 text-[10px] text-primary">{done.toLocaleString()} delivered</span>}
+                            </span>
+                            <span className="font-mono text-muted-foreground">
+                              ${Number(a.price_per_user_per_day).toFixed(2)}{a.key === "acquisition" ? " / user" : " / user / day"}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
