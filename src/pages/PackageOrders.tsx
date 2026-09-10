@@ -20,6 +20,12 @@ type Order = {
   admin_notes: string | null; created_at: string; starts_at: string | null; ends_at: string | null;
   platform: string | null; selected_milestone_ids: string[] | null; milestone_breakdown: any;
   escrow_spent_usd: number | null; refunded_usd: number | null; refunded_at: string | null;
+  package_type: string | null;
+  swift_actions: SwiftOrderAction[] | null;
+  proposed_actions: SwiftOrderAction[] | null;
+  proposed_total_usd: number | null;
+  admin_edit_note: string | null;
+  swift_base_price_usd: number | null;
 };
 type Milestone = { id: string; name: string; slug: string; requires_duration: boolean };
 type Delivery = {
