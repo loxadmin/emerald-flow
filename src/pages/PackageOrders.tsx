@@ -43,6 +43,7 @@ type Delivery = {
 const STATUS: Record<string, string> = {
   pending_payment: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   pending_review: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  pending_advertiser_approval: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   active: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   completed: "bg-sky-500/10 text-sky-500 border-sky-500/20",
   rejected: "bg-destructive/10 text-destructive border-destructive/20",
@@ -55,27 +56,40 @@ export default function PackageOrders() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [responding, setResponding] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = async () => {
     if (!user) return;
-    (async () => {
-      const [{ data }, { data: ms }] = await Promise.all([
-        supabase.from("package_orders" as any)
-          .select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("milestones" as any).select("id,name,slug,requires_duration"),
-      ]);
-      const list = (data as any) || [];
-      setOrders(list);
-      setMilestones((ms as any) || []);
-      if (list.length) {
-        const ids = list.map((o: Order) => o.id);
-        const { data: dv } = await supabase.from("package_order_deliveries" as any)
-          .select("*").in("order_id", ids).order("delivery_date", { ascending: true });
-        setDeliveries((dv as any) || []);
-      }
-      setLoading(false);
-    })();
-  }, [user?.id]);
+    const [{ data }, { data: ms }] = await Promise.all([
+      supabase.from("package_orders" as any)
+        .select("*").eq("advertiser_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("milestones" as any).select("id,name,slug,requires_duration"),
+    ]);
+    const list = (data as any) || [];
+    setOrders(list);
+    setMilestones((ms as any) || []);
+    if (list.length) {
+      const ids = list.map((o: Order) => o.id);
+      const { data: dv } = await supabase.from("package_order_deliveries" as any)
+        .select("*").in("order_id", ids).order("delivery_date", { ascending: true });
+      setDeliveries((dv as any) || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user?.id]);
+
+  const respond = async (orderId: string, accept: boolean) => {
+    if (!accept && !window.confirm("Declining cancels this order and refunds the full amount to your wallet. Continue?")) return;
+    setResponding(orderId);
+    const { error } = await supabase.rpc("respond_swift_order_edit" as never, {
+      _order_id: orderId, _accept: accept,
+    } as never);
+    setResponding(null);
+    if (error) return toast.error(friendlyError(error));
+    toast.success(accept ? "Changes approved. Your order is back with our team." : "Order cancelled and refunded.");
+    load();
+  };
 
   const deliveriesFor = (orderId: string, milestoneId: string) =>
     deliveries.filter((d) => d.order_id === orderId && d.milestone_id === milestoneId);
