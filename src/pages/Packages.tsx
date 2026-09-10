@@ -268,6 +268,7 @@ export default function Packages() {
 
     for (const k of Object.keys(byPkg)) byPkg[k].sort((a, b) => a.step_order - b.step_order);
     setPkgMs(byPkg);
+    await loadSwift(pkgs.filter((p: any) => p.package_type === "swift").map((p: any) => p.id));
     setLoading(false);
   };
 
