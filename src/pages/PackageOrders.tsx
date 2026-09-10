@@ -37,6 +37,7 @@ type Delivery = {
   txn_rows: any; total_txn_amount: number | null; notes: string | null;
   charged_usd: number | null; fresh_users: number | null;
   engagement_metrics: any; competitor_breakdown: any;
+  swift_action_key: string | null;
 };
 
 
