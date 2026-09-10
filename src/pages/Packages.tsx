@@ -502,6 +502,42 @@ export default function Packages() {
           <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {packages.map((p) => {
               const ms = pkgMs[p.id] || [];
+              if (p.package_type === "swift") {
+                const tiers = swiftTiers[p.id] || [];
+                const maxUsers = swiftMaxUnits(tiers);
+                const startAt = swiftStartingPrice(tiers);
+                const ready = tiers.length > 0;
+                return (
+                  <div
+                    key={p.id}
+                    className="group relative flex h-full min-h-[280px] flex-col items-center overflow-hidden rounded-xl border border-border bg-card p-6 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                  >
+                    <div className="flex h-28 items-end justify-center">
+                      <Sparkles className="h-14 w-14 text-primary" />
+                    </div>
+                    <div className="mt-5 min-w-0 w-full">
+                      <p className="text-xs font-medium text-primary">Swift package</p>
+                      <h3 className="mt-1 truncate text-lg font-semibold text-foreground">{p.name}</h3>
+                      <p className="mt-2 text-sm font-semibold text-foreground">
+                        {ready
+                          ? `Get up to ${maxUsers.toLocaleString()} daily users · starting price $${(startAt || 0).toFixed(2)}`
+                          : "Pricing is being set up"}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">Pay per user acquired, plus the daily actions you choose</p>
+                    </div>
+                    <div className="mt-auto w-full pt-5">
+                      <Button
+                        size="sm"
+                        className="w-full gap-1.5 font-semibold"
+                        onClick={() => setSwiftSelected(p)}
+                        disabled={!ready}
+                      >
+                        {ready ? "Get started" : "Configuring"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div
                   key={p.id}
