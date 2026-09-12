@@ -153,6 +153,42 @@ export default function AdminPackageDelivery() {
   };
 
 
+  const isSwift = order?.package_type === "swift";
+
+  const swiftLines: SwiftOrderAction[] = useMemo(() => {
+    if (!order || !isSwift) return [];
+    return [
+      { key: "acquisition", name: "Users acquired", price_per_user_per_day: Number(order.swift_base_price_usd || 0), source: "preset" as const },
+      ...((order.swift_actions || []) as SwiftOrderAction[]),
+    ];
+  }, [order, isSwift]);
+
+  const [swiftForms, setSwiftForms] = useState<Record<string, { users: string; date: string; notes: string }>>({});
+  const swiftForm = (key: string) =>
+    swiftForms[key] || { users: "", date: new Date().toISOString().slice(0, 10), notes: "" };
+  const setSwiftForm = (key: string, patch: Partial<{ users: string; date: string; notes: string }>) =>
+    setSwiftForms((s) => ({ ...s, [key]: { ...swiftForm(key), ...patch } }));
+
+  const submitSwift = async (line: SwiftOrderAction) => {
+    if (!order) return;
+    const f = swiftForm(line.key);
+    const users = Number(f.users) || 0;
+    if (users <= 0) return toast.error("Enter how many users were delivered.");
+    setSaving(line.key);
+    const { error } = await supabase.rpc("record_swift_delivery" as never, {
+      _order_id: order.id,
+      _action_key: line.key,
+      _delivery_date: f.date,
+      _users_delivered: users,
+      _notes: f.notes || null,
+    } as never);
+    setSaving(null);
+    if (error) return toast.error(friendlyError(error));
+    toast.success("Delivery recorded — escrow updated");
+    setSwiftForms((s) => ({ ...s, [line.key]: { users: "", date: f.date, notes: "" } }));
+    load();
+  };
+
   const onCsvFile = async (mid: string, file: File) => {
     const text = await file.text();
     setForm(mid, { txnCsv: text });
