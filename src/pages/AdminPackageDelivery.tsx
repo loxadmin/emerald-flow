@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, ArrowLeft, Save, Upload } from "lucide-react";
 import AdminMigrationEntry from "@/components/AdminMigrationEntry";
 import { friendlyError } from "@/lib/errors";
+import type { SwiftOrderAction } from "@/lib/swift";
 
 type Order = {
   id: string; advertiser_id: string; package_name: string;
