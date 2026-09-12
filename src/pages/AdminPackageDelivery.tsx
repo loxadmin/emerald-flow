@@ -23,12 +23,16 @@ type Order = {
   refunded_usd: number | null;
   refunded_at: string | null;
   milestone_breakdown: any;
+  package_type: string | null;
+  swift_actions: SwiftOrderAction[] | null;
+  swift_base_price_usd: number | null;
 };
 type Milestone = { id: string; name: string; slug: string; requires_duration: boolean };
 type Delivery = {
   id: string; milestone_id: string; delivery_date: string;
   users_delivered: number; txn_rows: any; total_txn_amount: number | null;
   charged_usd: number | null; fresh_users: number | null; engagement_metrics: any;
+  swift_action_key: string | null;
 };
 
 type Competitor = { id: string; name: string; is_active: boolean };
