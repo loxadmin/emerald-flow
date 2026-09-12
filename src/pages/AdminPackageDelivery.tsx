@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, ArrowLeft, Save, Upload } from "lucide-react";
 import AdminMigrationEntry from "@/components/AdminMigrationEntry";
 import { friendlyError } from "@/lib/errors";
+import type { SwiftOrderAction } from "@/lib/swift";
 
 type Order = {
   id: string; advertiser_id: string; package_name: string;
@@ -23,12 +24,16 @@ type Order = {
   refunded_usd: number | null;
   refunded_at: string | null;
   milestone_breakdown: any;
+  package_type: string | null;
+  swift_actions: SwiftOrderAction[] | null;
+  swift_base_price_usd: number | null;
 };
 type Milestone = { id: string; name: string; slug: string; requires_duration: boolean };
 type Delivery = {
   id: string; milestone_id: string; delivery_date: string;
   users_delivered: number; txn_rows: any; total_txn_amount: number | null;
   charged_usd: number | null; fresh_users: number | null; engagement_metrics: any;
+  swift_action_key: string | null;
 };
 
 type Competitor = { id: string; name: string; is_active: boolean };
@@ -148,6 +153,42 @@ export default function AdminPackageDelivery() {
   };
 
 
+  const isSwift = order?.package_type === "swift";
+
+  const swiftLines: SwiftOrderAction[] = useMemo(() => {
+    if (!order || !isSwift) return [];
+    return [
+      { key: "acquisition", name: "Users acquired", price_per_user_per_day: Number(order.swift_base_price_usd || 0), source: "preset" as const },
+      ...((order.swift_actions || []) as SwiftOrderAction[]),
+    ];
+  }, [order, isSwift]);
+
+  const [swiftForms, setSwiftForms] = useState<Record<string, { users: string; date: string; notes: string }>>({});
+  const swiftForm = (key: string) =>
+    swiftForms[key] || { users: "", date: new Date().toISOString().slice(0, 10), notes: "" };
+  const setSwiftForm = (key: string, patch: Partial<{ users: string; date: string; notes: string }>) =>
+    setSwiftForms((s) => ({ ...s, [key]: { ...swiftForm(key), ...patch } }));
+
+  const submitSwift = async (line: SwiftOrderAction) => {
+    if (!order) return;
+    const f = swiftForm(line.key);
+    const users = Number(f.users) || 0;
+    if (users <= 0) return toast.error("Enter how many users were delivered.");
+    setSaving(line.key);
+    const { error } = await supabase.rpc("record_swift_delivery" as never, {
+      _order_id: order.id,
+      _action_key: line.key,
+      _delivery_date: f.date,
+      _users_delivered: users,
+      _notes: f.notes || null,
+    } as never);
+    setSaving(null);
+    if (error) return toast.error(friendlyError(error));
+    toast.success("Delivery recorded — escrow updated");
+    setSwiftForms((s) => ({ ...s, [line.key]: { users: "", date: f.date, notes: "" } }));
+    load();
+  };
+
   const onCsvFile = async (mid: string, file: File) => {
     const text = await file.text();
     setForm(mid, { txnCsv: text });
@@ -195,8 +236,86 @@ export default function AdminPackageDelivery() {
         </p>
       </div>
 
+      {isSwift && (
+        <div className="grid gap-4">
+          {swiftLines.map((line) => {
+            const f = swiftForm(line.key);
+            const dv = deliveries.filter((d) => d.swift_action_key === line.key);
+            const totalUsers = dv.reduce((s, d) => s + (d.users_delivered || 0), 0);
+            const chargedSum = dv.reduce((s, d) => s + (Number(d.charged_usd) || 0), 0);
+            const rate = Number(line.price_per_user_per_day || 0);
+            return (
+              <div key={line.key} className="rounded-lg border bg-card p-4">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">{line.name}</h3>
+                  <Badge variant={line.key === "acquisition" ? "outline" : "secondary"} className="text-[10px]">
+                    {line.key === "acquisition" ? "One-off per user" : "Per user per day"}
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px]">${rate.toFixed(2)} / user</Badge>
+                  {line.source === "custom" && <Badge variant="outline" className="text-[10px]">Custom</Badge>}
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    Delivered: {totalUsers.toLocaleString()} users · charged ${chargedSum.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label>Delivery date</Label>
+                    <Input type="date" value={f.date} onChange={(e) => setSwiftForm(line.key, { date: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Users delivered</Label>
+                    <Input type="number" min={0} value={f.users} onChange={(e) => setSwiftForm(line.key, { users: e.target.value })} />
+                    {rate > 0 && Number(f.users) > 0 && (
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        Will deduct ${(Number(f.users) * rate).toFixed(2)} from escrow.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <Label>Notes (optional)</Label>
+                  <Input value={f.notes} onChange={(e) => setSwiftForm(line.key, { notes: e.target.value })} />
+                </div>
+
+                <Button className="mt-3" onClick={() => submitSwift(line)} disabled={saving === line.key}>
+                  {saving === line.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> Record delivery</>}
+                </Button>
+
+                {dv.length > 0 && (
+                  <div className="mt-4 border-t pt-3">
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">History</p>
+                    <div className="max-h-48 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="text-muted-foreground">
+                          <tr>
+                            <th className="py-1 text-left">Date</th>
+                            <th className="py-1 text-left">Users</th>
+                            <th className="py-1 text-right">Charged</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dv.map((d) => (
+                            <tr key={d.id} className="border-t border-border/50">
+                              <td className="py-1">{new Date(d.delivery_date).toLocaleDateString()}</td>
+                              <td className="py-1">{d.users_delivered}</td>
+                              <td className="py-1 text-right font-mono">${Number(d.charged_usd || 0).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="grid gap-4">
-        {selectedMs.map((m) => {
+        {(isSwift ? [] : selectedMs).map((m) => {
           const f: FormState = forms[m.id] || EMPTY_FORM();
           const isTxn = m.slug === "transaction" || m.slug === "sale";
           const isSwitch = SWITCH_SLUGS.has(m.slug);
