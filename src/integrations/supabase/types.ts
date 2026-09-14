@@ -68,6 +68,10 @@ export type Database = {
           package_type: string
           platform_support: string[]
           sort_order: number
+          swift_churn_discount_pct: number
+          swift_churn_units: number
+          swift_trial_free_days: number
+          swift_trial_units: number
           unit_label: string | null
           unit_price_usd: number | null
           updated_at: string
@@ -92,6 +96,10 @@ export type Database = {
           package_type?: string
           platform_support?: string[]
           sort_order?: number
+          swift_churn_discount_pct?: number
+          swift_churn_units?: number
+          swift_trial_free_days?: number
+          swift_trial_units?: number
           unit_label?: string | null
           unit_price_usd?: number | null
           updated_at?: string
@@ -116,6 +124,10 @@ export type Database = {
           package_type?: string
           platform_support?: string[]
           sort_order?: number
+          swift_churn_discount_pct?: number
+          swift_churn_units?: number
+          swift_trial_free_days?: number
+          swift_trial_units?: number
           unit_label?: string | null
           unit_price_usd?: number | null
           updated_at?: string
@@ -2197,6 +2209,7 @@ export type Database = {
           ends_at: string | null
           escrow_spent_usd: number
           id: string
+          is_trial: boolean
           milestone_breakdown: Json | null
           package_id: string | null
           package_name: string
@@ -2220,6 +2233,7 @@ export type Database = {
           swift_base_price_usd: number | null
           target_milestone_id: string | null
           total_amount_usd: number
+          trial_variant: string | null
           unit_label: string
           unit_price_usd: number
           units: number
@@ -2235,6 +2249,7 @@ export type Database = {
           ends_at?: string | null
           escrow_spent_usd?: number
           id?: string
+          is_trial?: boolean
           milestone_breakdown?: Json | null
           package_id?: string | null
           package_name: string
@@ -2258,6 +2273,7 @@ export type Database = {
           swift_base_price_usd?: number | null
           target_milestone_id?: string | null
           total_amount_usd: number
+          trial_variant?: string | null
           unit_label: string
           unit_price_usd: number
           units: number
@@ -2273,6 +2289,7 @@ export type Database = {
           ends_at?: string | null
           escrow_spent_usd?: number
           id?: string
+          is_trial?: boolean
           milestone_breakdown?: Json | null
           package_id?: string | null
           package_name?: string
@@ -2296,6 +2313,7 @@ export type Database = {
           swift_base_price_usd?: number | null
           target_milestone_id?: string | null
           total_amount_usd?: number
+          trial_variant?: string | null
           unit_label?: string
           unit_price_usd?: number
           units?: number
@@ -2496,6 +2514,47 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      swift_churn_feedback: {
+        Row: {
+          advertiser_id: string
+          converted: boolean
+          created_at: string
+          id: string
+          note: string | null
+          offer_shown: boolean
+          package_id: string
+          reason: string
+        }
+        Insert: {
+          advertiser_id: string
+          converted?: boolean
+          created_at?: string
+          id?: string
+          note?: string | null
+          offer_shown?: boolean
+          package_id: string
+          reason: string
+        }
+        Update: {
+          advertiser_id?: string
+          converted?: boolean
+          created_at?: string
+          id?: string
+          note?: string | null
+          offer_shown?: boolean
+          package_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swift_churn_feedback_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "ad_packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       swift_daily_actions: {
         Row: {
@@ -3270,6 +3329,15 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_swift_trial: {
+        Args: {
+          _links: string[]
+          _package_id: string
+          _platform: string
+          _variant: string
+        }
+        Returns: Json
+      }
       purchase_switch_offer: {
         Args: { _offer_id: string; _target_link: string }
         Returns: Json
@@ -3434,6 +3502,10 @@ export type Database = {
       }
       submit_offline_offer: { Args: { _offer_id: string }; Returns: Json }
       swift_actions_daily_rate: { Args: { _actions: Json }; Returns: number }
+      swift_package_used: {
+        Args: { _package_id: string; _user: string }
+        Returns: boolean
+      }
       swift_unit_price: {
         Args: { _package_id: string; _units: number }
         Returns: number
