@@ -37,6 +37,10 @@ type Pkg = {
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
   package_type?: string | null;
+  swift_trial_units?: number | null;
+  swift_trial_free_days?: number | null;
+  swift_churn_units?: number | null;
+  swift_churn_discount_pct?: number | null;
 };
 type Milestone = { id: string; name: string; slug: string; default_order: number; requires_duration: boolean };
 type PkgMilestone = {
