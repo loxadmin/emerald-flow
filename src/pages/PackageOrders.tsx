@@ -103,7 +103,9 @@ export default function PackageOrders() {
   // Render Concise Order Card for All Orders List (Overview)
   const renderOverviewOrderCard = (o: Order) => {
     const orderDeliveries = deliveries.filter((d) => d.order_id === o.id);
-    const totalDelivered = orderDeliveries.reduce((sum, d) => sum + (d.users_delivered || 0), 0);
+    const totalDelivered = (o.package_type === "swift" || (o.swift_actions || []).length > 0)
+      ? orderDeliveries.filter((d) => d.swift_action_key === "acquisition" || (!d.swift_action_key && !d.milestone_id)).reduce((sum, d) => sum + (d.users_delivered || 0), 0)
+      : orderDeliveries.reduce((sum, d) => sum + (d.users_delivered || 0), 0);
     const pct = Math.min(100, Math.round((totalDelivered / Math.max(o.units, 1)) * 100));
     const spent = Number(o.escrow_spent_usd || 0);
     const total = Number(o.total_amount_usd || 0);
@@ -218,7 +220,9 @@ export default function PackageOrders() {
   // Render Full Standalone Order Details View
   const renderSingleOrderDetails = (o: Order) => {
     const orderDeliveries = deliveries.filter((d) => d.order_id === o.id);
-    const totalDelivered = orderDeliveries.reduce((sum, d) => sum + (d.users_delivered || 0), 0);
+    const totalDelivered = (o.package_type === "swift" || (o.swift_actions || []).length > 0)
+      ? orderDeliveries.filter((d) => d.swift_action_key === "acquisition" || (!d.swift_action_key && !d.milestone_id)).reduce((sum, d) => sum + (d.users_delivered || 0), 0)
+      : orderDeliveries.reduce((sum, d) => sum + (d.users_delivered || 0), 0);
 
     return (
       <div key={o.id} className="space-y-6">
