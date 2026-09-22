@@ -254,7 +254,7 @@ export default function AdminPackageDelivery() {
     if (users <= 0) return toast.error("Enter users delivered or upload deliverable CSV.");
 
     setSaving(line.key);
-    const { error } = await supabase.rpc("record_swift_delivery" as never, {
+    const { error } = await supabase.rpc("record_swift_delivery", {
       _order_id: order.id,
       _action_key: line.key,
       _delivery_date: f.date,
@@ -262,7 +262,7 @@ export default function AdminPackageDelivery() {
       _notes: f.notes || null,
       _txn_rows: txnRows,
       _engagement_metrics: engagementData,
-    } as never);
+    });
     setSaving(null);
     if (error) return toast.error(friendlyError(error));
     toast.success("Delivery recorded — escrow updated");
