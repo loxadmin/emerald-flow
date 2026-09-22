@@ -7,19 +7,24 @@ import {
 
 type Milestone = { id: string; name: string; slug: string; requires_duration: boolean };
 type Delivery = {
-  id: string; order_id: string; milestone_id: string; delivery_date: string;
+  id: string; order_id: string; milestone_id?: string | null; delivery_date: string;
   users_delivered: number; charged_usd?: number | null; fresh_users?: number | null;
   engagement_metrics?: any; competitor_breakdown?: any;
+  swift_action_key?: string | null;
 };
 
 type Props = {
   order: {
-    id: string; units: number; duration_days: number;
+    id: string; units: number; duration_days?: number | null;
     total_amount_usd: number;
     escrow_spent_usd?: number | null;
     refunded_usd?: number | null;
     refunded_at?: string | null;
-    selected_milestone_ids: string[] | null;
+    selected_milestone_ids?: string[] | null;
+    starts_at?: string | null;
+    ends_at?: string | null;
+    package_type?: string | null;
+    swift_actions?: any[] | null;
   };
   milestones: Milestone[];
   deliveries: Delivery[];
@@ -27,6 +32,8 @@ type Props = {
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 export default function PackageMetricsPanel({ order, milestones, deliveries }: Props) {
   const [competitorNames, setCompetitorNames] = useState<Record<string, string>>({});
@@ -60,26 +67,75 @@ export default function PackageMetricsPanel({ order, milestones, deliveries }: P
 
   const milestoneById = (id: string) => milestones.find((m) => m.id === id);
 
-  // Daily line chart: users delivered per milestone per date
+  const getMetricName = (d: Delivery): string => {
+    if (d.milestone_id) {
+      const m = milestoneById(d.milestone_id);
+      if (m?.name) return m.name;
+    }
+    if (d.swift_action_key) {
+      if (d.swift_action_key === "acquisition") return "Users acquired";
+      const sa = (order.swift_actions || []).find((a: any) => a.key === d.swift_action_key);
+      if (sa?.name) return sa.name;
+      return d.swift_action_key.replace(/_/g, " ");
+    }
+    return "Users delivered";
+  };
+
+  const seriesKeys = useMemo(() => {
+    const set = new Set<string>();
+
+    if (order.package_type === "swift" || (order.swift_actions || []).length > 0) {
+      set.add("Users acquired");
+      (order.swift_actions || []).forEach((a: any) => {
+        if (a.name) set.add(a.name);
+      });
+    }
+
+    (order.selected_milestone_ids || []).forEach((id) => {
+      const m = milestoneById(id);
+      if (m?.name) set.add(m.name);
+    });
+
+    rows.forEach((d) => {
+      set.add(getMetricName(d));
+    });
+
+    const list = Array.from(set).filter(Boolean);
+    return list.length > 0 ? list : ["Users delivered"];
+  }, [order, milestones, rows]);
+
+  // Daily line chart: prefilled timeline dates with delivered counts
   const dailySeries = useMemo(() => {
     const byDate: Record<string, any> = {};
+
+    // 1. Prefill timeline if starts_at is available
+    if (order.starts_at) {
+      const startDate = new Date(order.starts_at);
+      const daysCount = Math.max(Number(order.duration_days) || 7, 7);
+      for (let i = 0; i < daysCount; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        const k = iso(d);
+        byDate[k] = { date: fmtDate(k), _k: k };
+        seriesKeys.forEach((key) => {
+          byDate[k][key] = 0;
+        });
+      }
+    }
+
+    // 2. Populate actual delivery rows
     rows.forEach((d) => {
       const key = String(d.delivery_date).slice(0, 10);
       byDate[key] = byDate[key] || { date: fmtDate(key), _k: key };
-      const m = milestoneById(d.milestone_id);
-      if (!m) return;
-      byDate[key][m.name] = (byDate[key][m.name] || 0) + (d.users_delivered || 0);
+      seriesKeys.forEach((k) => {
+        if (byDate[key][k] === undefined) byDate[key][k] = 0;
+      });
+      const metricName = getMetricName(d);
+      byDate[key][metricName] = (byDate[key][metricName] || 0) + (d.users_delivered || 0);
     });
-    return Object.values(byDate).sort((a: any, b: any) => (a._k < b._k ? -1 : 1));
-  }, [rows, milestones]);
 
-  const milestoneNames = useMemo(
-    () =>
-      (order.selected_milestone_ids || [])
-        .map((id) => milestoneById(id)?.name)
-        .filter(Boolean) as string[],
-    [order.selected_milestone_ids, milestones]
-  );
+    return Object.values(byDate).sort((a: any, b: any) => (a._k < b._k ? -1 : 1));
+  }, [rows, order.starts_at, order.duration_days, seriesKeys]);
 
   // Engagement bar chart
   const engagementSeries = useMemo(() => {
@@ -126,9 +182,11 @@ export default function PackageMetricsPanel({ order, milestones, deliveries }: P
     fontSize: 11,
   };
   const palette = [
-    "hsl(var(--primary))",
-    "hsl(var(--chart-2, var(--primary)))",
-    "hsl(var(--muted-foreground))",
+    "hsl(160, 84%, 39%)",
+    "hsl(199, 89%, 48%)",
+    "hsl(38, 92%, 50%)",
+    "hsl(280, 81%, 60%)",
+    "hsl(340, 82%, 52%)",
   ];
 
   return (
@@ -156,32 +214,44 @@ export default function PackageMetricsPanel({ order, milestones, deliveries }: P
       </div>
 
       {/* Daily delivery line chart */}
-      {dailySeries.length > 0 && (
-        <div className="rounded-lg border border-border/40 bg-secondary/10 p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Daily delivery trend
+      <div className="rounded-lg border border-border/40 bg-secondary/10 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Daily Delivery Trend
           </p>
-          <ResponsiveContainer width="100%" height={200}>
+          {dailySeries.length > 0 && (
+            <p className="text-[10px] font-mono text-muted-foreground">
+              {dailySeries.length} timeline days
+            </p>
+          )}
+        </div>
+        {dailySeries.length > 0 ? (
+          <ResponsiveContainer width="100%" height={220}>
             <LineChart data={dailySeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} opacity={0.2} />
               <XAxis dataKey="date" tick={axis} axisLine={false} tickLine={false} />
               <YAxis tick={axis} axisLine={false} tickLine={false} width={32} />
               <Tooltip contentStyle={tooltipStyle} />
               <Legend wrapperStyle={{ fontSize: 10 }} />
-              {milestoneNames.map((name, i) => (
+              {seriesKeys.map((name, i) => (
                 <Line
                   key={name}
                   type="monotone"
                   dataKey={name}
                   stroke={palette[i % palette.length]}
                   strokeWidth={2}
-                  dot={{ r: 2 }}
+                  dot={{ r: 3, fill: palette[i % palette.length] }}
+                  activeDot={{ r: 5 }}
                 />
               ))}
             </LineChart>
           </ResponsiveContainer>
-        </div>
-      )}
+        ) : (
+          <div className="h-40 flex items-center justify-center text-xs text-muted-foreground">
+            No delivery timeline active yet.
+          </div>
+        )}
+      </div>
 
       {/* Engagement bar chart */}
       {engagementSeries.length > 0 && (
