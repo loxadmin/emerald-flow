@@ -540,7 +540,7 @@ export default function Dashboard() {
                     {packageOrders.slice(0, 5).map((o) => (
                       <tr key={`o-${o.id}`} className="transition-colors hover:bg-accent/30">
                         <td className="px-6 py-4.5">
-                          <Link to="/packages/orders" className="font-semibold text-foreground hover:text-primary transition-colors">
+                          <Link to={`/packages/orders?orderId=${o.id}`} className="font-semibold text-foreground hover:text-primary transition-colors">
                             {o.package_name}
                           </Link>
                         </td>
@@ -557,7 +557,7 @@ export default function Dashboard() {
                           <Sparkline data={fallback(deliverySeries)} tone={o.status === "active" ? "primary" : "muted"} className="h-7 w-28 scale-100 group-hover:scale-105 transition-transform" />
                         </td>
                         <td className="px-6 py-4.5 text-right">
-                          <Link to="/packages/orders" className="rounded-lg p-1 hover:bg-accent/40 inline-block transition-colors">
+                          <Link to={`/packages/orders?orderId=${o.id}`} className="rounded-lg p-1 hover:bg-accent/40 inline-block transition-colors">
                             <ArrowUpRight className="h-4.5 w-4.5 text-muted-foreground" />
                           </Link>
                         </td>
