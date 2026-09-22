@@ -50,48 +50,19 @@ Deno.serve(async (req) => {
     const clientId = String(client_id || "").trim();
     if (clientId) {
       const now = new Date().toISOString();
-      const { error: sessionRpcErr } = await supabase.rpc("upsert_tracking_session", {
-        _tid: clientId,
-        _campaign_id: referral.campaign_id,
-        _referral_id: referral.id,
-        _referral_code: referral.code,
-        _last_seen_at: now,
-        _metadata: {
+      await supabase.from("tracking_sessions").upsert({
+        tid: clientId,
+        campaign_id: referral.campaign_id,
+        referral_id: referral.id,
+        referral_code: referral.code,
+        first_seen_at: now,
+        last_seen_at: now,
+        metadata: {
           source: "referral-click",
           user_agent: userAgent,
           ip,
         },
-      });
-
-      if (sessionRpcErr) {
-        const { error: upsertErr } = await supabase.from("tracking_sessions").upsert({
-          tid: clientId,
-          campaign_id: referral.campaign_id,
-          referral_id: referral.id,
-          referral_code: referral.code,
-          first_seen_at: now,
-          last_seen_at: now,
-          metadata: {
-            source: "referral-click",
-            user_agent: userAgent,
-            ip,
-          },
-        }, { onConflict: "tid" });
-
-        if (upsertErr && (upsertErr as { code?: string }).code === "23505") {
-          await supabase.from("tracking_sessions").update({
-            campaign_id: referral.campaign_id,
-            referral_id: referral.id,
-            referral_code: referral.code,
-            last_seen_at: now,
-            metadata: {
-              source: "referral-click",
-              user_agent: userAgent,
-              ip,
-            },
-          }).eq("tid", clientId);
-        }
-      }
+      }, { onConflict: "tid" });
 
       const { data: trackedUser } = await supabase
         .from("users_tracking")
