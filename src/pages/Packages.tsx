@@ -14,7 +14,7 @@ import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload
 import MotionWrapper from "@/components/MotionWrapper";
 import GiftBox from "@/components/GiftBox";
 import { toast } from "sonner";
-import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock, Youtube, Music, Instagram, Video, Sparkles, LayoutGrid, Check } from "lucide-react";
+import { Package as PackageIcon, Loader2, ShoppingCart, Wallet, CreditCard, ClipboardList, Smartphone, Globe, Lock, Youtube, Music, Instagram, Video, Sparkles, LayoutGrid, Check, ArrowLeft } from "lucide-react";
 import { CardGridSkeleton } from "@/components/skeletons";
 
 const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; placeholder: string }> = {
@@ -473,6 +473,13 @@ export default function Packages() {
   return (
     <DashboardLayout>
       <MotionWrapper>
+        <Link
+          to="/overview"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-4"
+        >
+          <ArrowLeft className="h-3.5 w-3.5 text-primary" /> Back to Dashboard
+        </Link>
+
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Ready to run</p>
