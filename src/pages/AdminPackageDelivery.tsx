@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Save, Upload } from "lucide-react";
 import AdminMigrationEntry from "@/components/AdminMigrationEntry";
+import { parseTxnCsv } from "@/lib/txn-csv";
 import { friendlyError } from "@/lib/errors";
 import type { SwiftOrderAction } from "@/lib/swift";
 
@@ -60,19 +61,6 @@ const EMPTY_FORM = (): FormState => ({
 const SWITCH_SLUGS = new Set(["app_install", "signup", "kyc", "deposit"]);
 
 
-function parseTxnCsv(csv: string): { user_ref: string; txn_id: string; amount_usd: number }[] {
-  const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const rows: any[] = [];
-  const startIdx = /user/i.test(lines[0] || "") && /txn/i.test(lines[0] || "") ? 1 : 0;
-  for (let i = startIdx; i < lines.length; i++) {
-    const parts = lines[i].split(",").map((s) => s.trim());
-    if (parts.length < 3) continue;
-    const amount = Number(parts[2]);
-    if (!parts[0] || !parts[1] || Number.isNaN(amount)) continue;
-    rows.push({ user_ref: parts[0], txn_id: parts[1], amount_usd: amount });
-  }
-  return rows;
-}
 
 export default function AdminPackageDelivery() {
   const { orderId } = useParams<{ orderId: string }>();
@@ -118,8 +106,9 @@ export default function AdminPackageDelivery() {
     const isTxn = m.slug === "transaction" || m.slug === "sale";
     let txnRows: any = null;
     if (isTxn && f.txnCsv.trim()) {
-      txnRows = parseTxnCsv(f.txnCsv);
-      if (txnRows.length === 0) return toast.error("CSV must have rows like: user_ref,txn_id,amount_usd");
+      const parsed = parseTxnCsv(f.txnCsv);
+      if (parsed.rows.length === 0) return toast.error(parsed.errors[0] || "CSV must have rows like: txn_id, amount or user_ref, txn_id, amount_usd");
+      txnRows = parsed.rows;
     }
     if (users <= 0 && (!txnRows || txnRows.length === 0)) {
       return toast.error("Enter users delivered or upload transactions.");
@@ -190,13 +179,43 @@ export default function AdminPackageDelivery() {
 
   function parseEngagementCsv(csv: string): { user_ref: string; action_type: string }[] {
     const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const rows: any[] = [];
-    const startIdx = /user/i.test(lines[0] || "") && /action/i.test(lines[0] || "") ? 1 : 0;
+    if (lines.length === 0) return [];
+    const split = (line: string) => line.split(",").map((s) => s.trim().replace(/^"|"$/g, ""));
+    const firstLineCols = split(lines[0]).map((c) => c.toLowerCase());
+
+    const userKeys = ["user_ref", "user", "user_id", "userid", "customer", "account"];
+    const actionKeys = ["action_type", "action", "type", "event", "activity"];
+
+    let userIdx = firstLineCols.findIndex((c) => userKeys.some((k) => c.includes(k)));
+    let actionIdx = firstLineCols.findIndex((c) => actionKeys.some((k) => c.includes(k)));
+
+    const hasHeader = userIdx !== -1 || actionIdx !== -1;
+    const startIdx = hasHeader ? 1 : 0;
+
+    const rows: { user_ref: string; action_type: string }[] = [];
     for (let i = startIdx; i < lines.length; i++) {
-      const parts = lines[i].split(",").map((s) => s.trim());
-      if (parts.length < 2) continue;
-      if (!parts[0] || !parts[1]) continue;
-      rows.push({ user_ref: parts[0], action_type: parts[1] });
+      const parts = split(lines[i]);
+      if (parts.length < 1) continue;
+
+      let user_ref = "N/A";
+      let action_type = "";
+
+      if (hasHeader) {
+        if (userIdx !== -1 && parts[userIdx]) user_ref = parts[userIdx];
+        if (actionIdx !== -1 && parts[actionIdx]) action_type = parts[actionIdx];
+      }
+
+      if (!action_type) {
+        if (parts.length >= 2) {
+          user_ref = parts[0] || "N/A";
+          action_type = parts[1] || "";
+        } else if (parts.length === 1) {
+          action_type = parts[0] || "";
+        }
+      }
+
+      if (!action_type) continue;
+      rows.push({ user_ref: user_ref || "N/A", action_type });
     }
     return rows;
   }
@@ -209,10 +228,11 @@ export default function AdminPackageDelivery() {
     let engagementData: any = null;
 
     if (f.deliverableType === "financial" && f.txnCsv.trim()) {
-      txnRows = parseTxnCsv(f.txnCsv);
-      if (txnRows.length === 0) {
-        return toast.error("CSV must have rows like: user_ref,txn_id,amount_usd");
+      const parsed = parseTxnCsv(f.txnCsv);
+      if (parsed.rows.length === 0) {
+        return toast.error(parsed.errors[0] || "CSV must have rows like: txn_id, amount or user_ref, txn_id, amount_usd");
       }
+      txnRows = parsed.rows;
       if (users <= 0) users = txnRows.length;
     } else if (f.deliverableType === "engagement" && f.engagementCsv.trim()) {
       const parsed = parseEngagementCsv(f.engagementCsv);
@@ -401,7 +421,7 @@ export default function AdminPackageDelivery() {
 
                     {f.deliverableType === "financial" && !isAcquisition && (
                       <div className="mt-3">
-                        <Label>Transactions CSV <span className="text-muted-foreground">(user_ref,txn_id,amount_usd)</span></Label>
+                        <Label>Transactions CSV <span className="text-muted-foreground">(txn_id, amount or user_ref, txn_id, amount)</span></Label>
                         <div className="flex items-center gap-2 mt-1">
                           <Input
                             type="file"
@@ -570,7 +590,7 @@ export default function AdminPackageDelivery() {
 
               {isTxn && (
                 <div className="mt-3">
-                  <Label>Transactions CSV <span className="text-muted-foreground">(user_ref,txn_id,amount_usd)</span></Label>
+                  <Label>Transactions CSV <span className="text-muted-foreground">(txn_id, amount or user_ref, txn_id, amount)</span></Label>
                   <div className="flex items-center gap-2 mt-1">
                     <Input type="file" accept=".csv,text/csv" onChange={(e) => {
                       const f0 = e.target.files?.[0]; if (f0) onCsvFile(m.id, f0);
