@@ -244,6 +244,9 @@ export default function AdminPackageDelivery() {
             const totalUsers = dv.reduce((s, d) => s + (d.users_delivered || 0), 0);
             const chargedSum = dv.reduce((s, d) => s + (Number(d.charged_usd) || 0), 0);
             const rate = Number(line.price_per_user_per_day || 0);
+            const isAcquisition = line.key === "acquisition";
+            const isCompleted = isAcquisition && totalUsers >= order.units;
+
             return (
               <div key={line.key} className="rounded-lg border bg-card p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -253,35 +256,48 @@ export default function AdminPackageDelivery() {
                   </Badge>
                   <Badge variant="outline" className="text-[10px]">${rate.toFixed(2)} / user</Badge>
                   {line.source === "custom" && <Badge variant="outline" className="text-[10px]">Custom</Badge>}
+                  {isCompleted && (
+                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px]">
+                      Target Reached ({totalUsers}/{order.units} users) — Completed
+                    </Badge>
+                  )}
                   <span className="ml-auto text-xs text-muted-foreground">
                     Delivered: {totalUsers.toLocaleString()} users · charged ${chargedSum.toFixed(2)}
                   </span>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label>Delivery date</Label>
-                    <Input type="date" value={f.date} onChange={(e) => setSwiftForm(line.key, { date: e.target.value })} />
+                {isCompleted ? (
+                  <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs text-emerald-600 font-medium">
+                    Target of {order.units.toLocaleString()} acquired users reached. User acquisition is completed.
                   </div>
-                  <div>
-                    <Label>Users delivered</Label>
-                    <Input type="number" min={0} value={f.users} onChange={(e) => setSwiftForm(line.key, { users: e.target.value })} />
-                    {rate > 0 && Number(f.users) > 0 && (
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        Will deduct ${(Number(f.users) * rate).toFixed(2)} from escrow.
-                      </p>
-                    )}
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label>Delivery date</Label>
+                        <Input type="date" value={f.date} onChange={(e) => setSwiftForm(line.key, { date: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Users delivered</Label>
+                        <Input type="number" min={0} value={f.users} onChange={(e) => setSwiftForm(line.key, { users: e.target.value })} />
+                        {rate > 0 && Number(f.users) > 0 && (
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            Will deduct ${(Number(f.users) * rate).toFixed(2)} from escrow.
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                <div className="mt-3">
-                  <Label>Notes (optional)</Label>
-                  <Input value={f.notes} onChange={(e) => setSwiftForm(line.key, { notes: e.target.value })} />
-                </div>
+                    <div className="mt-3">
+                      <Label>Notes (optional)</Label>
+                      <Input value={f.notes} onChange={(e) => setSwiftForm(line.key, { notes: e.target.value })} />
+                    </div>
 
-                <Button className="mt-3" onClick={() => submitSwift(line)} disabled={saving === line.key}>
-                  {saving === line.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> Record delivery</>}
-                </Button>
+                    <Button className="mt-3" onClick={() => submitSwift(line)} disabled={saving === line.key}>
+                      {saving === line.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> Record delivery</>}
+                    </Button>
+                  </>
+                )}
 
                 {dv.length > 0 && (
                   <div className="mt-4 border-t pt-3">

@@ -171,10 +171,15 @@ export default function PackageMetricsPanel({ order, milestones, deliveries }: P
     return list;
   }, [rows, competitorNames]);
 
-  // Dynamic KPI computations
+  // Dynamic KPI computations: count acquired users (excluding daily deliverables for swift orders)
   const totalDelivered = useMemo(() => {
+    if (order.package_type === "swift" || (order.swift_actions || []).length > 0) {
+      return rows
+        .filter((d) => d.swift_action_key === "acquisition" || (!d.swift_action_key && !d.milestone_id))
+        .reduce((s, d) => s + (d.users_delivered || 0), 0);
+    }
     return rows.reduce((s, d) => s + (d.users_delivered || 0), 0);
-  }, [rows]);
+  }, [rows, order.package_type, order.swift_actions]);
 
   const targetUnits = Math.max(order.units, 1);
   const deliveryPct = Math.min(100, Math.round((totalDelivered / targetUnits) * 100));
