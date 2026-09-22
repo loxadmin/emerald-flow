@@ -3302,19 +3302,6 @@ export type Database = {
         }
         Returns: Json
       }
-      upsert_tracking_session: {
-        Args: {
-          _tid: string
-          _campaign_id?: string | null
-          _advertiser_id?: string | null
-          _referral_code?: string | null
-          _referral_id?: string | null
-          _first_seen_at?: string | null
-          _last_seen_at?: string | null
-          _metadata?: Json | null
-        }
-        Returns: Database["public"]["Tables"]["tracking_sessions"]["Row"]
-      }
       purchase_package_v2: {
         Args: {
           _duration_days: number

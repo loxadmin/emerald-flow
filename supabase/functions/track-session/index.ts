@@ -95,29 +95,13 @@ Deno.serve(async (req) => {
       metadata: mergedMetadata,
     };
 
-    const { error: rpcErr } = await supabase.rpc("upsert_tracking_session", {
-      _tid: tid,
-      _campaign_id: writePayload.campaign_id,
-      _advertiser_id: writePayload.advertiser_id,
-      _referral_code: writePayload.referral_code,
-      _referral_id: writePayload.referral_id,
-      _first_seen_at: existing?.id ? undefined : now,
-      _last_seen_at: now,
-      _metadata: writePayload.metadata,
-    });
-
-    if (rpcErr) {
-      const { error: upsertErr } = await supabase.from("tracking_sessions").upsert(
-        {
-          ...writePayload,
-          ...(existing?.id ? {} : { first_seen_at: now }),
-        },
-        { onConflict: "tid" }
-      );
-      if (upsertErr && (upsertErr as { code?: string }).code === "23505") {
-        await supabase.from("tracking_sessions").update(writePayload).eq("tid", tid);
-      }
-    }
+    await supabase.from("tracking_sessions").upsert(
+      {
+        ...writePayload,
+        ...(existing?.id ? {} : { first_seen_at: now }),
+      },
+      { onConflict: "tid" }
+    );
 
     const finalReferralId = writePayload.referral_id || null;
     const finalReferralCode = writePayload.referral_code || null;
