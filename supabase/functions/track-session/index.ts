@@ -95,13 +95,19 @@ Deno.serve(async (req) => {
       metadata: mergedMetadata,
     };
 
-    await supabase.from("tracking_sessions").upsert(
-      {
-        ...writePayload,
-        ...(existing?.id ? {} : { first_seen_at: now }),
-      },
-      { onConflict: "tid" }
-    );
+    if (existing?.id) {
+      await supabase
+        .from("tracking_sessions")
+        .update(writePayload)
+        .eq("id", existing.id);
+    } else {
+      await supabase
+        .from("tracking_sessions")
+        .insert({
+          ...writePayload,
+          first_seen_at: now,
+        });
+    }
 
     const finalReferralId = writePayload.referral_id || null;
     const finalReferralCode = writePayload.referral_code || null;
@@ -126,14 +132,7 @@ Deno.serve(async (req) => {
       };
 
       if (!existingTrackedUser) {
-        const { error: insertErr } = await supabase.from("users_tracking").insert(payload);
-        if (insertErr && (insertErr as { code?: string }).code === "23505") {
-          await supabase
-            .from("users_tracking")
-            .update(payload)
-            .eq("campaign_id", finalCampaignId)
-            .eq("external_user_id", identity);
-        }
+        await supabase.from("users_tracking").insert(payload);
       } else {
         await supabase
           .from("users_tracking")
