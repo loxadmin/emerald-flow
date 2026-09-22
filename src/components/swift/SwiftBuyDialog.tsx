@@ -38,6 +38,7 @@ type CustomRow = { name: string; price: string };
 
 type Props = {
   pkg: Pkg | null;
+  isClaimed?: boolean;
   tiers: SwiftTier[];
   presets: SwiftAction[];
   pkgActions: SwiftPkgAction[];
@@ -66,7 +67,7 @@ function trialUnitPrice(tiers: SwiftTier[], units: number): number | null {
 }
 
 export default function SwiftBuyDialog({
-  pkg, tiers, presets, pkgActions, websites, walletBalance, onClose, onDone,
+  pkg, isClaimed = false, tiers, presets, pkgActions, websites, walletBalance, onClose, onDone,
 }: Props) {
   const minUnits = swiftMinUnits(tiers);
   const maxUnits = swiftMaxUnits(tiers);
@@ -152,7 +153,7 @@ export default function SwiftBuyDialog({
 
   /** Closing without buying opens the "why not?" prompt. */
   const handleWalkAway = () => {
-    if (pkg) {
+    if (pkg && !isClaimed) {
       setChurnPkg(pkg);
       setReason(null);
       setReasonSent(false);
@@ -165,6 +166,7 @@ export default function SwiftBuyDialog({
 
   const submit = async () => {
     if (!pkg) return;
+    if (isClaimed) return toast.error("You have already claimed this one-off package offer");
     if (!unitPrice) return toast.error(`Pick a volume between ${minUnits} and ${maxUnits} users`);
     if (chosen.length === 0 && customLines.length === 0)
       return toast.error("Pick at least one daily deliverable");
@@ -201,6 +203,7 @@ export default function SwiftBuyDialog({
   const startTrial = async (variant: "standard" | "churn") => {
     const target = variant === "churn" ? churnPkg : pkg;
     if (!target) return;
+    if (isClaimed) return toast.error("You have already claimed this one-off package offer");
     const pl = variant === "churn" ? churnPlatform : platform;
     const cleanLinks = checkLinks(pl, variant === "churn" ? churnLinks : links);
     if (!cleanLinks) return;
@@ -264,6 +267,12 @@ export default function SwiftBuyDialog({
               </DialogHeader>
 
               <div className="space-y-5 pt-4">
+                {isClaimed && (
+                  <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-center font-semibold text-destructive">
+                    You have already claimed this one-off package offer.
+                  </div>
+                )}
+
                 {pkg.description && (
                   <p className="rounded-lg border bg-secondary/40 p-3 text-sm text-muted-foreground">{pkg.description}</p>
                 )}
@@ -284,7 +293,7 @@ export default function SwiftBuyDialog({
                       size="sm"
                       variant="destructive"
                       className="shrink-0 font-semibold"
-                      disabled={buying}
+                      disabled={buying || isClaimed}
                       onClick={() => startTrial("standard")}
                     >
                       <Gift className="mr-1 h-3.5 w-3.5" /> Try it
@@ -480,9 +489,9 @@ export default function SwiftBuyDialog({
 
               <DialogFooter className="mt-5 gap-2 border-t border-border/20 pt-4">
                 <Button variant="outline" className="h-9 text-xs" onClick={handleWalkAway}>Cancel</Button>
-                <Button className="h-9 text-xs font-semibold" onClick={submit} disabled={buying || total <= 0}>
+                <Button className="h-9 text-xs font-semibold" onClick={submit} disabled={buying || total <= 0 || isClaimed}>
                   {buying && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
-                  {buying ? "Placing order..." : `Authorize $${total.toFixed(2)}`}
+                  {isClaimed ? "Already claimed" : buying ? "Placing order..." : `Authorize $${total.toFixed(2)}`}
                 </Button>
               </DialogFooter>
             </>
