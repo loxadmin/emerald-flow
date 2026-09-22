@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MotionWrapper from "@/components/MotionWrapper";
-import { Loader2, Package as PackageIcon, ArrowLeft, TrendingUp, Calendar, ExternalLink, BarChart3, Layers } from "lucide-react";
+import { Loader2, Package as PackageIcon, ArrowLeft, TrendingUp, Calendar, ExternalLink, BarChart3, ShieldCheck } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import MigrationChart from "@/components/MigrationChart";
 import DailyTargets from "@/components/DailyTargets";
@@ -100,21 +100,32 @@ export default function PackageOrders() {
 
   const activeOrder = orders.find((o) => o.id === selectedOrderId) || null;
 
-  const renderSingleOrderDetails = (o: Order, isStandalone = false) => {
+  // Render Concise Order Card for All Orders List (Overview)
+  const renderOverviewOrderCard = (o: Order) => {
     const orderDeliveries = deliveries.filter((d) => d.order_id === o.id);
     const totalDelivered = orderDeliveries.reduce((sum, d) => sum + (d.users_delivered || 0), 0);
+    const pct = Math.min(100, Math.round((totalDelivered / Math.max(o.units, 1)) * 100));
+    const spent = Number(o.escrow_spent_usd || 0);
+    const total = Number(o.total_amount_usd || 0);
+    const remaining = Math.max(total - spent, 0);
 
     return (
-      <div key={o.id} className="rounded-xl border border-border/40 bg-card/30 backdrop-blur-md p-5 space-y-5 shadow-md">
+      <div
+        key={o.id}
+        onClick={() => setSearchParams({ orderId: o.id })}
+        className="group relative cursor-pointer rounded-xl border border-border/50 bg-card p-5 transition-all duration-200 hover:border-primary/40 hover:shadow-md space-y-4"
+      >
         {/* Header Row */}
-        <div className="flex items-center justify-between gap-4 flex-wrap border-b border-border/20 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="shrink-0 bg-primary/10 text-primary border border-primary/20 rounded-lg p-2.5">
+        <div className="flex items-center justify-between gap-4 flex-wrap border-b border-border/20 pb-3.5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="shrink-0 bg-primary/10 text-primary border border-primary/20 rounded-xl p-2.5">
               <PackageIcon className="h-5 w-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base font-bold text-foreground tracking-tight">{o.package_name}</h2>
+                <h3 className="text-base font-bold text-foreground tracking-tight group-hover:text-primary transition-colors truncate">
+                  {o.package_name}
+                </h3>
                 <Badge variant="outline" className={`capitalize font-semibold text-[9px] px-2 py-0.5 rounded-full ${STATUS[o.status] || ""}`}>
                   {o.status.replace(/_/g, " ")}
                 </Badge>
@@ -136,12 +147,6 @@ export default function PackageOrders() {
                     <span className="capitalize text-[10px] font-bold text-primary">{o.platform}</span>
                   </>
                 )}
-                {totalDelivered > 0 && (
-                  <>
-                    <span className="text-border/40">•</span>
-                    <span className="text-primary font-bold font-mono">{totalDelivered.toLocaleString()} delivered</span>
-                  </>
-                )}
               </div>
             </div>
           </div>
@@ -151,123 +156,226 @@ export default function PackageOrders() {
               <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Investment</p>
               <p className="text-base font-bold text-foreground font-mono mt-0.5">${Number(o.total_amount_usd).toFixed(2)}</p>
             </div>
-            {!isStandalone && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 rounded-lg text-xs font-semibold gap-1.5 border-primary/30 hover:bg-primary/10 text-primary"
-                onClick={() => setSearchParams({ orderId: o.id })}
-              >
-                <BarChart3 className="h-3.5 w-3.5" /> View standalone stats →
-              </Button>
-            )}
+            <Button
+              size="sm"
+              className="h-8 rounded-lg text-xs font-semibold gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSearchParams({ orderId: o.id });
+              }}
+            >
+              <BarChart3 className="h-3.5 w-3.5" /> View stats
+            </Button>
           </div>
         </div>
 
-        {/* Admin-proposed change awaiting your answer */}
-        {o.status === "pending_advertiser_approval" && (() => {
-          const proposed = (o.proposed_actions || []) as SwiftOrderAction[];
-          const newTotal = Number(o.proposed_total_usd ?? o.total_amount_usd);
-          const diff = Number((newTotal - Number(o.total_amount_usd)).toFixed(2));
-          const dailyRate = swiftDailyRate(proposed);
-          return (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Our team proposed a change</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Review the daily deliverables below. Approving updates your order; declining cancels it and refunds you in full.
-                </p>
+        {/* Progress & Delivery Metrics Summary Row */}
+        <div className="grid gap-3 sm:grid-cols-3 bg-secondary/10 border border-border/30 rounded-lg p-3">
+          <div>
+            <div className="flex justify-between text-[10px] font-semibold text-muted-foreground mb-1">
+              <span>Delivery Progress</span>
+              <span className="text-primary font-mono">{pct}% ({totalDelivered.toLocaleString()} delivered)</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden border border-border/10">
+              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground border-t sm:border-t-0 sm:border-l border-border/20 sm:pl-3 pt-2 sm:pt-0">
+            <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+            <div className="leading-tight">
+              <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Delivery Timeline</p>
+              <p className="font-mono text-[11px] font-semibold text-foreground">
+                {o.starts_at ? `${new Date(o.starts_at).toLocaleDateString()} → ${o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "continuous"}` : "Pending schedule"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground border-t sm:border-t-0 sm:border-l border-border/20 sm:pl-3 pt-2 sm:pt-0">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+            <div className="leading-tight">
+              <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Escrow Spent / Balance</p>
+              <p className="font-mono text-[11px] font-semibold text-foreground">
+                Spent: ${spent.toFixed(2)} · <span className="text-primary font-bold">Escrow: ${remaining.toFixed(2)}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Admin-proposed change banner if pending approval */}
+        {o.status === "pending_advertiser_approval" && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-center justify-between gap-3 text-xs">
+            <span className="font-semibold text-amber-500">Proposed order changes awaiting your review</span>
+            <Button size="sm" variant="outline" className="h-7 text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10">
+              Review changes
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render Full Standalone Order Details View
+  const renderSingleOrderDetails = (o: Order) => {
+    const orderDeliveries = deliveries.filter((d) => d.order_id === o.id);
+    const totalDelivered = orderDeliveries.reduce((sum, d) => sum + (d.users_delivered || 0), 0);
+
+    return (
+      <div key={o.id} className="space-y-6">
+        {/* Header Summary Card */}
+        <div className="rounded-xl border border-border/50 bg-card p-5 space-y-5 shadow-sm">
+          <div className="flex items-center justify-between gap-4 flex-wrap border-b border-border/20 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="shrink-0 bg-primary/10 text-primary border border-primary/20 rounded-xl p-2.5">
+                <PackageIcon className="h-5 w-5" />
               </div>
-              {o.admin_edit_note && (
-                <p className="rounded-lg border border-amber-500/20 bg-background/40 p-2.5 text-xs text-foreground/90">{o.admin_edit_note}</p>
-              )}
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-lg font-extrabold text-foreground tracking-tight">{o.package_name}</h2>
+                  <Badge variant="outline" className={`capitalize font-semibold text-[9px] px-2.5 py-0.5 rounded-full ${STATUS[o.status] || ""}`}>
+                    {o.status.replace(/_/g, " ")}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap mt-1">
+                  <span className="font-semibold text-foreground">{o.units.toLocaleString()} {o.unit_label || "users"}</span>
+                  <span className="text-border/40">•</span>
+                  <span>{o.payment_method}</span>
+                  {o.duration_days && (
+                    <>
+                      <span className="text-border/40">•</span>
+                      <span>{o.duration_days} days</span>
+                    </>
+                  )}
+                  {o.platform && (
+                    <>
+                      <span className="text-border/40">•</span>
+                      <span className="capitalize font-bold text-primary">{o.platform}</span>
+                    </>
+                  )}
+                  {totalDelivered > 0 && (
+                    <>
+                      <span className="text-border/40">•</span>
+                      <span className="text-primary font-bold font-mono">{totalDelivered.toLocaleString()} delivered</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Investment</p>
+              <p className="text-xl font-extrabold text-foreground font-mono mt-0.5">${Number(o.total_amount_usd).toFixed(2)}</p>
+            </div>
+          </div>
+
+          {/* Admin-proposed change awaiting your answer */}
+          {o.status === "pending_advertiser_approval" && (() => {
+            const proposed = (o.proposed_actions || []) as SwiftOrderAction[];
+            const newTotal = Number(o.proposed_total_usd ?? o.total_amount_usd);
+            const diff = Number((newTotal - Number(o.total_amount_usd)).toFixed(2));
+            const dailyRate = swiftDailyRate(proposed);
+            return (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Our team proposed a change</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Review the daily deliverables below. Approving updates your order; declining cancels it and refunds you in full.
+                  </p>
+                </div>
+                {o.admin_edit_note && (
+                  <p className="rounded-lg border border-amber-500/20 bg-background/40 p-2.5 text-xs text-foreground/90">{o.admin_edit_note}</p>
+                )}
+                <div className="grid gap-1.5">
+                  {proposed.map((a) => (
+                    <div key={a.key} className="flex items-center justify-between rounded-lg border border-border/30 bg-background/40 px-3 py-2 text-xs">
+                      <span className="font-semibold text-foreground">{a.name}</span>
+                      <span className="font-mono text-foreground/90">${Number(a.price_per_user_per_day).toFixed(2)} / user / day</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-amber-500/20 pt-3 text-xs">
+                  <span className="text-muted-foreground">
+                    Daily rate ${dailyRate.toFixed(2)} per user · new total{" "}
+                    <span className="font-bold font-mono text-foreground">${newTotal.toFixed(2)}</span>
+                  </span>
+                  <span className={`font-semibold font-mono ${diff > 0 ? "text-amber-500" : diff < 0 ? "text-emerald-500" : "text-muted-foreground"}`}>
+                    {diff > 0 ? `Top up $${diff.toFixed(2)}` : diff < 0 ? `Refund $${Math.abs(diff).toFixed(2)}` : "No price change"}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-8 text-xs font-semibold" disabled={responding === o.id} onClick={() => respond(o.id, true)}>
+                    {responding === o.id ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null} Approve changes
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs font-semibold" disabled={responding === o.id} onClick={() => respond(o.id, false)}>
+                    Decline
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Swift daily deliverables */}
+          {o.package_type === "swift" && (o.swift_actions || []).length > 0 && o.status !== "pending_advertiser_approval" && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Daily deliverables</p>
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                {[{ key: "acquisition", name: "Users acquired", price_per_user_per_day: Number(o.swift_base_price_usd || 0) } as SwiftOrderAction,
+                  ...(o.swift_actions || [])].map((a) => {
+                  const done = deliveries
+                    .filter((d) => d.order_id === o.id && d.swift_action_key === a.key)
+                    .reduce((s, d) => s + (d.users_delivered || 0), 0);
+                  return (
+                    <div key={a.key} className="flex items-center justify-between rounded-lg border border-border/20 bg-secondary/15 px-3 py-1.5 text-xs">
+                      <span className="font-medium text-foreground">
+                        {a.name}
+                        {done > 0 && <span className="ml-2 text-[10px] text-primary">{done.toLocaleString()} delivered</span>}
+                      </span>
+                      <span className="font-mono text-muted-foreground">
+                        ${Number(a.price_per_user_per_day).toFixed(2)}{a.key === "acquisition" ? " / user" : " / user / day"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Target URLs */}
+          {o.app_links?.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Campaign Target URLs</p>
               <div className="grid gap-1.5">
-                {proposed.map((a) => (
-                  <div key={a.key} className="flex items-center justify-between rounded-lg border border-border/30 bg-background/40 px-3 py-2 text-xs">
-                    <span className="font-semibold text-foreground">{a.name}</span>
-                    <span className="font-mono text-foreground/90">${Number(a.price_per_user_per_day).toFixed(2)} / user / day</span>
+                {o.app_links.map((l, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg bg-secondary/15 border border-border/20 px-3 py-1.5 text-xs text-muted-foreground">
+                    <ExternalLink className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <a href={l} target="_blank" rel="noreferrer" className="truncate text-primary hover:underline font-mono font-medium">
+                      {l}
+                    </a>
                   </div>
                 ))}
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-amber-500/20 pt-3 text-xs">
-                <span className="text-muted-foreground">
-                  Daily rate ${dailyRate.toFixed(2)} per user · new total{" "}
-                  <span className="font-bold font-mono text-foreground">${newTotal.toFixed(2)}</span>
-                </span>
-                <span className={`font-semibold font-mono ${diff > 0 ? "text-amber-500" : diff < 0 ? "text-emerald-500" : "text-muted-foreground"}`}>
-                  {diff > 0 ? `Top up $${diff.toFixed(2)}` : diff < 0 ? `Refund $${Math.abs(diff).toFixed(2)}` : "No price change"}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" className="h-8 text-xs font-semibold" disabled={responding === o.id} onClick={() => respond(o.id, true)}>
-                  {responding === o.id ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null} Approve changes
-                </Button>
-                <Button size="sm" variant="outline" className="h-8 text-xs font-semibold" disabled={responding === o.id} onClick={() => respond(o.id, false)}>
-                  Decline
-                </Button>
-              </div>
             </div>
-          );
-        })()}
+          )}
 
-        {/* Swift daily deliverables */}
-        {o.package_type === "swift" && (o.swift_actions || []).length > 0 && o.status !== "pending_advertiser_approval" && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Daily deliverables</p>
-            <div className="grid gap-1.5 sm:grid-cols-2">
-              {[{ key: "acquisition", name: "Users acquired", price_per_user_per_day: Number(o.swift_base_price_usd || 0) } as SwiftOrderAction,
-                ...(o.swift_actions || [])].map((a) => {
-                const done = deliveries
-                  .filter((d) => d.order_id === o.id && d.swift_action_key === a.key)
-                  .reduce((s, d) => s + (d.users_delivered || 0), 0);
-                return (
-                  <div key={a.key} className="flex items-center justify-between rounded-lg border border-border/20 bg-secondary/15 px-3 py-1.5 text-xs">
-                    <span className="font-medium text-foreground">
-                      {a.name}
-                      {done > 0 && <span className="ml-2 text-[10px] text-primary">{done.toLocaleString()} delivered</span>}
-                    </span>
-                    <span className="font-mono text-muted-foreground">
-                      ${Number(a.price_per_user_per_day).toFixed(2)}{a.key === "acquisition" ? " / user" : " / user / day"}
-                    </span>
-                  </div>
-                );
-              })}
+          {o.admin_notes && (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs text-amber-500 space-y-1">
+              <p className="font-bold uppercase tracking-wider text-[10px]">Operations Desk Note</p>
+              <p className="leading-relaxed">{o.admin_notes}</p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Date range details */}
-        {o.starts_at && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/10 border border-border/20 rounded-lg px-3.5 py-2">
-            <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span className="font-semibold text-foreground/90">Delivery Timeline:</span>
-            <span className="font-mono">{new Date(o.starts_at).toLocaleDateString()}</span>
-            <span>→</span>
-            <span className="font-mono">{o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "continuous"}</span>
-          </div>
-        )}
-
-        {/* Target URLs */}
-        {o.app_links?.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Campaign Target URLs</p>
-            <div className="grid gap-1.5">
-              {o.app_links.map((l, i) => (
-                <div key={i} className="flex items-center gap-2 rounded-lg bg-secondary/15 border border-border/20 px-3 py-1.5 text-xs text-muted-foreground">
-                  <ExternalLink className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <a href={l} target="_blank" rel="noreferrer" className="truncate text-primary hover:underline font-mono font-medium">
-                    {l}
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Orderly Bento KPI Cards & Analytics Charts */}
+        <PackageMetricsPanel order={o} milestones={milestones} deliveries={deliveries} />
 
         {/* Delivery graph + breakdown for milestones */}
         {(o.selected_milestone_ids || []).length > 0 && (
-          <div className="space-y-4">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Conversion Funnel Delivery</p>
+          <div className="space-y-4 rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+            <div className="border-b border-border/20 pb-3">
+              <h3 className="text-sm font-bold text-foreground tracking-tight">Conversion Funnel Delivery</h3>
+              <p className="text-[11px] text-muted-foreground">Milestone conversion rates and transactional audit logs</p>
+            </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               {(o.selected_milestone_ids || []).map((mid) => {
@@ -368,35 +476,22 @@ export default function PackageOrders() {
           </div>
         )}
 
-        {/* Day-by-day target tracker & Trend Graphs */}
-        {o.status === "active" || o.status === "completed" ? (
-          <>
-            <PackageMetricsPanel order={o} milestones={milestones} deliveries={deliveries} />
-
-            {o.duration_days > 0 && o.starts_at && (
-              <DailyTargets
-                startsAt={o.starts_at}
-                durationDays={o.duration_days}
-                dailyTarget={o.units}
-                deliveredByDate={orderDeliveries
-                  .reduce<Record<string, number>>((acc, d) => {
-                    const k = String(d.delivery_date).slice(0, 10);
-                    acc[k] = Math.max(acc[k] || 0, d.users_delivered || 0);
-                    return acc;
-                  }, {})}
-              />
-            )}
-
-            <MigrationChart packageOrderId={o.id} />
-          </>
-        ) : null}
-
-        {o.admin_notes && (
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4.5 text-xs text-amber-500 space-y-1">
-            <p className="font-bold uppercase tracking-wider text-[10px]">Operations Desk Note</p>
-            <p className="leading-relaxed">{o.admin_notes}</p>
-          </div>
+        {/* Day-by-day target tracker */}
+        {o.duration_days > 0 && o.starts_at && (
+          <DailyTargets
+            startsAt={o.starts_at}
+            durationDays={o.duration_days}
+            dailyTarget={o.units}
+            deliveredByDate={orderDeliveries
+              .reduce<Record<string, number>>((acc, d) => {
+                const k = String(d.delivery_date).slice(0, 10);
+                acc[k] = Math.max(acc[k] || 0, d.users_delivered || 0);
+                return acc;
+              }, {})}
+          />
         )}
+
+        <MigrationChart packageOrderId={o.id} />
       </div>
     );
   };
@@ -404,38 +499,39 @@ export default function PackageOrders() {
   return (
     <DashboardLayout>
       <MotionWrapper>
-        {/* Navigation Breadcrumb & Order Selector Header */}
-        <div className="mb-8 flex items-center justify-between gap-4 flex-wrap border-b border-border pb-6">
-          <div className="flex items-center gap-3">
-            {activeOrder ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 rounded-xl border-border hover:bg-accent"
-                onClick={() => setSearchParams({})}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4 text-primary" /> View All Orders
-              </Button>
-            ) : (
-              <Link to="/packages">
-                <Button variant="outline" size="sm" className="h-9 rounded-xl border-border hover:bg-accent">
-                  <ArrowLeft className="mr-2 h-4 w-4 text-primary" /> Packages
-                </Button>
-              </Link>
-            )}
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-                {activeOrder ? activeOrder.package_name : "Package Orders"}
-              </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {activeOrder
-                  ? "Standalone order delivery metrics, conversion charts, and escrow status."
-                  : "Track live delivery status, conversion charts, and user transactions across all orders."}
-              </p>
-            </div>
+        {/* Standardized Breadcrumb Navigation Above Header */}
+        <div className="mb-3">
+          {activeOrder ? (
+            <button
+              onClick={() => setSearchParams({})}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 text-primary" /> Back to All Orders
+            </button>
+          ) : (
+            <Link
+              to="/packages"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 text-primary" /> Back to Ad Packages
+            </Link>
+          )}
+        </div>
+
+        {/* Header Title & Selector */}
+        <div className="mb-6 flex items-center justify-between gap-4 flex-wrap border-b border-border/40 pb-5">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+              {activeOrder ? activeOrder.package_name : "Package Orders"}
+            </h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              {activeOrder
+                ? "Standalone order delivery metrics, conversion charts, and escrow status."
+                : "Track live delivery status, conversion charts, and user transactions across all orders."}
+            </p>
           </div>
 
-          {/* Quick order selector dropdown when multiple orders exist */}
+          {/* Order selector dropdown */}
           {orders.length > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">Select Order:</span>
@@ -476,14 +572,12 @@ export default function PackageOrders() {
             <p className="text-xs mt-1 text-muted-foreground">Launch a campaign to begin monitoring delivery metrics.</p>
           </div>
         ) : activeOrder ? (
-          /* Standalone View for a Selected Order */
-          <div className="space-y-6">
-            {renderSingleOrderDetails(activeOrder, true)}
-          </div>
+          /* Standalone View for Selected Order */
+          renderSingleOrderDetails(activeOrder)
         ) : (
-          /* Overview List of All Orders */
-          <div className="grid gap-6">
-            {orders.map((o) => renderSingleOrderDetails(o, false))}
+          /* Overview List of All Orders (Non-expandable cards) */
+          <div className="grid gap-4">
+            {orders.map((o) => renderOverviewOrderCard(o))}
           </div>
         )}
       </MotionWrapper>
