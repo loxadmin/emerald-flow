@@ -29,7 +29,7 @@ const PLATFORM_META: Record<string, { label: string; sub: string; Icon: any; pla
 import { subtypeLabel, SUBTYPES, type AdvertiserSubtype, type SubtypeGroupSlug } from "@/lib/advertiser-subtypes";
 import { friendlyError, functionError } from "@/lib/errors";
 import SwiftBuyDialog from "@/components/swift/SwiftBuyDialog";
-import { swiftMaxUnits, swiftStartingPrice, type SwiftTier, type SwiftAction, type SwiftPkgAction } from "@/lib/swift";
+import { swiftMaxUnits, swiftStartingPrice, tierPriceFor, type SwiftTier, type SwiftAction, type SwiftPkgAction } from "@/lib/swift";
 
 type Pkg = {
   id: string; name: string; description: string | null;
@@ -83,6 +83,7 @@ export default function Packages() {
   const [swiftPresets, setSwiftPresets] = useState<SwiftAction[]>([]);
   const [swiftPkgActions, setSwiftPkgActions] = useState<Record<string, SwiftPkgAction[]>>({});
   const [swiftSelected, setSwiftSelected] = useState<Pkg | null>(null);
+  const [claimedPkgIds, setClaimedPkgIds] = useState<Set<string>>(new Set());
 
   const loadSwift = async (ids: string[]) => {
     if (!ids.length) { setSwiftTiers({}); setSwiftPkgActions({}); return; }
@@ -186,11 +187,20 @@ export default function Packages() {
     const type = ((ac as any)?.advertiser_type || null) as string | null;
     setMySubtype(sub);
 
-    const [{ data: w }, { data: ms }, { data: sites }] = await Promise.all([
+    const [{ data: w }, { data: ms }, { data: sites }, { data: myOrders }] = await Promise.all([
       supabase.from("wallets").select("id, balance, is_activated").eq("advertiser_id", user.id).maybeSingle(),
       supabase.from("milestones" as any).select("id,name,slug,default_order,requires_duration").eq("is_active", true).order("default_order"),
       supabase.from("advertiser_websites").select("id, domain, is_verified").eq("advertiser_id", user.id),
+      supabase.from("package_orders" as any).select("package_id, package_type, status").eq("advertiser_id", user.id),
     ]);
+
+    const claimed = new Set<string>();
+    ((myOrders as any) || []).forEach((o: any) => {
+      if (o.status !== "rejected" && o.status !== "refunded" && o.package_id) {
+        claimed.add(o.package_id);
+      }
+    });
+    setClaimedPkgIds(claimed);
 
     // Filter packages by advertiser's subcategory
     let pkgs: any[] = [];
@@ -511,32 +521,53 @@ export default function Packages() {
                 const maxUsers = swiftMaxUnits(tiers);
                 const startAt = swiftStartingPrice(tiers);
                 const ready = tiers.length > 0;
+                const isClaimed = claimedPkgIds.has(p.id);
+
+                const trialUnits = Math.max(1, Number(p.swift_trial_units ?? 10));
+                const freeDays = Math.max(1, Number(p.swift_trial_free_days ?? 3));
+                const trialPer = tierPriceFor(tiers, trialUnits) ?? (tiers.length ? Number([...tiers].sort((a,b) => a.min_units - b.min_units)[0].price_per_user_usd) : null);
+                const trialCost = trialPer != null ? Number((trialPer * trialUnits).toFixed(2)) : null;
+
                 return (
                   <div
                     key={p.id}
                     className="group relative flex h-full min-h-[280px] flex-col items-center overflow-hidden rounded-xl border border-border bg-card p-6 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                   >
                     <div className="flex h-28 items-end justify-center">
-                      <Sparkles className="h-14 w-14 text-primary" />
+                      <GiftBox size={76} tone="red" shake />
                     </div>
                     <div className="mt-5 min-w-0 w-full">
-                      <p className="text-xs font-medium text-primary">Swift package</p>
+                      <p className="text-xs font-semibold text-destructive flex items-center justify-center gap-1">
+                        <Sparkles className="h-3 w-3" /> One-off Swift Package
+                      </p>
                       <h3 className="mt-1 truncate text-lg font-semibold text-foreground">{p.name}</h3>
-                      <p className="mt-2 text-sm font-semibold text-foreground">
+
+                      {trialCost != null && (
+                        <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-center">
+                          <p className="font-semibold text-foreground">
+                            Try package with {trialUnits} users for ${trialCost.toFixed(2)}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Includes {freeDays} days free daily activity
+                          </p>
+                        </div>
+                      )}
+
+                      <p className="mt-2 text-xs text-muted-foreground">
                         {ready
-                          ? `Get up to ${maxUsers.toLocaleString()} daily users · starting price $${(startAt || 0).toFixed(2)}`
+                          ? `Up to ${maxUsers.toLocaleString()} daily users · starting at $${(startAt || 0).toFixed(2)}`
                           : "Pricing is being set up"}
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">Pay per user acquired, plus the daily actions you choose</p>
                     </div>
                     <div className="mt-auto w-full pt-5">
                       <Button
                         size="sm"
+                        variant={isClaimed ? "secondary" : "default"}
                         className="w-full gap-1.5 font-semibold"
                         onClick={() => setSwiftSelected(p)}
-                        disabled={!ready}
+                        disabled={!ready || isClaimed}
                       >
-                        {ready ? "Get started" : "Configuring"}
+                        {isClaimed ? "Already claimed" : ready ? "Unwrap" : "Configuring"}
                       </Button>
                     </div>
                   </div>
@@ -579,7 +610,12 @@ export default function Packages() {
             description: swiftSelected.description,
             duration_options: swiftSelected.duration_options || [30],
             platform_support: swiftSelected.platform_support || ["mobile"],
+            swift_trial_units: swiftSelected.swift_trial_units,
+            swift_trial_free_days: swiftSelected.swift_trial_free_days,
+            swift_churn_units: swiftSelected.swift_churn_units,
+            swift_churn_discount_pct: swiftSelected.swift_churn_discount_pct,
           } : null}
+          isClaimed={swiftSelected ? claimedPkgIds.has(swiftSelected.id) : false}
           tiers={swiftSelected ? (swiftTiers[swiftSelected.id] || []) : []}
           presets={swiftPresets}
           pkgActions={swiftSelected ? (swiftPkgActions[swiftSelected.id] || []) : []}

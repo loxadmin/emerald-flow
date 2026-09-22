@@ -34,6 +34,10 @@ type Pkg = {
   min_units: number; max_units: number;
   duration_options: number[]; platform_support: string[];
   is_active: boolean; sort_order: number;
+  swift_trial_units?: number | null;
+  swift_trial_free_days?: number | null;
+  swift_churn_units?: number | null;
+  swift_churn_discount_pct?: number | null;
 };
 type Group = { id: string; name: string; slug: string };
 type Category = { id: string; name: string; group_id: string | null };
@@ -66,6 +70,10 @@ const emptyForm = {
   duration_options: [30] as number[],
   platform_support: ["mobile"] as string[],
   is_active: true, sort_order: "0",
+  swift_trial_units: "10",
+  swift_trial_free_days: "3",
+  swift_churn_units: "5",
+  swift_churn_discount_pct: "20",
 };
 const emptyPreset = { id: "", name: "", slug: "", description: "", price: "0.02", is_active: true, sort_order: "0" };
 
@@ -157,6 +165,10 @@ export default function AdminPackages() {
       duration_options: p.duration_options || [30],
       platform_support: p.platform_support || ["mobile", "web"],
       is_active: p.is_active, sort_order: String(p.sort_order),
+      swift_trial_units: String(p.swift_trial_units ?? 10),
+      swift_trial_free_days: String(p.swift_trial_free_days ?? 3),
+      swift_churn_units: String(p.swift_churn_units ?? 5),
+      swift_churn_discount_pct: String(p.swift_churn_discount_pct ?? 20),
     });
     setRows(pkgMilestones[p.id] || []);
     setTiers(tiersByPkg[p.id] || []);
@@ -205,6 +217,10 @@ export default function AdminPackages() {
       platform_support: form.platform_support,
       is_active: form.is_active,
       sort_order: Number(form.sort_order) || 0,
+      swift_trial_units: Number(form.swift_trial_units) || 10,
+      swift_trial_free_days: Number(form.swift_trial_free_days) || 3,
+      swift_churn_units: Number(form.swift_churn_units) || 5,
+      swift_churn_discount_pct: Number(form.swift_churn_discount_pct) || 0,
     };
     let pkgId = editing?.id;
     if (editing) {
@@ -691,6 +707,14 @@ export default function AdminPackages() {
                 presets={presets}
                 pkgActions={pkgActions}
                 setPkgActions={setPkgActions}
+                swiftTrialUnits={form.swift_trial_units}
+                setSwiftTrialUnits={(v) => setForm((prev) => ({ ...prev, swift_trial_units: v }))}
+                swiftTrialFreeDays={form.swift_trial_free_days}
+                setSwiftTrialFreeDays={(v) => setForm((prev) => ({ ...prev, swift_trial_free_days: v }))}
+                swiftChurnUnits={form.swift_churn_units}
+                setSwiftChurnUnits={(v) => setForm((prev) => ({ ...prev, swift_churn_units: v }))}
+                swiftChurnDiscountPct={form.swift_churn_discount_pct}
+                setSwiftChurnDiscountPct={(v) => setForm((prev) => ({ ...prev, swift_churn_discount_pct: v }))}
               />
             ) : (
               <div className="rounded-lg border p-3 space-y-3">

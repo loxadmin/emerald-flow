@@ -19,9 +19,23 @@ type Props = {
   presets: SwiftAction[];
   pkgActions: SwiftPkgAction[];
   setPkgActions: (a: SwiftPkgAction[]) => void;
+  swiftTrialUnits?: string;
+  setSwiftTrialUnits?: (v: string) => void;
+  swiftTrialFreeDays?: string;
+  setSwiftTrialFreeDays?: (v: string) => void;
+  swiftChurnUnits?: string;
+  setSwiftChurnUnits?: (v: string) => void;
+  swiftChurnDiscountPct?: string;
+  setSwiftChurnDiscountPct?: (v: string) => void;
 };
 
-export default function SwiftPackageEditor({ tiers, setTiers, presets, pkgActions, setPkgActions }: Props) {
+export default function SwiftPackageEditor({
+  tiers, setTiers, presets, pkgActions, setPkgActions,
+  swiftTrialUnits = "10", setSwiftTrialUnits,
+  swiftTrialFreeDays = "3", setSwiftTrialFreeDays,
+  swiftChurnUnits = "5", setSwiftChurnUnits,
+  swiftChurnDiscountPct = "20", setSwiftChurnDiscountPct,
+}: Props) {
   const update = (i: number, patch: Partial<SwiftTier>) => {
     const next = [...tiers];
     next[i] = { ...next[i], ...patch };
@@ -118,6 +132,66 @@ export default function SwiftPackageEditor({ tiers, setTiers, presets, pkgAction
             </p>
           </div>
         )}
+      </div>
+
+      <div className="rounded-lg border p-3 space-y-3">
+        <div>
+          <Label className="font-semibold">Trial & Walk-away Churn Offer Settings</Label>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Configure the default trial offer and the discounted walk-away offer when advertisers hesitate.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs">Trial Volume (users)</Label>
+            <Input
+              type="number"
+              min={1}
+              value={swiftTrialUnits}
+              onChange={(e) => setSwiftTrialUnits?.(e.target.value)}
+              className="h-8 text-xs mt-1"
+              placeholder="10"
+            />
+            <p className="text-[10px] text-muted-foreground mt-0.5">e.g. 10 users</p>
+          </div>
+          <div>
+            <Label className="text-xs">Free Daily Activity (days)</Label>
+            <Input
+              type="number"
+              min={1}
+              value={swiftTrialFreeDays}
+              onChange={(e) => setSwiftTrialFreeDays?.(e.target.value)}
+              className="h-8 text-xs mt-1"
+              placeholder="3"
+            />
+            <p className="text-[10px] text-muted-foreground mt-0.5">e.g. 3 days free</p>
+          </div>
+          <div>
+            <Label className="text-xs">Churn Trial Volume (users)</Label>
+            <Input
+              type="number"
+              min={1}
+              value={swiftChurnUnits}
+              onChange={(e) => setSwiftChurnUnits?.(e.target.value)}
+              className="h-8 text-xs mt-1"
+              placeholder="5"
+            />
+            <p className="text-[10px] text-muted-foreground mt-0.5">Adjusted offer for hesitant users</p>
+          </div>
+          <div>
+            <Label className="text-xs">Churn Discount Rate (%)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={90}
+              value={swiftChurnDiscountPct}
+              onChange={(e) => setSwiftChurnDiscountPct?.(e.target.value)}
+              className="h-8 text-xs mt-1"
+              placeholder="20"
+            />
+            <p className="text-[10px] text-muted-foreground mt-0.5">Discount percentage set by admin</p>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-lg border p-3 space-y-3">
