@@ -149,9 +149,56 @@ export default function PackageMetricsPanel({ order, milestones, deliveries }: P
       byDate[key].Opened += Number(em.opens || 0);
       byDate[key].Active += Number(em.active_users || 0);
       byDate[key].Posted += Number(em.posts || 0);
+
+      if (em.counts_by_type && typeof em.counts_by_type === "object") {
+        Object.entries(em.counts_by_type).forEach(([act, cnt]) => {
+          byDate[key][act] = (byDate[key][act] || 0) + Number(cnt || 0);
+        });
+      }
     });
     return Object.values(byDate).sort((a: any, b: any) => (a._k < b._k ? -1 : 1));
   }, [rows]);
+
+  // Dynamic engagement actions summary
+  const engagementActionBreakdown = useMemo(() => {
+    const totals: Record<string, number> = {};
+    rows.forEach((d) => {
+      const em = d.engagement_metrics;
+      if (em && em.counts_by_type && typeof em.counts_by_type === "object") {
+        Object.entries(em.counts_by_type).forEach(([act, cnt]) => {
+          totals[act] = (totals[act] || 0) + Number(cnt || 0);
+        });
+      }
+    });
+    return Object.entries(totals).map(([action, count]) => ({ action, count }));
+  }, [rows]);
+
+  // Financial transactions summary & table
+  const financialTxnRows = useMemo(() => {
+    const list: { delivery_date: string; user_ref: string; txn_id: string; amount_usd: number; action_name: string }[] = [];
+    rows.forEach((d) => {
+      if (Array.isArray(d.txn_rows) && d.txn_rows.length > 0) {
+        const actionName = getMetricName(d);
+        d.txn_rows.forEach((t: any) => {
+          list.push({
+            delivery_date: String(d.delivery_date).slice(0, 10),
+            user_ref: t.user_ref || "User",
+            txn_id: t.txn_id || "N/A",
+            amount_usd: Number(t.amount_usd || 0),
+            action_name: actionName,
+          });
+        });
+      }
+    });
+    return list;
+  }, [rows]);
+
+  const financialStatementSummary = useMemo(() => {
+    const totalVolume = financialTxnRows.reduce((s, t) => s + t.amount_usd, 0);
+    const totalTxns = financialTxnRows.length;
+    const avgVolume = totalTxns > 0 ? totalVolume / totalTxns : 0;
+    return { totalVolume, totalTxns, avgVolume };
+  }, [financialTxnRows]);
 
   // Source breakdown: fresh vs each competitor
   const sourceSeries = useMemo(() => {
@@ -172,12 +219,21 @@ export default function PackageMetricsPanel({ order, milestones, deliveries }: P
   }, [rows, competitorNames]);
 
   // Dynamic KPI computations
+  const totalAcquiredUsers = useMemo(() => {
+    if (order.package_type === "swift" || (order.swift_actions || []).length > 0) {
+      return rows
+        .filter((d) => d.swift_action_key === "acquisition" || (!d.swift_action_key && !d.milestone_id))
+        .reduce((s, d) => s + (d.users_delivered || 0), 0);
+    }
+    return rows.reduce((s, d) => s + (d.users_delivered || 0), 0);
+  }, [rows, order.package_type, order.swift_actions]);
+
   const totalDelivered = useMemo(() => {
     return rows.reduce((s, d) => s + (d.users_delivered || 0), 0);
   }, [rows]);
 
   const targetUnits = Math.max(order.units, 1);
-  const deliveryPct = Math.min(100, Math.round((totalDelivered / targetUnits) * 100));
+  const deliveryPct = Math.min(100, Math.round((totalAcquiredUsers / targetUnits) * 100));
 
   const spent = Number(order.escrow_spent_usd || 0);
   const total = Number(order.total_amount_usd || 0);
@@ -226,12 +282,12 @@ export default function PackageMetricsPanel({ order, milestones, deliveries }: P
           </div>
           <div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold font-mono text-foreground">{totalDelivered.toLocaleString()}</span>
+              <span className="text-2xl font-extrabold font-mono text-foreground">{totalAcquiredUsers.toLocaleString()}</span>
               <span className="text-xs text-muted-foreground font-mono">/ {order.units.toLocaleString()}</span>
             </div>
             <div className="mt-2.5 space-y-1">
               <div className="flex justify-between text-[10px] font-semibold text-muted-foreground">
-                <span>Progress</span>
+                <span>Acquisition Progress</span>
                 <span className="text-primary font-mono">{deliveryPct}%</span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
@@ -358,27 +414,96 @@ export default function PackageMetricsPanel({ order, milestones, deliveries }: P
         )}
       </div>
 
-      {/* Engagement bar chart */}
-      {engagementSeries.length > 0 && (
+      {/* Financial Statement & Transaction Logs */}
+      {financialTxnRows.length > 0 && (
+        <div className="rounded-xl border border-border/50 bg-card p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-border/20 pb-3">
+            <div>
+              <h3 className="text-sm font-bold text-foreground tracking-tight">Financial Income & Transaction Statement</h3>
+              <p className="text-[11px] text-muted-foreground">Audited user transactions and translated income metrics</p>
+            </div>
+            <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-primary/30 text-primary">
+              ${financialStatementSummary.totalVolume.toFixed(2)} Total Volume
+            </Badge>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3 bg-secondary/10 border border-border/30 rounded-lg p-3">
+            <div>
+              <p className="text-[10px] uppercase font-semibold text-muted-foreground">Transacted Volume</p>
+              <p className="text-lg font-extrabold font-mono text-emerald-500">${financialStatementSummary.totalVolume.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-semibold text-muted-foreground">Transaction Count</p>
+              <p className="text-lg font-extrabold font-mono text-foreground">{financialStatementSummary.totalTxns.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-semibold text-muted-foreground">Avg. Txn Size</p>
+              <p className="text-lg font-extrabold font-mono text-foreground">${financialStatementSummary.avgVolume.toFixed(2)}</p>
+            </div>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto rounded-lg border border-border/30">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-secondary/30 text-muted-foreground text-[10px] font-mono uppercase sticky top-0">
+                <tr>
+                  <th className="p-2">Date</th>
+                  <th className="p-2">Deliverable Action</th>
+                  <th className="p-2">User Ref</th>
+                  <th className="p-2">Txn ID</th>
+                  <th className="p-2 text-right">Amount (USD)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/20 font-mono text-[11px]">
+                {financialTxnRows.map((r, i) => (
+                  <tr key={i} className="hover:bg-secondary/10">
+                    <td className="p-2">{r.delivery_date}</td>
+                    <td className="p-2 font-semibold text-foreground">{r.action_name}</td>
+                    <td className="p-2 text-muted-foreground">{r.user_ref}</td>
+                    <td className="p-2 text-muted-foreground">{r.txn_id}</td>
+                    <td className="p-2 text-right font-bold text-emerald-500">${r.amount_usd.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Engagement bar chart & action breakdown */}
+      {(engagementSeries.length > 0 || engagementActionBreakdown.length > 0) && (
         <div className="rounded-xl border border-border/50 bg-card p-5 shadow-sm space-y-3">
           <div className="flex items-center justify-between border-b border-border/20 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-foreground tracking-tight">App Engagement per Day</h3>
-              <p className="text-[11px] text-muted-foreground">Daily active users, app opens, and posts</p>
+              <h3 className="text-sm font-bold text-foreground tracking-tight">App Engagement & User Actions</h3>
+              <p className="text-[11px] text-muted-foreground">Daily active users, app opens, posts, and action deliverables</p>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={engagementSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} opacity={0.2} />
-              <XAxis dataKey="date" tick={axis} axisLine={false} tickLine={false} />
-              <YAxis tick={axis} axisLine={false} tickLine={false} width={32} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 10 }} />
-              <Bar dataKey="Opened" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="Active" fill="hsl(var(--primary))" fillOpacity={0.6} radius={[3, 3, 0, 0]} />
-              <Bar dataKey="Posted" fill="hsl(var(--muted-foreground))" fillOpacity={0.5} radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+
+          {engagementActionBreakdown.length > 0 && (
+            <div className="grid gap-2 sm:grid-cols-3 mb-3">
+              {engagementActionBreakdown.map((item) => (
+                <div key={item.action} className="rounded-lg border border-border/30 bg-secondary/15 p-2.5 text-xs">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold block">{item.action}</span>
+                  <span className="text-lg font-bold font-mono text-foreground">{item.count.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {engagementSeries.length > 0 && (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={engagementSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                <XAxis dataKey="date" tick={axis} axisLine={false} tickLine={false} />
+                <YAxis tick={axis} axisLine={false} tickLine={false} width={32} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
+                <Bar dataKey="Opened" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Active" fill="hsl(var(--primary))" fillOpacity={0.6} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Posted" fill="hsl(var(--muted-foreground))" fillOpacity={0.5} radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       )}
 

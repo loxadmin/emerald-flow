@@ -163,17 +163,76 @@ export default function AdminPackageDelivery() {
     ];
   }, [order, isSwift]);
 
-  const [swiftForms, setSwiftForms] = useState<Record<string, { users: string; date: string; notes: string }>>({});
-  const swiftForm = (key: string) =>
-    swiftForms[key] || { users: "", date: new Date().toISOString().slice(0, 10), notes: "" };
-  const setSwiftForm = (key: string, patch: Partial<{ users: string; date: string; notes: string }>) =>
+  type SwiftDeliverableType = "basic" | "financial" | "engagement";
+
+  type SwiftFormState = {
+    users: string;
+    date: string;
+    notes: string;
+    deliverableType: SwiftDeliverableType;
+    txnCsv: string;
+    engagementCsv: string;
+  };
+
+  const [swiftForms, setSwiftForms] = useState<Record<string, SwiftFormState>>({});
+  const swiftForm = (key: string): SwiftFormState =>
+    swiftForms[key] || {
+      users: "",
+      date: new Date().toISOString().slice(0, 10),
+      notes: "",
+      deliverableType: "basic",
+      txnCsv: "",
+      engagementCsv: "",
+    };
+
+  const setSwiftForm = (key: string, patch: Partial<SwiftFormState>) =>
     setSwiftForms((s) => ({ ...s, [key]: { ...swiftForm(key), ...patch } }));
+
+  function parseEngagementCsv(csv: string): { user_ref: string; action_type: string }[] {
+    const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const rows: any[] = [];
+    const startIdx = /user/i.test(lines[0] || "") && /action/i.test(lines[0] || "") ? 1 : 0;
+    for (let i = startIdx; i < lines.length; i++) {
+      const parts = lines[i].split(",").map((s) => s.trim());
+      if (parts.length < 2) continue;
+      if (!parts[0] || !parts[1]) continue;
+      rows.push({ user_ref: parts[0], action_type: parts[1] });
+    }
+    return rows;
+  }
 
   const submitSwift = async (line: SwiftOrderAction) => {
     if (!order) return;
     const f = swiftForm(line.key);
-    const users = Number(f.users) || 0;
-    if (users <= 0) return toast.error("Enter how many users were delivered.");
+    let users = Number(f.users) || 0;
+    let txnRows: any = null;
+    let engagementData: any = null;
+
+    if (f.deliverableType === "financial" && f.txnCsv.trim()) {
+      txnRows = parseTxnCsv(f.txnCsv);
+      if (txnRows.length === 0) {
+        return toast.error("CSV must have rows like: user_ref,txn_id,amount_usd");
+      }
+      if (users <= 0) users = txnRows.length;
+    } else if (f.deliverableType === "engagement" && f.engagementCsv.trim()) {
+      const parsed = parseEngagementCsv(f.engagementCsv);
+      if (parsed.length === 0) {
+        return toast.error("CSV must have rows like: user_ref,action_type");
+      }
+      const counts: Record<string, number> = {};
+      parsed.forEach((r) => {
+        counts[r.action_type] = (counts[r.action_type] || 0) + 1;
+      });
+      engagementData = {
+        actions: parsed,
+        counts_by_type: counts,
+        total_actions: parsed.length,
+      };
+      if (users <= 0) users = parsed.length;
+    }
+
+    if (users <= 0) return toast.error("Enter users delivered or upload deliverable CSV.");
+
     setSaving(line.key);
     const { error } = await supabase.rpc("record_swift_delivery" as never, {
       _order_id: order.id,
@@ -181,11 +240,23 @@ export default function AdminPackageDelivery() {
       _delivery_date: f.date,
       _users_delivered: users,
       _notes: f.notes || null,
+      _txn_rows: txnRows,
+      _engagement_metrics: engagementData,
     } as never);
     setSaving(null);
     if (error) return toast.error(friendlyError(error));
     toast.success("Delivery recorded — escrow updated");
-    setSwiftForms((s) => ({ ...s, [line.key]: { users: "", date: f.date, notes: "" } }));
+    setSwiftForms((s) => ({
+      ...s,
+      [line.key]: {
+        users: "",
+        date: f.date,
+        notes: "",
+        deliverableType: f.deliverableType,
+        txnCsv: "",
+        engagementCsv: "",
+      },
+    }));
     load();
   };
 
@@ -244,44 +315,156 @@ export default function AdminPackageDelivery() {
             const totalUsers = dv.reduce((s, d) => s + (d.users_delivered || 0), 0);
             const chargedSum = dv.reduce((s, d) => s + (Number(d.charged_usd) || 0), 0);
             const rate = Number(line.price_per_user_per_day || 0);
+
+            const isAcquisition = line.key === "acquisition";
+            const targetUnits = Number(order.units || 0);
+            const isAcquisitionCompleted = isAcquisition && totalUsers >= targetUnits;
+
             return (
               <div key={line.key} className="rounded-lg border bg-card p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
                   <h3 className="font-semibold">{line.name}</h3>
-                  <Badge variant={line.key === "acquisition" ? "outline" : "secondary"} className="text-[10px]">
-                    {line.key === "acquisition" ? "One-off per user" : "Per user per day"}
+                  <Badge variant={isAcquisition ? "outline" : "secondary"} className="text-[10px]">
+                    {isAcquisition ? "One-off per user" : "Per user per day"}
                   </Badge>
                   <Badge variant="outline" className="text-[10px]">${rate.toFixed(2)} / user</Badge>
                   {line.source === "custom" && <Badge variant="outline" className="text-[10px]">Custom</Badge>}
+                  {isAcquisitionCompleted && (
+                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px]">
+                      Completed ({totalUsers.toLocaleString()} / {targetUnits.toLocaleString()})
+                    </Badge>
+                  )}
                   <span className="ml-auto text-xs text-muted-foreground">
-                    Delivered: {totalUsers.toLocaleString()} users · charged ${chargedSum.toFixed(2)}
+                    Delivered: {totalUsers.toLocaleString()} users {isAcquisition ? `/ ${targetUnits.toLocaleString()} target` : ""} · charged ${chargedSum.toFixed(2)}
                   </span>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label>Delivery date</Label>
-                    <Input type="date" value={f.date} onChange={(e) => setSwiftForm(line.key, { date: e.target.value })} />
+                {isAcquisitionCompleted ? (
+                  <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-500 font-medium">
+                    User acquisition goal completed! All {targetUnits.toLocaleString()} users have been delivered.
                   </div>
-                  <div>
-                    <Label>Users delivered</Label>
-                    <Input type="number" min={0} value={f.users} onChange={(e) => setSwiftForm(line.key, { users: e.target.value })} />
-                    {rate > 0 && Number(f.users) > 0 && (
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        Will deduct ${(Number(f.users) * rate).toFixed(2)} from escrow.
-                      </p>
+                ) : (
+                  <>
+                    {!isAcquisition && (
+                      <div className="mb-3">
+                        <Label className="text-xs">Deliverable Type</Label>
+                        <div className="flex items-center gap-4 mt-1">
+                          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`deliverableType-${line.key}`}
+                              value="basic"
+                              checked={f.deliverableType === "basic"}
+                              onChange={() => setSwiftForm(line.key, { deliverableType: "basic" })}
+                            />
+                            Basic Deliverable
+                          </label>
+                          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`deliverableType-${line.key}`}
+                              value="financial"
+                              checked={f.deliverableType === "financial"}
+                              onChange={() => setSwiftForm(line.key, { deliverableType: "financial" })}
+                            />
+                            Financial Deliverable
+                          </label>
+                          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`deliverableType-${line.key}`}
+                              value="engagement"
+                              checked={f.deliverableType === "engagement"}
+                              onChange={() => setSwiftForm(line.key, { deliverableType: "engagement" })}
+                            />
+                            Engagement Deliverable
+                          </label>
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </div>
 
-                <div className="mt-3">
-                  <Label>Notes (optional)</Label>
-                  <Input value={f.notes} onChange={(e) => setSwiftForm(line.key, { notes: e.target.value })} />
-                </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label>Delivery date</Label>
+                        <Input type="date" value={f.date} onChange={(e) => setSwiftForm(line.key, { date: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Users / Actions count</Label>
+                        <Input type="number" min={0} value={f.users} onChange={(e) => setSwiftForm(line.key, { users: e.target.value })} placeholder="Auto-calculated if CSV uploaded" />
+                        {rate > 0 && Number(f.users) > 0 && (
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            Will deduct ${(Number(f.users) * rate).toFixed(2)} from escrow.
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                <Button className="mt-3" onClick={() => submitSwift(line)} disabled={saving === line.key}>
-                  {saving === line.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> Record delivery</>}
-                </Button>
+                    {f.deliverableType === "financial" && !isAcquisition && (
+                      <div className="mt-3">
+                        <Label>Transactions CSV <span className="text-muted-foreground">(user_ref,txn_id,amount_usd)</span></Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input
+                            type="file"
+                            accept=".csv,text/csv"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const text = await file.text();
+                                setSwiftForm(line.key, { txnCsv: text });
+                              }
+                            }}
+                            className="max-w-xs"
+                          />
+                          <span className="text-xs text-muted-foreground"><Upload className="inline h-3 w-3" /> or paste below</span>
+                        </div>
+                        <Textarea
+                          rows={3}
+                          value={f.txnCsv}
+                          onChange={(e) => setSwiftForm(line.key, { txnCsv: e.target.value })}
+                          placeholder={"user123,TXN-001,50\nuser456,TXN-002,120"}
+                          className="mt-2 font-mono text-xs"
+                        />
+                      </div>
+                    )}
+
+                    {f.deliverableType === "engagement" && !isAcquisition && (
+                      <div className="mt-3">
+                        <Label>Engagement CSV <span className="text-muted-foreground">(user_ref,action_type)</span></Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input
+                            type="file"
+                            accept=".csv,text/csv"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const text = await file.text();
+                                setSwiftForm(line.key, { engagementCsv: text });
+                              }
+                            }}
+                            className="max-w-xs"
+                          />
+                          <span className="text-xs text-muted-foreground"><Upload className="inline h-3 w-3" /> or paste below</span>
+                        </div>
+                        <Textarea
+                          rows={3}
+                          value={f.engagementCsv}
+                          onChange={(e) => setSwiftForm(line.key, { engagementCsv: e.target.value })}
+                          placeholder={"user123,made a comment\nuser456,uploaded a video\nuser789,referred a friend"}
+                          className="mt-2 font-mono text-xs"
+                        />
+                      </div>
+                    )}
+
+                    <div className="mt-3">
+                      <Label>Notes (optional)</Label>
+                      <Input value={f.notes} onChange={(e) => setSwiftForm(line.key, { notes: e.target.value })} />
+                    </div>
+
+                    <Button className="mt-3" onClick={() => submitSwift(line)} disabled={saving === line.key}>
+                      {saving === line.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> Record delivery</>}
+                    </Button>
+                  </>
+                )}
 
                 {dv.length > 0 && (
                   <div className="mt-4 border-t pt-3">

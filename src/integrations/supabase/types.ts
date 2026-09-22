@@ -3416,9 +3416,11 @@ export type Database = {
         Args: {
           _action_key: string
           _delivery_date: string
-          _notes: string
+          _notes?: string | null
           _order_id: string
           _users_delivered: number
+          _txn_rows?: Json
+          _engagement_metrics?: Json
         }
         Returns: Json
       }

@@ -103,8 +103,11 @@ export default function PackageOrders() {
   // Render Concise Order Card for All Orders List (Overview)
   const renderOverviewOrderCard = (o: Order) => {
     const orderDeliveries = deliveries.filter((d) => d.order_id === o.id);
-    const totalDelivered = orderDeliveries.reduce((sum, d) => sum + (d.users_delivered || 0), 0);
-    const pct = Math.min(100, Math.round((totalDelivered / Math.max(o.units, 1)) * 100));
+    const acquiredDeliveries = o.package_type === "swift" || (o.swift_actions || []).length > 0
+      ? orderDeliveries.filter((d) => d.swift_action_key === "acquisition" || (!d.swift_action_key && !d.milestone_id))
+      : orderDeliveries;
+    const totalAcquired = acquiredDeliveries.reduce((sum, d) => sum + (d.users_delivered || 0), 0);
+    const pct = Math.min(100, Math.round((totalAcquired / Math.max(o.units, 1)) * 100));
     const spent = Number(o.escrow_spent_usd || 0);
     const total = Number(o.total_amount_usd || 0);
     const remaining = Math.max(total - spent, 0);
@@ -173,8 +176,8 @@ export default function PackageOrders() {
         <div className="grid gap-3 sm:grid-cols-3 bg-secondary/10 border border-border/30 rounded-lg p-3">
           <div>
             <div className="flex justify-between text-[10px] font-semibold text-muted-foreground mb-1">
-              <span>Delivery Progress</span>
-              <span className="text-primary font-mono">{pct}% ({totalDelivered.toLocaleString()} delivered)</span>
+              <span>Acquisition Progress</span>
+              <span className="text-primary font-mono">{pct}% ({totalAcquired.toLocaleString()} / {o.units.toLocaleString()})</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden border border-border/10">
               <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
