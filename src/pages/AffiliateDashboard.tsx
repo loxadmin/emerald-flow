@@ -41,7 +41,7 @@ export default function AffiliateDashboard() {
   const load = useCallback(async () => {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
-    if (!uid) { navigate("/login", { replace: true }); return; }
+    if (!uid) { navigate("/affiliate/login", { replace: true }); return; }
 
     const { data: aff } = await supabase.from("affiliates").select("*").eq("user_id", uid).maybeSingle();
     if (!aff) { navigate("/affiliates", { replace: true }); return; }
@@ -105,7 +105,7 @@ export default function AffiliateDashboard() {
           <Logo size={20} />
           <span className="text-sm font-bold text-gradient">Karbali Affiliates</span>
         </Link>
-        <button className="text-sm text-muted-foreground hover:text-primary" onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}>
+        <button className="text-sm text-muted-foreground hover:text-primary" onClick={async () => { await supabase.auth.signOut(); navigate("/affiliate/login"); }}>
           Log out
         </button>
       </header>

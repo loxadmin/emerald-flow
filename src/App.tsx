@@ -22,6 +22,7 @@ const AiMode = lazy(() => import("./pages/AiMode"));
 const Affiliates = lazy(() => import("./pages/Affiliates"));
 const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
 const AffiliateSetup = lazy(() => import("./pages/AffiliateSetup"));
+const AffiliateLogin = lazy(() => import("./pages/AffiliateLogin"));
 const AdminAffiliates = lazy(() => import("./pages/AdminAffiliates"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
@@ -146,7 +147,8 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="/r/:code" element={<ReferralRedirect />} />
               <Route path="/affiliates" element={<Affiliates />} />
-              <Route path="/affiliate/dashboard" element={<RequireAuth><AffiliateDashboard /></RequireAuth>} />
+              <Route path="/affiliate/login" element={<AffiliateLogin />} />
+              <Route path="/affiliate/dashboard" element={<AffiliateDashboard />} />
               <Route path="/affiliate/setup" element={<AffiliateSetup />} />
               <Route path="/ella/affiliates" element={<RequireAuth><RequireAdmin><AdminAffiliates /></RequireAdmin></RequireAuth>} />
               
