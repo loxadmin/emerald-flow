@@ -98,6 +98,7 @@ export default function AdminPackages() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [presetOpen, setPresetOpen] = useState(false);
   const [presetForm, setPresetForm] = useState(emptyPreset);
+  const [churn, setChurn] = useState<{ id: string; package_id: string; reason: string; converted: boolean; created_at: string }[]>([]);
 
   const load = async () => {
     setLoading(true);
@@ -118,6 +119,8 @@ export default function AdminPackages() {
     setCategories((c.data as any) || []);
     setMilestones((m.data as any) || []);
     setPresets(((sa.data as any) || []).map((r: any) => ({ ...r, price_per_user_per_day: Number(r.price_per_user_per_day) })));
+    supabase.from("swift_churn_feedback" as any).select("*").order("created_at", { ascending: false }).limit(500)
+      .then(({ data }) => setChurn((data as any) || []));
 
     const byPkg: Record<string, PkgMilestone[]> = {};
     for (const r of ((pm.data as any) || [])) {
@@ -387,6 +390,7 @@ export default function AdminPackages() {
           <TabsTrigger value="packages">Packages ({packages.length})</TabsTrigger>
           <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
           <TabsTrigger value="actions">Daily actions ({presets.length})</TabsTrigger>
+          <TabsTrigger value="churn">Churn reasons ({churn.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="packages" className="mt-4">
@@ -567,6 +571,46 @@ export default function AdminPackages() {
               </div>
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="churn" className="mt-4 space-y-4">
+          {(() => {
+            const counts: Record<string, number> = {};
+            for (const f of churn) counts[f.reason] = (counts[f.reason] || 0) + 1;
+            const converted = churn.filter((f) => f.converted).length;
+            return (
+              <>
+                <div className="rounded-xl border bg-card p-4">
+                  <p className="text-sm font-semibold">Why advertisers walked away</p>
+                  <p className="text-xs text-muted-foreground">
+                    {churn.length} responses · {converted} took the discounted trial
+                  </p>
+                  <div className="mt-3 space-y-1.5">
+                    {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([r, n]) => (
+                      <div key={r} className="flex items-center justify-between text-xs">
+                        <span>{r}</span><span className="font-semibold">{n}</span>
+                      </div>
+                    ))}
+                    {churn.length === 0 && <p className="text-xs italic text-muted-foreground">No responses yet.</p>}
+                  </div>
+                </div>
+                <div className="rounded-xl border bg-card divide-y">
+                  {churn.map((f) => (
+                    <div key={f.id} className="flex items-center justify-between gap-3 p-3 text-xs">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{packages.find((p) => p.id === f.package_id)?.name || "Package"}</p>
+                        <p className="text-muted-foreground">{f.reason}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {f.converted ? <Badge>Took trial</Badge> : <Badge variant="outline">Walked away</Badge>}
+                        <p className="mt-1 text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </TabsContent>
       </Tabs>
 
