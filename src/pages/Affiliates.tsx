@@ -76,12 +76,12 @@ export default function Affiliates() {
             affiliate_phone: phone.trim(),
             affiliate_ref: getStoredAffiliateRef() || undefined,
           },
-          emailRedirectTo: `${window.location.origin}/affiliates`,
+          emailRedirectTo: `${window.location.origin}/affiliate/login`,
         },
       });
       if (error) throw error;
       toast.success("Account created. Verify your email, then log in to activate your affiliate account.");
-      navigate("/login");
+      navigate("/affiliate/login");
     } catch (err) {
       toast.error(friendlyError(err, "Something went wrong"));
     } finally {
@@ -96,7 +96,7 @@ export default function Affiliates() {
           <Logo size={22} />
           <span className="text-base font-bold text-gradient">Karbali Ads</span>
         </Link>
-        <Link to="/login" className="text-sm text-muted-foreground hover:text-primary">Log in</Link>
+        <Link to="/affiliate/login" className="text-sm text-muted-foreground hover:text-primary">Affiliate sign in</Link>
       </header>
 
       <main className="mx-auto grid max-w-6xl gap-12 px-6 py-10 sm:px-10 lg:grid-cols-2 lg:py-16">

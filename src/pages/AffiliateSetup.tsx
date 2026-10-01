@@ -36,7 +36,7 @@ export default function AffiliateSetup() {
       });
       if (signInErr) {
         toast.success("Password set. Please sign in.");
-        navigate("/login", { replace: true });
+        navigate("/affiliate/login", { replace: true });
         return;
       }
       toast.success("Welcome aboard 🎉");
