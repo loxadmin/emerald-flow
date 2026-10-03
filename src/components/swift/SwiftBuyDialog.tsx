@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2, Zap, Plus, Trash2, Gift } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import GiftBox from "@/components/GiftBox";
+import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
 import {
   type SwiftTier,
   type SwiftAction,
@@ -79,6 +80,12 @@ export default function SwiftBuyDialog({
   const [customs, setCustoms] = useState<CustomRow[]>([]);
   const [links, setLinks] = useState<string[]>([""]);
   const [buying, setBuying] = useState(false);
+  const [promo, setPromo] = useState<PromoMediaValue>({ url: null, path: null, type: null });
+  const [offerText, setOfferText] = useState("");
+  const saveOffer = async (orderId: string) => {
+    const { error } = await supabase.rpc("set_order_offer" as never, { _kind: "package", _order_id: orderId, _url: promo.url, _path: promo.path, _type: promo.type, _text: offerText.trim() || null } as never);
+    if (error) toast.error(friendlyError(error));
+  };
 
   // churn flow
   const [churnOpen, setChurnOpen] = useState(false);
@@ -173,6 +180,7 @@ export default function SwiftBuyDialog({
     const cleanLinks = checkLinks(platform, links);
     if (!cleanLinks) return;
     if (walletBalance < total) return toast.error("Top up your wallet to cover this order");
+    { const oe = offerError(promo, offerText); if (oe) return toast.error(oe); }
 
     setBuying(true);
     const { data, error } = await supabase.rpc("purchase_swift_package" as never, {
@@ -187,6 +195,7 @@ export default function SwiftBuyDialog({
     setBuying(false);
     if (error) return toast.error(friendlyError(error));
     const orderId = (data as { order_id?: string } | null)?.order_id;
+    if (orderId) await saveOffer(orderId);
     if (orderId) {
       supabase.functions
         .invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } })
@@ -210,6 +219,7 @@ export default function SwiftBuyDialog({
     const cost = variant === "churn" ? churnCost : trialCost;
     if (cost == null) return toast.error("This trial isn't priced yet");
     if (walletBalance < cost) return toast.error("Top up your wallet to cover this trial");
+    { const oe = offerError(promo, offerText); if (oe) return toast.error(oe + " (in the order form)"); }
 
     variant === "churn" ? setChurnBusy(true) : setBuying(true);
     const { data, error } = await supabase.rpc("purchase_swift_trial" as never, {
@@ -221,6 +231,7 @@ export default function SwiftBuyDialog({
     variant === "churn" ? setChurnBusy(false) : setBuying(false);
     if (error) return toast.error(friendlyError(error));
     const orderId = (data as { order_id?: string } | null)?.order_id;
+    if (orderId) await saveOffer(orderId);
     if (orderId) {
       supabase.functions
         .invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } })
@@ -485,6 +496,8 @@ export default function SwiftBuyDialog({
                   </div>
                   <Badge variant="outline" className="text-[10px]">Wallet balance ${walletBalance.toFixed(2)}</Badge>
                 </div>
+
+                <PromoMediaUpload value={promo} onChange={setPromo} offerText={offerText} onOfferTextChange={setOfferText} />
               </div>
 
               <DialogFooter className="mt-5 gap-2 border-t border-border/20 pt-4">
