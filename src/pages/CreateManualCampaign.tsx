@@ -14,7 +14,7 @@ import { draftKey, loadDraft, saveDraft, clearDraft } from "@/lib/draft-storage"
 import {
   Globe, Smartphone, CheckCircle, Send, Loader2, Settings, Download, UserPlus, ShoppingCart, AlertCircle, Lock,
 } from "lucide-react";
-import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
+import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
 import { friendlyError, functionError } from "@/lib/errors";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
@@ -64,6 +64,7 @@ export default function CreateManualCampaign() {
   // Per-event prices the advertiser may raise above the admin floor
   const [customPrices, setCustomPrices] = useState<{ download?: number; signup?: number; purchase?: number }>({});
   const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
+  const [offerText, setOfferText] = useState("");
   const restored = useRef(false);
 
   const dKey = draftKey(user?.id, "manual", null);
@@ -196,6 +197,7 @@ export default function CreateManualCampaign() {
   };
 
   const handleSubmit = async () => {
+    { const oe = offerError(promoMedia, offerText); if (oe) { toast.error(oe); return; } }
     if (!user) return;
     if (!campaignName.trim()) { toast.error("Enter a campaign name"); return; }
     if (milestones.length === 0) { toast.error("Select at least one goal"); return; }
@@ -238,6 +240,7 @@ export default function CreateManualCampaign() {
       promo_media_url: promoMedia.url,
       promo_media_path: promoMedia.path,
       promo_media_type: promoMedia.type,
+      offer_text: offerText.trim() || null,
     } as any).select().single();
 
     if (campErr) { toast.error(friendlyError(campErr)); setLoading(false); return; }
@@ -513,7 +516,7 @@ export default function CreateManualCampaign() {
             <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
               <p>Your campaign will be submitted for admin approval. Once approved, a referral link will be auto-generated and your campaign will go live.</p>
             </div>
-            <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} />
+            <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} offerText={offerText} onOfferTextChange={setOfferText} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertCircle, Handshake, Globe, RotateCcw, Smartphone } from "lucide-react";
 import JSZip from "jszip";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
-import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
+import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
 import { friendlyError, functionError } from "@/lib/errors";
 
 interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
@@ -66,6 +66,7 @@ export default function CreateCampaign() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
   const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
+  const [offerText, setOfferText] = useState("");
 
   const syncDraftUrl = (draftId: string, nextStep: number) => {
     const currentStep = Number(stepParam ?? "0");
@@ -310,6 +311,7 @@ export default function CreateCampaign() {
   };
 
   const handleSubmit = async () => {
+    { const oe = offerError(promoMedia, offerText); if (oe) { toast.error(oe); return; } }
     if (!user) return;
     if (!campaignName.trim()) { toast.error("Enter a campaign name"); return; }
     if (milestones.length === 0) { toast.error("Select at least one milestone"); return; }
@@ -352,6 +354,7 @@ export default function CreateCampaign() {
       promo_media_url: promoMedia.url,
       promo_media_path: promoMedia.path,
       promo_media_type: promoMedia.type,
+      offer_text: offerText.trim() || null,
     } as any).eq("id", cId);
     if (error) { toast.error(friendlyError(error)); setLoading(false); return; }
 
@@ -806,7 +809,7 @@ new KarbaliTracking();`;
                 <div key={r.l} className="flex justify-between text-sm"><span className="text-muted-foreground">{r.l}</span><span className="text-foreground font-medium">{r.v}</span></div>
               ))}
             </div>
-            <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} />
+            <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} offerText={offerText} onOfferTextChange={setOfferText} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(isPartnership ? 1 : 3)}>← Back</Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>

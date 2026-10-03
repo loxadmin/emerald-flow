@@ -18,6 +18,7 @@ import SwitchStoryCard from "@/components/SwitchStoryCard";
 import SwitchMetricsPanel from "@/components/SwitchMetricsPanel";
 import { CardGridSkeleton } from "@/components/skeletons";
 import { friendlyError } from "@/lib/errors";
+import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
 
 /** Turns "https://www.cabally.com" into "Cabally" so offers read personally. */
 function brandFrom(website?: string | null, companyName?: string | null, email?: string | null): string {
@@ -69,6 +70,8 @@ export default function SwitchOffers() {
 
   const [selected, setSelected] = useState<Offer | null>(null);
   const [link, setLink] = useState("");
+  const [promo, setPromo] = useState<PromoMediaValue>({ url: null, path: null, type: null });
+  const [offerText, setOfferText] = useState("");
   const [buying, setBuying] = useState(false);
 
   useEffect(() => {
@@ -107,12 +110,16 @@ export default function SwitchOffers() {
     if (!selected) return;
     if (selected.target_link_required && !link.trim()) return toast.error("Enter your target app link");
     if (balance < selected.flat_price_usd) return toast.error("Insufficient wallet balance");
+    { const oe = offerError(promo, offerText); if (oe) return toast.error(oe); }
     setBuying(true);
-    const { error } = await supabase.rpc("purchase_switch_offer" as any, {
+    const { data, error } = await supabase.rpc("purchase_switch_offer" as any, {
       _offer_id: selected.id, _target_link: link.trim() || null,
     });
+    if (error) { setBuying(false); return toast.error(friendlyError(error)); }
+    const orderId = (data as { order_id?: string } | null)?.order_id;
+    if (orderId) await supabase.rpc("set_order_offer" as any, { _kind: "switch", _order_id: orderId, _url: promo.url, _path: promo.path, _type: promo.type, _text: offerText.trim() || null });
     setBuying(false);
-    if (error) return toast.error(friendlyError(error));
+    setPromo({ url: null, path: null, type: null }); setOfferText("");
     toast.success("Offer purchased — delivery starting");
     setSelected(null); setLink("");
     // reload
@@ -292,6 +299,7 @@ export default function SwitchOffers() {
                   />
                 </div>
               )}
+              <PromoMediaUpload value={promo} onChange={setPromo} offerText={offerText} onOfferTextChange={setOfferText} />
               <p className="text-[10px] leading-relaxed text-muted-foreground/60 font-medium">
                 Payment is debited directly from your corporate wallet (balance: <span className="font-semibold text-foreground">${balance.toFixed(2)}</span>).
               </p>

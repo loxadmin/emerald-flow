@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import PromoMediaUpload, { PromoMediaValue } from "@/components/PromoMediaUpload";
+import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
 import MotionWrapper from "@/components/MotionWrapper";
 import GiftBox from "@/components/GiftBox";
 import { toast } from "sonner";
@@ -75,6 +75,7 @@ export default function Packages() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [links, setLinks] = useState<string[]>([""]);
   const [promo, setPromo] = useState<PromoMediaValue>({ url: null, path: null, type: null });
+  const [offerText, setOfferText] = useState("");
   const [payMethod, setPayMethod] = useState<"wallet" | "paystack">("wallet");
   const [buying, setBuying] = useState(false);
 
@@ -334,11 +335,7 @@ export default function Packages() {
         else {
           toast.success("Package purchased! Approval takes 3–7 business days.");
           const orderId = (data as { order_id?: string })?.order_id;
-          if (orderId && p.promo?.url) {
-            await supabase.rpc("set_package_order_promo" as any, {
-              _order_id: orderId, _url: p.promo.url, _path: p.promo.path, _type: p.promo.type,
-            });
-          }
+          if (orderId) await supabase.rpc("set_order_offer" as any, { _kind: "package", _order_id: orderId, _url: p.promo?.url ?? null, _path: p.promo?.path ?? null, _type: p.promo?.type ?? null, _text: (p.offerText || "").trim() || null });
           if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
         }
         load();
@@ -403,6 +400,7 @@ export default function Packages() {
       try { new URL(cleanLinks[0]); } catch { return toast.error(`Invalid URL: ${cleanLinks[0]}`); }
     }
     if (flatTotal <= 0) return toast.error("Total must be greater than zero");
+    { const oe = offerError(promo, offerText); if (oe) return toast.error(oe); }
 
     setBuying(true);
     const args = {
@@ -419,11 +417,7 @@ export default function Packages() {
       if (error) return toast.error(friendlyError(error));
       toast.success("Package purchased! Approval takes 3–7 business days.");
       const orderId = (data as { order_id?: string })?.order_id;
-      if (orderId && promo.url) {
-        await supabase.rpc("set_package_order_promo" as any, {
-          _order_id: orderId, _url: promo.url, _path: promo.path, _type: promo.type,
-        });
-      }
+      if (orderId) await supabase.rpc("set_order_offer" as any, { _kind: "package", _order_id: orderId, _url: promo.url, _path: promo.path, _type: promo.type, _text: offerText.trim() || null });
       if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
       setPromo({ url: null, path: null, type: null });
       setSelected(null); load();
@@ -440,7 +434,7 @@ export default function Packages() {
 
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({
       package_id: selected.id, units, duration: needsDuration ? duration : null,
-      selected_ids: selectedIds, platform, links: cleanLinks, promo,
+      selected_ids: selectedIds, platform, links: cleanLinks, promo, offerText,
     }));
     const { data, error } = await supabase.functions.invoke("paystack-wallet", {
       body: { action: "initialize_funding", amount: flatTotal, callback_origin: window.location.origin },
@@ -831,7 +825,7 @@ export default function Packages() {
                   </div>
 
                   {/* Promotional media */}
-                  <PromoMediaUpload value={promo} onChange={setPromo} />
+                  <PromoMediaUpload value={promo} onChange={setPromo} offerText={offerText} onOfferTextChange={setOfferText} />
 
 
                   {/* Payment Methods */}

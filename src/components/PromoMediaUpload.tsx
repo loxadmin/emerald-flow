@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Upload, Image as ImageIcon, Film, X, Loader2 } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
@@ -16,12 +17,24 @@ export type PromoMediaValue = {
   type: string | null;
 };
 
+/** Returns an error message when neither media nor a text offer was provided. */
+export function offerError(media: PromoMediaValue, text: string): string | null {
+  if (media.url) return null;
+  if (!text.trim()) return "Upload an offer image or video, or write a text offer";
+  if (text.trim().length > 500) return "Text offer is too long (max 500 characters)";
+  return null;
+}
+
 export default function PromoMediaUpload({
   value,
   onChange,
+  offerText,
+  onOfferTextChange,
 }: {
   value: PromoMediaValue;
   onChange: (v: PromoMediaValue) => void;
+  offerText: string;
+  onOfferTextChange: (v: string) => void;
 }) {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
@@ -67,10 +80,10 @@ export default function PromoMediaUpload({
   return (
     <div className="space-y-2">
       <Label className="flex items-center gap-1.5 text-sm font-medium">
-        Promotional image or video <span className="text-[10px] font-normal text-muted-foreground">(optional)</span>
+        Your offer <span className="text-destructive">*</span>
       </Label>
       <p className="text-xs text-muted-foreground">
-        Attaching a preview image or short video improves your approval timeline. Max 10 MB.
+        Upload an offer image or short video (max 10 MB). If you skip it, write your offer as text below.
       </p>
 
       {value.url ? (
@@ -115,6 +128,21 @@ export default function PromoMediaUpload({
           />
         </label>
       )}
+
+      <div className="space-y-1.5 pt-1">
+        <Label htmlFor="offer-text" className="text-xs font-medium">
+          Text offer {value.url ? <span className="text-[10px] font-normal text-muted-foreground">(optional)</span> : <span className="text-destructive">*</span>}
+        </Label>
+        <Textarea
+          id="offer-text"
+          value={offerText}
+          maxLength={500}
+          rows={2}
+          placeholder="e.g. Buy 1GB data for 200 naira"
+          onChange={(e) => onOfferTextChange(e.target.value)}
+        />
+        <p className="text-[11px] text-muted-foreground">The offer is entirely up to you. {offerText.length}/500</p>
+      </div>
     </div>
   );
 }
