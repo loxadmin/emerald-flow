@@ -1001,6 +1001,7 @@ export type Database = {
           is_draft: boolean
           name: string
           notified_event_count: number
+          offer_text: string | null
           platform_type: string
           price_download: number
           price_purchase: number
@@ -1032,6 +1033,7 @@ export type Database = {
           is_draft?: boolean
           name: string
           notified_event_count?: number
+          offer_text?: string | null
           platform_type?: string
           price_download?: number
           price_purchase?: number
@@ -1063,6 +1065,7 @@ export type Database = {
           is_draft?: boolean
           name?: string
           notified_event_count?: number
+          offer_text?: string | null
           platform_type?: string
           price_download?: number
           price_purchase?: number
@@ -2211,6 +2214,7 @@ export type Database = {
           id: string
           is_trial: boolean
           milestone_breakdown: Json | null
+          offer_text: string | null
           package_id: string | null
           package_name: string
           package_type: string
@@ -2251,6 +2255,7 @@ export type Database = {
           id?: string
           is_trial?: boolean
           milestone_breakdown?: Json | null
+          offer_text?: string | null
           package_id?: string | null
           package_name: string
           package_type?: string
@@ -2291,6 +2296,7 @@ export type Database = {
           id?: string
           is_trial?: boolean
           milestone_breakdown?: Json | null
+          offer_text?: string | null
           package_id?: string | null
           package_name?: string
           package_type?: string
@@ -2678,7 +2684,11 @@ export type Database = {
           flat_price_usd: number
           id: string
           offer_id: string
+          offer_text: string | null
           offer_title: string
+          promo_media_path: string | null
+          promo_media_type: string | null
+          promo_media_url: string | null
           starts_at: string
           status: string
           target_link: string | null
@@ -2696,7 +2706,11 @@ export type Database = {
           flat_price_usd: number
           id?: string
           offer_id: string
+          offer_text?: string | null
           offer_title: string
+          promo_media_path?: string | null
+          promo_media_type?: string | null
+          promo_media_url?: string | null
           starts_at?: string
           status?: string
           target_link?: string | null
@@ -2714,7 +2728,11 @@ export type Database = {
           flat_price_usd?: number
           id?: string
           offer_id?: string
+          offer_text?: string | null
           offer_title?: string
+          promo_media_path?: string | null
+          promo_media_type?: string | null
+          promo_media_url?: string | null
           starts_at?: string
           status?: string
           target_link?: string | null
@@ -3476,6 +3494,17 @@ export type Database = {
         Returns: Json
       }
       run_financial_selftest: { Args: never; Returns: Json }
+      set_order_offer: {
+        Args: {
+          _kind: string
+          _order_id: string
+          _path: string
+          _text: string
+          _type: string
+          _url: string
+        }
+        Returns: Json
+      }
       set_package_order_promo: {
         Args: { _order_id: string; _path: string; _type: string; _url: string }
         Returns: Json
