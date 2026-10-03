@@ -27,7 +27,6 @@ export default function Footer({ content }: FooterProps) {
           <Link to="/docs" className="hover:text-primary transition-colors">Docs</Link>
           <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
         </div>
-        <Link to="/affiliate/login" className="text-xs text-muted-foreground underline underline-offset-4 hover:text-primary">Affiliate sign in</Link>
         <p className="text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} Karbali Ads. All rights reserved.</p>
       </div>
     </footer>

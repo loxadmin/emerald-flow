@@ -134,7 +134,18 @@ export default function Affiliates() {
           </div>
         </div>
 
-        <div className="lg:sticky lg:top-10 lg:self-start">
+        <div className="lg:sticky lg:top-10 lg:self-start space-y-4">
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+            <h2 className="text-base font-semibold">Already an affiliate?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Sign in to your affiliate dashboard to see your referrals, commissions and bonus progress.
+            </p>
+            <Link to="/affiliate/login">
+              <GlassButton variant="outline" className="mt-3 h-11 w-full rounded-lg">
+                Sign in as an affiliate
+              </GlassButton>
+            </Link>
+          </div>
           <div className="rounded-2xl border border-border bg-card p-6">
             <h2 className="text-lg font-semibold">Become an affiliate</h2>
             <p className="mt-1 text-sm text-muted-foreground">
