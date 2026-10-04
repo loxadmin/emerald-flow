@@ -1,3 +1,4 @@
+import AdvertiserOfferView from "@/components/AdvertiserOfferView";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
@@ -484,6 +485,7 @@ export default function AdminPackages() {
                           {o.units.toLocaleString()} daily users · ${o.total_amount_usd} · {o.duration_days} days
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">Advertiser: {o.advertiser_id}</p>
+                        <div className="mt-2"><AdvertiserOfferView compact path={(o as any).promo_media_path} url={(o as any).promo_media_url} type={(o as any).promo_media_type} text={(o as any).offer_text} /></div>
                         {swift && Array.isArray(o.swift_actions) && (
                           <p className="mt-1 text-xs text-muted-foreground">
                             {o.swift_actions.map((a) =>

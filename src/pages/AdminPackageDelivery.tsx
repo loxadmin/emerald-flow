@@ -1,3 +1,4 @@
+import AdvertiserOfferView from "@/components/AdvertiserOfferView";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -207,6 +208,9 @@ export default function AdminPackageDelivery() {
             {order.units.toLocaleString()} target · {order.duration_days ? `${order.duration_days} days` : "one-off"} · advertiser {order.advertiser_id}
           </p>
         </div>
+      </div>
+      <div className="mb-4">
+        <AdvertiserOfferView path={(order as any).promo_media_path} url={(order as any).promo_media_url} type={(order as any).promo_media_type} text={(order as any).offer_text} />
       </div>
 
       {/* Escrow tracker */}

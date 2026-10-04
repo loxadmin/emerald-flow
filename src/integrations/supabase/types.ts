@@ -3331,6 +3331,18 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_package_v2_with_offer: {
+        Args: {
+          _duration_days: number
+          _links: string[]
+          _offer: Json
+          _package_id: string
+          _platform: string
+          _selected_milestone_ids: string[]
+          _units: number
+        }
+        Returns: Json
+      }
       purchase_package_with_wallet: {
         Args: { _links: string[]; _package_id: string; _units: number }
         Returns: Json
@@ -3347,6 +3359,19 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_swift_package_with_offer: {
+        Args: {
+          _action_ids: string[]
+          _custom: Json
+          _duration_days: number
+          _links: string[]
+          _offer: Json
+          _package_id: string
+          _platform: string
+          _units: number
+        }
+        Returns: Json
+      }
       purchase_swift_trial: {
         Args: {
           _links: string[]
@@ -3356,8 +3381,22 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_swift_trial_with_offer: {
+        Args: {
+          _links: string[]
+          _offer: Json
+          _package_id: string
+          _platform: string
+          _variant: string
+        }
+        Returns: Json
+      }
       purchase_switch_offer: {
         Args: { _offer_id: string; _target_link: string }
+        Returns: Json
+      }
+      purchase_switch_offer_with_offer: {
+        Args: { _offer: Json; _offer_id: string; _target_link: string }
         Returns: Json
       }
       qualify_affiliate_referral: {

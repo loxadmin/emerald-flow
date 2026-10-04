@@ -1,3 +1,4 @@
+import AdvertiserOfferView from "@/components/AdvertiserOfferView";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
@@ -348,6 +349,7 @@ export default function AdminSwitchOffers() {
                           from {o.competitor_app_name || "—"} · {o.batch_size.toLocaleString()} users · ${Number(o.flat_price_usd).toFixed(2)}
                           {o.target_link ? ` · ${o.target_link}` : ""}
                         </p>
+                        <div className="mt-2"><AdvertiserOfferView compact path={(o as any).promo_media_path} url={(o as any).promo_media_url} type={(o as any).promo_media_type} text={(o as any).offer_text} /></div>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
                           Delivered: {o.users_delivered.toLocaleString()} / {o.batch_size.toLocaleString()}
                         </p>
