@@ -327,15 +327,15 @@ export default function Packages() {
       sessionStorage.removeItem(PENDING_KEY);
       (async () => {
         await new Promise((r) => setTimeout(r, 1500));
-        const { data, error } = await supabase.rpc("purchase_package_v2" as any, {
+        const { data, error } = await supabase.rpc("purchase_package_v2_with_offer" as any, {
           _package_id: p.package_id, _units: p.units, _duration_days: p.duration,
           _selected_milestone_ids: p.selected_ids, _platform: p.platform, _links: p.links,
+          _offer: { url: p.promo?.url ?? null, path: p.promo?.path ?? null, type: p.promo?.type ?? null, text: (p.offerText || "").trim() || null },
         });
         if (error) toast.error(`Payment received but purchase failed: ${error.message}`);
         else {
           toast.success("Package purchased! Approval takes 3–7 business days.");
           const orderId = (data as { order_id?: string })?.order_id;
-          if (orderId) await supabase.rpc("set_order_offer" as any, { _kind: "package", _order_id: orderId, _url: p.promo?.url ?? null, _path: p.promo?.path ?? null, _type: p.promo?.type ?? null, _text: (p.offerText || "").trim() || null });
           if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
         }
         load();
@@ -407,17 +407,17 @@ export default function Packages() {
       _package_id: selected.id, _units: units,
       _duration_days: needsDuration ? duration : null,
       _selected_milestone_ids: selectedIds, _platform: platform, _links: cleanLinks,
+      _offer: { url: promo.url, path: promo.path, type: promo.type, text: offerText.trim() || null },
     };
 
     if (payMethod === "wallet") {
       if (!wallet?.is_activated) { setBuying(false); return toast.error("Activate your wallet first"); }
       if ((wallet?.balance || 0) < flatTotal) { setBuying(false); return toast.error("Insufficient wallet balance"); }
-      const { data, error } = await supabase.rpc("purchase_package_v2" as any, args);
+      const { data, error } = await supabase.rpc("purchase_package_v2_with_offer" as any, args);
       setBuying(false);
       if (error) return toast.error(friendlyError(error));
       toast.success("Package purchased! Approval takes 3–7 business days.");
       const orderId = (data as { order_id?: string })?.order_id;
-      if (orderId) await supabase.rpc("set_order_offer" as any, { _kind: "package", _order_id: orderId, _url: promo.url, _path: promo.path, _type: promo.type, _text: offerText.trim() || null });
       if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
       setPromo({ url: null, path: null, type: null });
       setSelected(null); load();

@@ -112,12 +112,11 @@ export default function SwitchOffers() {
     if (balance < selected.flat_price_usd) return toast.error("Insufficient wallet balance");
     { const oe = offerError(promo, offerText); if (oe) return toast.error(oe); }
     setBuying(true);
-    const { data, error } = await supabase.rpc("purchase_switch_offer" as any, {
+    const { error } = await supabase.rpc("purchase_switch_offer_with_offer" as any, {
       _offer_id: selected.id, _target_link: link.trim() || null,
+      _offer: { url: promo.url, path: promo.path, type: promo.type, text: offerText.trim() || null },
     });
     if (error) { setBuying(false); return toast.error(friendlyError(error)); }
-    const orderId = (data as { order_id?: string } | null)?.order_id;
-    if (orderId) await supabase.rpc("set_order_offer" as any, { _kind: "switch", _order_id: orderId, _url: promo.url, _path: promo.path, _type: promo.type, _text: offerText.trim() || null });
     setBuying(false);
     setPromo({ url: null, path: null, type: null }); setOfferText("");
     toast.success("Offer purchased — delivery starting");

@@ -82,10 +82,7 @@ export default function SwiftBuyDialog({
   const [buying, setBuying] = useState(false);
   const [promo, setPromo] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const [offerText, setOfferText] = useState("");
-  const saveOffer = async (orderId: string) => {
-    const { error } = await supabase.rpc("set_order_offer" as never, { _kind: "package", _order_id: orderId, _url: promo.url, _path: promo.path, _type: promo.type, _text: offerText.trim() || null } as never);
-    if (error) toast.error(friendlyError(error));
-  };
+  const offerPayload = () => ({ url: promo.url, path: promo.path, type: promo.type, text: offerText.trim() || null });
 
   // churn flow
   const [churnOpen, setChurnOpen] = useState(false);
@@ -183,7 +180,8 @@ export default function SwiftBuyDialog({
     { const oe = offerError(promo, offerText); if (oe) return toast.error(oe); }
 
     setBuying(true);
-    const { data, error } = await supabase.rpc("purchase_swift_package" as never, {
+    const { data, error } = await supabase.rpc("purchase_swift_package_with_offer" as never, {
+      _offer: offerPayload(),
       _package_id: pkg.id,
       _units: units,
       _duration_days: duration,
@@ -195,7 +193,6 @@ export default function SwiftBuyDialog({
     setBuying(false);
     if (error) return toast.error(friendlyError(error));
     const orderId = (data as { order_id?: string } | null)?.order_id;
-    if (orderId) await saveOffer(orderId);
     if (orderId) {
       supabase.functions
         .invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } })
@@ -222,7 +219,8 @@ export default function SwiftBuyDialog({
     { const oe = offerError(promo, offerText); if (oe) return toast.error(oe + " (in the order form)"); }
 
     variant === "churn" ? setChurnBusy(true) : setBuying(true);
-    const { data, error } = await supabase.rpc("purchase_swift_trial" as never, {
+    const { data, error } = await supabase.rpc("purchase_swift_trial_with_offer" as never, {
+      _offer: offerPayload(),
       _package_id: target.id,
       _variant: variant,
       _platform: pl,
@@ -231,7 +229,6 @@ export default function SwiftBuyDialog({
     variant === "churn" ? setChurnBusy(false) : setBuying(false);
     if (error) return toast.error(friendlyError(error));
     const orderId = (data as { order_id?: string } | null)?.order_id;
-    if (orderId) await saveOffer(orderId);
     if (orderId) {
       supabase.functions
         .invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } })
