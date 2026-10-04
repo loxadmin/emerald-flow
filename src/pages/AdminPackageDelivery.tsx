@@ -210,7 +210,7 @@ export default function AdminPackageDelivery() {
         </div>
       </div>
       <div className="mb-4">
-        <AdvertiserOfferView path={order.promo_media_path} url={order.promo_media_url} type={order.promo_media_type} text={order.offer_text} />
+        <AdvertiserOfferView path={(order as any).promo_media_path} url={(order as any).promo_media_url} type={(order as any).promo_media_type} text={(order as any).offer_text} />
       </div>
 
       {/* Escrow tracker */}
