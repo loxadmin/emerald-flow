@@ -1,3 +1,4 @@
+import AdvertiserOfferView from "@/components/AdvertiserOfferView";
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -355,6 +356,7 @@ export default function AdminCampaignDetail() {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        <AdvertiserOfferView path={(campaign as any).promo_media_path} url={(campaign as any).promo_media_url} type={(campaign as any).promo_media_type} text={(campaign as any).offer_text} />
         <MotionWrapper>
           <div className="flex items-center justify-between">
             <div>
