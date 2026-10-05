@@ -2488,6 +2488,215 @@ export type Database = {
           },
         ]
       }
+      roast_boost_deliveries: {
+        Row: {
+          amount_released: number
+          comments: string | null
+          comments_count: number
+          created_at: string
+          created_by: string | null
+          id: string
+          likes: number
+          new_followers: number
+          note: string | null
+          order_id: string
+          post_id: string | null
+          reposts: number
+          shares: number
+        }
+        Insert: {
+          amount_released?: number
+          comments?: string | null
+          comments_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          likes?: number
+          new_followers?: number
+          note?: string | null
+          order_id: string
+          post_id?: string | null
+          reposts?: number
+          shares?: number
+        }
+        Update: {
+          amount_released?: number
+          comments?: string | null
+          comments_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          likes?: number
+          new_followers?: number
+          note?: string | null
+          order_id?: string
+          post_id?: string | null
+          reposts?: number
+          shares?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roast_boost_deliveries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "roast_boost_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roast_boost_deliveries_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "roast_boost_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roast_boost_orders: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          created_at: string
+          daily_cost: number
+          daily_fee_per_user: number
+          days: number
+          ends_at: string | null
+          escrow_balance: number
+          follower_cost: number
+          followers: number
+          followers_delivered: number
+          id: string
+          offer_media_path: string | null
+          offer_media_type: string | null
+          offer_media_url: string | null
+          offer_text: string | null
+          page_url: string
+          platform: string
+          price_per_1000: number
+          starts_at: string | null
+          status: string
+          subtype: string
+          total_cost: number
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          created_at?: string
+          daily_cost: number
+          daily_fee_per_user: number
+          days: number
+          ends_at?: string | null
+          escrow_balance: number
+          follower_cost: number
+          followers: number
+          followers_delivered?: number
+          id?: string
+          offer_media_path?: string | null
+          offer_media_type?: string | null
+          offer_media_url?: string | null
+          offer_text?: string | null
+          page_url: string
+          platform: string
+          price_per_1000: number
+          starts_at?: string | null
+          status?: string
+          subtype: string
+          total_cost: number
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          created_at?: string
+          daily_cost?: number
+          daily_fee_per_user?: number
+          days?: number
+          ends_at?: string | null
+          escrow_balance?: number
+          follower_cost?: number
+          followers?: number
+          followers_delivered?: number
+          id?: string
+          offer_media_path?: string | null
+          offer_media_type?: string | null
+          offer_media_url?: string | null
+          offer_text?: string | null
+          page_url?: string
+          platform?: string
+          price_per_1000?: number
+          starts_at?: string | null
+          status?: string
+          subtype?: string
+          total_cost?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      roast_boost_posts: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          post_url: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          post_url: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          post_url?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roast_boost_posts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "roast_boost_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roast_boost_pricing: {
+        Row: {
+          daily_fee_per_user: number
+          is_active: boolean
+          min_days: number
+          min_followers: number
+          platforms: string[]
+          price_per_1000: number
+          subtype: string
+          updated_at: string
+        }
+        Insert: {
+          daily_fee_per_user?: number
+          is_active?: boolean
+          min_days?: number
+          min_followers?: number
+          platforms?: string[]
+          price_per_1000?: number
+          subtype: string
+          updated_at?: string
+        }
+        Update: {
+          daily_fee_per_user?: number
+          is_active?: boolean
+          min_days?: number
+          min_followers?: number
+          platforms?: string[]
+          price_per_1000?: number
+          subtype?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_content: {
         Row: {
           content: string | null
@@ -3229,6 +3438,10 @@ export type Database = {
     }
     Functions: {
       accept_offline_order: { Args: { _order_id: string }; Returns: Json }
+      add_roast_boost_post: {
+        Args: { _order_id: string; _post_url: string }
+        Returns: string
+      }
       admin_credit_wallet: {
         Args: { _amount: number; _description: string; _wallet_id: string }
         Returns: Json
@@ -3297,6 +3510,10 @@ export type Database = {
         Returns: Database["public"]["Enums"]["advertiser_type"]
       }
       mark_loi_threshold_reached: { Args: { _loi_id: string }; Returns: Json }
+      mark_roast_boost_post_sent: {
+        Args: { _post_id: string }
+        Returns: undefined
+      }
       maybe_complete_campaign: {
         Args: { _campaign_id: string }
         Returns: undefined
@@ -3345,6 +3562,16 @@ export type Database = {
       }
       purchase_package_with_wallet: {
         Args: { _links: string[]; _package_id: string; _units: number }
+        Returns: Json
+      }
+      purchase_roast_boost: {
+        Args: {
+          _days: number
+          _followers: number
+          _offer: Json
+          _page_url: string
+          _platform: string
+        }
         Returns: Json
       }
       purchase_swift_package: {
@@ -3469,6 +3696,22 @@ export type Database = {
             }
             Returns: Json
           }
+      record_roast_boost_delivery: {
+        Args: {
+          _amount: number
+          _comments: string
+          _comments_count: number
+          _complete: boolean
+          _likes: number
+          _new_followers: number
+          _note: string
+          _order_id: string
+          _post_id: string
+          _reposts: number
+          _shares: number
+        }
+        Returns: Json
+      }
       record_swift_delivery: {
         Args: {
           _action_key: string
@@ -3525,6 +3768,10 @@ export type Database = {
         Returns: Json
       }
       review_package_order: {
+        Args: { _approve: boolean; _notes: string; _order_id: string }
+        Returns: Json
+      }
+      review_roast_boost: {
         Args: { _approve: boolean; _notes: string; _order_id: string }
         Returns: Json
       }
