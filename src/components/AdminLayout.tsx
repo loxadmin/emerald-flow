@@ -1,11 +1,12 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import {
   Shield, BarChart3, Settings, LogOut, Sun, Moon, PenSquare, Users, Layers,
-  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap, FileSignature, PenTool, GitBranch, Megaphone, Inbox, ShieldAlert, UserCog,
+  Wallet, Handshake, Menu, X, MessageSquare, Layout, Chrome, Gamepad2, ChevronRight, Send, Package, Flag, Zap, FileSignature, PenTool, GitBranch, Flame, Megaphone, Inbox, ShieldAlert, UserCog,
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
@@ -50,6 +51,7 @@ const adminGroups: { label: string; links: { to: string; label: string; icon: an
       { to: "/ella/signature", label: "Company Signature", icon: PenTool },
       { to: "/ella/packages", label: "Ad Packages", icon: Package },
       { to: "/ella/switch-offers", label: "Switch Offers", icon: Zap },
+      { to: "/ella/roast-boost", label: "Roast and Boost", icon: Flame },
       { to: "/ella/milestones", label: "Milestones", icon: Flag },
 
       { to: "/ella/extension", label: "Extension", icon: Chrome },
@@ -65,6 +67,23 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [rbAlerts, setRbAlerts] = useState(0);
+  useEffect(() => {
+    const db = supabase as any;
+    const count = async () => {
+      const [a, b] = await Promise.all([
+        db.from("roast_boost_orders").select("id", { count: "exact", head: true }).eq("status", "pending_approval"),
+        db.from("roast_boost_posts").select("id", { count: "exact", head: true }).eq("status", "new"),
+      ]);
+      setRbAlerts((a.count ?? 0) + (b.count ?? 0));
+    };
+    count();
+    const ch = supabase.channel("rb-admin-alerts")
+      .on("postgres_changes", { event: "*", schema: "public", table: "roast_boost_posts" }, count)
+      .on("postgres_changes", { event: "*", schema: "public", table: "roast_boost_orders" }, count)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   const allLinks = adminGroups.flatMap(g => g.links);
   const currentLink = allLinks.find(l => l.to === location.pathname);
@@ -105,7 +124,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   }`}
                 >
                   <link.icon className={`h-4 w-4 ${active ? "text-primary" : ""}`} />
-                  {link.label}
+                  <span className="flex-1">{link.label}</span>
+                  {link.to === "/ella/roast-boost" && rbAlerts > 0 && (
+                    <span className="rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground">{rbAlerts}</span>
+                  )}
                 </Link>
               );
             })}
