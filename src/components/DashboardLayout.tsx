@@ -8,7 +8,7 @@ import { useAiMode } from "@/lib/ai-mode";
 import {
   LayoutDashboard, Plus, LogOut, Sun, Moon, FileText, Wallet,
   Menu, X, Lock, AlertCircle, Megaphone, Globe, ChevronRight,
-  Package, ClipboardList, Zap, Rocket, FileSignature, UserRound,
+  Package, ClipboardList, Zap, Rocket, FileSignature, UserRound, Flame,
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
@@ -33,6 +33,7 @@ const baseAdvertiserLinks: NavLink[] = [
   { to: "/campaigns/create", label: "New campaign", icon: Plus, group: "Workspace", hideForOffline: true },
   { to: "/packages", label: "Ad packages", icon: Package, group: "Workspace", hideForOffline: true },
   { to: "/switch-offers", label: "Switch offers", icon: Zap, group: "Workspace", hideForOffline: true },
+  { to: "/roast-boost", label: "Roast and Boost", icon: Flame, group: "Workspace" },
   { to: "/offline/loi", label: "Letter of Intent", icon: FileSignature, group: "Workspace", onlyForOffline: true },
   { to: "/offline/loi/status", label: "Reservation status", icon: ClipboardList, group: "Workspace", onlyForOffline: true },
   { to: "/offline/campaign", label: "Launch campaign", icon: Rocket, group: "Workspace", onlyForOffline: true },

@@ -68,6 +68,8 @@ const Packages = lazy(() => import("./pages/Packages"));
 const PackageOrders = lazy(() => import("./pages/PackageOrders"));
 const SwitchOffers = lazy(() => import("./pages/SwitchOffers"));
 const AdminSwitchOffers = lazy(() => import("./pages/AdminSwitchOffers"));
+const RoastBoost = lazy(() => import("./pages/RoastBoost"));
+const AdminRoastBoost = lazy(() => import("./pages/AdminRoastBoost"));
 const OfflineLOI = lazy(() => import("./pages/OfflineLOI"));
 const OfflineLOIStatus = lazy(() => import("./pages/OfflineLOIStatus"));
 const OfflineCampaignLaunch = lazy(() => import("./pages/OfflineCampaignLaunch"));
@@ -163,6 +165,8 @@ const App = () => (
               <Route path="/packages/orders" element={<RequireAuth><PackageOrders /></RequireAuth>} />
               <Route path="/switch-offers" element={<RequireAuth><SwitchOffers /></RequireAuth>} />
               <Route path="/ella/switch-offers" element={<RequireAuth><RequireAdmin><AdminSwitchOffers /></RequireAdmin></RequireAuth>} />
+              <Route path="/roast-boost" element={<RequireAuth><RoastBoost /></RequireAuth>} />
+              <Route path="/ella/roast-boost" element={<RequireAuth><RequireAdmin><AdminRoastBoost /></RequireAdmin></RequireAuth>} />
 
               {/* Offline Ads */}
               <Route path="/offline/loi" element={<RequireAuth><OfflineLOI /></RequireAuth>} />
