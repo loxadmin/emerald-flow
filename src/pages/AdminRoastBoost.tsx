@@ -164,7 +164,7 @@ export default function AdminRoastBoost() {
           </div>
           <Badge variant={o.status === "rejected" ? "destructive" : "secondary"}>{STATUS[o.status] ?? o.status}</Badge>
         </div>
-        <AdvertiserOfferView mediaUrl={o.offer_media_url} mediaType={o.offer_media_type} text={o.offer_text} />
+        <AdvertiserOfferView path={o.offer_media_path} url={o.offer_media_url} type={o.offer_media_type} text={o.offer_text} />
         <div className="text-xs text-muted-foreground">Followers delivered: {o.followers_delivered}/{o.followers} · Held: {usd(o.escrow_balance)}</div>
         {ps.length > 0 && (
           <div className="space-y-1">
