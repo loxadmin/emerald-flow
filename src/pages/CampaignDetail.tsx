@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MotionWrapper, { MotionStagger, MotionItem } from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users, Eye, EyeOff, RefreshCw, KeyRound, Music, MonitorPlay, HelpCircle, CheckCircle2, MessageSquareWarning, Plus, StopCircle, AlertTriangle } from "lucide-react";
+import { Copy, Download, MousePointerClick, UserPlus, ShoppingCart, Wallet, Users, Eye, EyeOff, RefreshCw, KeyRound, Music, MonitorPlay, HelpCircle, CheckCircle2, MessageSquareWarning, Plus, StopCircle, AlertTriangle, MapPin } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -333,6 +333,16 @@ export default function CampaignDetail() {
                   <Badge key={m} variant="outline" className="text-[10px] capitalize">{m}</Badge>
                 ))}
               </div>
+              {((campaign as any).target_countries?.length || (campaign as any).target_states?.length) ? (
+                <div className="flex flex-wrap items-center gap-1.5 mt-2 text-xs">
+                  <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="font-semibold text-foreground">Targeting:</span>
+                  <span className="text-muted-foreground">
+                    {(campaign as any).target_countries?.join(", ") || "Global"}
+                    {(campaign as any).target_states?.length ? ` (${(campaign as any).target_states.join(", ")})` : " (All states)"}
+                  </span>
+                </div>
+              ) : null}
             </div>
             <Badge variant="outline" className={statusColor}>{campaign.status}</Badge>
           </div>

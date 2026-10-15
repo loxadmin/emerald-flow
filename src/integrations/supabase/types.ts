@@ -1011,6 +1011,8 @@ export type Database = {
           promo_media_url: string | null
           selected_milestones: string[]
           status: Database["public"]["Enums"]["campaign_status"]
+          target_countries: string[] | null
+          target_states: string[] | null
           target_users: number
           total_cost: number
           website_id: string | null
@@ -1043,6 +1045,8 @@ export type Database = {
           promo_media_url?: string | null
           selected_milestones?: string[]
           status?: Database["public"]["Enums"]["campaign_status"]
+          target_countries?: string[] | null
+          target_states?: string[] | null
           target_users?: number
           total_cost?: number
           website_id?: string | null
@@ -1075,6 +1079,8 @@ export type Database = {
           promo_media_url?: string | null
           selected_milestones?: string[]
           status?: Database["public"]["Enums"]["campaign_status"]
+          target_countries?: string[] | null
+          target_states?: string[] | null
           target_users?: number
           total_cost?: number
           website_id?: string | null
@@ -2235,7 +2241,9 @@ export type Database = {
           status: string
           swift_actions: Json | null
           swift_base_price_usd: number | null
+          target_countries: string[] | null
           target_milestone_id: string | null
+          target_states: string[] | null
           total_amount_usd: number
           trial_variant: string | null
           unit_label: string
@@ -2276,7 +2284,9 @@ export type Database = {
           status?: string
           swift_actions?: Json | null
           swift_base_price_usd?: number | null
+          target_countries?: string[] | null
           target_milestone_id?: string | null
+          target_states?: string[] | null
           total_amount_usd: number
           trial_variant?: string | null
           unit_label: string
@@ -2317,7 +2327,9 @@ export type Database = {
           status?: string
           swift_actions?: Json | null
           swift_base_price_usd?: number | null
+          target_countries?: string[] | null
           target_milestone_id?: string | null
+          target_states?: string[] | null
           total_amount_usd?: number
           trial_variant?: string | null
           unit_label?: string

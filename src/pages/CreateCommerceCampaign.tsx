@@ -13,6 +13,7 @@ import { Key, Code, CheckCircle, Send, Loader2, Copy, AlertCircle, Globe, Shoppi
 import JSZip from "jszip";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
+import LocationTargeting from "@/components/LocationTargeting";
 import { friendlyError, functionError } from "@/lib/errors";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
@@ -47,6 +48,10 @@ export default function CreateCommerceCampaign() {
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
   const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const [offerText, setOfferText] = useState("");
+
+  // Location targeting
+  const [targetCountries, setTargetCountries] = useState<string[]>(["NG"]);
+  const [targetStates, setTargetStates] = useState<string[]>([]);
 
   const syncDraftUrl = (draftId: string, nextStep: number) => {
     const currentStep = Number(stepParam ?? "0");
@@ -120,6 +125,8 @@ export default function CreateCommerceCampaign() {
           setIntegrationType((draft.integration_type as "custom" | "wordpress") || "custom");
           setVerified(draft.integration_verified || false);
           if (draft.website_id) setSelectedWebsiteId(draft.website_id);
+          if (draft.target_countries?.length) setTargetCountries(draft.target_countries);
+          if (draft.target_states?.length) setTargetStates(draft.target_states);
 
           const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", draft.id).limit(1);
           if (keys && keys.length > 0) {
@@ -177,6 +184,8 @@ export default function CreateCommerceCampaign() {
       integration_type: integrationType, is_draft: true,
       website_id: selectedWebsiteId, ad_type: "commerce",
       selected_milestones: ["purchase"],
+      target_countries: targetCountries,
+      target_states: targetStates,
     } as any).select().single();
     if (error) { toast.error(friendlyError(error)); setLoading(false); return; }
 
@@ -213,6 +222,7 @@ export default function CreateCommerceCampaign() {
     { const oe = offerError(promoMedia, offerText); if (oe) { toast.error(oe); return; } }
     if (!user || !campaignId) return;
     if (!campaignName.trim()) { toast.error("Enter a campaign name"); return; }
+    if (targetCountries.length === 0) { toast.error("Select at least one target country"); return; }
     if (!verified) { toast.error("Verify your integration first"); return; }
     if (walletBalance < totalCost) { toast.error(`Insufficient balance. Need $${totalCost.toFixed(2)}`); return; }
 
@@ -226,6 +236,8 @@ export default function CreateCommerceCampaign() {
       promo_media_path: promoMedia.path,
       promo_media_type: promoMedia.type,
       offer_text: offerText.trim() || null,
+      target_countries: targetCountries,
+      target_states: targetStates,
     } as any).eq("id", campaignId);
 
     const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -490,6 +502,11 @@ new KarbaliCommerce();`;
               <Label className="text-xs text-muted-foreground">Campaign Name *</Label>
               <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="My Commerce Campaign" />
             </div>
+            <LocationTargeting
+              selectedCountries={targetCountries}
+              selectedStates={targetStates}
+              onChange={(c, s) => { setTargetCountries(c); setTargetStates(s); }}
+            />
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Target Sales (min 100) *</Label>
               <Input type="number" min="100" value={targetSales} onChange={(e) => setTargetSales(e.target.value)} />
@@ -520,6 +537,8 @@ new KarbaliCommerce();`;
               {[
                 { l: "Campaign", v: campaignName },
                 { l: "Type", v: "Commerce Ads" },
+                { l: "Target Countries", v: targetCountries.join(", ") || "None" },
+                ...(targetStates.length ? [{ l: "Target States", v: targetStates.join(", ") }] : []),
                 { l: "Website", v: selectedDomain },
                 { l: "Target Sales", v: sales.toString() },
                 { l: "Pricing", v: "$1 + 10% per sale" },

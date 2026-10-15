@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MotionWrapper from "@/components/MotionWrapper";
-import { Loader2, Package as PackageIcon, ArrowLeft, TrendingUp, Calendar, ExternalLink, BarChart3, ShieldCheck } from "lucide-react";
+import { Loader2, Package as PackageIcon, ArrowLeft, TrendingUp, Calendar, ExternalLink, BarChart3, ShieldCheck, MapPin } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import MigrationChart from "@/components/MigrationChart";
 import DailyTargets from "@/components/DailyTargets";
@@ -30,6 +30,8 @@ type Order = {
   proposed_total_usd: number | null;
   admin_edit_note: string | null;
   swift_base_price_usd: number | null;
+  target_countries: string[] | null;
+  target_states: string[] | null;
 };
 type Milestone = { id: string; name: string; slug: string; requires_duration: boolean };
 type Delivery = {
@@ -147,6 +149,16 @@ export default function PackageOrders() {
                   <>
                     <span className="text-border/40">•</span>
                     <span className="capitalize text-[10px] font-bold text-primary">{o.platform}</span>
+                  </>
+                )}
+                {(o.target_countries?.length || o.target_states?.length) && (
+                  <>
+                    <span className="text-border/40">•</span>
+                    <span className="flex items-center gap-1 text-primary">
+                      <MapPin className="h-3 w-3" />
+                      {o.target_countries?.join(", ")}
+                      {o.target_states?.length ? ` (${o.target_states.join(", ")})` : ""}
+                    </span>
                   </>
                 )}
               </div>

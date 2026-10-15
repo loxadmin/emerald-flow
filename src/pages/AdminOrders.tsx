@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ListSkeleton } from "@/components/skeletons";
 import { toast } from "sonner";
-import { Search, Package, Zap, Store, Inbox, ArrowUpRight } from "lucide-react";
+import { Search, Package, Zap, Store, Inbox, ArrowUpRight, MapPin } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 
 type Source = "package" | "switch" | "offline";
@@ -288,6 +288,18 @@ export default function AdminOrders() {
                 <Detail label="Details" value={view.subtitle} />
                 <Detail label="Created" value={new Date(view.created_at).toLocaleString()} />
               </div>
+
+              {(view.raw.target_countries?.length || view.raw.target_states?.length) && (
+                <div className="rounded-lg border border-border p-3 space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5 text-primary" /> Target Location
+                  </p>
+                  <p className="text-xs font-semibold text-foreground">
+                    {view.raw.target_countries?.join(", ") || "Global"}
+                    {view.raw.target_states?.length ? ` (${view.raw.target_states.join(", ")})` : " (All states)"}
+                  </p>
+                </div>
+              )}
 
               {view.source === "package" && Array.isArray(view.raw.app_links) && view.raw.app_links.length > 0 && (
                 <div className="rounded-lg border border-border p-3">
