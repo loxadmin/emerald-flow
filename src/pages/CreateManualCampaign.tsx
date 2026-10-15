@@ -15,6 +15,7 @@ import {
   Globe, Smartphone, CheckCircle, Send, Loader2, Settings, Download, UserPlus, ShoppingCart, AlertCircle, Lock,
 } from "lucide-react";
 import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
+import LocationTargeting from "@/components/LocationTargeting";
 import { friendlyError, functionError } from "@/lib/errors";
 
 interface Website { id: string; domain: string; is_verified: boolean; }
@@ -34,6 +35,8 @@ interface ManualDraft {
   appLink: string;
   selectedWebsiteId: string | null;
   customPrices: { download?: number; signup?: number; purchase?: number };
+  targetCountries?: string[];
+  targetStates?: string[];
 }
 
 export default function CreateManualCampaign() {
@@ -65,6 +68,8 @@ export default function CreateManualCampaign() {
   const [customPrices, setCustomPrices] = useState<{ download?: number; signup?: number; purchase?: number }>({});
   const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const [offerText, setOfferText] = useState("");
+  const [targetCountries, setTargetCountries] = useState<string[]>(["NG"]);
+  const [targetStates, setTargetStates] = useState<string[]>([]);
   const restored = useRef(false);
 
   const dKey = draftKey(user?.id, "manual", null);
@@ -82,6 +87,8 @@ export default function CreateManualCampaign() {
       setAppLink(saved.appLink ?? "");
       setSelectedWebsiteId(saved.selectedWebsiteId ?? null);
       setCustomPrices(saved.customPrices ?? {});
+      if (saved.targetCountries?.length) setTargetCountries(saved.targetCountries);
+      if (saved.targetStates?.length) setTargetStates(saved.targetStates);
     }
     restored.current = true;
   }, [user?.id, dKey]);
@@ -91,7 +98,7 @@ export default function CreateManualCampaign() {
     if (!restored.current || !user?.id) return;
     const snapshot: ManualDraft = {
       step, platformType, campaignName, targetUsers, milestones, appLink,
-      selectedWebsiteId, customPrices,
+      selectedWebsiteId, customPrices, targetCountries, targetStates,
     };
     saveDraft(dKey, snapshot);
   }, [step, platformType, campaignName, targetUsers, milestones, appLink, selectedWebsiteId, customPrices, user?.id, dKey]);
@@ -200,6 +207,7 @@ export default function CreateManualCampaign() {
     { const oe = offerError(promoMedia, offerText); if (oe) { toast.error(oe); return; } }
     if (!user) return;
     if (!campaignName.trim()) { toast.error("Enter a campaign name"); return; }
+    if (targetCountries.length === 0) { toast.error("Select at least one target country"); return; }
     if (milestones.length === 0) { toast.error("Select at least one goal"); return; }
     if (websites.length === 0) { toast.error("Please add and verify a website first"); navigate("/websites"); return; }
     if (!selectedWebsiteId) { toast.error("Please select a website"); return; }
@@ -241,6 +249,8 @@ export default function CreateManualCampaign() {
       promo_media_path: promoMedia.path,
       promo_media_type: promoMedia.type,
       offer_text: offerText.trim() || null,
+      target_countries: targetCountries,
+      target_states: targetStates,
     } as any).select().single();
 
     if (campErr) { toast.error(friendlyError(campErr)); setLoading(false); return; }
@@ -370,6 +380,12 @@ export default function CreateManualCampaign() {
               <Label className="text-xs text-muted-foreground">Campaign Name *</Label>
               <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="My Campaign" />
             </div>
+
+            <LocationTargeting
+              selectedCountries={targetCountries}
+              selectedStates={targetStates}
+              onChange={(c, s) => { setTargetCountries(c); setTargetStates(s); }}
+            />
 
             {platformType === "mobile_app" && (
               <div className="space-y-1.5">
@@ -501,6 +517,8 @@ export default function CreateManualCampaign() {
               {[
                 { l: "Campaign Name", v: campaignName },
                 { l: "Platform", v: platformType === "mobile_app" ? "Mobile App" : "Website" },
+                { l: "Target Countries", v: targetCountries.join(", ") || "None" },
+                ...(targetStates.length ? [{ l: "Target States", v: targetStates.join(", ") }] : []),
                 { l: "Website", v: selectedDomain },
                 ...(platformType === "mobile_app" && appLink ? [{ l: "App Link", v: appLink }] : []),
                 { l: "Target Users", v: String(Number(targetUsers)) },

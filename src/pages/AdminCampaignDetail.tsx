@@ -13,7 +13,7 @@ import MotionWrapper from "@/components/MotionWrapper";
 import AutoActivationEditor from "@/components/AutoActivationEditor";
 import AdminMigrationEntry from "@/components/AdminMigrationEntry";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Copy, Link as LinkIcon, Plus, Loader2, HelpCircle, Trash2, Sparkles, MessageSquareWarning } from "lucide-react";
+import { CheckCircle, XCircle, Copy, Link as LinkIcon, Plus, Loader2, HelpCircle, Trash2, Sparkles, MessageSquareWarning, MapPin } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tables } from "@/integrations/supabase/types";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -381,6 +381,16 @@ export default function AdminCampaignDetail() {
               {(campaign as any).app_link && (
                 <p className="text-xs text-muted-foreground mt-1">App: <a href={(campaign as any).app_link} target="_blank" rel="noopener noreferrer" className="text-primary underline">{(campaign as any).app_link}</a></p>
               )}
+              {((campaign as any).target_countries?.length || (campaign as any).target_states?.length) ? (
+                <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-xs">
+                  <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="font-semibold text-foreground">Targeting:</span>
+                  <span className="text-muted-foreground">
+                    {(campaign as any).target_countries?.join(", ") || "Global"}
+                    {(campaign as any).target_states?.length ? ` (${(campaign as any).target_states.join(", ")})` : " (All states)"}
+                  </span>
+                </div>
+              ) : null}
             </div>
             <div className="flex flex-col gap-2 items-end">
               <div className="flex gap-2">

@@ -13,6 +13,7 @@ import { Loader2, Zap, Plus, Trash2, Gift } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import GiftBox from "@/components/GiftBox";
 import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
+import LocationTargeting from "@/components/LocationTargeting";
 import {
   type SwiftTier,
   type SwiftAction,
@@ -82,6 +83,10 @@ export default function SwiftBuyDialog({
   const [buying, setBuying] = useState(false);
   const [promo, setPromo] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const [offerText, setOfferText] = useState("");
+
+  // Location targeting
+  const [targetCountries, setTargetCountries] = useState<string[]>(["NG"]);
+  const [targetStates, setTargetStates] = useState<string[]>([]);
   const offerPayload = () => ({ url: promo.url, path: promo.path, type: promo.type, text: offerText.trim() || null });
 
   // churn flow
@@ -101,6 +106,8 @@ export default function SwiftBuyDialog({
     setActionIds([]);
     setCustoms([]);
     setLinks([""]);
+    setTargetCountries(["NG"]);
+    setTargetStates([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pkg?.id]);
 
@@ -171,6 +178,7 @@ export default function SwiftBuyDialog({
   const submit = async () => {
     if (!pkg) return;
     if (isClaimed) return toast.error("You have already claimed this one-off package offer");
+    if (targetCountries.length === 0) return toast.error("Select at least one target country");
     if (!unitPrice) return toast.error(`Pick a volume between ${minUnits} and ${maxUnits} users`);
     if (chosen.length === 0 && customLines.length === 0)
       return toast.error("Pick at least one daily deliverable");
@@ -194,6 +202,7 @@ export default function SwiftBuyDialog({
     if (error) return toast.error(friendlyError(error));
     const orderId = (data as { order_id?: string } | null)?.order_id;
     if (orderId) {
+      await supabase.from("package_orders" as any).update({ target_countries: targetCountries, target_states: targetStates }).eq("id", orderId);
       supabase.functions
         .invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } })
         .catch(() => {});
@@ -230,6 +239,7 @@ export default function SwiftBuyDialog({
     if (error) return toast.error(friendlyError(error));
     const orderId = (data as { order_id?: string } | null)?.order_id;
     if (orderId) {
+      await supabase.from("package_orders" as any).update({ target_countries: targetCountries, target_states: targetStates }).eq("id", orderId);
       supabase.functions
         .invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } })
         .catch(() => {});
@@ -284,6 +294,13 @@ export default function SwiftBuyDialog({
                 {pkg.description && (
                   <p className="rounded-lg border bg-secondary/40 p-3 text-sm text-muted-foreground">{pkg.description}</p>
                 )}
+
+                <LocationTargeting
+                  selectedCountries={targetCountries}
+                  selectedStates={targetStates}
+                  onChange={(c, s) => { setTargetCountries(c); setTargetStates(s); }}
+                  compact
+                />
 
                 {/* Trial offer */}
                 {trialCost != null && (

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Music, MonitorPlay, Send, Loader2, CheckCircle, Edit3, AlertCircle, DollarSign, Eye, UserPlus, Plus, Trash2 } from "lucide-react";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
+import LocationTargeting from "@/components/LocationTargeting";
 import { friendlyError, functionError } from "@/lib/errors";
 
 type MediaType = "music" | "video";
@@ -53,6 +54,10 @@ export default function CreateEngagementCampaign() {
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
   const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const [offerText, setOfferText] = useState("");
+
+  // Location targeting
+  const [targetCountries, setTargetCountries] = useState<string[]>(["NG"]);
+  const [targetStates, setTargetStates] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user?.id || !advertiserType || advertiserType === "engagement") return;
@@ -139,6 +144,9 @@ export default function CreateEngagementCampaign() {
     if (!user || !mediaType || !campaignName.trim() || !effectiveMediaLink) {
       toast.error("Please fill in all fields"); return;
     }
+    if (targetCountries.length === 0) {
+      toast.error("Select at least one target country"); return;
+    }
     if (isVideo && eventTypes.length === 0) {
       toast.error("Select at least one event type"); return;
     }
@@ -176,6 +184,8 @@ export default function CreateEngagementCampaign() {
       promo_media_path: promoMedia.path,
       promo_media_type: promoMedia.type,
       offer_text: offerText.trim() || null,
+      target_countries: targetCountries,
+      target_states: targetStates,
     } as any).select().single();
 
     if (campErr) { toast.error(friendlyError(campErr)); setLoading(false); return; }
@@ -415,6 +425,12 @@ export default function CreateEngagementCampaign() {
               </h3>
             </div>
 
+            <LocationTargeting
+              selectedCountries={targetCountries}
+              selectedStates={targetStates}
+              onChange={(c, s) => { setTargetCountries(c); setTargetStates(s); }}
+            />
+
             {hasViewer && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">
@@ -501,6 +517,8 @@ export default function CreateEngagementCampaign() {
               {[
                 { l: "Campaign Name", v: campaignName },
                 { l: "Type", v: isMusic ? "Music (Engagement)" : "Video (Engagement)" },
+                { l: "Target Countries", v: targetCountries.join(", ") || "None" },
+                ...(targetStates.length ? [{ l: "Target States", v: targetStates.join(", ") }] : []),
                 ...(isVideo ? [{ l: "Events", v: eventTypes.map(e => e.charAt(0).toUpperCase() + e.slice(1)).join(", ") }] : []),
                 { l: isMusic && validMusicLinks.length > 1 ? `Song Links (${validMusicLinks.length})` : "Media Link", v: isMusic ? validMusicLinks.join(" • ") : mediaLink },
                 ...(hasViewer ? [{ l: `Target ${viewerLabel}s`, v: `${viewerCount.toLocaleString()} × $${viewerRate.toFixed(2)}` }] : []),

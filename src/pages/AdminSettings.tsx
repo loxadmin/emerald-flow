@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import MotionWrapper from "@/components/MotionWrapper";
 import { toast } from "sonner";
-import { Save, CreditCard, Settings2, ToggleLeft, ToggleRight, Construction, Sparkles } from "lucide-react";
+import { Save, CreditCard, Settings2, ToggleLeft, ToggleRight, Construction, Sparkles, Globe, ShieldAlert, Search, X } from "lucide-react";
+import { Country } from "country-state-city";
+import { Badge } from "@/components/ui/badge";
 import { friendlyError } from "@/lib/errors";
 
 interface Setting { id: string; key: string; value: string; description: string | null; }
@@ -79,9 +81,61 @@ export default function AdminSettings() {
     toast.success(`AI provider set to ${provider === "lovable" ? "Lovable AI Gateway" : provider === "gemini" ? "Google Gemini (your key)" : "OpenAI (your key)"}`);
   };
 
+  // Location targeting controls
+  const [disabledCountriesSearch, setDisabledCountriesSearch] = useState("");
+  const allCountries = Country.getAllCountries();
+
+  const disabledCountryKeys = (() => {
+    const raw = editValues["disabled_target_countries"] || "";
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.map((s: string) => String(s).toUpperCase());
+    } catch {
+      return raw.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
+    }
+    return [];
+  })();
+
+  const toggleDisableCountry = async (isoCode: string) => {
+    const upper = isoCode.toUpperCase();
+    let nextKeys: string[];
+    if (disabledCountryKeys.includes(upper)) {
+      nextKeys = disabledCountryKeys.filter((k) => k !== upper);
+    } else {
+      nextKeys = [...disabledCountryKeys, upper];
+    }
+    const valStr = JSON.stringify(nextKeys);
+    setEditValues({ ...editValues, disabled_target_countries: valStr });
+
+    const existing = settings.find((s) => s.key === "disabled_target_countries");
+    if (existing) {
+      const { error } = await supabase
+        .from("admin_settings")
+        .update({ value: valStr, updated_at: new Date().toISOString() })
+        .eq("key", "disabled_target_countries");
+      if (error) toast.error(friendlyError(error));
+      else toast.success(`Updated disabled countries`);
+    } else {
+      const { error } = await supabase.from("admin_settings").insert({
+        key: "disabled_target_countries",
+        value: valStr,
+        description: "Disabled country location selection for advertisers",
+      });
+      if (error) toast.error(friendlyError(error));
+      else toast.success(`Updated disabled countries`);
+    }
+  };
+
+  const filteredCountriesForAdmin = allCountries.filter((c) => {
+    if (!disabledCountriesSearch.trim()) return true;
+    const term = disabledCountriesSearch.toLowerCase();
+    return c.name.toLowerCase().includes(term) || c.isoCode.toLowerCase().includes(term);
+  });
+
   const paystackSettings = settings.filter(s => s.key.includes("paystack"));
   const flutterwaveSettings = settings.filter(s => s.key.includes("flutterwave"));
-  const platformSettings = settings.filter(s => !s.key.includes("paystack") && !s.key.includes("flutterwave") && s.key !== "active_payment_gateway" && !s.key.startsWith("ai_"));
+  const platformSettings = settings.filter(s => !s.key.includes("paystack") && !s.key.includes("flutterwave") && s.key !== "active_payment_gateway" && !s.key.startsWith("ai_") && s.key !== "disabled_target_countries");
   const aiModelSetting = settings.find(s => s.key === "ai_model");
 
 
@@ -126,6 +180,79 @@ export default function AdminSettings() {
                   </div>
                 </div>
                 <Switch checked={isMaintenanceOn} onCheckedChange={toggleMaintenanceMode} />
+              </div>
+            </div>
+
+            {/* Disabled Countries for Advertiser Location Selection */}
+            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <Globe className="h-5 w-5 text-destructive" />
+                <div>
+                  <h3 className="text-sm font-medium text-foreground">Location Selection by Country</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Disable specific countries so advertisers cannot select them as target campaign locations (e.g., United States).
+                  </p>
+                </div>
+              </div>
+
+              {disabledCountryKeys.length > 0 && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-destructive flex items-center gap-1.5">
+                    <ShieldAlert className="h-3.5 w-3.5" /> Currently Disabled Countries ({disabledCountryKeys.length}):
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {disabledCountryKeys.map((iso) => {
+                      const country = allCountries.find((c) => c.isoCode === iso);
+                      return (
+                        <Badge key={iso} variant="destructive" className="gap-1.5 text-xs font-medium px-2.5 py-1">
+                          {country?.flag || "🌐"} {country?.name || iso}
+                          <X
+                            className="h-3 w-3 cursor-pointer hover:opacity-80 ml-1"
+                            onClick={() => toggleDisableCountry(iso)}
+                          />
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search countries to disable/enable (e.g. United States, United Kingdom)..."
+                  value={disabledCountriesSearch}
+                  onChange={(e) => setDisabledCountriesSearch(e.target.value)}
+                  className="pl-8 text-xs bg-background/50 h-9"
+                />
+              </div>
+
+              <div className="max-h-56 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 p-2 rounded-lg border border-border/60 bg-background/30">
+                {filteredCountriesForAdmin.map((c) => {
+                  const isDisabled = disabledCountryKeys.includes(c.isoCode.toUpperCase());
+                  return (
+                    <button
+                      key={c.isoCode}
+                      type="button"
+                      onClick={() => toggleDisableCountry(c.isoCode)}
+                      className={`flex items-center justify-between p-2 rounded-md text-xs text-left transition-colors ${
+                        isDisabled
+                          ? "bg-destructive/15 border border-destructive/30 text-destructive font-semibold"
+                          : "hover:bg-muted/50 text-foreground"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span>{c.flag}</span>
+                        <span className="truncate">{c.name}</span>
+                      </div>
+                      {isDisabled ? (
+                        <ShieldAlert className="h-3.5 w-3.5 text-destructive shrink-0" />
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground shrink-0">Allowed</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

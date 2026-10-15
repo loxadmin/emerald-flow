@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
+import LocationTargeting from "@/components/LocationTargeting";
 import MotionWrapper from "@/components/MotionWrapper";
 import GiftBox from "@/components/GiftBox";
 import { toast } from "sonner";
@@ -78,6 +79,10 @@ export default function Packages() {
   const [offerText, setOfferText] = useState("");
   const [payMethod, setPayMethod] = useState<"wallet" | "paystack">("wallet");
   const [buying, setBuying] = useState(false);
+
+  // Location targeting
+  const [targetCountries, setTargetCountries] = useState<string[]>(["NG"]);
+  const [targetStates, setTargetStates] = useState<string[]>([]);
 
   // Swift packages
   const [swiftTiers, setSwiftTiers] = useState<Record<string, SwiftTier[]>>({});
@@ -307,6 +312,8 @@ export default function Packages() {
     setSelectedIds(requiredAppInstall ? [appInstallId] : []);
     setLinks(initPlat === "web" ? [websites[0]?.domain || ""] : [""]);
     setPayMethod("wallet");
+    setTargetCountries(["NG"]);
+    setTargetStates([]);
   };
 
   useEffect(() => {
@@ -381,6 +388,7 @@ export default function Packages() {
     if (units < selected.min_units || units > selected.max_units) {
       return toast.error(`Users must be between ${selected.min_units} and ${selected.max_units}`);
     }
+    if (targetCountries.length === 0) return toast.error("Select at least one target country");
     if (selectedIds.length === 0) return toast.error("Pick at least one milestone");
     if (!hasFlatSelected && commissionRows.length === 0) return toast.error("Pick at least one milestone");
     if (platform === "mobile" && appInstallId && packageMs.find((r) => r.milestone_id === appInstallId) && !selectedIds.includes(appInstallId)) {
@@ -418,7 +426,10 @@ export default function Packages() {
       if (error) return toast.error(friendlyError(error));
       toast.success("Package purchased! Approval takes 3–7 business days.");
       const orderId = (data as { order_id?: string })?.order_id;
-      if (orderId) supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
+      if (orderId) {
+        await supabase.from("package_orders" as any).update({ target_countries: targetCountries, target_states: targetStates }).eq("id", orderId);
+        supabase.functions.invoke("notify", { body: { event: "package_order_submitted", payload: { order_id: orderId } } }).catch(() => {});
+      }
       setPromo({ url: null, path: null, type: null });
       setSelected(null); load();
       return;
@@ -435,6 +446,7 @@ export default function Packages() {
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({
       package_id: selected.id, units, duration: needsDuration ? duration : null,
       selected_ids: selectedIds, platform, links: cleanLinks, promo, offerText,
+      targetCountries, targetStates,
     }));
     const { data, error } = await supabase.functions.invoke("paystack-wallet", {
       body: { action: "initialize_funding", amount: flatTotal, callback_origin: window.location.origin },
@@ -729,6 +741,14 @@ export default function Packages() {
                       })}
                     </div>
                   </div>
+
+                  {/* Location Targeting */}
+                  <LocationTargeting
+                    selectedCountries={targetCountries}
+                    selectedStates={targetStates}
+                    onChange={(c, s) => { setTargetCountries(c); setTargetStates(s); }}
+                    compact
+                  />
 
                   {/* Dual Grid for Volume Input & Duration Selector */}
                   <div className="grid gap-3 grid-cols-2">

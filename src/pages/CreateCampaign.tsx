@@ -15,6 +15,7 @@ import { Key, Code, CheckCircle, Settings, Send, Download, Loader2, Copy, AlertC
 import JSZip from "jszip";
 import { clearAiCampaignPrefill, loadAiCampaignPrefill } from "@/lib/ai-campaign-prefill";
 import PromoMediaUpload, { PromoMediaValue, offerError } from "@/components/PromoMediaUpload";
+import LocationTargeting from "@/components/LocationTargeting";
 import { friendlyError, functionError } from "@/lib/errors";
 
 interface AdminPrices { price_per_download: number; price_per_signup: number; price_per_purchase: number; ad_placement_fee: number; }
@@ -67,6 +68,10 @@ export default function CreateCampaign() {
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
   const [promoMedia, setPromoMedia] = useState<PromoMediaValue>({ url: null, path: null, type: null });
   const [offerText, setOfferText] = useState("");
+
+  // Location targeting
+  const [targetCountries, setTargetCountries] = useState<string[]>(["NG"]);
+  const [targetStates, setTargetStates] = useState<string[]>([]);
 
   const syncDraftUrl = (draftId: string, nextStep: number) => {
     const currentStep = Number(stepParam ?? "0");
@@ -166,6 +171,8 @@ export default function CreateCampaign() {
           setIntegrationType((draftCampaign.integration_type as "custom" | "wordpress") || "custom");
           setVerified(draftCampaign.integration_verified || false);
           if (draftCampaign.website_id) setSelectedWebsiteId(draftCampaign.website_id);
+          if (draftCampaign.target_countries?.length) setTargetCountries(draftCampaign.target_countries);
+          if (draftCampaign.target_states?.length) setTargetStates(draftCampaign.target_states);
 
           const { data: keys } = await supabase.from("api_keys").select("key").eq("campaign_id", draftCampaign.id).limit(1);
           if (keys && keys.length > 0) {
@@ -259,6 +266,8 @@ export default function CreateCampaign() {
       website_id: selectedWebsiteId,
       platform_type: platformType,
       app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
+      target_countries: targetCountries,
+      target_states: targetStates,
       is_draft: true,
       ...updates,
     }).eq("id", campaignId);
@@ -277,6 +286,8 @@ export default function CreateCampaign() {
       website_id: selectedWebsiteId,
       platform_type: platformType,
       app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
+      target_countries: targetCountries,
+      target_states: targetStates,
     } as any).select().single();
     if (error) { toast.error(friendlyError(error)); setLoading(false); return; }
     const key = `kb_${crypto.randomUUID().replace(/-/g, "")}`;
@@ -314,6 +325,7 @@ export default function CreateCampaign() {
     { const oe = offerError(promoMedia, offerText); if (oe) { toast.error(oe); return; } }
     if (!user) return;
     if (!campaignName.trim()) { toast.error("Enter a campaign name"); return; }
+    if (targetCountries.length === 0) { toast.error("Select at least one target country"); return; }
     if (milestones.length === 0) { toast.error("Select at least one milestone"); return; }
     if (!isPartnership && !verified) { toast.error("Verify your integration before submitting"); return; }
     if (platformType === "mobile_app" && milestones.includes("download")) {
@@ -335,6 +347,8 @@ export default function CreateCampaign() {
         website_id: selectedWebsiteId,
         platform_type: platformType,
         app_link: platformType === "mobile_app" ? appLink.trim() || null : null,
+        target_countries: targetCountries,
+        target_states: targetStates,
       } as any).select().single();
       if (error) { toast.error(friendlyError(error)); setLoading(false); return; }
       cId = campaign.id;
@@ -355,6 +369,8 @@ export default function CreateCampaign() {
       promo_media_path: promoMedia.path,
       promo_media_type: promoMedia.type,
       offer_text: offerText.trim() || null,
+      target_countries: targetCountries,
+      target_states: targetStates,
     } as any).eq("id", cId);
     if (error) { toast.error(friendlyError(error)); setLoading(false); return; }
 
@@ -731,6 +747,11 @@ new KarbaliTracking();`;
           <div className="rounded-xl border border-border bg-card p-6 space-y-5">
             <div><h3 className="text-sm font-medium text-foreground flex items-center gap-2"><Settings className="h-4 w-4 text-primary" /> Campaign Configuration</h3></div>
             <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Campaign Name *</Label><Input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="My Campaign" /></div>
+            <LocationTargeting
+              selectedCountries={targetCountries}
+              selectedStates={targetStates}
+              onChange={(c, s) => { setTargetCountries(c); setTargetStates(s); }}
+            />
             <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Target Users (min 100) *</Label><Input type="number" min="100" value={targetUsers} onChange={e => setTargetUsers(e.target.value)} /></div>
             {platformType === "mobile_app" && (
               <div className="space-y-1.5">
@@ -797,6 +818,8 @@ new KarbaliTracking();`;
               {[
                 { l: "Campaign Name", v: campaignName },
                 { l: "Platform", v: platformType === "mobile_app" ? "Mobile App" : "Website" },
+                { l: "Target Countries", v: targetCountries.join(", ") || "None" },
+                ...(targetStates.length ? [{ l: "Target States", v: targetStates.join(", ") }] : []),
                 { l: "Website", v: selectedDomain || websites[0]?.domain || "Not selected" },
                 ...(platformType === "mobile_app" && appLink ? [{ l: "App Link", v: appLink }] : []),
                 { l: "Type", v: isPartnership ? "External Referral" : integrationType === "wordpress" ? "WordPress" : "Custom API" },
