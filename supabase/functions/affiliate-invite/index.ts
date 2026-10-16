@@ -59,75 +59,116 @@ Deno.serve(async (req) => {
 
   try {
     const token = (req.headers.get("Authorization") || "").replace("Bearer ", "").trim();
-    if (!token) return json({ error: "Not authorized" });
+    if (!token) return json({ error: "Not authorized" }, 401);
 
     const anonClient = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: userData } = await anonClient.auth.getUser(token);
+    const { data: userData, error: userError } = await anonClient.auth.getUser(token);
     const caller = userData?.user;
-    if (!caller) return json({ error: "Not authorized" });
+    if (userError || !caller) return json({ error: "Not authorized" }, 401);
 
-    const { data: role } = await admin
-      .from("user_roles").select("role").eq("user_id", caller.id).in("role", ["admin", "super_admin"]).maybeSingle();
-    if (!role) return json({ error: "Admin access required" });
+    const { data: roles } = await admin
+      .from("user_roles").select("role").eq("user_id", caller.id);
+    const isAdmin = (roles || []).some((r) => r.role === "admin" || r.role === "super_admin");
+    if (!isAdmin) return json({ error: "Admin access required" }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || "invite");
     const email = String(body.email || "").trim().toLowerCase();
-    if (!email || !email.includes("@") || email.length > 255) return json({ error: "Enter a valid email address" });
+    if (!email || !email.includes("@") || email.length > 255) return json({ error: "Enter a valid email address" }, 400);
     const fullName = String(body.full_name || "").trim().slice(0, 120);
 
     const code = randomCode();
     const expires = new Date(Date.now() + 7 * 86400000).toISOString();
 
-    const { data: existingAff } = await admin
-      .from("affiliates").select("id, full_name").eq("email", email).maybeSingle();
-
     if (action === "resend") {
-      if (!existingAff) return json({ error: "No affiliate found with that email" });
+      const { data: existingAff } = await admin
+        .from("affiliates").select("id, full_name").ilike("email", email).maybeSingle();
+      if (!existingAff) return json({ error: "No affiliate account found with that email" }, 404);
       const { error: upErr } = await admin.from("affiliates")
         .update({ setup_code: code, setup_code_expires_at: expires, setup_code_used_at: null })
         .eq("id", existingAff.id);
-      if (upErr) return json({ error: "Could not refresh that code" });
+      if (upErr) return json({ error: "Could not refresh setup code" }, 500);
       await sendInvite(email, existingAff.full_name || fullName, code);
       return json({ ok: true, resent: true });
     }
 
-    if (existingAff) return json({ error: "That email already has an affiliate account" });
-
-    // find or create the auth user
+    // find or create user first to check if already an affiliate by user_id or email
     let userId = "";
-    const { data: profile } = await admin.from("profiles").select("id").eq("email", email).maybeSingle();
+    const { data: profile } = await admin.from("profiles").select("id").ilike("email", email).maybeSingle();
     if (profile) {
       userId = profile.id;
     } else {
-      const { data: created, error: createErr } = await admin.auth.admin.createUser({
-        email,
-        password: crypto.randomUUID() + "aA1!",
-        email_confirm: true,
-        user_metadata: { full_name: fullName },
-      });
-      if (createErr || !created?.user) return json({ error: "Could not create that account" });
-      userId = created.user.id;
+      // Check auth.users list in case profile row is missing or not created yet
+      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const existingUser = list?.users?.find((u) => u.email?.toLowerCase() === email);
+      if (existingUser) {
+        userId = existingUser.id;
+      } else {
+        const { data: created, error: createErr } = await admin.auth.admin.createUser({
+          email,
+          password: crypto.randomUUID() + "aA1!",
+          email_confirm: true,
+          user_metadata: { full_name: fullName },
+        });
+        if (createErr || !created?.user) {
+          console.error("createUser error", createErr);
+          return json({ error: createErr?.message || "Could not create user account for affiliate" }, 400);
+        }
+        userId = created.user.id;
+      }
+    }
+
+    // Ensure profile row exists
+    await admin.from("profiles").upsert(
+      { id: userId, email, full_name: fullName || null },
+      { onConflict: "id", ignoreDuplicates: true }
+    );
+
+    // Ensure user role exists
+    await admin.from("user_roles").upsert(
+      { user_id: userId, role: "user" },
+      { onConflict: "user_id,role", ignoreDuplicates: true }
+    );
+
+    // Check if an affiliate row already exists for this email or user_id
+    const { data: existingAff } = await admin
+      .from("affiliates")
+      .select("id")
+      .or(`email.ilike.${email},user_id.eq.${userId}`)
+      .maybeSingle();
+
+    if (existingAff) {
+      return json({ error: "An affiliate account with this email already exists" }, 400);
+    }
+
+    // Generate unique affiliate code
+    let affCode = affiliateCode(fullName || email.split("@")[0]);
+    for (let i = 0; i < 5; i++) {
+      const { data: dupCode } = await admin.from("affiliates").select("id").eq("code", affCode).maybeSingle();
+      if (!dupCode) break;
+      affCode = affiliateCode(fullName || email.split("@")[0]);
     }
 
     const { error: insErr } = await admin.from("affiliates").insert({
       user_id: userId,
       email,
       full_name: fullName,
-      code: affiliateCode(fullName || email.split("@")[0]),
+      code: affCode,
       setup_code: code,
       setup_code_expires_at: expires,
       invited_by: caller.id,
     });
+
     if (insErr) {
-      console.error("affiliate insert", insErr);
-      return json({ error: "Could not create that affiliate" });
+      console.error("affiliate insert error:", insErr);
+      return json({ error: insErr.message || "Could not create affiliate record" }, 500);
     }
 
     await sendInvite(email, fullName, code);
     return json({ ok: true, user_id: userId });
   } catch (e) {
-    console.error("affiliate-invite", e);
-    return json({ error: "Oops! Something went wrong!" });
+    console.error("affiliate-invite exception:", e);
+    const msg = e instanceof Error ? e.message : "Internal server error";
+    return json({ error: msg }, 500);
   }
 });
