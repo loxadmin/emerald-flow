@@ -17,10 +17,12 @@ const ACTIONABLE_PATTERNS: RegExp[] = [
   /user already registered/i,
   /already registered/i,
   /already exists/i,
+  /already has/i,
   /password/i,
   /email rate limit|rate limit|too many requests|try again in/i,
   /session expired|not authenticated|sign in again/i,
-  /admin only/i,
+  /admin (only|access)/i,
+  /affiliate/i,
   // Email / domain rules (e.g. gmail instead of a business domain)
   /public email provider|free email|business (email|website)|website domain|disposable email|valid email|email domain/i,
   // OTP / codes
@@ -30,7 +32,7 @@ const ACTIONABLE_PATTERNS: RegExp[] = [
   // Verification / eligibility flows
   /not verified|verification failed|verify your|pending approval|not approved|not eligible|not available for your/i,
   // Explicit validation phrasing
-  /is required|please (enter|select|provide|accept|fill)|must be|cannot be empty|already used/i,
+  /is required|please (enter|select|provide|accept|fill)|must be|cannot be empty|already used|could not create|no affiliate/i,
 ];
 
 function extract(error: unknown): string {
