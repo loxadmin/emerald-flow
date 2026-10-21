@@ -109,7 +109,9 @@ export default function SwitchOffers() {
   const buy = async () => {
     if (!selected) return;
     if (selected.target_link_required && !link.trim()) return toast.error("Enter your target app link");
-    if (balance < selected.flat_price_usd) return toast.error("Insufficient wallet balance");
+    const placementFee = selected.flat_price_usd <= 500 ? 5 : 10;
+    const grandTotal = selected.flat_price_usd + placementFee;
+    if (balance < grandTotal) return toast.error(`Insufficient wallet balance. Need $${grandTotal.toFixed(2)} ($${selected.flat_price_usd.toFixed(2)} escrow + $${placementFee.toFixed(2)} placement fee)`);
     { const oe = offerError(promo, offerText); if (oe) return toast.error(oe); }
     setBuying(true);
     const { error } = await supabase.rpc("purchase_switch_offer_with_offer" as any, {
@@ -282,8 +284,16 @@ export default function SwitchOffers() {
                   <span className="font-semibold text-foreground">{selected.batch_size.toLocaleString()} users</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-border/10">
-                  <span className="text-muted-foreground font-semibold">Total Acquisition Price</span>
+                  <span className="text-muted-foreground font-semibold">Acquisition Escrow</span>
                   <span className="font-semibold text-foreground">${Number(selected.flat_price_usd).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground font-semibold">Placement Fee (Non-refundable)</span>
+                  <span className="font-semibold text-foreground">${selected.flat_price_usd <= 500 ? "5.00" : "10.00"}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-border/10">
+                  <span className="text-muted-foreground font-semibold">Total Charged</span>
+                  <span className="font-bold text-foreground">${(Number(selected.flat_price_usd) + (selected.flat_price_usd <= 500 ? 5 : 10)).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -306,9 +316,9 @@ export default function SwitchOffers() {
           )}
           <DialogFooter className="mt-5 border-t border-border/20 pt-4 gap-2">
             <Button variant="outline" className="rounded-lg font-medium border-border/80 text-xs h-9" onClick={() => setSelected(null)}>Cancel</Button>
-            <Button onClick={buy} className="rounded-lg font-semibold text-xs h-9 shadow-none hover:bg-primary/95" disabled={buying || !selected || balance < (selected?.flat_price_usd || 0)}>
+            <Button onClick={buy} className="rounded-lg font-semibold text-xs h-9 shadow-none hover:bg-primary/95" disabled={buying || !selected || balance < (selected ? selected.flat_price_usd + (selected.flat_price_usd <= 500 ? 5 : 10) : 0)}>
               {buying ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-              {buying ? "Processing..." : `Authorize: $${selected?.flat_price_usd.toFixed(2)}`}
+              {buying ? "Processing..." : `Authorize: $${selected ? (selected.flat_price_usd + (selected.flat_price_usd <= 500 ? 5 : 10)).toFixed(2) : "0.00"}`}
             </Button>
           </DialogFooter>
         </DialogContent>

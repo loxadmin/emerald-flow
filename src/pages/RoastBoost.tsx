@@ -82,6 +82,8 @@ export default function RoastBoost() {
 
   const minDays = Math.max(3, pricing?.min_days ?? 3);
   const cost = pricing ? roastBoostCost(pricing, followers || 0, days || 0) : { follower: 0, daily: 0, total: 0 };
+  const placementFee = cost.total <= 500 ? 5 : 10;
+  const grandTotal = cost.total + placementFee;
 
   const submit = async () => {
     if (!pricing) return;
@@ -90,7 +92,7 @@ export default function RoastBoost() {
     if (days < minDays) return toast.error(`Minimum is ${minDays} days`);
     const oe = offerError(media, offerText);
     if (oe) return toast.error(oe);
-    if (cost.total > balance) return toast.error("Not enough money in your wallet. Fund your wallet first.");
+    if (grandTotal > balance) return toast.error(`Not enough money in your wallet. Need $${grandTotal.toFixed(2)} ($${cost.total.toFixed(2)} escrow + $${placementFee.toFixed(2)} placement fee).`);
     setSubmitting(true);
     const { error } = await db.rpc("purchase_roast_boost", {
       _platform: platform, _page_url: pageUrl.trim(), _followers: followers, _days: days,
@@ -171,12 +173,13 @@ export default function RoastBoost() {
             <div className="rounded-lg bg-muted/40 p-4 text-sm space-y-1">
               <div className="flex justify-between"><span className="text-muted-foreground">{followers.toLocaleString()} followers</span><span>{usd(cost.follower)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Daily engagement ({days} days)</span><span>{usd(cost.daily)}</span></div>
-              <div className="flex justify-between border-t border-border pt-2 font-semibold text-foreground"><span>Total</span><span>{usd(cost.total)}</span></div>
+              <div className="flex justify-between text-xs text-muted-foreground"><span>Placement Fee (Non-refundable)</span><span>{usd(placementFee)}</span></div>
+              <div className="flex justify-between border-t border-border pt-2 font-semibold text-foreground"><span>Total Charged</span><span>{usd(grandTotal)}</span></div>
               <p className="text-[11px] text-muted-foreground">Wallet balance: {usd(balance)}</p>
             </div>
-            <Button className="w-full" onClick={submit} disabled={submitting || cost.total > balance}>
+            <Button className="w-full" onClick={submit} disabled={submitting || grandTotal > balance}>
               {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Flame className="mr-2 h-4 w-4" />}
-              {cost.total > balance ? "Fund your wallet to continue" : `Pay ${usd(cost.total)} and submit`}
+              {grandTotal > balance ? "Fund your wallet to continue" : `Pay ${usd(grandTotal)} and submit`}
             </Button>
           </div>
         )}

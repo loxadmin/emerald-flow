@@ -167,6 +167,8 @@ export default function CreateCommerceCampaign() {
   const sales = Math.max(100, Number(targetSales) || 100);
   const baseCost = saleReserve * sales;
   const totalCost = baseCost + COMMISSION_BUFFER;
+  const placementFee = totalCost <= 500 ? 5 : 10;
+  const grandTotal = totalCost + placementFee;
 
   const handleGenerateKey = async () => {
     if (!user) return;
@@ -224,7 +226,7 @@ export default function CreateCommerceCampaign() {
     if (!campaignName.trim()) { toast.error("Enter a campaign name"); return; }
     if (targetCountries.length === 0) { toast.error("Select at least one target country"); return; }
     if (!verified) { toast.error("Verify your integration first"); return; }
-    if (walletBalance < totalCost) { toast.error(`Insufficient balance. Need $${totalCost.toFixed(2)}`); return; }
+    if (walletBalance < grandTotal) { toast.error(`Insufficient balance. Need $${grandTotal.toFixed(2)} ($${totalCost.toFixed(2)} campaign escrow + $${placementFee.toFixed(2)} placement fee)`); return; }
 
     setLoading(true);
     await supabase.from("campaigns").update({
@@ -518,11 +520,13 @@ new KarbaliCommerce();`;
                 <p>• 10% commission on each sale amount</p>
                 <p>• Base reserve: ${baseCost.toFixed(2)} (${saleReserve.toFixed(2)} × {sales} sales)</p>
                 <p>• Commission buffer: ${COMMISSION_BUFFER.toFixed(2)} (covers unknown 10% per sale)</p>
-                <p className="text-foreground font-medium pt-1">Total escrow: ${totalCost.toFixed(2)}</p>
+                <p className="text-foreground font-medium pt-1">Campaign Escrow: ${totalCost.toFixed(2)}</p>
+                <p className="text-foreground font-medium">Placement Fee (Non-refundable): ${placementFee.toFixed(2)}</p>
+                <p className="text-primary font-bold pt-1">Total Charged: ${grandTotal.toFixed(2)}</p>
               </div>
               <div className="border-t border-border pt-1.5 flex justify-between text-xs">
                 <span className="text-muted-foreground">Balance</span>
-                <span className={walletBalance >= totalCost ? "text-primary" : "text-destructive"}>${walletBalance.toFixed(2)}</span>
+                <span className={walletBalance >= grandTotal ? "text-primary" : "text-destructive"}>${walletBalance.toFixed(2)}</span>
               </div>
             </div>
             <Button className="w-full" onClick={() => goToStep(4)} disabled={!campaignName.trim() || sales < 100}>Review →</Button>
@@ -543,6 +547,8 @@ new KarbaliCommerce();`;
                 { l: "Target Sales", v: sales.toString() },
                 { l: "Pricing", v: "$1 + 10% per sale" },
                 { l: "Escrow Reserve", v: `$${totalCost.toFixed(2)}` },
+                { l: "Placement Fee (Non-refundable)", v: `$${placementFee.toFixed(2)}` },
+                { l: "Total Charged", v: `$${grandTotal.toFixed(2)}` },
               ].map((r) => (
                 <div key={r.l} className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{r.l}</span>
@@ -553,7 +559,7 @@ new KarbaliCommerce();`;
             <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} offerText={offerText} onOfferTextChange={setOfferText} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(3)}>← Back</Button>
-              <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>
+              <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < grandTotal}>
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit for Review"}
               </Button>
             </div>

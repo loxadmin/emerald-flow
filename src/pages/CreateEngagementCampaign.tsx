@@ -107,7 +107,10 @@ export default function CreateEngagementCampaign() {
   const subscriberCount = Math.max(MIN_INTERACTIONS, Number(targetSubscribers) || MIN_INTERACTIONS);
   const viewerCost = hasViewer ? viewerRate * viewerCount : 0;
   const subscriberCost = hasSubscriber ? subscriberRate * subscriberCount : 0;
-  const totalCost = viewerCost + subscriberCost + PLACEMENT_FEE;
+  const campaignCost = viewerCost + subscriberCost;
+  const placementFee = campaignCost <= 500 ? 5 : 10;
+  const totalCost = campaignCost;
+  const grandTotal = totalCost + placementFee;
 
   const viewerLabel = isMusic ? "listener" : "viewer";
 
@@ -160,8 +163,8 @@ export default function CreateEngagementCampaign() {
     if (hasSubscriber && subscriberCount < MIN_INTERACTIONS) {
       toast.error(`Minimum ${MIN_INTERACTIONS} subscribers`); return;
     }
-    if (walletBalance < totalCost) {
-      toast.error(`Insufficient balance. Need $${totalCost.toFixed(2)}, have $${walletBalance.toFixed(2)}.`);
+    if (walletBalance < grandTotal) {
+      toast.error(`Insufficient balance. Need $${grandTotal.toFixed(2)} ($${totalCost.toFixed(2)} campaign escrow + $${placementFee.toFixed(2)} placement fee), have $${walletBalance.toFixed(2)}.`);
       return;
     }
 
@@ -474,24 +477,24 @@ export default function CreateEngagementCampaign() {
                 </div>
               )}
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Ad Placement Fee</span>
-                <span className="text-foreground">${PLACEMENT_FEE.toFixed(2)}</span>
+                <span>Placement Fee (Non-refundable)</span>
+                <span className="text-foreground">${placementFee.toFixed(2)}</span>
               </div>
               <div className="border-t border-border pt-1.5 flex justify-between text-xs font-medium text-foreground">
-                <span>Total</span>
-                <span className="text-primary">${totalCost.toFixed(2)}</span>
+                <span>Total Charged</span>
+                <span className="text-primary">${grandTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>Balance</span>
-                <span className={walletBalance >= totalCost ? "text-primary" : "text-destructive"}>
-                  ${walletBalance.toFixed(2)} {walletBalance < totalCost && "(Insufficient)"}
+                <span className={walletBalance >= grandTotal ? "text-primary" : "text-destructive"}>
+                  ${walletBalance.toFixed(2)} {walletBalance < grandTotal && "(Insufficient)"}
                 </span>
               </div>
             </div>
-            {walletBalance < totalCost && (
+            {walletBalance < grandTotal && (
               <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-600">
                 <AlertCircle className="h-4 w-4 shrink-0" />
-                <p>Need ${totalCost.toFixed(2)}, have ${walletBalance.toFixed(2)}.{" "}
+                <p>Need ${grandTotal.toFixed(2)} (${totalCost.toFixed(2)} campaign escrow + ${placementFee.toFixed(2)} placement fee), have ${walletBalance.toFixed(2)}.{" "}
                   <button onClick={() => navigate("/wallet")} className="underline">Fund wallet</button>
                 </p>
               </div>
@@ -523,7 +526,9 @@ export default function CreateEngagementCampaign() {
                 { l: isMusic && validMusicLinks.length > 1 ? `Song Links (${validMusicLinks.length})` : "Media Link", v: isMusic ? validMusicLinks.join(" • ") : mediaLink },
                 ...(hasViewer ? [{ l: `Target ${viewerLabel}s`, v: `${viewerCount.toLocaleString()} × $${viewerRate.toFixed(2)}` }] : []),
                 ...(hasSubscriber ? [{ l: "Target subscribers", v: `${subscriberCount.toLocaleString()} × $${subscriberRate.toFixed(2)}` }] : []),
-                { l: "Total Cost", v: `$${totalCost.toFixed(2)}` },
+                { l: "Campaign Escrow Budget", v: `$${totalCost.toFixed(2)}` },
+                { l: "Placement Fee (Non-refundable)", v: `$${placementFee.toFixed(2)}` },
+                { l: "Total Charged", v: `$${grandTotal.toFixed(2)}` },
                 { l: "Balance", v: `$${walletBalance.toFixed(2)}` },
               ].map((r) => (
                 <div key={r.l} className="flex justify-between text-sm">
@@ -540,7 +545,7 @@ export default function CreateEngagementCampaign() {
             <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} offerText={offerText} onOfferTextChange={setOfferText} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(isMusic ? 3 : 4)}>← Back</Button>
-              <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>
+              <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < grandTotal}>
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit for Review"}
               </Button>
             </div>

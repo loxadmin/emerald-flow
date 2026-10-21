@@ -241,14 +241,18 @@ export default function CreateCampaign() {
 
   const saleReserve = Math.max(Number(prices.price_per_purchase) || 0, 1);
 
-  const totalCost = (() => {
+  const campaignCost = (() => {
     const users = Math.max(100, Number(targetUsers) || 100);
     let milestoneTotal = 0;
     if (milestones.includes("download")) milestoneTotal += prices.price_per_download;
     if (milestones.includes("signup")) milestoneTotal += prices.price_per_signup;
     if (milestones.includes("purchase")) milestoneTotal += saleReserve;
-    return milestoneTotal * users + prices.ad_placement_fee;
+    return milestoneTotal * users;
   })();
+
+  const placementFee = campaignCost <= 500 ? 5 : 10;
+  const totalCost = campaignCost;
+  const grandTotal = totalCost + placementFee;
 
   const STEPS = isPartnership && hasExternalReferral
     ? ["Referral Info", "Configure", "Submit"]
@@ -783,15 +787,15 @@ new KarbaliTracking();`;
                   const users = Math.max(100, Number(targetUsers) || 100);
                   return <div key={m} className="flex justify-between text-xs text-muted-foreground"><span className="capitalize">{m === "purchase" ? "sales reserve" : m}: ${price.toFixed(2)} × {users}</span><span className="text-foreground">${(price * users).toFixed(2)}</span></div>;
                 })}
-                <div className="flex justify-between text-xs text-muted-foreground"><span>Placement Fee</span><span className="text-foreground">${prices.ad_placement_fee.toFixed(2)}</span></div>
+                <div className="flex justify-between text-xs text-muted-foreground"><span>Placement Fee (Non-refundable)</span><span className="text-foreground">${placementFee.toFixed(2)}</span></div>
                 {milestones.includes("purchase") && <div className="text-[10px] text-muted-foreground">10% sales commission is deducted separately whenever a tracked sale comes in.</div>}
-                <div className="border-t border-border pt-1.5 flex justify-between text-xs font-medium text-foreground"><span>Total</span><span className="text-primary">${totalCost.toFixed(2)}</span></div>
-                <div className="flex justify-between text-[10px] text-muted-foreground"><span>Balance</span><span className={walletBalance >= totalCost ? "text-primary" : "text-destructive"}>${walletBalance.toFixed(2)} {walletBalance < totalCost && "(Insufficient)"}</span></div>
+                <div className="border-t border-border pt-1.5 flex justify-between text-xs font-medium text-foreground"><span>Total Charged</span><span className="text-primary">${grandTotal.toFixed(2)}</span></div>
+                <div className="flex justify-between text-[10px] text-muted-foreground"><span>Balance</span><span className={walletBalance >= grandTotal ? "text-primary" : "text-destructive"}>${walletBalance.toFixed(2)} {walletBalance < grandTotal && "(Insufficient)"}</span></div>
               </div>
             )}
-            {walletBalance < totalCost && milestones.length > 0 && (
+            {walletBalance < grandTotal && milestones.length > 0 && (
               <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-600">
-                <AlertCircle className="h-4 w-4 shrink-0" /><p>Need ${totalCost.toFixed(2)}, have ${walletBalance.toFixed(2)}. <button onClick={() => navigate("/wallet")} className="underline">Fund wallet</button></p>
+                <AlertCircle className="h-4 w-4 shrink-0" /><p>Need ${grandTotal.toFixed(2)} (${totalCost.toFixed(2)} campaign escrow + ${placementFee.toFixed(2)} placement fee), have ${walletBalance.toFixed(2)}. <button onClick={() => navigate("/wallet")} className="underline">Fund wallet</button></p>
               </div>
             )}
             <Button className="w-full" onClick={() => {
@@ -826,7 +830,9 @@ new KarbaliTracking();`;
                 ...(isPartnership ? [] : [{ l: "Verified", v: verified ? "Yes ✓" : "Pending" }]),
                 { l: "Target Users", v: targetUsers },
                 { l: "Milestones", v: milestones.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(", ") },
-                { l: "Total Cost", v: `$${totalCost.toFixed(2)}` },
+                { l: "Campaign Escrow Budget", v: `$${totalCost.toFixed(2)}` },
+                { l: "Placement Fee (Non-refundable)", v: `$${placementFee.toFixed(2)}` },
+                { l: "Total Charged", v: `$${grandTotal.toFixed(2)}` },
                 { l: "Balance", v: `$${walletBalance.toFixed(2)}` },
               ].map(r => (
                 <div key={r.l} className="flex justify-between text-sm"><span className="text-muted-foreground">{r.l}</span><span className="text-foreground font-medium">{r.v}</span></div>
@@ -835,7 +841,7 @@ new KarbaliTracking();`;
             <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} offerText={offerText} onOfferTextChange={setOfferText} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(isPartnership ? 1 : 3)}>← Back</Button>
-              <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>
+              <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < grandTotal}>
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit for Review"}
               </Button>
             </div>

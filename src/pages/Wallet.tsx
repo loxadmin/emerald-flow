@@ -78,6 +78,7 @@ const TYPE_LABEL: Record<string, string> = {
   refund: "Refund",
   escrow_topup: "Escrow Top-up",
   escrow_refund: "Escrow Refund",
+  placement_fee: "Placement Fee",
   bonus: "Bonus",
 };
 

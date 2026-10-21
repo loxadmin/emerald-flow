@@ -147,7 +147,9 @@ export default function SwiftBuyDialog({
     .map((c) => ({ name: c.name.trim(), price: Number(c.price) }));
 
   const allLines = [...chosen, ...customLines].map((l) => ({ price_per_user_per_day: l.price }));
-  const { base, daily, total } = swiftTotal(unitPrice || 0, units, duration, allLines);
+  const { base, daily, total: escrowTotal } = swiftTotal(unitPrice || 0, units, duration, allLines);
+  const placementFee = escrowTotal <= 500 ? 5 : 10;
+  const grandTotal = escrowTotal + placementFee;
 
   const checkLinks = (pl: string, raw: string[]) => {
     const clean = raw.map((l) => l.trim()).filter(Boolean);
@@ -184,7 +186,7 @@ export default function SwiftBuyDialog({
       return toast.error("Pick at least one daily deliverable");
     const cleanLinks = checkLinks(platform, links);
     if (!cleanLinks) return;
-    if (walletBalance < total) return toast.error("Top up your wallet to cover this order");
+    if (walletBalance < grandTotal) return toast.error(`Top up your wallet to cover this order ($${escrowTotal.toFixed(2)} + $${placementFee.toFixed(2)} placement fee = $${grandTotal.toFixed(2)})`);
     { const oe = offerError(promo, offerText); if (oe) return toast.error(oe); }
 
     setBuying(true);
@@ -224,7 +226,9 @@ export default function SwiftBuyDialog({
     if (!cleanLinks) return;
     const cost = variant === "churn" ? churnCost : trialCost;
     if (cost == null) return toast.error("This trial isn't priced yet");
-    if (walletBalance < cost) return toast.error("Top up your wallet to cover this trial");
+    const trialPlacementFee = cost <= 500 ? 5 : 10;
+    const trialGrandTotal = cost + trialPlacementFee;
+    if (walletBalance < trialGrandTotal) return toast.error(`Top up your wallet to cover this trial ($${cost.toFixed(2)} + $${trialPlacementFee.toFixed(2)} placement fee = $${trialGrandTotal.toFixed(2)})`);
     { const oe = offerError(promo, offerText); if (oe) return toast.error(oe + " (in the order form)"); }
 
     variant === "churn" ? setChurnBusy(true) : setBuying(true);
@@ -504,9 +508,13 @@ export default function SwiftBuyDialog({
                     <span>Daily activity ({duration} days)</span>
                     <span className="font-semibold text-foreground">${daily.toFixed(2)}</span>
                   </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Placement Fee (Non-refundable)</span>
+                    <span className="font-semibold text-foreground">${placementFee.toFixed(2)}</span>
+                  </div>
                   <div className="flex items-center justify-between border-t border-border/20 pt-2">
-                    <span className="text-xs font-semibold text-muted-foreground">Held in escrow</span>
-                    <span className="text-lg font-bold text-foreground">${total.toFixed(2)}</span>
+                    <span className="text-xs font-semibold text-muted-foreground">Total Charged (${escrowTotal.toFixed(2)} escrow + ${placementFee.toFixed(2)} fee)</span>
+                    <span className="text-lg font-bold text-foreground">${grandTotal.toFixed(2)}</span>
                   </div>
                   <Badge variant="outline" className="text-[10px]">Wallet balance ${walletBalance.toFixed(2)}</Badge>
                 </div>
@@ -516,9 +524,9 @@ export default function SwiftBuyDialog({
 
               <DialogFooter className="mt-5 gap-2 border-t border-border/20 pt-4">
                 <Button variant="outline" className="h-9 text-xs" onClick={handleWalkAway}>Cancel</Button>
-                <Button className="h-9 text-xs font-semibold" onClick={submit} disabled={buying || total <= 0 || isClaimed}>
+                <Button className="h-9 text-xs font-semibold" onClick={submit} disabled={buying || escrowTotal <= 0 || isClaimed}>
                   {buying && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
-                  {isClaimed ? "Already claimed" : buying ? "Placing order..." : `Authorize $${total.toFixed(2)}`}
+                  {isClaimed ? "Already claimed" : buying ? "Placing order..." : `Authorize $${grandTotal.toFixed(2)}`}
                 </Button>
               </DialogFooter>
             </>
