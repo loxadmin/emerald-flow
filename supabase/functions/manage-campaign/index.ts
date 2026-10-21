@@ -172,6 +172,9 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Campaign has no cost configured" }, 400);
       }
 
+      const placementFee = totalCost <= 500 ? 5 : 10;
+      const grandTotal = totalCost + placementFee;
+
       // Server-side: enforce admin-set minimum price floors (skip for engagement/external referral)
       const adType = String(campaign.ad_type || "performance").toLowerCase();
       const integration = String(campaign.integration_type || "").toLowerCase();
@@ -214,30 +217,39 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Wallet not found" }, 404);
       }
 
-      if (Number(wallet.balance) < totalCost) {
+      if (Number(wallet.balance) < grandTotal) {
         return jsonResponse({
-          error: `Insufficient balance. Need $${totalCost.toFixed(2)}, have $${Number(wallet.balance).toFixed(2)}.`,
+          error: `Insufficient balance. Need $${grandTotal.toFixed(2)} ($${totalCost.toFixed(2)} campaign cost + $${placementFee.toFixed(2)} placement fee), have $${Number(wallet.balance).toFixed(2)}.`,
         }, 402);
       }
 
-      // Atomic: deduct wallet → fund escrow
-      const newBalance = Number(wallet.balance) - totalCost;
+      // Atomic: deduct wallet → fund escrow + placement fee
+      const newBalance = Number(wallet.balance) - grandTotal;
       const { error: walletErr } = await supabase
         .from("wallets")
         .update({ balance: newBalance, updated_at: new Date().toISOString() })
         .eq("id", wallet.id);
       if (walletErr) throw walletErr;
 
-      // Record wallet transaction
+      // Record wallet transactions (escrow and non-refundable placement fee)
       const { error: txErr } = await supabase
         .from("wallet_transactions")
-        .insert({
-          wallet_id: wallet.id,
-          amount: totalCost,
-          type: "escrow",
-          status: "completed",
-          description: `Campaign escrow: ${campaign.name}`,
-        });
+        .insert([
+          {
+            wallet_id: wallet.id,
+            amount: totalCost,
+            type: "escrow",
+            status: "completed",
+            description: `Campaign escrow: ${campaign.name}`,
+          },
+          {
+            wallet_id: wallet.id,
+            amount: placementFee,
+            type: "placement_fee",
+            status: "completed",
+            description: `Placement fee: ${campaign.name}`,
+          },
+        ]);
       if (txErr) throw txErr;
 
       // Activate campaign escrow (budget_remaining) and set status

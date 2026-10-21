@@ -175,14 +175,18 @@ export default function CreateManualCampaign() {
     return Math.max(floor, requested == null ? def : Number(requested));
   };
 
-  const totalCost = (() => {
+  const campaignCost = (() => {
     const users = Math.max(100, Number(targetUsers) || 100);
     let milestoneTotal = 0;
     if (milestones.includes("download")) milestoneTotal += eventPrice("download");
     if (milestones.includes("signup")) milestoneTotal += eventPrice("signup");
     if (milestones.includes("purchase")) milestoneTotal += eventPrice("purchase");
-    return milestoneTotal * users + prices.ad_placement_fee;
+    return milestoneTotal * users;
   })();
+
+  const placementFee = campaignCost <= 500 ? 5 : 10;
+  const totalCost = campaignCost;
+  const grandTotal = totalCost + placementFee;
 
   const milestoneOptions = [
     // Only mobile-app owners ever see the download event
@@ -219,8 +223,8 @@ export default function CreateManualCampaign() {
     }
     const users = Number(targetUsers);
     if (users < 100) { toast.error("Minimum 100 target users"); return; }
-    if (walletBalance < totalCost) {
-      toast.error(`Insufficient balance. Need $${totalCost.toFixed(2)}, have $${walletBalance.toFixed(2)}.`);
+    if (walletBalance < grandTotal) {
+      toast.error(`Insufficient balance. Need $${grandTotal.toFixed(2)} ($${totalCost.toFixed(2)} campaign escrow + $${placementFee.toFixed(2)} placement fee), have $${walletBalance.toFixed(2)}.`);
       return;
     }
 
@@ -481,17 +485,17 @@ export default function CreateManualCampaign() {
                 ) : null;
               })}
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Ad Placement Fee</span>
-                <span className="text-foreground">${prices.ad_placement_fee.toFixed(2)}</span>
+                <span>Placement Fee (Non-refundable)</span>
+                <span className="text-foreground">${placementFee.toFixed(2)}</span>
               </div>
               <div className="border-t border-border pt-1.5 flex justify-between text-xs font-medium text-foreground">
-                <span>Total</span>
-                <span className="text-primary">${totalCost.toFixed(2)}</span>
+                <span>Total Charged</span>
+                <span className="text-primary">${grandTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>Balance</span>
-                <span className={walletBalance >= totalCost ? "text-primary" : "text-destructive"}>
-                  ${walletBalance.toFixed(2)} {walletBalance < totalCost && "(Insufficient)"}
+                <span className={walletBalance >= grandTotal ? "text-primary" : "text-destructive"}>
+                  ${walletBalance.toFixed(2)} {walletBalance < grandTotal && "(Insufficient)"}
                 </span>
               </div>
             </div>
@@ -523,7 +527,9 @@ export default function CreateManualCampaign() {
                 ...(platformType === "mobile_app" && appLink ? [{ l: "App Link", v: appLink }] : []),
                 { l: "Target Users", v: String(Number(targetUsers)) },
                 { l: "Goals", v: milestones.map((m) => m.charAt(0).toUpperCase() + m.slice(1)).join(", ") },
-                { l: "Total Cost", v: `$${totalCost.toFixed(2)}` },
+                { l: "Campaign Escrow Budget", v: `$${totalCost.toFixed(2)}` },
+                { l: "Placement Fee (Non-refundable)", v: `$${placementFee.toFixed(2)}` },
+                { l: "Total Charged", v: `$${grandTotal.toFixed(2)}` },
               ].map((r) => (
                 <div key={r.l} className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{r.l}</span>
@@ -537,7 +543,7 @@ export default function CreateManualCampaign() {
             <PromoMediaUpload value={promoMedia} onChange={setPromoMedia} offerText={offerText} onOfferTextChange={setOfferText} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-              <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < totalCost}>
+              <Button className="flex-1" onClick={handleSubmit} disabled={loading || walletBalance < grandTotal}>
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit for Approval"}
               </Button>
             </div>

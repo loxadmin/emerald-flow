@@ -368,7 +368,7 @@ export default function Packages() {
   const hasFlatSelected = selectedMs.some((r) => r.pricing_type === "flat");
   const commissionOnly = !hasFlatSelected && commissionRows.length > 0;
 
-  const flatTotal = useMemo(() => {
+  const packageEscrow = useMemo(() => {
     if (commissionOnly) {
       return Number((units * COMMISSION_RESERVE_PER_USER).toFixed(2));
     }
@@ -382,6 +382,10 @@ export default function Packages() {
       }, 0);
     return Number(total.toFixed(2));
   }, [selectedMs, units, duration, commissionOnly, milestones]);
+
+  const placementFee = packageEscrow <= 500 ? 5 : 10;
+  const flatTotal = packageEscrow;
+  const grandTotal = flatTotal + placementFee;
 
   const submit = async () => {
     if (!selected || !user) return;
@@ -420,7 +424,7 @@ export default function Packages() {
 
     if (payMethod === "wallet") {
       if (!wallet?.is_activated) { setBuying(false); return toast.error("Activate your wallet first"); }
-      if ((wallet?.balance || 0) < flatTotal) { setBuying(false); return toast.error("Insufficient wallet balance"); }
+      if ((wallet?.balance || 0) < grandTotal) { setBuying(false); return toast.error(`Insufficient balance. Need $${grandTotal.toFixed(2)} ($${flatTotal.toFixed(2)} package escrow + $${placementFee.toFixed(2)} placement fee)`); }
       const { data, error } = await supabase.rpc("purchase_package_v2_with_offer" as any, args);
       setBuying(false);
       if (error) return toast.error(friendlyError(error));
@@ -449,7 +453,7 @@ export default function Packages() {
       targetCountries, targetStates,
     }));
     const { data, error } = await supabase.functions.invoke("paystack-wallet", {
-      body: { action: "initialize_funding", amount: flatTotal, callback_origin: window.location.origin },
+      body: { action: "initialize_funding", amount: grandTotal, callback_origin: window.location.origin },
     });
     setBuying(false);
     if (error || (data as any)?.error) {
@@ -890,9 +894,17 @@ export default function Packages() {
 
                   {/* Calculation Summary box - flat, clear border */}
                   <div className="rounded-lg border border-border/30 bg-secondary/20 p-3.5 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Upfront Funding Required</span>
-                      <span className="text-lg font-bold text-foreground">${flatTotal.toFixed(2)}</span>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Package Escrow</span>
+                      <span className="font-semibold text-foreground">${flatTotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Placement Fee (Non-refundable)</span>
+                      <span className="font-semibold text-foreground">${placementFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-border/20 pt-2">
+                      <span className="text-xs font-semibold text-muted-foreground">Total Charged</span>
+                      <span className="text-lg font-bold text-foreground">${grandTotal.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-border/10 pt-2">
                       <p className="text-[10px] leading-relaxed text-muted-foreground">
@@ -910,7 +922,7 @@ export default function Packages() {
                   <Button variant="outline" className="rounded-lg font-medium border-border/80 text-xs h-9" onClick={() => setSelected(null)}>Cancel</Button>
                   <Button onClick={submit} className="rounded-lg font-semibold text-xs h-9 shadow-none hover:bg-primary/95" disabled={buying || flatTotal <= 0 || (platform === "web" && websites.length === 0)}>
                     {buying ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-                    {buying ? "Deploying..." : `Authorize: $${flatTotal.toFixed(2)}`}
+                    {buying ? "Deploying..." : `Authorize: $${grandTotal.toFixed(2)}`}
                   </Button>
                 </DialogFooter>
               </>
