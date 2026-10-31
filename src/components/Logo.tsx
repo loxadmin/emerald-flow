@@ -7,63 +7,82 @@ interface LogoProps {
 }
 
 export default function Logo({ className, size = 32 }: LogoProps) {
-  const gradientId = useId();
+  const glowId = useId();
+  const dotId = useId();
 
   return (
-    <div className={cn("relative flex items-center justify-center", className)}>
+    <div className={cn("relative inline-flex items-center justify-center shrink-0", className)}>
       <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 64 64"
         width={size}
         height={size}
-        viewBox="0 0 100 100"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="drop-shadow-md"
+        role="img"
+        aria-label="Karbali animated logo"
+        className="drop-shadow-sm select-none"
       >
+        <title>Karbali animated logo</title>
         <defs>
-          <linearGradient id={gradientId} x1="50%" y1="0%" x2="50%" y2="100%">
-            <stop offset="0%" stopColor="hsl(160, 60%, 55%)" />
-            <stop offset="50%" stopColor="hsl(160, 60%, 35%)" />
-            <stop offset="100%" stopColor="hsl(160, 60%, 15%)" />
-          </linearGradient>
+          <radialGradient id={glowId} cx="0.35" cy="0.3" r="0.9">
+            <stop offset="0%" stopColor="hsl(160, 78%, 45%)" />
+            <stop offset="45%" stopColor="hsl(160, 84%, 32%)" />
+            <stop offset="100%" stopColor="hsl(160, 84%, 14%)" />
+          </radialGradient>
+          <radialGradient id={dotId} cx="0.35" cy="0.3" r="0.9">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="hsl(160, 70%, 90%)" />
+          </radialGradient>
         </defs>
 
-        {/* Main Leaf Shape */}
-        <path
-          d="M 50 2 C 70 25 90 55 90 75 A 40 30 0 0 1 10 75 C 10 55 30 25 50 2 Z"
-          fill={`url(#${gradientId})`}
-        />
-
-        {/* Central Spine */}
-        <line
-          x1="50"
-          y1="2"
-          x2="50"
-          y2="95"
-          stroke="rgba(0,0,0,0.4)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-
-        {/* Venation */}
-        <g stroke="rgba(0,0,0,0.25)" strokeWidth="1" fill="none" strokeLinecap="round">
-          <path d="M 50 35 L 75 25" />
-          <path d="M 50 55 L 80 45" />
-          <path d="M 50 75 L 82 65" />
-
-          <path d="M 50 35 L 25 25" />
-          <path d="M 50 55 L 20 45" />
-          <path d="M 50 75 L 18 65" />
-        </g>
-
-        {/* Glass Highlight */}
-        <path
-          d="M 35 20 C 20 40 20 70 40 85"
-          stroke="rgba(255,255,255,0.4)"
-          strokeWidth="3"
+        {/* Dark Emerald Disc */}
+        <circle cx="32" cy="32" r="31" fill={`url(#${glowId})`} />
+        <circle
+          cx="32"
+          cy="32"
+          r="30.5"
           fill="none"
-          strokeLinecap="round"
-          className="opacity-60"
+          stroke="hsl(160, 84%, 14%)"
+          strokeOpacity="0.4"
+          strokeWidth="0.6"
         />
+
+        {/* White orbit ring */}
+        <circle
+          cx="35"
+          cy="36"
+          r="13.5"
+          fill="none"
+          stroke="#ffffff"
+          strokeOpacity="0.78"
+          strokeWidth="2.6"
+        >
+          <animate
+            attributeName="stroke-opacity"
+            values="0.78;0.95;0.78"
+            dur="4s"
+            repeatCount="indefinite"
+          />
+        </circle>
+
+        {/* Highlight dot orbiting the ring */}
+        <g>
+          <circle cx="35" cy="22.5" r="6.6" fill={`url(#${dotId})`}>
+            <animate
+              attributeName="r"
+              values="6.6;7.4;6.6"
+              dur="4s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="-45 35 36"
+            to="315 35 36"
+            dur="16s"
+            repeatCount="indefinite"
+          />
+        </g>
       </svg>
     </div>
   );
