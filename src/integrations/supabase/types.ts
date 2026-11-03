@@ -3301,8 +3301,12 @@ export type Database = {
         Row: {
           advertiser_id: string
           balance: number
+          bonus_granted_total_usd: number
+          bonus_usd: number
           created_at: string
           currency: string
+          escrow_spent_total_usd: number
+          first_1k_bonus_granted: boolean
           flutterwave_bank_name: string | null
           flutterwave_barter_id: string | null
           flutterwave_nuban: string | null
@@ -3317,8 +3321,12 @@ export type Database = {
         Insert: {
           advertiser_id: string
           balance?: number
+          bonus_granted_total_usd?: number
+          bonus_usd?: number
           created_at?: string
           currency?: string
+          escrow_spent_total_usd?: number
+          first_1k_bonus_granted?: boolean
           flutterwave_bank_name?: string | null
           flutterwave_barter_id?: string | null
           flutterwave_nuban?: string | null
@@ -3333,8 +3341,12 @@ export type Database = {
         Update: {
           advertiser_id?: string
           balance?: number
+          bonus_granted_total_usd?: number
+          bonus_usd?: number
           created_at?: string
           currency?: string
+          escrow_spent_total_usd?: number
+          first_1k_bonus_granted?: boolean
           flutterwave_bank_name?: string | null
           flutterwave_barter_id?: string | null
           flutterwave_nuban?: string | null
@@ -3520,6 +3532,10 @@ export type Database = {
       }
       maybe_complete_package_order: {
         Args: { _order_id: string }
+        Returns: undefined
+      }
+      note_escrow_spend: {
+        Args: { _advertiser_id: string; _amount: number }
         Returns: undefined
       }
       package_order_milestone_price: {
