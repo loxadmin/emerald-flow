@@ -18,6 +18,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Building2,
+  Gift,
   Copy,
   Check,
   ShieldCheck,
@@ -521,7 +522,7 @@ export default function WalletPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-                Available for withdrawal: <span className="font-semibold text-foreground">${Number(wallet?.balance || 0).toFixed(2)}</span>. Funds locked in escrow for active campaigns cannot be withdrawn.
+                Available for withdrawal: <span className="font-semibold text-foreground">${withdrawable.toFixed(2)}</span>. Funds locked in escrow for active campaigns and bonus campaign credit cannot be withdrawn.
               </div>
               <DialogFooter className="gap-2 sm:gap-2">
                 <Button asChild variant="default" className="bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -535,13 +536,13 @@ export default function WalletPage() {
               <DialogHeader>
                 <DialogTitle>Request withdrawal</DialogTitle>
                 <DialogDescription>
-                  You can withdraw up to <strong>${Number(wallet?.balance || 0).toFixed(2)}</strong>. Escrow funds are not withdrawable.
+                  You can withdraw up to <strong>${withdrawable.toFixed(2)}</strong>. Escrow funds and bonus campaign credit are not withdrawable.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Amount (USD)</Label>
-                  <Input type="number" min="1" max={Number(wallet?.balance || 0)} step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="e.g. 50" />
+                  <Input type="number" min="1" max={withdrawable} step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="e.g. 50" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Payout method</Label>
