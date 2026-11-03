@@ -230,6 +230,7 @@ export default function WalletPage() {
 
   const fmtMoney = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fmtDate = (s: string) => new Date(s).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  const withdrawable = Math.max(Number(wallet?.balance || 0) - Number(wallet?.bonus_usd || 0), 0);
 
   const filterTabs: Array<{ key: "all" | StatusKey; label: string }> = [
     { key: "all", label: "All" },
@@ -300,6 +301,13 @@ export default function WalletPage() {
                   </span>
                   <span className="ml-1.5 text-xs font-medium text-white/50 uppercase tracking-wider">{wallet?.currency || "USD"}</span>
                 </div>
+
+                {Number(wallet?.bonus_usd || 0) > 0 && (
+                  <p className="relative mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-white/80 backdrop-blur">
+                    <Gift className="h-3 w-3 text-emerald-300" />
+                    Includes ${fmtMoney(Number(wallet?.bonus_usd))} bonus campaign credit — spendable on campaigns only, not withdrawable
+                  </p>
+                )}
 
                 <div className="relative mt-8 flex flex-wrap items-end justify-between gap-3 text-[11px]">
                   <div className="space-y-1">
