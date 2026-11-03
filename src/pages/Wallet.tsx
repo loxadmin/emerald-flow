@@ -18,6 +18,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Building2,
+  Gift,
   Copy,
   Check,
   ShieldCheck,
@@ -33,10 +34,10 @@ import { ListSkeleton, StatsSkeleton } from "@/components/skeletons";
 import { friendlyError } from "@/lib/errors";
 
 interface WalletData {
-  id: string; balance: number; currency: string; is_activated: boolean;
+  id: string; balance: number; bonus_usd: number; currency: string; is_activated: boolean;
   paystack_dva_account_number: string | null; paystack_dva_bank_name: string | null;
 }
-const walletSelectFields = "id, balance, currency, is_activated, paystack_dva_account_number, paystack_dva_bank_name";
+const walletSelectFields = "id, balance, bonus_usd, currency, is_activated, paystack_dva_account_number, paystack_dva_bank_name";
 interface WalletTx { id: string; amount: number; type: string; description: string | null; status: string; created_at: string; reference: string | null; }
 interface WalletFunctionResponse { wallet?: WalletData; authorization_url?: string; reference?: string; error?: string; details?: { message?: string }; }
 
@@ -110,9 +111,9 @@ export default function WalletPage() {
 
   const submitWithdrawal = async () => {
     const amt = Number(withdrawAmount);
-    const available = Number(wallet?.balance || 0);
+    const available = Math.max(Number(wallet?.balance || 0) - Number(wallet?.bonus_usd || 0), 0);
     if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
-    if (amt > available) { toast.error(`You can only withdraw up to $${available.toFixed(2)} (escrow funds are locked)`); return; }
+    if (amt > available) { toast.error(`You can only withdraw up to $${available.toFixed(2)} (escrow and bonus campaign credit are locked)`); return; }
     if (!withdrawBank.trim() || !withdrawAccount.trim() || !withdrawName.trim()) { toast.error("Bank name, account number and account name are required"); return; }
     setWithdrawing(true);
     const destination = { bank: withdrawBank.trim(), account_number: withdrawAccount.trim(), account_name: withdrawName.trim() };
@@ -230,6 +231,7 @@ export default function WalletPage() {
 
   const fmtMoney = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fmtDate = (s: string) => new Date(s).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  const withdrawable = Math.max(Number(wallet?.balance || 0) - Number(wallet?.bonus_usd || 0), 0);
 
   const filterTabs: Array<{ key: "all" | StatusKey; label: string }> = [
     { key: "all", label: "All" },
@@ -300,6 +302,13 @@ export default function WalletPage() {
                   </span>
                   <span className="ml-1.5 text-xs font-medium text-white/50 uppercase tracking-wider">{wallet?.currency || "USD"}</span>
                 </div>
+
+                {Number(wallet?.bonus_usd || 0) > 0 && (
+                  <p className="relative mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-white/80 backdrop-blur">
+                    <Gift className="h-3 w-3 text-emerald-300" />
+                    Includes ${fmtMoney(Number(wallet?.bonus_usd))} bonus campaign credit — spendable on campaigns only, not withdrawable
+                  </p>
+                )}
 
                 <div className="relative mt-8 flex flex-wrap items-end justify-between gap-3 text-[11px]">
                   <div className="space-y-1">
@@ -513,7 +522,7 @@ export default function WalletPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-                Available for withdrawal: <span className="font-semibold text-foreground">${Number(wallet?.balance || 0).toFixed(2)}</span>. Funds locked in escrow for active campaigns cannot be withdrawn.
+                Available for withdrawal: <span className="font-semibold text-foreground">${withdrawable.toFixed(2)}</span>. Funds locked in escrow for active campaigns and bonus campaign credit cannot be withdrawn.
               </div>
               <DialogFooter className="gap-2 sm:gap-2">
                 <Button asChild variant="default" className="bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -527,13 +536,13 @@ export default function WalletPage() {
               <DialogHeader>
                 <DialogTitle>Request withdrawal</DialogTitle>
                 <DialogDescription>
-                  You can withdraw up to <strong>${Number(wallet?.balance || 0).toFixed(2)}</strong>. Escrow funds are not withdrawable.
+                  You can withdraw up to <strong>${withdrawable.toFixed(2)}</strong>. Escrow funds and bonus campaign credit are not withdrawable.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Amount (USD)</Label>
-                  <Input type="number" min="1" max={Number(wallet?.balance || 0)} step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="e.g. 50" />
+                  <Input type="number" min="1" max={withdrawable} step="0.01" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="e.g. 50" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Payout method</Label>
