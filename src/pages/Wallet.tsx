@@ -33,10 +33,10 @@ import { ListSkeleton, StatsSkeleton } from "@/components/skeletons";
 import { friendlyError } from "@/lib/errors";
 
 interface WalletData {
-  id: string; balance: number; currency: string; is_activated: boolean;
+  id: string; balance: number; bonus_usd: number; currency: string; is_activated: boolean;
   paystack_dva_account_number: string | null; paystack_dva_bank_name: string | null;
 }
-const walletSelectFields = "id, balance, currency, is_activated, paystack_dva_account_number, paystack_dva_bank_name";
+const walletSelectFields = "id, balance, bonus_usd, currency, is_activated, paystack_dva_account_number, paystack_dva_bank_name";
 interface WalletTx { id: string; amount: number; type: string; description: string | null; status: string; created_at: string; reference: string | null; }
 interface WalletFunctionResponse { wallet?: WalletData; authorization_url?: string; reference?: string; error?: string; details?: { message?: string }; }
 
@@ -110,9 +110,9 @@ export default function WalletPage() {
 
   const submitWithdrawal = async () => {
     const amt = Number(withdrawAmount);
-    const available = Number(wallet?.balance || 0);
+    const available = Math.max(Number(wallet?.balance || 0) - Number(wallet?.bonus_usd || 0), 0);
     if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
-    if (amt > available) { toast.error(`You can only withdraw up to $${available.toFixed(2)} (escrow funds are locked)`); return; }
+    if (amt > available) { toast.error(`You can only withdraw up to $${available.toFixed(2)} (escrow and bonus campaign credit are locked)`); return; }
     if (!withdrawBank.trim() || !withdrawAccount.trim() || !withdrawName.trim()) { toast.error("Bank name, account number and account name are required"); return; }
     setWithdrawing(true);
     const destination = { bank: withdrawBank.trim(), account_number: withdrawAccount.trim(), account_name: withdrawName.trim() };
