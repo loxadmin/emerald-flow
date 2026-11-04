@@ -167,13 +167,17 @@ Deno.serve(async (req) => {
           if (leftover > 0) {
             const { data: wallet } = await supabase
               .from("wallets")
-              .select("id, balance")
+              .select("id, balance, bonus_usd, bonus_granted_total_usd")
               .eq("advertiser_id", campRow.advertiser_id)
               .maybeSingle();
             if (wallet) {
               await supabase
                 .from("wallets")
-                .update({ balance: Number(wallet.balance) + leftover, updated_at: new Date().toISOString() })
+                .update({
+                  balance: Number(wallet.balance) + leftover,
+                  bonus_usd: Math.min(Number(wallet.bonus_usd || 0) + leftover, Number(wallet.bonus_granted_total_usd || 0)),
+                  updated_at: new Date().toISOString(),
+                })
                 .eq("id", wallet.id);
               await supabase.from("wallet_transactions").insert({
                 wallet_id: wallet.id,

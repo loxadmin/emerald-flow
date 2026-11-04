@@ -401,13 +401,17 @@ Deno.serve(async (req) => {
           if (remaining > 0) {
             const { data: wallet } = await supabase
               .from("wallets")
-              .select("id, balance")
+              .select("id, balance, bonus_usd, bonus_granted_total_usd")
               .eq("advertiser_id", campaign.advertiser_id)
               .maybeSingle();
             if (wallet) {
               await supabase
                 .from("wallets")
-                .update({ balance: Number(wallet.balance) + remaining, updated_at: new Date().toISOString() })
+                .update({
+                  balance: Number(wallet.balance) + remaining,
+                  bonus_usd: Math.min(Number(wallet.bonus_usd || 0) + remaining, Number(wallet.bonus_granted_total_usd || 0)),
+                  updated_at: new Date().toISOString(),
+                })
                 .eq("id", wallet.id);
               await supabase.from("wallet_transactions").insert({
                 wallet_id: wallet.id,
