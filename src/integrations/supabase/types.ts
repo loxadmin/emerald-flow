@@ -982,6 +982,111 @@ export type Database = {
           },
         ]
       }
+      campaign_verification_cases: {
+        Row: {
+          admin_notes: string | null
+          advertiser_id: string
+          campaign_id: string | null
+          created_at: string
+          id: string
+          package_order_id: string | null
+          requested_documents: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          status: string
+          switch_order_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advertiser_id: string
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          package_order_id?: string | null
+          requested_documents?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source: string
+          status?: string
+          switch_order_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advertiser_id?: string
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          package_order_id?: string | null
+          requested_documents?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          switch_order_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_verification_cases_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_verification_cases_package_order_id_fkey"
+            columns: ["package_order_id"]
+            isOneToOne: false
+            referencedRelation: "package_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_verification_cases_switch_order_id_fkey"
+            columns: ["switch_order_id"]
+            isOneToOne: false
+            referencedRelation: "switch_offer_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_verification_documents: {
+        Row: {
+          case_id: string
+          created_at: string
+          document_type: string
+          file_name: string
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          document_type: string
+          file_name: string
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          document_type?: string
+          file_name?: string
+          id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_verification_documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_verification_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           ad_type: Database["public"]["Enums"]["advertiser_type"] | null
@@ -3507,6 +3612,15 @@ export type Database = {
         Returns: undefined
       }
       end_campaign_early: { Args: { _campaign_id: string }; Returns: Json }
+      ensure_campaign_verification_case: {
+        Args: {
+          _campaign_id?: string
+          _package_order_id?: string
+          _source: string
+          _switch_order_id?: string
+        }
+        Returns: Json
+      }
       evaluate_affiliate_bonus_cycles: { Args: never; Returns: number }
       expire_stale_affiliates: { Args: never; Returns: number }
       expire_stale_offline_orders: { Args: never; Returns: number }
